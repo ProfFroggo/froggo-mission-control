@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { Activity, AlertTriangle, CheckCircle, Clock, Users, Zap } from 'lucide-react';
-import { Badge } from '@radix-ui/themes';
+import { Badge, Box, Flex } from '@radix-ui/themes';
 import { useStore, Agent } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
 import { useEventBus } from '../lib/useEventBus';
@@ -112,37 +112,6 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
         ))}
       </div>
 
-      {/* Alert section */}
-      {alertRows.length > 0 && (
-        <div className="rounded-lg border border-warning-border bg-warning-subtle p-4 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-warning uppercase tracking-wider mb-1">
-            <AlertTriangle size={13} />
-            Attention required
-          </div>
-          {alertRows.map(r => (
-            <div key={r.agent.id} className="flex items-center gap-3 text-sm">
-              <span className="font-medium text-mission-control-text w-28 truncate">{r.agent.name}</span>
-              <div className="flex items-center gap-2 flex-wrap">
-                {r.circuitOpen && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-error-subtle text-error border border-error-border">
-                    Circuit open
-                  </span>
-                )}
-                {r.isStale && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-warning-subtle text-warning border border-warning-border">
-                    No activity 24h
-                  </span>
-                )}
-                {r.failuresToday > 3 && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-error-subtle text-error border border-error-border">
-                    {r.failuresToday} failures today
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Per-agent health table */}
       <div className="rounded-lg border border-mission-control-border overflow-hidden">
@@ -220,9 +189,9 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
         </table>
         </div>
         {healthRows.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-mission-control-text-dim">
+          <Flex align="center" justify="center" px="4" py="6" className="text-sm text-mission-control-text-dim">
             No agents to display
-          </div>
+          </Flex>
         )}
       </div>
     </div>

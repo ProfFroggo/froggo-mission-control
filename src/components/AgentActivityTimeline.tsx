@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 
 interface DayActivity {
   date: string; // YYYY-MM-DD
@@ -40,10 +41,10 @@ export default function AgentActivityTimeline({ agentId }: AgentActivityTimeline
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+      <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
         <Calendar size={12} />
         <span>Loading activity...</span>
-      </div>
+      </Flex>
     );
   }
 

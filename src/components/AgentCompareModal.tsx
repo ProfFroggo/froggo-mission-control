@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, TrendingUp, Award, CheckCircle, Clock, Activity, Crown, Trophy, Dumbbell, Zap } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Box, Flex } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 import { getAgentTheme } from '../utils/agentThemes';
 import { agentApi } from '../lib/api';
@@ -119,18 +119,22 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
   };
 
   return (
-    <div 
-      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className={`fixed inset-0 modal-backdrop backdrop-blur-md z-50 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
-      }`} 
+      }`}
       onClick={handleBackdropClick}
       role="button"
       tabIndex={0}
       onKeyDown={handleBackdropClick}
       aria-label="Close modal backdrop"
     >
-      <div
-        className={`glass-modal rounded-xl max-w-5xl w-full max-h-[85vh] overflow-hidden flex flex-col ${
+      <Flex
+        direction="column"
+        className={`glass-modal rounded-xl max-w-5xl w-full max-h-[85vh] overflow-hidden ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`}
         onClick={handleInnerClick}
@@ -138,8 +142,8 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
-          <div>
+        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border flex-shrink-0">
+          <Box>
             <h2 className="text-base font-semibold text-mission-control-text flex items-center gap-2">
               <Activity size={16} />
               Agent Comparison
@@ -152,19 +156,19 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
             onClick={handleClose}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             aria-label="Close modal"
           >
             <X size={16} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <Box px="5" py="4" className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-64">
+            <Flex align="center" justify="center" style={{ height: '16rem' }}>
               <div className="text-mission-control-text-dim">Loading comparison...</div>
-            </div>
+            </Flex>
           ) : (
             <div className="space-y-6">
               {/* Agent Headers */}
@@ -352,10 +356,10 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
               </div>
             </div>
           )}
-        </div>
+        </Box>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+        <Flex align="center" justify="end" gap="3" px="5" py="4" className="border-t border-mission-control-border flex-shrink-0">
           <Button
             onClick={handleClose}
             size="2"
@@ -363,8 +367,8 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
           >
             Close
           </Button>
-        </div>
-      </div>
-    </div>
+        </Flex>
+      </Flex>
+    </Flex>
   );
 }

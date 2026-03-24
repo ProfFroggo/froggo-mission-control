@@ -24,7 +24,8 @@ import type { CatalogAgent } from '../types/catalog';
 import { getAgentTheme } from '../utils/agentThemes';
 import { createLogger } from '../utils/logger';
 import { agentApi, analyticsApi } from '../lib/api';
-import { Button, IconButton, Badge, TextField, Select } from '@radix-ui/themes';
+import { Button, IconButton, Badge, TextField, Select, Box, Flex } from '@radix-ui/themes';
+import TabNav from './TabNav';
 
 const logger = createLogger('AgentPanel');
 const getTheme = getAgentTheme;
@@ -292,9 +293,9 @@ export default function AgentPanel() {
 
   if (initialLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <Flex align="center" justify="center" height="100%">
         <Spinner size={32} />
-      </div>
+      </Flex>
     );
   }
 
@@ -309,21 +310,21 @@ export default function AgentPanel() {
   }
 
   return (
-    <div className="h-full overflow-auto p-4">
-      <div className="w-full">
+    <Box p="4" className="h-full overflow-auto">
+      <Box>
         {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-mission-control-accent/20 rounded-lg">
+        <Flex align="center" justify="between" mb="4">
+          <Flex align="center" gap="3">
+            <Box p="2" className="bg-mission-control-accent/20 rounded-lg">
               <Bot size={24} className="text-mission-control-accent" />
-            </div>
-            <div>
+            </Box>
+            <Box>
               <h1 className="text-xl font-semibold text-mission-control-text tracking-tight">Agents</h1>
               <p className="text-sm text-mission-control-text-dim">
                 {uniqueAgents.length} agent{uniqueAgents.length !== 1 ? 's' : ''} · {activeSubagents.length} sub-agent{activeSubagents.length !== 1 ? 's' : ''} running
               </p>
-            </div>
-          </div>
+            </Box>
+          </Flex>
           <div className="icon-text gap-2">
             {view === 'active' && (
               <Button
@@ -364,33 +365,22 @@ export default function AgentPanel() {
               </Button>
             )}
           </div>
-        </div>
+        </Flex>
 
         {/* View tabs */}
-        <div role="tablist" aria-label="Agent views" className="flex border-b border-mission-control-border mb-5">
-          {([
-            { key: 'active'      as const, icon: Bot,     label: 'Active'      },
-            { key: 'health'      as const, icon: Activity, label: 'Health'     },
-            { key: 'library'     as const, icon: Library,  label: 'Library'    },
-            { key: 'leaderboard' as const, icon: Trophy,   label: 'Leaderboard'},
-          ]).map(tab => (
-            <Button
-              key={tab.key}
-              type="button"
-              variant={view === tab.key ? 'soft' : 'ghost'}
-              color={view === tab.key ? 'indigo' : 'gray'}
-              size="2"
-              role="tab"
-              id={`agent-tab-${tab.key}`}
-              aria-selected={view === tab.key}
-              aria-controls={`agent-tabpanel-${tab.key}`}
-              onClick={() => setView(tab.key)}
-              className="-mb-px rounded-none border-b-2 border-transparent data-[state=active]:border-mission-control-accent"
-            >
-              <tab.icon size={15} aria-hidden="true" /> {tab.label}
-            </Button>
-          ))}
-        </div>
+        <Box mb="5" className="border-b border-mission-control-border">
+          <TabNav
+            tabs={[
+              { id: 'active',      label: 'Active',      icon: Bot      },
+              { id: 'health',      label: 'Health',      icon: Activity },
+              { id: 'library',     label: 'Library',     icon: Library  },
+              { id: 'leaderboard', label: 'Leaderboard', icon: Trophy   },
+            ]}
+            activeTab={view}
+            onTabChange={(id) => setView(id as typeof view)}
+            paddingX="px-0"
+          />
+        </Box>
 
         {/* Health view */}
         {view === 'health' && (
@@ -528,7 +518,7 @@ export default function AgentPanel() {
                     type="button"
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={(e) => { e.stopPropagation(); setManagingAgent({ id: agent.id, name: agent.name }); }}
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all z-10"
                     title="Manage agent"
@@ -810,7 +800,7 @@ export default function AgentPanel() {
           cancelLabel={confirmConfig.cancelLabel}
           type={confirmConfig.type}
         />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

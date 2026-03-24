@@ -4,7 +4,7 @@ import {
   Target, Plus, CheckCircle2, Trash2, Clock,
   ChevronRight, RefreshCw, AlertTriangle,
 } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Box, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface Goal {
@@ -209,9 +209,9 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
   const completedGoals = goals.filter(g => g.status === 'completed');
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+    <Box className="space-y-4">
+      <Flex align="center" justify="between">
+        <Flex align="center" gap="2">
           <Target size={14} className="text-mission-control-text-dim" />
           <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Goals</span>
           {goals.length > 0 && (
@@ -219,13 +219,13 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
               {activeGoals.length} active
             </span>
           )}
-        </div>
-        <div className="flex items-center gap-1">
+        </Flex>
+        <Flex align="center" gap="1">
           <IconButton
             type="button"
             size="1"
             variant="ghost"
-            radius="medium"
+           
             onClick={fetchGoals}
             disabled={loading}
             title="Refresh goals"
@@ -237,21 +237,21 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
             type="button"
             size="1"
             variant="ghost"
-            radius="medium"
+           
             onClick={() => setShowForm(v => !v)}
             title="Add goal"
             aria-label="Add new goal"
           >
             <Plus size={12} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {error && !loading && (
-        <div className="rounded-lg border border-error-border bg-error-subtle p-3 text-xs text-error flex items-center gap-2">
+        <Flex align="center" gap="2" p="3" className="rounded-lg border border-error-border bg-error-subtle text-xs text-error">
           <AlertTriangle size={12} className="flex-shrink-0" />
           {error}
-        </div>
+        </Flex>
       )}
 
       {showForm && (
@@ -349,7 +349,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
                       type="button"
                       size="1"
                       variant="ghost"
-                      radius="medium"
+                     
                       color="green"
                       onClick={() => handleMarkComplete(goal.id, goal.title)}
                       title="Mark complete"
@@ -362,7 +362,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
                     type="button"
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                     color="red"
                     onClick={() => handleDeleteGoal(goal.id)}
                     title="Delete goal"
@@ -434,6 +434,6 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
           {completedGoals.length} completed goal{completedGoals.length !== 1 ? 's' : ''}
         </div>
       )}
-    </div>
+    </Box>
   );
 }

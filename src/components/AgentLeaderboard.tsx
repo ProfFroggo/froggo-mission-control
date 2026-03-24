@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown, Minus, Trophy, RefreshCw, AlertTriangle } from 'lucide-react';
-import { Button, IconButton, Select } from '@radix-ui/themes';
+import { Button, IconButton, Select, Box, Flex } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 import { getAgentTheme } from '../utils/agentThemes';
 
@@ -198,11 +198,11 @@ export default function AgentLeaderboard() {
   });
 
   return (
-    <div className="space-y-4">
+    <Box className="space-y-4">
       {/* Header controls */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <Flex align="center" justify="between" gap="3" className="flex-wrap">
         {/* Period */}
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+        <Flex align="center" gap="1" p="1" className="rounded-lg bg-mission-control-bg border border-mission-control-border">
           {(['7d', '30d', '90d'] as Period[]).map(p => (
             <Button
               key={p}
@@ -213,9 +213,9 @@ export default function AgentLeaderboard() {
               {p}
             </Button>
           ))}
-        </div>
+        </Flex>
 
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           {/* Sort */}
           <Select.Root value={sortBy} onValueChange={(val) => setSortBy(val as SortKey)} size="1">
             <Select.Trigger aria-label="Sort leaderboard by" />
@@ -231,21 +231,21 @@ export default function AgentLeaderboard() {
             disabled={loading}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             title="Refresh leaderboard"
             aria-label="Refresh leaderboard"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Error */}
       {error && (
-        <div className="rounded-lg border border-error-border bg-error-subtle p-3 text-sm text-error flex items-center gap-2">
+        <Flex align="center" gap="2" p="3" className="rounded-lg border border-error-border bg-error-subtle text-sm text-error">
           <AlertTriangle size={14} className="flex-shrink-0" />
           {error}
-        </div>
+        </Flex>
       )}
 
       {/* Loading skeleton */}
@@ -343,10 +343,10 @@ export default function AgentLeaderboard() {
       )}
 
       {!loading && sorted.length === 0 && (
-        <div className="py-12 text-center text-sm text-mission-control-text-dim">
+        <Flex align="center" justify="center" py="9" className="text-sm text-mission-control-text-dim">
           No agent data available yet.
-        </div>
+        </Flex>
       )}
-    </div>
+    </Box>
   );
 }

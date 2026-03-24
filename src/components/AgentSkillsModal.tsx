@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Award } from 'lucide-react';
-import { IconButton, Select } from '@radix-ui/themes';
+import { IconButton, Select, Flex, Box } from '@radix-ui/themes';
 import { libraryApi } from '../lib/api';
 
 interface AgentSkill {
@@ -85,7 +85,7 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+    <Flex align="center" justify="center" p="4" className={`fixed inset-0 z-50 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
         onClick={handleBackdropClick}
@@ -94,7 +94,7 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
         tabIndex={0}
         aria-label="Close agent skills"
       />
-      <div className={`relative w-full max-w-2xl bg-mission-control-bg border border-mission-control-border rounded-xl shadow-2xl flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
+      <Flex direction="column" className={`relative w-full max-w-2xl bg-mission-control-bg border border-mission-control-border rounded-xl shadow-2xl max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
         {/* Header */}
         <div className="flex items-center gap-3 px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <Award size={20} className="text-mission-control-accent" />
@@ -159,7 +159,7 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 }

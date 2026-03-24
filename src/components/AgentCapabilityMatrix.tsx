@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { RefreshCw, Circle } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Box, Flex } from '@radix-ui/themes';
 
 interface Agent {
   id: string;

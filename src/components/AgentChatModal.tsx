@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Mic, MessageSquare, AlertTriangle, XCircle } from 'lucide-react';
-import { Button, IconButton, TextArea, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, TextArea, Spinner, Box, Flex } from '@radix-ui/themes';
 import MarkdownMessage from './MarkdownMessage';
 import SessionStatsBar from './SessionStatsBar';
 import StreamingText from './StreamingText';
@@ -192,8 +192,11 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
   };
 
   return (
-    <div
-      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className={`fixed inset-0 modal-backdrop backdrop-blur-md z-50 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
       }`}
       onClick={handleBackdropClick}
@@ -202,8 +205,9 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
       onKeyDown={handleBackdropClick}
       aria-label="Close modal backdrop"
     >
-      <div
-        className={`glass-modal rounded-xl max-w-3xl w-full h-[80vh] max-h-[85vh] flex flex-col ${
+      <Flex
+        direction="column"
+        className={`glass-modal rounded-xl max-w-3xl w-full h-[80vh] max-h-[85vh] ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`}
         onClick={handleInnerClick}
@@ -211,8 +215,8 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
             {(() => {
               const theme = getAgentTheme(agent.id);
               return theme.pic ? (
@@ -243,8 +247,8 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
               </p>
               <SessionStatsBar sessionKey={sessionKey} onCompact={() => sendMessage('/compact')} className="mt-1" />
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <IconButton
               onClick={() => setIsVoiceMode(!isVoiceMode)}
               variant="ghost"
@@ -263,8 +267,8 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
             >
               <X size={16} />
             </IconButton>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Voice Mode */}
         {isVoiceMode && (
@@ -392,7 +396,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 }

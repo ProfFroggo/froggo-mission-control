@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton, Select, TextArea, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextArea, TextField, Box, Flex } from '@radix-ui/themes';
 import { BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Power, BarChart2, X } from 'lucide-react';
 import { agentApi, catalogApi, settingsApi, libraryApi } from '../lib/api';
 import { showToast } from './Toast';

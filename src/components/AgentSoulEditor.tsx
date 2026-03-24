@@ -4,7 +4,7 @@ import {
   Save, RefreshCw, FileText, Send, Info, Tag, X, Plus,
   Brain, MessageSquare, Star, ToggleLeft, ToggleRight,
 } from 'lucide-react';
-import { Button, IconButton, TextField, TextArea, Switch } from '@radix-ui/themes';
+import { Button, IconButton, TextField, TextArea, Switch, Box, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { agentApi } from '../lib/api';
 
@@ -254,7 +254,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
   }
 
   return (
-    <div className="space-y-5">
+    <Box className="space-y-5">
       {/* Character Traits Panel */}
       <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
         <div className="flex items-center gap-2 mb-3">
@@ -272,7 +272,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
                 type="button"
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
                 onClick={() => removeTrait(trait)}
                 aria-label={`Remove trait ${trait}`}
               >
@@ -311,7 +311,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
             type="button"
             size="2"
             variant="ghost"
-            radius="medium"
+           
             onClick={() => addTrait(newTrait)}
             disabled={!newTrait.trim() || traits.length >= 10}
             aria-label="Add trait"
@@ -447,7 +447,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
               type="button"
               size="2"
               variant="ghost"
-              radius="medium"
+             
               onClick={() => setShowHint(!showHint)}
               title="Show format hints"
               aria-label="Show format hints"
@@ -458,7 +458,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
               type="button"
               size="2"
               variant="ghost"
-              radius="medium"
+             
               onClick={loadSoul}
               disabled={loading}
               title="Reload from disk"
@@ -518,6 +518,6 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
           </div>
         </div>
       </div>
-    </div>
+    </Box>
   );
 }

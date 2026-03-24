@@ -12,7 +12,7 @@ import AgentCompareModal from './AgentCompareModal';
 import EmptyState from './EmptyState';
 import AgentCapabilityMatrix from './AgentCapabilityMatrix';
 import { getAgentTheme } from '../utils/agentThemes';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Box, Flex } from '@radix-ui/themes';
 
 const CORE_AGENT_IDS = ['mission-control', 'clara', 'hr', 'coder', 'inbox'];
 
@@ -241,7 +241,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
   return (
     <>
       {/* Library tabs */}
-      <div className="flex items-center gap-1 mb-4 border-b border-mission-control-border">
+      <Flex align="center" gap="1" mb="4" className="border-b border-mission-control-border">
         <button
           type="button"
           onClick={() => setActiveTab('catalog')}
@@ -266,7 +266,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
           <Table2 size={14} />
           Capabilities
         </button>
-      </div>
+      </Flex>
 
       {activeTab === 'capabilities' && <AgentCapabilityMatrix />}
       {activeTab === 'catalog' && <div className="flex gap-4">

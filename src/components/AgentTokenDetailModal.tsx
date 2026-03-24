@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { X, TrendingUp, BarChart3, DollarSign, PiggyBank } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Box, Flex } from '@radix-ui/themes';
 import { getAgentTheme } from '../utils/agentThemes';
 import { analyticsApi } from '../lib/api';
 
@@ -199,23 +199,26 @@ export default function AgentTokenDetailModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+    <Flex
+      align="center"
+      justify="center"
+      className="fixed inset-0 bg-black/50 z-50"
       onClick={handleBackdropClick}
       onKeyDown={handleBackdropClick}
       role="button"
       tabIndex={0}
       aria-label="Close token detail modal"
     >
-      <div
-        className="bg-mission-control-bg border border-mission-control-border rounded-xl w-[640px] max-h-[85vh] flex flex-col shadow-2xl"
+      <Flex
+        direction="column"
+        className="bg-mission-control-bg border border-mission-control-border rounded-xl w-[640px] max-h-[85vh] shadow-2xl"
         onClick={handleInnerClick}
         onKeyDown={handleInnerClick}
         role="presentation"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.color }} />
             <div>
               <h3 className="text-base font-semibold text-mission-control-text">
@@ -223,8 +226,8 @@ export default function AgentTokenDetailModal({
               </h3>
               <p className="text-xs text-mission-control-text-dim">Token Usage & Cost</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             {onOpenBudgets && (
               <Button
                 size="1"
@@ -239,13 +242,13 @@ export default function AgentTokenDetailModal({
               onClick={onClose}
               size="2"
               variant="ghost"
-              radius="medium"
+
               aria-label="Close"
             >
               <X size={20} />
             </IconButton>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         <div className="flex-1 overflow-y-auto">
           {/* 30-day cost trend */}
@@ -376,7 +379,7 @@ export default function AgentTokenDetailModal({
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 }
