@@ -1154,16 +1154,19 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             { key: 'soul' as const, icon: CalendarDays, label: 'Soul' },
             { key: 'chat' as const, icon: MessageSquare, label: 'Chat' },
           ]).map((tab) => (
-            <Button
+            <button
               key={tab.key}
-              variant={activeTab === tab.key ? 'solid' : 'ghost'}
-              color={activeTab === tab.key ? 'violet' : 'gray'}
-              size="1"
+              type="button"
               onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === tab.key
+                  ? 'border-mission-control-accent text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
-              <tab.icon size={14} className="inline mr-1" />
+              <tab.icon size={14} />
               {tab.label}
-            </Button>
+            </button>
           ))}
         </div>
 

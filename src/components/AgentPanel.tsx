@@ -507,7 +507,7 @@ export default function AgentPanel() {
               return (
                 <div
                   key={agent.id}
-                  className={`group relative rounded-2xl border-2 transition-all duration-200 hover:-translate-y-0.5 hover:bg-mission-control-surface/50 cursor-pointer flex flex-col ${theme.border}`}
+                  className={`group relative rounded-2xl border border-mission-control-border transition-all duration-200 hover:-translate-y-0.5 hover:bg-mission-control-surface/50 cursor-pointer flex flex-col`}
                 >
                   {/* Full-card button — covers background/inactive areas for mouse + keyboard access.
                       z-[1] puts it above static content (which is z-auto) so pointer events on
@@ -679,7 +679,7 @@ export default function AgentPanel() {
                     </div>
 
                     {/* Start/Stop + Soul link — relative z-[2] lifts above cover button */}
-                    <div className={`flex items-center gap-1.5 mt-auto pt-2 border-t relative z-[2] ${theme.border}`}>
+                    <div className={`flex items-center gap-1.5 mt-auto pt-2 border-t border-mission-control-border relative z-[2]`}>
                       {agent.status === 'idle' && agentTasks.length > 0 && (
                         <Button type="button" variant="solid" color="grass" size="1" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}>
                           <Play size={11} /> Start

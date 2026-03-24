@@ -623,13 +623,23 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
 
   return (
     <>
-      {/* Sub-tabs — horizontal pills */}
-      <div className="flex gap-1 mb-4 overflow-x-auto">
+      {/* Sub-tabs — border-b-2 underline style */}
+      <div className="flex border-b border-mission-control-border mb-4 overflow-x-auto">
         {TABS.map(t => (
-          <Button key={t.id} variant={tab === t.id ? 'solid' : 'ghost'} size="1" onClick={() => setTab(t.id)} style={{ flexShrink: 0, position: 'relative' }}>
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            style={{ flexShrink: 0, position: 'relative' }}
+            className={`px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              tab === t.id
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+          >
             {t.label}
             {t.dirty && <span className="w-1.5 h-1.5 rounded-full bg-warning absolute top-1 right-1" />}
-          </Button>
+          </button>
         ))}
       </div>
 
