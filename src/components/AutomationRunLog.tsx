@@ -206,7 +206,7 @@ export default function AutomationRunLog({ automationId, automationName, onClose
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'flex-end',
-        background: 'rgba(0,0,0,0.4)',
+        background: 'var(--black-a4)',
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >

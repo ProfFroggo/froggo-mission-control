@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState } from 'react';
 import { ShieldQuestion, Check, Lock, X, MessageSquare } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 
 export interface ToolPermissionRequest {
   approvalId: string;
@@ -99,65 +100,77 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
       {/* Reject with reason input */}
       {showRejectInput && (
         <div className="flex gap-2 items-center">
-          <input
-            className="flex-1 px-2.5 py-1.5 rounded-lg text-xs border border-mission-control-border bg-mission-control-bg focus:outline-none focus:ring-1 focus:ring-error/50"
+          <TextField.Root
+            className="flex-1"
+            size="1"
             placeholder="Reason for rejection..."
             value={rejectReason}
             onChange={e => setRejectReason(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') resolve('reject_reason', rejectReason); }}
             autoFocus
           />
-          <button
+          <Button
             onClick={() => resolve('reject_reason', rejectReason)}
             disabled={loading}
-            className="px-2.5 py-1.5 rounded-lg text-xs bg-error text-white hover:bg-error/80 transition-colors disabled:opacity-50"
+            variant="solid"
+            color="red"
+            size="1"
           >
             Send
-          </button>
-          <button
+          </Button>
+          <IconButton
             onClick={() => setShowRejectInput(false)}
-            className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim"
+            variant="ghost"
+            size="2"
+            radius="medium"
           >
             <X size={12} />
-          </button>
+          </IconButton>
         </div>
       )}
 
       {/* Action buttons */}
       {!showRejectInput && (
         <div className="flex items-center gap-2 flex-wrap">
-          <button
+          <Button
             onClick={() => resolve('grant')}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-success text-white hover:bg-success/80 transition-colors disabled:opacity-50"
+            variant="solid"
+            color="green"
+            size="1"
           >
             <Check size={12} />
             Grant
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => resolve('grant_session')}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-info text-white hover:bg-info/80 transition-colors disabled:opacity-50"
+            variant="solid"
+            color="blue"
+            size="1"
           >
             <Check size={12} />
             Grant for Session
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => resolve('reject')}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-error/40 text-error hover:bg-error/10 transition-colors disabled:opacity-50"
+            variant="outline"
+            color="red"
+            size="1"
           >
             <X size={12} />
             Reject
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setShowRejectInput(true)}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border transition-colors disabled:opacity-50"
+            variant="ghost"
+            size="1"
           >
             <MessageSquare size={12} />
             Reject with Reason
-          </button>
+          </Button>
         </div>
       )}
     </div>

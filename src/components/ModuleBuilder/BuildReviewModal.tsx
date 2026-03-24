@@ -43,7 +43,7 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.7)' }}
+      style={{ background: 'var(--black-a7)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
       <div

@@ -181,10 +181,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             {quickActions.map(({ icon: Icon, label, color }) => (
               <button
                 key={label}
+                type="button"
                 onClick={() => handleQuickAction(label)}
                 disabled={loadingAction === label}
-                className={`group relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${color} 
-                  hover:scale-105 active:scale-95 transition-all duration-200 
+                className={`group relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${color}
+                  hover:scale-105 active:scale-95 transition-all duration-200
                   shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed
                   border border-black/10`}
               >
@@ -196,7 +197,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                   )}
                   <span className="text-sm font-medium text-white">{label}</span>
                 </div>
-                
+
                 {/* Shine effect on hover */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               </button>
@@ -211,9 +212,10 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
         {/* PRIORITY METRICS - Larger, more prominent cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Pending Approvals - HERO CARD */}
-          <button 
+          <button
+            type="button"
             onClick={() => onNavigate?.('approvals')}
-            className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
+            className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300
               ${pendingApprovals.length > 0 
                 ? 'bg-gradient-to-br from-[var(--color-danger)]/20 via-[var(--color-danger)]/10 to-transparent border-2 border-warning-border hover:border-warning-border shadow-xl'
                 : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
@@ -250,10 +252,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           </button>
 
           {/* Active Tasks */}
-          <button 
+          <button
+            type="button"
             onClick={() => onNavigate?.('kanban')}
-            className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
-              ${inProgressTasks.length > 0 
+            className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300
+              ${inProgressTasks.length > 0
                 ? 'bg-gradient-to-br from-[var(--color-info)]/20 via-[var(--color-info)]/10 to-transparent border border-info-border hover:border-info-border shadow-lg'
                 : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
               } hover:scale-105`}
@@ -287,9 +290,10 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           </button>
 
           {/* Urgent Tasks */}
-          <button 
+          <button
+            type="button"
             onClick={() => onNavigate?.('kanban')}
-            className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
+            className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300
               ${urgentTasks.length > 0 || unassignedTasks.length > 0
                 ? 'bg-gradient-to-br from-[var(--color-warning)]/20 via-[var(--color-warning)]/10 to-transparent border border-warning-border hover:border-warning-border shadow-lg'
                 : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
@@ -320,9 +324,10 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           </button>
 
           {/* Active Agents */}
-          <button 
+          <button
+            type="button"
             onClick={() => onNavigate?.('agents')}
-            className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
+            className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300
               ${activeSubagents.length > 0
                 ? 'bg-gradient-to-br from-[var(--color-success)]/20 via-[var(--color-success)]/10 to-transparent border border-success-border hover:border-success-border shadow-lg'
                 : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
@@ -478,7 +483,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
         {/* ACTIVITY STREAM - Collapsible glass panel */}
         <div className="bg-mission-control-surface/60 backdrop-blur-2xl rounded-2xl border border-mission-control-border/30 overflow-hidden shadow-2xl">
-          <button 
+          <button
+            type="button"
             onClick={() => setShowActivityStream(!showActivityStream)}
             className="w-full p-6 flex items-center justify-between hover:bg-mission-control-bg/20 transition-all group"
           >

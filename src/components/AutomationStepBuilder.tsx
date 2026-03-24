@@ -504,7 +504,7 @@ export default function AutomationStepBuilder({ automationId, initialSteps = [],
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'flex-end',
-        background: 'rgba(0,0,0,0.4)',
+        background: 'var(--black-a4)',
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >

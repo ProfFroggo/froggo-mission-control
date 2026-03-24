@@ -391,15 +391,18 @@ function renderInline(text: string, allArticles: KBArticle[], onNavigate: (artic
       const target = allArticles.find(a => a.title.toLowerCase() === articleTitle.toLowerCase());
       if (target) {
         parts.push(
-          <button
+          <Button
             key={key++}
             onClick={() => onNavigate(target)}
-            className="text-info hover:underline inline font-medium"
+            variant="ghost"
+            color="indigo"
+            size="1"
             title={`View article: ${target.title}`}
+            style={{ display: 'inline', padding: '0 2px', height: 'auto' }}
           >
             <Link size={10} className="inline mr-0.5 opacity-70" />
             {articleTitle}
-          </button>
+          </Button>
         );
       } else {
         parts.push(<span key={key++} className="text-mission-control-text-dim">{articleTitle}</span>);
@@ -948,16 +951,19 @@ export default function KnowledgeBase() {
                   <p className="text-xs font-medium text-mission-control-text-dim mb-2">Related articles</p>
                   <div className="space-y-1.5">
                     {related.map(r => (
-                      <button
+                      <Button
                         key={r.id}
                         onClick={() => setViewing(r)}
-                        className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg bg-mission-control-surface hover:border-info/40 border border-mission-control-border transition-colors"
+                        variant="ghost"
+                        color="gray"
+                        size="2"
+                        style={{ width: '100%', justifyContent: 'flex-start' }}
                       >
                         <BookOpen size={12} className="text-mission-control-text-dim shrink-0" />
                         <span className="text-sm text-mission-control-text truncate">{r.title}</span>
                         <span className="ml-auto text-xs text-mission-control-text-dim capitalize shrink-0">{r.category}</span>
                         <ChevronRight size={12} className="text-mission-control-text-dim shrink-0" />
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -1230,14 +1236,17 @@ export default function KnowledgeBase() {
                       <p className="px-3 py-2 text-xs text-mission-control-text-dim">No templates available</p>
                     ) : (
                       apiTemplates.map(t => (
-                        <button
+                        <Button
                           key={t.id}
                           onClick={() => createFromTemplate(t.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs text-mission-control-text hover:bg-mission-control-border transition-colors bg-transparent border-0 cursor-pointer"
+                          variant="ghost"
+                          color="gray"
+                          size="1"
+                          style={{ width: '100%', justifyContent: 'flex-start' }}
                         >
                           <FileText size={11} className="text-mission-control-text-dim shrink-0" />
                           {t.label}
-                        </button>
+                        </Button>
                       ))
                     )}
                   </div>
@@ -1426,32 +1435,30 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
 
   return (
     <nav className="w-36 shrink-0 border-r border-mission-control-border flex flex-col h-full overflow-y-auto py-3 px-2 space-y-0.5">
-      <button
+      <Button
         onClick={() => onSelect('all')}
-        className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors ${
-          selected === 'all'
-            ? 'bg-info/20 text-info font-medium'
-            : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
-        }`}
+        variant={selected === 'all' ? 'soft' : 'ghost'}
+        color={selected === 'all' ? 'indigo' : 'gray'}
+        size="1"
+        style={{ width: '100%', justifyContent: 'space-between' }}
       >
         <span>All</span>
         <span className="opacity-60">{total}</span>
-      </button>
+      </Button>
       {categories.map(cat => (
-        <button
+        <Button
           key={cat}
           onClick={() => onSelect(cat)}
-          className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors ${
-            selected === cat
-              ? 'bg-info/20 text-info font-medium'
-              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
-          }`}
+          variant={selected === cat ? 'soft' : 'ghost'}
+          color={selected === cat ? 'indigo' : 'gray'}
+          size="1"
+          style={{ width: '100%', justifyContent: 'space-between' }}
         >
           <span className="capitalize truncate">{cat}</span>
           {counts[cat] != null && (
             <span className="opacity-60 shrink-0 ml-1">{counts[cat]}</span>
           )}
-        </button>
+        </Button>
       ))}
 
       {/* Add category */}
@@ -1490,16 +1497,15 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
 
       {/* Brand Assets section — separator */}
       <div className="border-t border-mission-control-border my-1.5 pt-1.5">
-        <button
+        <Button
           onClick={() => onSelect('brand-assets')}
-          className={`w-full text-left flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs transition-colors ${
-            selected === 'brand-assets'
-              ? 'bg-info/20 text-info font-medium'
-              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
-          }`}
+          variant={selected === 'brand-assets' ? 'soft' : 'ghost'}
+          color={selected === 'brand-assets' ? 'indigo' : 'gray'}
+          size="1"
+          style={{ width: '100%', justifyContent: 'flex-start' }}
         >
           <span className="truncate">Brand Assets</span>
-        </button>
+        </Button>
       </div>
     </nav>
   );
@@ -1752,14 +1758,17 @@ function QuickCreateModal({
                   {ARTICLE_TEMPLATES.map(tmpl => {
                     const Icon = tmpl.icon;
                     return (
-                      <button
+                      <Button
                         key={tmpl.id}
                         onClick={() => applyTemplate(tmpl)}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs text-mission-control-text hover:bg-mission-control-border transition-colors bg-transparent border-0 cursor-pointer"
+                        variant="ghost"
+                        color="gray"
+                        size="1"
+                        style={{ width: '100%', justifyContent: 'flex-start' }}
                       >
                         <Icon size={12} className="text-mission-control-text-dim shrink-0" />
                         {tmpl.label}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -1887,14 +1896,13 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
         ) : (
           <div className="space-y-px px-2">
             {versions.map(v => (
-              <button
+              <Button
                 key={v.id}
                 onClick={() => onPreview(previewVersion?.id === v.id ? null : v)}
-                className={`w-full text-left px-3 py-2.5 rounded transition-colors bg-transparent border cursor-pointer ${
-                  previewVersion?.id === v.id
-                    ? 'bg-info/20 border-info/40'
-                    : 'border-transparent hover:bg-mission-control-border'
-                }`}
+                variant={previewVersion?.id === v.id ? 'soft' : 'ghost'}
+                color={previewVersion?.id === v.id ? 'indigo' : 'gray'}
+                size="1"
+                style={{ width: '100%', justifyContent: 'flex-start' }}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-medium text-mission-control-text">
@@ -1910,7 +1918,7 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
                     <span className="text-xs text-mission-control-text-dim truncate opacity-70">· {v.versionNote}</span>
                   )}
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
         )}

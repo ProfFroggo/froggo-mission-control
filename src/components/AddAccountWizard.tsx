@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, ArrowRight, ArrowLeft, Check, Loader2, Mail, Calendar, HardDrive, Users, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { AccountProvider, DataType, AddAccountRequest } from '../types/accounts';
 import { useUserSettings } from '../store/userSettings';
 import { accountsApi } from '../lib/api';
@@ -183,14 +184,17 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
               {step === 'success' && 'Account connected!'}
             </p>
           </div>
-          <button
+          <IconButton
             onClick={onClose}
             disabled={step === 'connecting'}
-            className="p-1.5 hover:bg-mission-control-border rounded-lg text-mission-control-text-dim hover:text-mission-control-text transition-colors disabled:opacity-50"
+            size="2"
+            variant="ghost"
+            color="gray"
+            radius="medium"
             aria-label="Close wizard"
           >
             <X size={20} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Progress Bar */}
@@ -218,7 +222,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
               {(Object.keys(PROVIDER_INFO) as AccountProvider[]).map((p) => {
                 const info = PROVIDER_INFO[p];
                 return (
-                  <button
+                  <Button
                     key={p}
                     onClick={() => {
                       if (info.comingSoon) return;
@@ -226,13 +230,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                       setAuthMethod(info.authMethods[0] as 'oauth' | 'app-password');
                     }}
                     disabled={info.comingSoon}
-                    className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                      info.comingSoon
-                        ? 'border-mission-control-border opacity-50 cursor-not-allowed'
-                        : provider === p
-                          ? 'border-mission-control-accent bg-mission-control-accent/10'
-                          : 'border-mission-control-border hover:border-mission-control-accent/50'
-                    }`}
+                    variant={provider === p ? 'soft' : 'ghost'}
+                    color={provider === p ? 'violet' : 'gray'}
+                    size="2"
+                    style={{ width: '100%', justifyContent: 'flex-start', padding: '1rem', height: 'auto' }}
                   >
                     <div className="flex items-center gap-4">
                       <div
@@ -256,7 +257,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                         <Check size={24} className="text-mission-control-accent" />
                       )}
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -275,14 +276,15 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
               <div>
                 <label htmlFor="email-input" className="block text-sm font-medium mb-2">Email Address</label>
-                <input
+                <TextField.Root
                   id="email-input"
                   type="email"
                   aria-label="Email address input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={`your.email@${provider === 'google' ? 'gmail.com' : provider === 'microsoft' ? 'outlook.com' : 'example.com'}`}
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-3 focus:outline-none focus:border-mission-control-accent"
+                  size="3"
+                  style={{ width: '100%' }}
                 />
               </div>
 
@@ -293,13 +295,16 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 </span>
                 <div className="space-y-2">
                   {provider === 'google' && useUserSettings.getState().emailAccounts.map(a => a.email).map(acc => (
-                    <button
+                    <Button
                       key={acc}
                       onClick={() => setEmail(acc)}
-                      className="w-full p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors text-left"
+                      variant="ghost"
+                      color="gray"
+                      size="2"
+                      style={{ width: '100%', justifyContent: 'flex-start' }}
                     >
                       {acc}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -323,14 +328,13 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   const isSelected = selectedDataTypes.includes(type);
 
                   return (
-                    <button
+                    <Button
                       key={type}
                       onClick={() => toggleDataType(type)}
-                      className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                        isSelected
-                          ? 'border-mission-control-accent bg-mission-control-accent/10'
-                          : 'border-mission-control-border hover:border-mission-control-accent/50'
-                      }`}
+                      variant={isSelected ? 'soft' : 'ghost'}
+                      color={isSelected ? 'violet' : 'gray'}
+                      size="2"
+                      style={{ width: '100%', justifyContent: 'flex-start', padding: '1rem', height: 'auto' }}
                     >
                       <div className="flex items-center gap-3">
                         <Icon size={24} className={isSelected ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
@@ -342,7 +346,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                           <Check size={20} className="text-mission-control-accent" />
                         )}
                       </div>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -432,26 +436,29 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
                   <div>
                     <label htmlFor="app-password" className="block text-sm font-medium mb-2">App-Specific Password</label>
-                    <input
+                    <TextField.Root
                       id="app-password"
                       type="password"
                       aria-label="App-specific password input"
                       value={appPassword}
                       onChange={(e) => setAppPassword(e.target.value)}
                       placeholder="xxxx-xxxx-xxxx-xxxx"
-                      className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-3 focus:outline-none focus:border-mission-control-accent font-mono"
+                      size="3"
+                      style={{ width: '100%', fontFamily: 'monospace' }}
                     />
                   </div>
 
-                  <button
+                  <Button
                     onClick={() => window.open(
                       provider === 'icloud' ? 'https://appleid.apple.com/account/manage' : '#',
                       '_blank'
                     )}
-                    className="text-sm text-mission-control-accent hover:underline"
+                    variant="ghost"
+                    color="violet"
+                    size="2"
                   >
                     How to generate an app-specific password →
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -497,21 +504,25 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
         {/* Footer Actions */}
         {step !== 'connecting' && step !== 'success' && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-mission-control-border flex-shrink-0">
-            <button
+            <Button
               onClick={handleBack}
               disabled={step === 'provider'}
-              className="px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors flex items-center gap-2 disabled:opacity-50"
+              variant="ghost"
+              color="gray"
+              size="2"
             >
               <ArrowLeft size={16} />
               Back
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleNext}
-              className="px-6 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors flex items-center gap-2"
+              variant="solid"
+              color="violet"
+              size="2"
             >
               {step === 'auth' ? 'Connect' : 'Next'}
               {step !== 'auth' && <ArrowRight size={16} />}
-            </button>
+            </Button>
           </div>
         )}
       </div>

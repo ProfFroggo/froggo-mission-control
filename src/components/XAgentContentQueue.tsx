@@ -18,7 +18,7 @@ import {
   Square,
   Eye,
 } from 'lucide-react';
-import { Button, Spinner, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, TextArea } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -222,9 +222,12 @@ function DraftCard({
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           {!autoApprove && (
-            <button
+            <IconButton
               onClick={onToggleSelect}
-              className="flex-shrink-0"
+              size="1"
+              variant="ghost"
+              color={selected ? 'indigo' : 'gray'}
+              radius="medium"
               aria-label={selected ? 'Deselect draft' : 'Select draft'}
             >
               {selected ? (
@@ -232,7 +235,7 @@ function DraftCard({
               ) : (
                 <Square size={16} className="text-mission-control-text-dim" />
               )}
-            </button>
+            </IconButton>
           )}
           <span className="px-2 py-0.5 text-xs rounded bg-info-subtle text-info">
             {draft.topic}
@@ -242,13 +245,16 @@ function DraftCard({
           </span>
         </div>
         <div className="flex items-center gap-1">
-          <button
+          <IconButton
             onClick={() => setShowPreview(!showPreview)}
-            className={`p-1 rounded hover:opacity-70 ${showPreview ? 'text-info' : 'text-mission-control-text-dim'}`}
+            size="1"
+            variant={showPreview ? 'soft' : 'ghost'}
+            color={showPreview ? 'indigo' : 'gray'}
+            radius="medium"
             title="Toggle preview"
           >
             <Eye size={13} />
-          </button>
+          </IconButton>
           <Bot size={14} className="text-mission-control-text-dim flex-shrink-0" />
         </div>
       </div>
@@ -276,28 +282,37 @@ function DraftCard({
         </span>
       ) : (
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={handleApproveAndSchedule}
             disabled={scheduling}
-            className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-success-subtle text-success transition-opacity disabled:opacity-50"
+            variant="soft"
+            color="green"
+            size="1"
+            style={{ flex: 1 }}
           >
             <Check size={12} />
             {scheduling ? 'Scheduling...' : 'Approve'}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => { setFeedbackMode('changes'); setShowFeedback(!showFeedback); }}
-            className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-warning bg-warning-subtle text-warning transition-opacity hover:opacity-70"
+            variant="soft"
+            color="yellow"
+            size="1"
+            style={{ flex: 1 }}
           >
             <MessageSquare size={12} />
             Changes
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => { setFeedbackMode('reject'); setShowFeedback(!showFeedback); }}
-            className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-error-subtle text-error transition-opacity hover:opacity-70"
+            variant="soft"
+            color="red"
+            size="1"
+            style={{ flex: 1 }}
           >
             <X size={12} />
             Reject
-          </button>
+          </Button>
         </div>
       )}
 
@@ -555,9 +570,13 @@ export function XAgentContentQueue() {
               When ON, agents can auto-draft and schedule posts based on your brief.
             </div>
           </div>
-          <button
+          <IconButton
             onClick={handleToggleAgentMode}
             disabled={saving}
+            size="2"
+            variant="ghost"
+            color={settings.enabled ? 'indigo' : 'gray'}
+            radius="medium"
             aria-label={settings.enabled ? 'Disable agent mode' : 'Enable agent mode'}
           >
             {settings.enabled ? (
@@ -565,7 +584,7 @@ export function XAgentContentQueue() {
             ) : (
               <ToggleLeft size={36} className="text-mission-control-text-dim" />
             )}
-          </button>
+          </IconButton>
         </div>
 
         {/* Content brief */}
@@ -620,9 +639,13 @@ export function XAgentContentQueue() {
               Approved drafts go directly to Scheduled without manual review.
             </p>
           </div>
-          <button
+          <IconButton
             onClick={handleToggleAutoApprove}
             disabled={saving}
+            size="2"
+            variant="ghost"
+            color={settings.autoApprove ? 'yellow' : 'gray'}
+            radius="medium"
             aria-label={settings.autoApprove ? 'Disable auto-approve' : 'Enable auto-approve'}
           >
             {settings.autoApprove ? (
@@ -630,7 +653,7 @@ export function XAgentContentQueue() {
             ) : (
               <ToggleLeft size={28} className="text-mission-control-text-dim" />
             )}
-          </button>
+          </IconButton>
         </div>
 
         {settings.autoApprove && (

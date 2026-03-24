@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { X, Eye, EyeOff, Calendar, RefreshCw, CheckSquare } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { useUserSettings } from '../store/userSettings';
 
 interface CalendarSource {
@@ -258,37 +259,48 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <IconButton
               onClick={loadSources}
               disabled={refreshing}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              size="2"
+              variant="ghost"
+              color="gray"
+              radius="medium"
               title="Refresh sources"
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               onClick={onClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              size="2"
+              variant="ghost"
+              color="gray"
+              radius="medium"
+              aria-label="Close"
             >
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="px-6 py-3 border-b border-mission-control-border bg-mission-control-bg/50 flex items-center gap-2">
-          <button
+          <Button
             onClick={selectAll}
-            className="text-sm px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
+            size="2"
+            variant="ghost"
+            color="gray"
           >
             Select All
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={deselectAll}
-            className="text-sm px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
+            size="2"
+            variant="ghost"
+            color="gray"
           >
             Deselect All
-          </button>
+          </Button>
         </div>
 
         {/* Sources List */}
@@ -308,14 +320,13 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
                   </h4>
                   <div className="space-y-2">
                     {typeSources.map((source) => (
-                      <button
+                      <Button
                         key={source.id}
                         onClick={() => toggleSource(source.id)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                          source.enabled
-                            ? 'border-mission-control-border bg-mission-control-bg/50 hover:bg-mission-control-bg'
-                            : 'border-mission-control-border/50 opacity-50 hover:opacity-75'
-                        }`}
+                        variant="ghost"
+                        color="gray"
+                        size="2"
+                        style={{ width: '100%', justifyContent: 'flex-start', opacity: source.enabled ? 1 : 0.5 }}
                       >
                         {/* Toggle Indicator */}
                         <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
@@ -327,7 +338,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
                         </div>
 
                         {/* Color Indicator */}
-                        <div 
+                        <div
                           className="w-3 h-3 rounded-full flex-shrink-0"
                           style={{ backgroundColor: source.color }}
                         />
@@ -346,7 +357,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
                         ) : (
                           <EyeOff size={16} className="text-mission-control-text-dim flex-shrink-0" />
                         )}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -357,19 +368,23 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
 
         {/* Footer Actions */}
         <div className="p-6 border-t border-mission-control-border flex justify-end gap-2 bg-mission-control-surface">
-          <button
+          <Button
             onClick={onClose}
-            className="px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-border/80 transition-colors"
+            size="2"
+            variant="ghost"
+            color="gray"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSave}
-            className="flex items-center gap-2 px-6 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+            size="2"
+            variant="solid"
+            color="violet"
           >
             <Calendar size={16} />
             Apply Filters
-          </button>
+          </Button>
         </div>
       </div>
     </div>

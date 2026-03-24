@@ -493,7 +493,7 @@ export default function AutomationBuilderModal({
         onClick={onClose}
         style={{
           position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'rgba(0,0,0,0.55)',
+          background: 'var(--black-a6)',
           backdropFilter: 'blur(4px)',
         }}
       />
@@ -513,7 +513,7 @@ export default function AutomationBuilderModal({
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+          boxShadow: '0 24px 64px var(--black-a5)',
         }}
       >
         {/* Header */}

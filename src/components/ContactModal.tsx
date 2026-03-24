@@ -492,45 +492,39 @@ Be thorough but only include real people, not generic references.`;
         onClose={onClose}
       />
 
-      {/* Mode Selector - Still in a custom section */}
+      {/* Mode Selector */}
       <div className="px-6 pt-6">
         <div className="flex gap-2">
-            <button
-              onClick={() => setMode('dialogue')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                mode === 'dialogue'
-                  ? 'bg-[--accent-9] text-[--accent-1] border-[--accent-9] shadow-lg shadow-[--accent-9]/20'
-                  : 'bg-mission-control-surface border-mission-control-border hover:border-[--accent-8]/50'
-              }`}
-            >
-              <MessageSquare size={16} />
-              <span className="font-medium">Dialogue</span>
-              <Sparkles size={14} className={mode === 'dialogue' ? 'animate-pulse' : 'opacity-50'} />
-            </button>
-            <button
-              onClick={() => setMode('upload')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                mode === 'upload'
-                  ? 'bg-[--accent-9] text-[--accent-1] border-[--accent-9] shadow-lg shadow-[--accent-9]/20'
-                  : 'bg-mission-control-surface border-mission-control-border hover:border-[--accent-8]/50'
-              }`}
-            >
-              <Upload size={16} />
-              <span className="font-medium">Upload</span>
-            </button>
-            <button
-              onClick={() => setMode('manual')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                mode === 'manual'
-                  ? 'bg-[--accent-9] text-[--accent-1] border-[--accent-9] shadow-lg shadow-[--accent-9]/20'
-                  : 'bg-mission-control-surface border-mission-control-border hover:border-[--accent-8]/50'
-              }`}
-            >
-              <Edit3 size={16} />
-              <span className="font-medium">Manual</span>
-            </button>
-          </div>
+          <Button
+            onClick={() => setMode('dialogue')}
+            variant={mode === 'dialogue' ? 'solid' : 'outline'}
+            size="2"
+            className="flex-1"
+          >
+            <MessageSquare size={16} />
+            <span className="font-medium">Dialogue</span>
+            <Sparkles size={14} className={mode === 'dialogue' ? 'animate-pulse' : 'opacity-50'} />
+          </Button>
+          <Button
+            onClick={() => setMode('upload')}
+            variant={mode === 'upload' ? 'solid' : 'outline'}
+            size="2"
+            className="flex-1"
+          >
+            <Upload size={16} />
+            <span className="font-medium">Upload</span>
+          </Button>
+          <Button
+            onClick={() => setMode('manual')}
+            variant={mode === 'manual' ? 'solid' : 'outline'}
+            size="2"
+            className="flex-1"
+          >
+            <Edit3 size={16} />
+            <span className="font-medium">Manual</span>
+          </Button>
         </div>
+      </div>
 
       {/* Content */}
       <BaseModalBody noPadding className="flex-1 min-h-0">
@@ -705,6 +699,7 @@ Be thorough but only include real people, not generic references.`;
                     {parsedEntities.map((entity, idx) => (
                       <button
                         key={idx}
+                        type="button"
                         onClick={() => setSelectedEntity(idx)}
                         className={`w-full text-left p-4 rounded-lg border transition-all ${
                           selectedEntity === idx
@@ -761,34 +756,30 @@ Be thorough but only include real people, not generic references.`;
               <div role="group" aria-labelledby="contact-type-label">
                 <span id="contact-type-label" className="block text-sm text-mission-control-text-dim mb-2">Contact Type</span>
                 <div className="flex gap-3" role="radiogroup" aria-label="Contact type selection">
-                  <button
+                  <Button
                     type="button"
                     role="radio"
                     aria-checked={contactType === 'personal'}
                     onClick={() => setContactType('personal')}
-                    className={`flex-1 p-3 rounded-lg border text-sm flex items-center justify-center gap-2 transition-colors ${
-                      contactType === 'personal'
-                        ? 'border-[--accent-9] bg-[--accent-3] text-[--accent-11]'
-                        : 'border-mission-control-border hover:border-[--accent-8]/50'
-                    }`}
+                    variant={contactType === 'personal' ? 'soft' : 'outline'}
+                    size="2"
+                    className="flex-1"
                   >
                     <User size={16} />
                     Personal
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     role="radio"
                     aria-checked={contactType === 'professional'}
                     onClick={() => setContactType('professional')}
-                    className={`flex-1 p-3 rounded-lg border text-sm flex items-center justify-center gap-2 transition-colors ${
-                      contactType === 'professional'
-                        ? 'border-[--accent-9] bg-[--accent-3] text-[--accent-11]'
-                        : 'border-mission-control-border hover:border-[--accent-8]/50'
-                    }`}
+                    variant={contactType === 'professional' ? 'soft' : 'outline'}
+                    size="2"
+                    className="flex-1"
                   >
                     <Briefcase size={16} />
                     Professional
-                  </button>
+                  </Button>
                 </div>
               </div>
 

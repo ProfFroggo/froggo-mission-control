@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Mail, MessageSquare, CheckSquare, Brain, Calendar, Filter, Clock, ChevronRight, Hash, User, Zap, Compass } from 'lucide-react';
 import Fuse from 'fuse.js';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { SkeletonList } from './Skeleton';
 import { gateway } from '../lib/gateway';
 import { sanitizeSearchSnippet } from '../utils/sanitize';
@@ -423,8 +424,8 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
       >
         {/* Search Input */}
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-          <Search size={20} className="text-mission-control-accent flex-shrink-0" />
-          <input
+          <Search size={20} className="text-[var(--mission-control-accent)] flex-shrink-0" />
+          <TextField.Root
             ref={inputRef}
             type="text"
             value={query}
@@ -432,32 +433,39 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             onKeyDown={handleKeyDown}
             placeholder="Search everything... (⌘K or ⌘F)"
             aria-label="Search input"
-            className="flex-1 bg-transparent text-lg outline-none placeholder-mission-control-text-dim"
+            variant="soft"
+            size="3"
+            className="flex-1"
+            style={{ background: 'transparent', boxShadow: 'none' }}
           />
           <div className="flex items-center gap-2">
             {loading && (
-              <div className="w-5 h-5 border-2 border-mission-control-accent border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-[var(--mission-control-accent)] border-t-transparent rounded-full animate-spin" />
             )}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`p-1.5 hover:bg-mission-control-border rounded-lg transition-colors relative ${
-                showFilters ? 'bg-mission-control-border' : ''
-              }`}
-              title="Toggle filters (Tab)"
-            >
-              <Filter size={16} className={activeFilters > 0 ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
+            <div className="relative">
+              <IconButton
+                onClick={() => setShowFilters(!showFilters)}
+                variant={showFilters ? 'soft' : 'ghost'}
+                size="2"
+                radius="medium"
+                title="Toggle filters (Tab)"
+              >
+                <Filter size={16} className={activeFilters > 0 ? 'text-[var(--mission-control-accent)]' : ''} />
+              </IconButton>
               {activeFilters > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-mission-control-accent text-mission-control-bg text-xs rounded-full flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--mission-control-accent)] text-[var(--mission-control-bg)] text-xs rounded-full flex items-center justify-center font-bold pointer-events-none">
                   {activeFilters}
                 </span>
               )}
-            </button>
-            <button
+            </div>
+            <IconButton
               onClick={onClose}
-              className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
+              variant="ghost"
+              size="2"
+              radius="medium"
             >
-              <X size={16} className="text-mission-control-text-dim" />
-            </button>
+              <X size={16} />
+            </IconButton>
           </div>
         </div>
 
@@ -469,17 +477,14 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
               <span className="text-sm text-mission-control-text-dim font-medium">Type:</span>
               <div className="flex gap-1 flex-wrap">
                 {(['all', 'task', 'fact', 'message', 'email', 'session', 'agent', 'calendar'] as FilterType[]).map(type => (
-                  <button
+                  <Button
                     key={type}
                     onClick={() => setTypeFilter(type)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      typeFilter === type
-                        ? 'bg-mission-control-accent text-mission-control-bg font-medium'
-                        : 'bg-mission-control-border hover:bg-mission-control-border/70 text-mission-control-text-dim'
-                    }`}
+                    variant={typeFilter === type ? 'solid' : 'ghost'}
+                    size="1"
                   >
                     {type === 'all' ? 'All' : typeLabels[type as keyof typeof typeLabels]}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -489,17 +494,14 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
               <span className="text-sm text-mission-control-text-dim font-medium">Date:</span>
               <div className="flex gap-1">
                 {(['all', 'today', 'week', 'month'] as DateFilter[]).map(date => (
-                  <button
+                  <Button
                     key={date}
                     onClick={() => setDateFilter(date)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      dateFilter === date
-                        ? 'bg-mission-control-accent text-mission-control-bg font-medium'
-                        : 'bg-mission-control-border hover:bg-mission-control-border/70 text-mission-control-text-dim'
-                    }`}
+                    variant={dateFilter === date ? 'solid' : 'ghost'}
+                    size="1"
                   >
                     {date.charAt(0).toUpperCase() + date.slice(1)}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -509,17 +511,14 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
               <span className="text-sm text-mission-control-text-dim font-medium">Status:</span>
               <div className="flex gap-1">
                 {(['all', 'todo', 'internal-review', 'in-progress', 'review', 'human-review', 'done'] as StatusFilter[]).map(status => (
-                  <button
+                  <Button
                     key={status}
                     onClick={() => setStatusFilter(status)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      statusFilter === status
-                        ? 'bg-mission-control-accent text-mission-control-bg font-medium'
-                        : 'bg-mission-control-border hover:bg-mission-control-border/70 text-mission-control-text-dim'
-                    }`}
+                    variant={statusFilter === status ? 'solid' : 'ghost'}
+                    size="1"
                   >
                     {status === 'all' ? 'All' : status.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -536,12 +535,13 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                   <Clock size={16} className="text-mission-control-text-dim" />
                   <span className="text-sm font-medium text-mission-control-text-dim">Recent Searches</span>
                 </div>
-                <button
+                <Button
                   onClick={clearHistory}
-                  className="text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
+                  variant="ghost"
+                  size="1"
                 >
                   Clear
-                </button>
+                </Button>
               </div>
               <div className="space-y-1">
                 {searchHistory.map((item, index) => (

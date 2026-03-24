@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Bell,
 } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import {
   generateWeeklyReport,
   generateMonthlyReport,
@@ -133,24 +134,26 @@ function ExportButtons({
 
   return (
     <div className="flex items-center gap-2">
-      <button
+      <Button
         onClick={() => handleExport('csv')}
         disabled={!!busy}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors disabled:opacity-50"
+        variant="ghost"
+        size="1"
         title={`Export ${type} as CSV`}
       >
         <Download size={12} />
         {busy === 'csv' ? 'Exporting…' : 'CSV'}
-      </button>
-      <button
+      </Button>
+      <Button
         onClick={() => handleExport('json')}
         disabled={!!busy}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors disabled:opacity-50"
+        variant="ghost"
+        size="1"
         title={`Export ${type} as JSON`}
       >
         <Download size={12} />
         {busy === 'json' ? 'Exporting…' : 'JSON'}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -220,13 +223,15 @@ function ExecutiveSummaryCard({
             ({summary.period.days}d period)
           </span>
         </div>
-        <button
+        <IconButton
           onClick={load}
-          className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
+          variant="ghost"
+          size="2"
+          radius="medium"
           title="Refresh summary"
         >
           <RefreshCw size={14} />
-        </button>
+        </IconButton>
       </div>
 
       {/* KPI grid */}
@@ -428,28 +433,25 @@ export default function ReportsPanel() {
           {/* Date range quick selectors */}
           <div className="flex bg-mission-control-border rounded-lg p-1 gap-0.5">
             {QUICK_RANGES.map((r) => (
-              <button
+              <Button
                 key={r.value}
                 onClick={() => { setQuickRange(r.value); setCustomFrom(''); setCustomTo(''); }}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                  quickRange === r.value && !customFrom
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
+                variant={quickRange === r.value && !customFrom ? 'solid' : 'ghost'}
+                size="1"
               >
                 {r.label}
-              </button>
+              </Button>
             ))}
           </div>
 
-          {/* Custom date inputs */}
+          {/* Custom date inputs — native date pickers kept as-is for functionality */}
           <div className="flex items-center gap-1.5">
             <Calendar size={14} className="text-mission-control-text-dim" />
             <input
               type="date"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
-              className="text-xs px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg"
+              style={{ fontSize: '0.75rem', padding: '0.375rem 0.5rem', background: 'var(--mission-control-surface)', border: '1px solid var(--mission-control-border)', borderRadius: '0.5rem', color: 'inherit' }}
               title="From date"
             />
             <span className="text-mission-control-text-dim text-xs">to</span>
@@ -457,7 +459,7 @@ export default function ReportsPanel() {
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
-              className="text-xs px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg"
+              style={{ fontSize: '0.75rem', padding: '0.375rem 0.5rem', background: 'var(--mission-control-surface)', border: '1px solid var(--mission-control-border)', borderRadius: '0.5rem', color: 'inherit' }}
               title="To date"
             />
           </div>
@@ -465,28 +467,27 @@ export default function ReportsPanel() {
           {/* Report type selector */}
           <div className="flex bg-mission-control-border rounded-lg p-1">
             {(['weekly', 'monthly'] as const).map((type) => (
-              <button
+              <Button
                 key={type}
                 onClick={() => setReportType(type)}
-                className={`px-3 py-2 rounded text-sm font-medium transition-colors capitalize ${
-                  reportType === type
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
+                variant={reportType === type ? 'solid' : 'ghost'}
+                size="2"
+                className="capitalize"
               >
                 {type}
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* Schedule stub */}
-          <button
+          <Button
             onClick={() => setShowScheduleToast(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors text-sm"
+            variant="outline"
+            size="2"
           >
             <Bell size={14} />
             Schedule Report
-          </button>
+          </Button>
         </div>
       </div>
 

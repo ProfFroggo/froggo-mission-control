@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, MessageSquare, TrendingUp, Zap, X, ChevronRight, Copy, Check, Loader2, Briefcase, Smile, AlignLeft, FileText, type LucideIcon } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { copyToClipboard } from '../utils/clipboard';
@@ -311,50 +312,58 @@ Provide a brief, actionable summary.`;
           <Sparkles size={20} className="text-mission-control-accent" />
           <h2 className="font-semibold">AI Assistance</h2>
         </div>
-        <button
+        <IconButton
           onClick={onClose}
-          className="p-1 hover:bg-mission-control-border rounded-lg transition-colors"
+          variant="ghost"
+          size="2"
+          radius="medium"
           aria-label="Close panel"
         >
           <X size={16} />
-        </button>
+        </IconButton>
       </div>
 
       {/* Tab Navigation */}
       <div className="flex border-b border-mission-control-border bg-mission-control-bg">
-        <button
+        <Button
           onClick={() => setActiveTab('suggestions')}
-          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+          variant="ghost"
+          size="2"
+          className={`flex-1 rounded-none border-b-2 ${
             activeTab === 'suggestions'
-              ? 'border-mission-control-accent text-mission-control-accent'
-              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              ? 'border-[var(--mission-control-accent)] text-[var(--mission-control-accent)]'
+              : 'border-transparent'
           }`}
         >
-          <Zap size={16} className="inline mr-2" />
+          <Zap size={16} />
           Suggestions
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => setActiveTab('sentiment')}
-          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+          variant="ghost"
+          size="2"
+          className={`flex-1 rounded-none border-b-2 ${
             activeTab === 'sentiment'
-              ? 'border-mission-control-accent text-mission-control-accent'
-              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              ? 'border-[var(--mission-control-accent)] text-[var(--mission-control-accent)]'
+              : 'border-transparent'
           }`}
         >
-          <TrendingUp size={16} className="inline mr-2" />
+          <TrendingUp size={16} />
           Sentiment
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => setActiveTab('summary')}
-          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+          variant="ghost"
+          size="2"
+          className={`flex-1 rounded-none border-b-2 ${
             activeTab === 'summary'
-              ? 'border-mission-control-accent text-mission-control-accent'
-              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              ? 'border-[var(--mission-control-accent)] text-[var(--mission-control-accent)]'
+              : 'border-transparent'
           }`}
         >
-          <MessageSquare size={16} className="inline mr-2" />
+          <MessageSquare size={16} />
           Summary
-        </button>
+        </Button>
       </div>
 
       {/* Content */}
@@ -386,9 +395,11 @@ Provide a brief, actionable summary.`;
                           <span className="capitalize">{suggestion.tone}</span>
                         </span>
                         <div className="flex gap-1">
-                          <button
+                          <IconButton
                             onClick={() => handleCopySuggestion(suggestion)}
-                            className="p-1.5 hover:bg-mission-control-border rounded transition-colors"
+                            variant="ghost"
+                            size="2"
+                            radius="medium"
                             title="Copy to clipboard"
                           >
                             {copiedId === suggestion.id ? (
@@ -396,14 +407,16 @@ Provide a brief, actionable summary.`;
                             ) : (
                               <Copy size={14} />
                             )}
-                          </button>
-                          <button
+                          </IconButton>
+                          <IconButton
                             onClick={() => handleApplySuggestion(suggestion)}
-                            className="p-1.5 hover:bg-mission-control-accent rounded transition-colors"
+                            variant="ghost"
+                            size="2"
+                            radius="medium"
                             title="Apply suggestion"
                           >
                             <ChevronRight size={14} />
-                          </button>
+                          </IconButton>
                         </div>
                       </div>
                       <p className="text-sm text-mission-control-text leading-relaxed">
@@ -495,10 +508,12 @@ Provide a brief, actionable summary.`;
 
       {/* Footer Actions */}
       <div className="p-4 border-t border-mission-control-border bg-mission-control-bg">
-        <button
+        <Button
           onClick={generateAssistance}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          variant="solid"
+          size="2"
+          className="w-full"
         >
           {loading ? (
             <>
@@ -511,7 +526,7 @@ Provide a brief, actionable summary.`;
               Regenerate
             </>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

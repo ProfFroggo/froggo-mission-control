@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Save, RefreshCw, AlertTriangle, RotateCcw, Code, ChevronDown, ChevronRight } from 'lucide-react';
+import { Button, IconButton, TextField, TextArea } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 
@@ -169,32 +170,35 @@ export default function ConfigTab() {
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        <button onClick={() => handleSave(false)} disabled={saving || !dirty}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm disabled:opacity-50">
+        <Button onClick={() => handleSave(false)} disabled={saving || !dirty} variant="solid" size="2">
           <Save size={16} /> {saving ? 'Saving...' : 'Save'}
-        </button>
-        <button onClick={() => handleSave(true)} disabled={saving || !dirty}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-lg text-sm disabled:opacity-50">
+        </Button>
+        <Button onClick={() => handleSave(true)} disabled={saving || !dirty} variant="soft" size="2">
           <RotateCcw size={16} /> Save & Restart
-        </button>
-        <button onClick={loadConfig} className="flex items-center gap-2 px-4 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:bg-mission-control-border/80">
+        </Button>
+        <Button onClick={loadConfig} variant="ghost" size="2">
           <RefreshCw size={16} /> Reload
-        </button>
+        </Button>
         <div className="flex-1" />
-        <button onClick={() => setShowRaw(!showRaw)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${showRaw ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'bg-mission-control-border text-mission-control-text-dim'}`}>
+        <Button
+          onClick={() => setShowRaw(!showRaw)}
+          variant={showRaw ? 'soft' : 'ghost'}
+          size="2"
+        >
           <Code size={16} /> Raw JSON
-        </button>
+        </Button>
         {dirty && <span className="text-xs text-warning">• Unsaved changes</span>}
       </div>
 
       {showRaw ? (
-        <textarea
+        <TextArea
           value={rawJson}
           onChange={e => { setRawJson(e.target.value); setDirty(true); }}
-          className="w-full h-96 bg-mission-control-bg border border-mission-control-border rounded-lg p-4 font-mono text-sm resize-none focus:outline-none focus:border-mission-control-accent"
+          style={{ height: '24rem', fontFamily: 'monospace', fontSize: '0.875rem' }}
+          resize="none"
           spellCheck={false}
           aria-label="Raw configuration JSON"
+          size="2"
         />
       ) : (
         <div className="space-y-4">
@@ -203,6 +207,7 @@ export default function ConfigTab() {
             return (
               <div key={section.key} className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
                 <button
+                  type="button"
                   onClick={() => toggleSection(section.key)}
                   className="w-full p-4 flex items-center justify-between hover:bg-mission-control-bg/50 transition-colors"
                 >
@@ -223,27 +228,39 @@ export default function ConfigTab() {
                               <div className="text-xs text-mission-control-text-dim">{field.path}</div>
                             </div>
                             <button
+                              type="button"
                               onClick={() => updateField(field.path, !field.value)}
-                              className={`w-10 h-5 rounded-full transition-colors ${field.value ? 'bg-mission-control-accent' : 'bg-mission-control-border'}`}
+                              style={{ background: field.value ? 'var(--mission-control-accent)' : 'var(--mission-control-border)' }}
+                              className="w-10 h-5 rounded-full transition-colors"
                             >
-                              <div className={`w-4 h-4 rounded-full bg-mission-control-text shadow transition-transform ${field.value ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                              <div className={`w-4 h-4 rounded-full bg-[var(--mission-control-text)] shadow transition-transform ${field.value ? 'translate-x-5' : 'translate-x-0.5'}`} />
                             </button>
                           </div>
                         ) : field.type === 'number' ? (
                           <div>
                             <label htmlFor={`config-${field.path}`} className="block text-sm font-medium mb-1">{field.label}</label>
-                            <input id={`config-${field.path}`} type="number" value={typeof field.value === 'number' ? field.value : (typeof field.value === 'string' ? Number(field.value) : 0)}
+                            <TextField.Root
+                              id={`config-${field.path}`}
+                              type="number"
+                              size="2"
+                              value={String(typeof field.value === 'number' ? field.value : (typeof field.value === 'string' ? Number(field.value) : 0))}
                               onChange={e => updateField(field.path, e.target.valueAsNumber || 0)}
-                              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
-                              aria-label={field.label} />
+                              aria-label={field.label}
+                              className="w-full"
+                            />
                           </div>
                         ) : field.type === 'string' ? (
                           <div>
                             <label htmlFor={`config-${field.path}`} className="block text-sm font-medium mb-1">{field.label}</label>
-                            <input id={`config-${field.path}`} type={field.sensitive ? 'password' : 'text'} value={typeof field.value === 'string' ? field.value : ''}
+                            <TextField.Root
+                              id={`config-${field.path}`}
+                              type={field.sensitive ? 'password' : 'text'}
+                              size="2"
+                              value={typeof field.value === 'string' ? field.value : ''}
                               onChange={e => updateField(field.path, e.target.value)}
-                              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
-                              aria-label={field.label} />
+                              aria-label={field.label}
+                              className="w-full"
+                            />
                           </div>
                         ) : field.type === 'object' ? (
                           <div>

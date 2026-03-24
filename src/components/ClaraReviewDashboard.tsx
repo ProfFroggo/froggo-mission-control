@@ -21,6 +21,7 @@ import {
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { useEventBus } from '../lib/useEventBus';
+import { Button, IconButton, TextArea } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -209,13 +210,15 @@ function ReviewCard({
             <span>{timeAgo}</span>
           </div>
         </div>
-        <button
+        <IconButton
           onClick={() => setExpanded(e => !e)}
-          className="flex-shrink-0 p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg2 transition-colors"
+          variant="ghost"
+          size="2"
+          radius="medium"
           aria-label={expanded ? 'Collapse' : 'Expand'}
         >
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
+        </IconButton>
       </div>
 
       {/* Gate checklist — always visible */}
@@ -249,12 +252,14 @@ function ReviewCard({
           <label className="block text-xs font-medium text-mission-control-text-dim mb-1">
             Rejection reason
           </label>
-          <textarea
+          <TextArea
             value={reason}
             onChange={e => setReason(e.target.value)}
             rows={3}
             placeholder="Explain what needs to be fixed before this task can proceed..."
-            className="w-full text-sm resize-none"
+            size="2"
+            resize="none"
+            className="w-full"
           />
         </div>
       )}
@@ -263,38 +268,47 @@ function ReviewCard({
       <div className="border-t border-mission-control-border px-4 py-3 flex items-center gap-2">
         {rejecting ? (
           <>
-            <button
+            <Button
               onClick={handleReject}
               disabled={loading || !reason.trim()}
-              className="flex-1 py-1.5 rounded text-sm font-medium bg-error text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              variant="solid"
+              color="red"
+              size="2"
+              className="flex-1"
             >
               {loading ? 'Rejecting...' : 'Confirm Reject'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => { setRejecting(false); setReason(''); }}
               disabled={loading}
-              className="py-1.5 px-3 rounded text-sm text-mission-control-text-dim border border-mission-control-border hover:bg-mission-control-bg2 transition-colors"
+              variant="outline"
+              size="2"
             >
               Cancel
-            </button>
+            </Button>
           </>
         ) : (
           <>
-            <button
+            <Button
               onClick={handleApprove}
               disabled={loading || !allGatesPass}
               title={!allGatesPass ? 'All 3 gates must pass before approving' : 'Approve and dispatch agent'}
-              className="flex-1 py-1.5 rounded text-sm font-medium bg-success text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              variant="solid"
+              color="green"
+              size="2"
+              className="flex-1"
             >
               {loading ? 'Approving...' : 'Approve'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setRejecting(true)}
               disabled={loading}
-              className="py-1.5 px-3 rounded text-sm font-medium border border-error text-error hover:bg-error/10 disabled:opacity-50 transition-colors"
+              variant="outline"
+              color="red"
+              size="2"
             >
               Reject
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -416,14 +430,15 @@ export default function ClaraReviewDashboard() {
           <h2 className="text-lg font-semibold text-mission-control-text">Clara Review Queue</h2>
           <p className="text-sm text-mission-control-text-dim">Pre-work gate — approve or reject tasks before agents start</p>
         </div>
-        <button
+        <Button
           onClick={() => refresh(true)}
           disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm border border-mission-control-border text-mission-control-text-dim hover:bg-mission-control-bg2 hover:text-mission-control-text transition-colors disabled:opacity-50"
+          variant="outline"
+          size="2"
         >
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
           Refresh
-        </button>
+        </Button>
       </div>
 
       {/* Stats bar */}

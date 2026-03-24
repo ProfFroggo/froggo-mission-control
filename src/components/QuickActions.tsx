@@ -265,24 +265,23 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
       )}
       <div className="space-y-1">
         {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
-          <button
+          <Button
             key={agent.id}
             onClick={() => onSelect(agent)}
-            className="w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm"
-            style={{
-              background: activeCall?.agentId === agent.id ? 'var(--red-a3)' : 'transparent',
-              border: activeCall?.agentId === agent.id ? '1px solid var(--red-6)' : '1px solid transparent',
-            }}
+            variant={activeCall?.agentId === agent.id ? 'soft' : 'ghost'}
+            color={activeCall?.agentId === agent.id ? 'red' : 'gray'}
+            size="1"
+            style={{ width: '100%', justifyContent: 'flex-start' }}
           >
             <AgentAvatar agentId={agent.id} size="sm" />
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-left">
               <div className="font-medium text-xs">{agent.name}</div>
               <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>
             </div>
             {activeCall?.agentId === agent.id && (
               <PhoneOff size={14} className="text-error" />
             )}
-          </button>
+          </Button>
         ))}
       </div>
     </div>
@@ -334,42 +333,42 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
         </div>
         <div className="flex gap-1.5 flex-wrap">
           {suggestedAgents.map(agent => (
-            <button
+            <Button
               key={agent.id}
               onClick={() => setSelectedAgent(agent)}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors"
-              style={{
-                background: selectedAgent.id === agent.id ? 'var(--accent-9)' : 'var(--gray-4)',
-                color: selectedAgent.id === agent.id ? 'white' : undefined,
-              }}
+              variant={selectedAgent.id === agent.id ? 'solid' : 'soft'}
+              color={selectedAgent.id === agent.id ? 'violet' : 'gray'}
+              size="1"
+              radius="full"
             >
               <AgentAvatar agentId={agent.id} size="xs" />
               {agent.name}
-            </button>
+            </Button>
           ))}
-          <button
+          <Button
             onClick={() => setShowAllAgents(!showAllAgents)}
-            className="px-2 py-1 rounded-full text-xs transition-colors"
-            style={{ background: 'var(--gray-4)' }}
+            variant="soft"
+            color="gray"
+            size="1"
+            radius="full"
           >
             {showAllAgents ? 'Less' : 'More...'}
-          </button>
+          </Button>
         </div>
         {showAllAgents && (
           <div className="flex gap-1.5 flex-wrap mt-1.5">
             {fetchAgentList().filter(a => !suggestedAgentIds.includes(a.id)).map(agent => (
-              <button
+              <Button
                 key={agent.id}
                 onClick={() => { setSelectedAgent(agent); setShowAllAgents(false); }}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors"
-                style={{
-                  background: selectedAgent.id === agent.id ? 'var(--accent-9)' : 'var(--gray-4)',
-                  color: selectedAgent.id === agent.id ? 'white' : undefined,
-                }}
+                variant={selectedAgent.id === agent.id ? 'solid' : 'soft'}
+                color={selectedAgent.id === agent.id ? 'violet' : 'gray'}
+                size="1"
+                radius="full"
               >
                 <AgentAvatar agentId={agent.id} size="xs" />
                 {agent.name}
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -466,17 +465,18 @@ function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
       </Flex>
 
       {/* Quick status filters */}
-      <div className="flex gap-1 mb-2">
+      <div className="flex gap-1 mb-2 flex-wrap">
         {TASK_STATUSES.map(s => (
-          <button
+          <Button
             key={s.value}
-            className="flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors"
-            style={{ background: 'var(--gray-4)' }}
+            variant="soft"
+            color="gray"
+            size="1"
             title={`View ${s.label} tasks`}
           >
             <s.icon size={10} className={s.color} />
             {s.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -489,20 +489,18 @@ function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
           {recentTasks.map(task => (
             <div key={task.id} className="p-2 bg-mission-control-bg rounded-lg">
               <div className="text-xs font-medium truncate mb-1">{task.title}</div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap">
                 {TASK_STATUSES.map(s => (
-                  <button
+                  <Button
                     key={s.value}
                     onClick={() => updateTaskStatus(task.id, s.value)}
-                    className="px-1.5 py-0.5 rounded text-[9px] transition-colors"
-                    style={{
-                      background: task.status === s.value ? 'var(--accent-9)' : 'var(--gray-4)',
-                      color: task.status === s.value ? 'white' : 'var(--gray-9)',
-                    }}
+                    variant={task.status === s.value ? 'solid' : 'soft'}
+                    color={task.status === s.value ? 'violet' : 'gray'}
+                    size="1"
                     title={`Set to ${s.label}`}
                   >
                     {s.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -1236,20 +1234,20 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           </Flex>
           <div className="space-y-1">
             {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
-              <button
+              <Button
                 key={agent.id}
                 onClick={() => handleStartAgentChat(agent)}
-                className="w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm"
-                style={{ background: 'transparent' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--gray-4)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                variant="ghost"
+                color="gray"
+                size="1"
+                style={{ width: '100%', justifyContent: 'flex-start' }}
               >
                 <AgentAvatar agentId={agent.id} size="sm" />
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 text-left">
                   <div className="font-medium text-xs">{agent.name}</div>
                   <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
         </div>

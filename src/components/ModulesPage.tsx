@@ -59,6 +59,7 @@ import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { Skeleton } from './LoadingStates';
 import ModuleLibraryPanel from './ModuleLibraryPanel';
 import type { CatalogModule } from '../types/catalog';
+import { Button, IconButton, Switch } from '@radix-ui/themes';
 
 // ─── Activity log helpers ──────────────────────────────────────────────────────
 
@@ -252,22 +253,13 @@ function ToggleSwitch({
   disabled?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
+    <Switch
+      checked={checked}
+      onCheckedChange={onChange}
       disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:ring-offset-2 focus:ring-offset-mission-control-bg disabled:opacity-40 disabled:cursor-not-allowed ${
-        checked ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-          checked ? 'translate-x-5' : 'translate-x-0'
-        }`}
-      />
-    </button>
+      color="violet"
+      size="2"
+    />
   );
 }
 
@@ -283,17 +275,17 @@ function CategoryChip({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors capitalize ${
-        selected
-          ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-          : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
-      }`}
+      variant={selected ? 'soft' : 'ghost'}
+      color={selected ? 'violet' : 'gray'}
+      size="1"
+      radius="full"
+      style={{ textTransform: 'capitalize' }}
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -374,15 +366,18 @@ function ModuleCard({
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {/* Settings gear — installed, non-core modules only */}
           {!manifest.core && moduleStatus !== 'disposed' && (
-            <button
+            <IconButton
               type="button"
               title={`Settings for ${manifest.name}`}
               aria-label={`Open settings for ${manifest.name}`}
               onClick={() => onSettingsClick(manifest.id)}
-              className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+              size="2"
+              variant="ghost"
+              color="gray"
+              radius="medium"
             >
               <Settings size={14} />
-            </button>
+            </IconButton>
           )}
 
           {/* Toggle / Core label / Re-enable */}
@@ -391,13 +386,15 @@ function ModuleCard({
               Always on
             </span>
           ) : isDisabled ? (
-            <button
+            <Button
               type="button"
               onClick={() => onToggle(data, true)}
-              className="text-xs px-2.5 py-1 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-text-dim transition-colors"
+              variant="ghost"
+              color="gray"
+              size="1"
             >
               Re-enable
-            </button>
+            </Button>
           ) : (
             <ToggleSwitch
               checked={panelVisible}
@@ -449,14 +446,17 @@ function ModuleCard({
         )}
 
         {hasCredentials && (
-          <button
+          <Button
             type="button"
             onClick={() => onConfigure(data)}
-            className="ml-auto flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors px-2 py-1 rounded-lg border border-mission-control-border hover:border-mission-control-text-dim"
+            variant="ghost"
+            color="gray"
+            size="1"
+            style={{ marginLeft: 'auto' }}
           >
             <Key size={12} />
             Configure
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -687,28 +687,28 @@ export default function ModulesPage() {
       </div>
       {/* View tabs */}
       <div className="flex border-b border-mission-control-border px-6">
-        <button
+        <Button
           type="button"
           onClick={() => setView('installed')}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-            view === 'installed'
-              ? 'border-mission-control-accent text-mission-control-accent'
-              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-          }`}
+          variant={view === 'installed' ? 'soft' : 'ghost'}
+          color={view === 'installed' ? 'violet' : 'gray'}
+          size="2"
+          radius="none"
+          style={{ borderBottom: view === 'installed' ? '2px solid var(--violet-9)' : '2px solid transparent', borderRadius: 0, marginBottom: '-1px' }}
         >
           <Puzzle size={15} /> Installed
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={() => setView('library')}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-            view === 'library'
-              ? 'border-mission-control-accent text-mission-control-accent'
-              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-          }`}
+          variant={view === 'library' ? 'soft' : 'ghost'}
+          color={view === 'library' ? 'violet' : 'gray'}
+          size="2"
+          radius="none"
+          style={{ borderBottom: view === 'library' ? '2px solid var(--violet-9)' : '2px solid transparent', borderRadius: 0, marginBottom: '-1px' }}
         >
           <Library size={15} /> Library
-        </button>
+        </Button>
       </div>
       <div className="p-6 space-y-6">
 
