@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, RefreshCw, ListTodo } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
 import EpicCalendar from './EpicCalendar';
 import TaskScheduler from './TaskScheduler';
 import ContentScheduler from './ContentScheduler';
@@ -9,8 +8,16 @@ import { Spinner } from './LoadingStates';
 import EmptyState from './EmptyState';
 import ErrorDisplay from './ErrorDisplay';
 import { ErrorBoundary } from './ErrorBoundary';
+import TabNav, { type TabNavItem } from './TabNav';
 
 type ScheduleTab = 'calendar' | 'tasks' | 'scheduler' | 'crons';
+
+const SCHEDULE_TABS: TabNavItem[] = [
+  { id: 'calendar',  label: 'Calendar',          icon: Calendar  },
+  { id: 'tasks',     label: 'Task Scheduler',     icon: ListTodo  },
+  { id: 'scheduler', label: 'Content Scheduler',  icon: Clock     },
+  { id: 'crons',     label: 'Cron Jobs',          icon: RefreshCw },
+];
 
 export default function SchedulePanel() {
   const [activeTab, setActiveTab] = useState<ScheduleTab>('calendar');
@@ -68,60 +75,12 @@ export default function SchedulePanel() {
     <div className="h-full flex flex-col">
       {/* Tab Header */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center px-4">
-          <Button
-            variant="ghost"
-            size="2"
-            onClick={() => setActiveTab('calendar')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
-              activeTab === 'calendar'
-                ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
-            }`}
-          >
-            <Calendar size={16} />
-            Calendar
-          </Button>
-          <Button
-            variant="ghost"
-            size="2"
-            onClick={() => setActiveTab('tasks')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
-              activeTab === 'tasks'
-                ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
-            }`}
-          >
-            <ListTodo size={16} />
-            Task Scheduler
-          </Button>
-          <Button
-            variant="ghost"
-            size="2"
-            onClick={() => setActiveTab('scheduler')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
-              activeTab === 'scheduler'
-                ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
-            }`}
-          >
-            <Clock size={16} />
-            Content Scheduler
-          </Button>
-          <Button
-            variant="ghost"
-            size="2"
-            onClick={() => setActiveTab('crons')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
-              activeTab === 'crons'
-                ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
-            }`}
-          >
-            <RefreshCw size={16} />
-            Cron Jobs
-          </Button>
-        </div>
+        <TabNav
+          tabs={SCHEDULE_TABS}
+          activeTab={activeTab}
+          onTabChange={(id) => setActiveTab(id as ScheduleTab)}
+          paddingX="px-4"
+        />
       </div>
 
       {/* Tab Content */}

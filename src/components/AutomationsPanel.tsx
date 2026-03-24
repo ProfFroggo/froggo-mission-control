@@ -7,6 +7,7 @@ import {
   Users, BarChart2,
 } from 'lucide-react';
 import { Button, IconButton, TextField } from '@radix-ui/themes';
+import TabNav, { type TabNavItem } from './TabNav';
 import AutomationBuilderModal from './AutomationBuilderModal';
 import AutomationStepBuilder, { type AutomationStepDef } from './AutomationStepBuilder';
 import AutomationRunLog from './AutomationRunLog';
@@ -459,6 +460,11 @@ function EmptyState({ onNew, onBrowseTemplates }: { onNew: () => void; onBrowseT
 
 type ActiveTab = 'my-automations' | 'templates';
 
+const AUTOMATION_TABS: TabNavItem[] = [
+  { id: 'my-automations', label: 'My Automations', icon: Zap    },
+  { id: 'templates',      label: 'Templates',      icon: Layers },
+];
+
 export default function AutomationsPanel() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('my-automations');
   const [automations, setAutomations] = useState<Automation[]>([]);
@@ -635,28 +641,13 @@ export default function AutomationsPanel() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--mission-control-border)', paddingBottom: 0 }}>
-        {(['my-automations', 'templates'] as ActiveTab[]).map(tab => (
-          <button
-            type="button"
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px 8px 0 0',
-              border: 'none',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              background: activeTab === tab ? 'var(--color-surface)' : 'transparent',
-              color: activeTab === tab ? 'var(--gray-12)' : 'var(--gray-9)',
-              borderBottom: activeTab === tab ? '2px solid var(--accent-9)' : '2px solid transparent',
-              transition: 'all 0.15s',
-            }}
-          >
-            {tab === 'my-automations' ? 'My Automations' : 'Templates'}
-          </button>
-        ))}
+      <div className="border-b border-mission-control-border">
+        <TabNav
+          tabs={AUTOMATION_TABS}
+          activeTab={activeTab}
+          onTabChange={(id) => setActiveTab(id as ActiveTab)}
+          paddingX="px-0"
+        />
       </div>
 
       {/* My Automations tab */}
