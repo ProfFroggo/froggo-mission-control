@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Heart, Repeat2, MessageCircle, Clock, HelpCircle, Ban, CheckCircle, StickyNote, RefreshCw, Inbox } from 'lucide-react';
+import { Button, IconButton, Spinner, TextArea, TextField } from '@radix-ui/themes';
 import { inboxApi, approvalApi } from '../lib/api';
 
 interface Mention {
@@ -257,20 +258,23 @@ export const XMentionsView: React.FC = () => {
         {/* Notes */}
         <div className="mb-3">
           <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={notes[mention.id] || ''}
-              onChange={(e) => setNotes({ ...notes, [mention.id]: e.target.value })}
-              placeholder="Add notes..."
-              className="flex-1 px-2 py-1 text-sm border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
-            />
-            <button
+            <div className="flex-1">
+              <TextField.Root
+                value={notes[mention.id] || ''}
+                onChange={(e) => setNotes({ ...notes, [mention.id]: e.target.value })}
+                placeholder="Add notes..."
+                size="1"
+              />
+            </div>
+            <Button
               onClick={() => saveNotes(mention.id, notes[mention.id] || '')}
               disabled={!notes[mention.id]?.trim()}
-              className="px-3 py-1 text-sm bg-mission-control-surface text-mission-control-text rounded hover:bg-mission-control-surface/80 disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="soft"
+              color="gray"
+              size="1"
             >
               Save Note
-            </button>
+            </Button>
           </div>
           {metadata.notes && (
             <div className="mt-1 text-xs text-mission-control-text-dim bg-mission-control-surface p-2 rounded">
@@ -284,45 +288,51 @@ export const XMentionsView: React.FC = () => {
           <div>
             {isSelected ? (
               <div className="space-y-2">
-                <textarea
+                <TextArea
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   placeholder="Write your reply..."
-                  className="w-full px-3 py-2 text-sm border border-mission-control-border rounded resize-none bg-mission-control-bg text-mission-control-text"
                   rows={3}
                   maxLength={280}
+                  resize="vertical"
                 />
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-mission-control-text-dim">
+                  <div className="text-xs tabular-nums text-mission-control-text-dim">
                     {replyText.length}/280 characters
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <Button
                       onClick={() => {
                         setSelectedMention(null);
                         setReplyText('');
                       }}
-                      className="px-3 py-1 text-sm border border-mission-control-border rounded hover:bg-mission-control-surface"
+                      variant="outline"
+                      color="gray"
+                      size="1"
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => handleReply(mention.id, mention.tweet_id)}
                       disabled={!replyText.trim()}
-                      className="px-3 py-1 text-sm bg-info text-white rounded hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                      variant="solid"
+                      color="blue"
+                      size="1"
                     >
                       Send Reply
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
             ) : (
-              <button
+              <Button
                 onClick={() => setSelectedMention(mention.id)}
-                className="px-3 py-1 text-sm border border-info text-info rounded hover:bg-info-subtle"
+                variant="outline"
+                color="blue"
+                size="1"
               >
-                <MessageCircle size={14} className="inline" /> Reply
-              </button>
+                <MessageCircle size={14} /> Reply
+              </Button>
             )}
           </div>
         )}
@@ -333,7 +343,7 @@ export const XMentionsView: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-mission-control-text-dim">Loading mentions...</div>
+        <Spinner size="3" />
       </div>
     );
   }
@@ -343,41 +353,41 @@ export const XMentionsView: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="text-lg font-semibold text-mission-control-text">X Mentions</div>
-        <button
+        <Button
           onClick={fetchNewMentions}
           disabled={fetching}
-          className="px-4 py-2 bg-info text-white rounded hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          variant="solid"
+          color="blue"
+          size="2"
         >
           {fetching ? (
             <>
-              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+              <Spinner size="1" />
               Fetching...
             </>
           ) : (
-            <><RefreshCw size={16} className="inline" /> Fetch New</>
+            <><RefreshCw size={16} /> Fetch New</>
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Filter tabs */}
       <div className="flex gap-2 p-4 border-b border-mission-control-border bg-mission-control-surface">
         {(['all', 'pending', 'considering', 'ignored', 'replied'] as const).map((status) => {
-          const count = status === 'all' 
-            ? mentions.length 
+          const count = status === 'all'
+            ? mentions.length
             : mentions.filter(m => m.reply_status === status).length;
-          
+
           return (
-            <button
+            <Button
               key={status}
               onClick={() => setFilter(status)}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
-                filter === status
-                  ? 'bg-info text-white'
-                  : 'bg-mission-control-bg text-mission-control-text hover:bg-mission-control-surface border border-mission-control-border'
-              }`}
+              variant={filter === status ? 'solid' : 'outline'}
+              color={filter === status ? 'blue' : 'gray'}
+              size="1"
             >
               {status.charAt(0).toUpperCase() + status.slice(1)} ({count})
-            </button>
+            </Button>
           );
         })}
       </div>

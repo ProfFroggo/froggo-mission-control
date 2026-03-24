@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Trash2, AlertCircle, CheckCircle, Loader2, Image, Calendar, Clock, X, Lightbulb } from 'lucide-react';
+import { Send, Plus, Trash2, AlertCircle, CheckCircle, Image, Calendar, Clock, X, Lightbulb } from 'lucide-react';
+import { Button, Spinner } from '@radix-ui/themes';
 import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
 
@@ -146,7 +147,7 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
           <button
             onClick={() => onRemove(index)}
             disabled={disabled}
-            className="mt-2 p-2 text-mission-control-text-dim hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-40"
+            className="mt-2 p-2 text-mission-control-text-dim hover:text-error hover:bg-error-subtle rounded-lg transition-colors disabled:opacity-40"
             title="Remove tweet"
           >
             <Trash2 className="w-4 h-4" />
@@ -568,10 +569,10 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {/* Failed posts notification banner */}
         {failedPosts.length > 0 && (
-          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+          <div className="p-3 bg-error-subtle border border-error rounded-lg">
             <div className="flex items-center gap-2 mb-1">
-              <AlertCircle className="w-4 h-4 text-red-400" />
-              <span className="text-sm font-medium text-red-400">
+              <AlertCircle className="w-4 h-4 text-error" />
+              <span className="text-sm font-medium text-error">
                 {failedPosts.length} scheduled post{failedPosts.length > 1 ? 's' : ''} failed to publish
               </span>
             </div>
@@ -652,15 +653,15 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                 <p className="text-sm text-mission-control-text truncate">{mediaFile.name}</p>
                 {uploadingMedia && (
                   <div className="flex items-center gap-1.5 mt-1 text-xs text-mission-control-text-dim">
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <Spinner size="1" />
                     Uploading...
                   </div>
                 )}
                 {!uploadingMedia && mediaId && (
-                  <p className="mt-1 text-xs text-green-400 font-medium">Media ready</p>
+                  <p className="mt-1 text-xs text-success font-medium">Media ready</p>
                 )}
                 {!uploadingMedia && mediaError && (
-                  <p className="mt-1 text-xs text-red-400">{mediaError}</p>
+                  <p className="mt-1 text-xs text-error">{mediaError}</p>
                 )}
               </div>
               <button
@@ -709,7 +710,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
             <label className="block text-sm font-medium text-mission-control-text">
               Schedule for
               {editingScheduledId && (
-                <span className="text-xs text-yellow-400 ml-2">(editing scheduled post)</span>
+                <span className="text-xs text-warning ml-2">(editing scheduled post)</span>
               )}
             </label>
             <input
@@ -720,19 +721,22 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
               className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
             />
             {scheduleResult && !scheduleResult.success && (
-              <div className="flex items-center gap-2 text-sm text-red-400">
+              <div className="flex items-center gap-2 text-sm text-error">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {scheduleResult.error}
               </div>
             )}
-            <button
+            <Button
               onClick={handleScheduleSubmit}
               disabled={isScheduleDisabled || !scheduledAt}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent/80 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+              variant="solid"
+              color="violet"
+              size="2"
+              className="w-full"
             >
               {schedulingLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Spinner size="1" />
                   Scheduling...
                 </>
               ) : (
@@ -743,13 +747,13 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                     : (mode === 'single' ? 'Schedule Tweet' : 'Schedule Thread')}
                 </>
               )}
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Schedule success banner */}
         {scheduleResult?.success && (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm bg-green-500/10 border border-green-500/30 text-green-400">
+          <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm bg-success-subtle border border-success text-success">
             <CheckCircle className="w-4 h-4 flex-shrink-0" />
             {scheduleResult.message}
           </div>
@@ -757,8 +761,8 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
 
         {/* Post confirmation inline bar */}
         {showConfirm && (
-          <div className="flex items-center gap-3 px-4 py-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-            <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+          <div className="flex items-center gap-3 px-4 py-3 bg-warning-subtle border border-warning rounded-lg">
+            <AlertCircle className="w-5 h-5 text-warning flex-shrink-0" />
             <span className="text-sm text-mission-control-text flex-1">
               {mode === 'single' ? 'Post this tweet to X?' : `Post this ${tweets.filter(t => t.trim()).length}-tweet thread to X?`}
               {' '}This cannot be undone.
@@ -783,8 +787,8 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
           <div
             className={`flex items-start gap-3 px-4 py-3 rounded-lg text-sm ${
               result.success
-                ? 'bg-green-500/10 border border-green-500/30 text-green-400'
-                : 'bg-red-500/10 border border-red-500/30 text-red-400'
+                ? 'bg-success-subtle border border-success text-success'
+                : 'bg-error-subtle border border-error text-error'
             }`}
           >
             {result.success ? (
@@ -845,7 +849,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                     key={post.id}
                     className={`flex items-start gap-3 p-3 bg-mission-control-surface border rounded-lg ${
                       editingScheduledId === post.id
-                        ? 'border-yellow-500/50 bg-yellow-500/5'
+                        ? 'border-warning bg-warning-subtle/30'
                         : 'border-mission-control-border'
                     }`}
                   >
@@ -867,7 +871,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                     </button>
                     <button
                       onClick={() => handleCancelScheduled(post.id)}
-                      className="text-mission-control-text-dim hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors flex-shrink-0"
+                      className="text-mission-control-text-dim hover:text-error hover:bg-error-subtle p-1.5 rounded-lg transition-colors flex-shrink-0"
                       title="Cancel scheduled post"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -884,14 +888,17 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
       <div className="px-6 pb-6 pt-4 border-t border-mission-control-border space-y-3">
         <div className="flex items-center gap-3">
           {/* Post button — shows confirmation first */}
-          <button
+          <Button
             onClick={() => setShowConfirm(true)}
             disabled={isPostDisabled}
-            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-mission-control-accent hover:bg-mission-control-accent/80 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+            variant="solid"
+            color="violet"
+            size="3"
+            className="flex-1"
           >
             {posting ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Spinner size="1" />
                 Posting...
               </>
             ) : (
@@ -900,7 +907,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                 {postButtonLabel()}
               </>
             )}
-          </button>
+          </Button>
 
           {/* Capture Idea button — saves rough draft instantly */}
           <button

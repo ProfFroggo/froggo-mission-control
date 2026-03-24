@@ -4,10 +4,10 @@ import { scheduleApi } from '../lib/api';
 
 function eventColorResolver(event: CalendarEvent): string | undefined {
   const colorId = (event as any).colorId || '';
-  if (colorId === 'research')  return 'bg-purple-500';
-  if (colorId === 'plan')      return 'bg-blue-500';
-  if (colorId === 'draft')     return 'bg-amber-500';
-  if (colorId === 'scheduled') return 'bg-emerald-500';
+  if (colorId === 'research')  return 'bg-review';
+  if (colorId === 'plan')      return 'bg-info';
+  if (colorId === 'draft')     return 'bg-warning';
+  if (colorId === 'scheduled') return 'bg-success';
   return undefined;
 }
 

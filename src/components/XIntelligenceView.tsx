@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search, Target, Zap } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import XResearchView from './XResearchView';
 import XCompetitorTracker from './XCompetitorTracker';
 
@@ -35,30 +36,30 @@ export default function XIntelligenceView() {
       <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center gap-1">
           {SUB_TABS.map((tab) => (
-            <button
+            <Button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                activeSubTab === tab.id
-                  ? 'bg-info-subtle text-info font-medium'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'
-              }`}
+              variant={activeSubTab === tab.id ? 'soft' : 'ghost'}
+              color={activeSubTab === tab.id ? 'violet' : 'gray'}
+              size="1"
             >
               {tab.icon}
               {tab.label}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex items-center gap-1">
           {AI_ACTIONS[activeSubTab]?.map((action, i) => (
-            <button
+            <Button
               key={i}
               onClick={() => dispatchToAgent(action.prompt)}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs text-info hover:bg-info-subtle/50 rounded-lg transition-colors"
+              variant="ghost"
+              color="violet"
+              size="1"
             >
               <Zap size={10} />
               {action.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

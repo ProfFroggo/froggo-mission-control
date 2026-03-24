@@ -17,9 +17,9 @@ import {
   FileText,
   Download,
   Zap,
-  Loader2,
   HelpCircle,
 } from 'lucide-react';
+import { Button, IconButton, Spinner, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import MarkdownMessage from './MarkdownMessage';
 
@@ -145,19 +145,23 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
           >
             <ExternalLink size={12} />
           </a>
-          <button
+          <Button
             onClick={() => setExpanded(v => !v)}
-            className="text-xs px-2 py-1 rounded border border-mission-control-border hover:bg-mission-control-bg transition-colors text-mission-control-text-dim"
+            variant="outline"
+            color="gray"
+            size="1"
           >
             {expanded ? 'Less' : 'Tweets'}
-          </button>
-          <button
+          </Button>
+          <IconButton
             onClick={() => onRemove(data.handle)}
             aria-label={`Remove @${data.handle}`}
-            className="text-mission-control-text-dim hover:text-error transition-colors"
+            variant="ghost"
+            color="red"
+            size="1"
           >
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -386,13 +390,15 @@ export function XCompetitorTracker() {
                 <span className="text-[10px] text-mission-control-text-dim">
                   {new Date(latestReport.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
-                <button
+                <Button
                   onClick={() => setShowReport(!showReport)}
-                  className="px-2 py-1 text-xs text-info hover:bg-info-subtle/50 rounded transition-colors"
+                  variant="ghost"
+                  color="blue"
+                  size="1"
                 >
                   {showReport ? 'Collapse' : 'View Report'}
-                </button>
-                <button
+                </Button>
+                <IconButton
                   onClick={() => {
                     const blob = new Blob([latestReport.content], { type: 'text/markdown' });
                     const url = URL.createObjectURL(blob);
@@ -402,11 +408,13 @@ export function XCompetitorTracker() {
                     a.click();
                     URL.revokeObjectURL(url);
                   }}
-                  className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded transition-colors"
+                  variant="ghost"
+                  color="gray"
+                  size="1"
                   title="Download report"
                 >
                   <Download size={13} />
-                </button>
+                </IconButton>
               </div>
             </div>
             {!showReport && <p className="text-xs text-mission-control-text-dim">{latestReport.summary}</p>}
@@ -420,7 +428,7 @@ export function XCompetitorTracker() {
 
         {/* Generate Report Button */}
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={async () => {
               setGeneratingReport(true);
               try {
@@ -443,11 +451,13 @@ export function XCompetitorTracker() {
               setGeneratingReport(false);
             }}
             disabled={generatingReport || handles.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-info/10 text-info hover:bg-info/20 rounded-lg transition-colors disabled:opacity-40"
+            variant="soft"
+            color="blue"
+            size="1"
           >
-            {generatingReport ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+            {generatingReport ? <Spinner size="1" /> : <Zap size={12} />}
             {generatingReport ? 'Generating...' : 'Run Competitor Analysis'}
-          </button>
+          </Button>
           {!latestReport && <span className="text-[10px] text-mission-control-text-dim">Add competitor handles below, then run analysis</span>}
         </div>
 
@@ -457,31 +467,27 @@ export function XCompetitorTracker() {
             Track a competitor
           </label>
           <div className="flex gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-mission-control-text-dim">
-                @
-              </span>
-              <input
-                type="text"
+            <div className="flex-1">
+              <TextField.Root
                 value={inputValue}
                 onChange={e => setInputValue(e.target.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter') handleAdd();
                 }}
-                placeholder="handle"
-                className="w-full pl-7 pr-3 py-2 text-sm border border-mission-control-border rounded-lg bg-mission-control-bg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': 'var(--color-info)' } as React.CSSProperties}
+                placeholder="@handle"
+                size="2"
               />
             </div>
-            <button
+            <Button
               onClick={handleAdd}
               disabled={!inputValue.trim()}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg transition-colors disabled:opacity-50"
-              style={{ background: 'var(--color-info)', color: '#fff' }}
+              variant="solid"
+              color="blue"
+              size="2"
             >
               <Plus size={16} />
               Add
-            </button>
+            </Button>
           </div>
           <p className="text-xs text-mission-control-text-dim mt-1.5">
             Track up to 10 competitors. Uses X search API to fetch recent tweets.
@@ -495,13 +501,15 @@ export function XCompetitorTracker() {
               <span className="text-sm font-medium text-mission-control-text">
                 Tracked accounts ({handles.length})
               </span>
-              <button
+              <Button
                 onClick={handleRefresh}
-                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                variant="ghost"
+                color="gray"
+                size="1"
               >
                 <RefreshCw size={12} />
                 Load data
-              </button>
+              </Button>
             </div>
             <div className="flex flex-wrap gap-2">
               {handles.map(h => (
@@ -521,8 +529,8 @@ export function XCompetitorTracker() {
 
         {/* Loading */}
         {loading && (
-          <div className="flex items-center justify-center py-12 text-mission-control-text-dim">
-            <div className="w-6 h-6 border-2 border-info border-t-transparent rounded-full animate-spin mr-3" />
+          <div className="flex items-center justify-center gap-3 py-12 text-mission-control-text-dim">
+            <Spinner size="2" />
             Searching X for competitor tweets...
           </div>
         )}
@@ -551,14 +559,16 @@ export function XCompetitorTracker() {
                   Competitor Analysis ({competitors.length})
                 </span>
               </div>
-              <button
+              <Button
                 onClick={handleRefresh}
                 disabled={loading}
-                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                variant="ghost"
+                color="gray"
+                size="1"
               >
                 <RefreshCw size={12} />
                 Refresh
-              </button>
+              </Button>
             </div>
             <div className="space-y-3">
               {competitors.map(c => (

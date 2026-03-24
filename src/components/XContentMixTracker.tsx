@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PieChart, TrendingUp, AlertTriangle, Check } from 'lucide-react';
+import { Button, TextField } from '@radix-ui/themes';
 import { CHART_COLORS } from '../lib/chartTheme';
 
 interface ContentMixData {
@@ -212,14 +213,15 @@ export const XContentMixTracker: React.FC = () => {
           <label htmlFor={`target-${item.type}`} className="text-xs text-mission-control-text-dim">
             Target:
           </label>
-          <input
+          <TextField.Root
             id={`target-${item.type}`}
             type="number"
-            value={item.target}
+            value={String(item.target)}
             onChange={e => updateTarget(item.type, parseInt(e.target.value) || 0)}
-            className="w-16 px-2 py-1 text-xs border border-mission-control-border rounded"
             min="0"
             max="100"
+            size="1"
+            style={{ width: '4rem' }}
           />
           <span className="text-xs text-mission-control-text-dim">%</span>
         </div>
@@ -264,18 +266,22 @@ export const XContentMixTracker: React.FC = () => {
 
         {/* Period selector */}
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={() => setPeriod('week')}
-            className={`px-3 py-1.5 text-sm rounded ${period === 'week' ? 'bg-info text-white' : 'border border-mission-control-border text-mission-control-text hover:bg-mission-control-surface'}`}
+            variant={period === 'week' ? 'solid' : 'outline'}
+            color={period === 'week' ? 'blue' : 'gray'}
+            size="2"
           >
             Last Week
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setPeriod('month')}
-            className={`px-3 py-1.5 text-sm rounded ${period === 'month' ? 'bg-info text-white' : 'border border-mission-control-border text-mission-control-text hover:bg-mission-control-surface'}`}
+            variant={period === 'month' ? 'solid' : 'outline'}
+            color={period === 'month' ? 'blue' : 'gray'}
+            size="2"
           >
             Last Month
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -284,9 +290,9 @@ export const XContentMixTracker: React.FC = () => {
         <div className="mb-4 p-3 rounded-lg bg-error-subtle text-error text-sm flex items-center gap-2">
           <AlertTriangle size={16} />
           {error}
-          <button onClick={loadContentMix} className="ml-auto underline text-xs">
+          <Button onClick={loadContentMix} variant="ghost" color="red" size="1" className="ml-auto">
             Retry
-          </button>
+          </Button>
         </div>
       )}
 

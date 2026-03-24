@@ -1,6 +1,7 @@
 // Setup wizard for Social Media module — verifies X/Twitter API, wires agents, syncs data
 import { useState, useEffect, useCallback } from 'react';
 import { Twitter, Key, CheckCircle, AlertTriangle, ArrowRight, ExternalLink, RefreshCw, Eye, EyeOff, XCircle, User, BarChart2, Bot } from 'lucide-react';
+import { Button, Spinner, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface XSetupWizardProps {
@@ -139,7 +140,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <RefreshCw size={24} className="text-mission-control-accent animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -203,14 +204,19 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                     {k.label} {k.required && <span className="text-error">*</span>}
                   </label>
                   <div className="relative">
-                    <input
+                    <TextField.Root
                       type={showKeys ? 'text' : 'password'}
                       value={values[k.id] || ''}
                       onChange={e => setValues(p => ({ ...p, [k.id]: e.target.value }))}
                       placeholder={k.placeholder}
-                      className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-                    />
-                    {values[k.id]?.trim() && <CheckCircle size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-success" />}
+                      size="2"
+                    >
+                      {values[k.id]?.trim() && (
+                        <TextField.Slot side="right">
+                          <CheckCircle size={14} className="text-success" />
+                        </TextField.Slot>
+                      )}
+                    </TextField.Root>
                   </div>
                 </div>
               ))}
@@ -219,14 +225,17 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
               className="flex items-center gap-2 text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors">
               <ExternalLink size={12} /> Get credentials from the X Developer Portal
             </a>
-            <button
+            <Button
               onClick={handleSaveKeys}
               disabled={saving || !requiredFilled}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40"
+              variant="solid"
+              color="violet"
+              size="3"
+              className="w-full"
             >
-              {saving ? <RefreshCw size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+              {saving ? <Spinner size="1" /> : <ArrowRight size={14} />}
               {saving ? 'Saving...' : 'Save & Verify'}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -247,7 +256,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                     }
                   }, 500);
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#000] text-white rounded-lg text-sm font-medium hover:bg-[#1a1a1a] transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-text text-mission-control-bg rounded-lg text-sm font-medium hover:opacity-90 transition-colors"
               >
                 <Twitter size={16} />
                 Connect with X
@@ -257,7 +266,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
               {verifying ? (
                 <div className="text-center py-4">
-                  <RefreshCw size={32} className="mx-auto text-mission-control-accent animate-spin mb-3" />
+                  <Spinner size="3" className="mx-auto mb-3" />
                   <p className="text-sm text-mission-control-text-dim">Verifying credentials with X API...</p>
                 </div>
               ) : verifyResult?.success ? (
@@ -310,20 +319,17 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
               ) : null}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setStep('keys')} className="flex-1 px-4 py-2.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text transition-colors">
+              <Button onClick={() => setStep('keys')} variant="outline" color="gray" size="2" className="flex-1">
                 Back
-              </button>
+              </Button>
               {verifyResult?.success ? (
-                <button onClick={() => { setStep('agent'); handleWireAgent(); }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors">
+                <Button onClick={() => { setStep('agent'); handleWireAgent(); }} variant="solid" color="violet" size="2" className="flex-1">
                   <ArrowRight size={14} /> Continue
-                </button>
+                </Button>
               ) : (
-                <button onClick={handleVerify} disabled={verifying}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40">
-                  {verifying ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                  {verifying ? 'Verifying...' : 'Retry Verification'}
-                </button>
+                <Button onClick={handleVerify} disabled={verifying} variant="solid" color="violet" size="2" className="flex-1">
+                  {verifying ? <><Spinner size="1" /> Verifying...</> : <><RefreshCw size={14} /> Retry Verification</>}
+                </Button>
               )}
             </div>
           </div>
@@ -342,7 +348,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                   <p className="text-xs text-mission-control-text-dim">Configuring tools and permissions...</p>
                 </div>
                 {agentWiring ? (
-                  <RefreshCw size={16} className="text-mission-control-accent animate-spin ml-auto" />
+                  <Spinner size="1" className="ml-auto" />
                 ) : agentWired ? (
                   <CheckCircle size={16} className="text-success ml-auto" />
                 ) : null}
@@ -358,18 +364,21 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                   <span className="text-mission-control-text">X API connection verified</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {agentWired ? <CheckCircle size={12} className="text-success" /> : <RefreshCw size={12} className="text-mission-control-text-dim animate-spin" />}
+                  {agentWired ? <CheckCircle size={12} className="text-success" /> : <Spinner size="1" />}
                   <span className="text-mission-control-text">{agentWired ? 'Agent tools configured' : 'Configuring agent tools...'}</span>
                 </div>
               </div>
             </div>
-            <button
+            <Button
               onClick={() => setStep('done')}
               disabled={!agentWired}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40"
+              variant="solid"
+              color="violet"
+              size="3"
+              className="w-full"
             >
               <ArrowRight size={14} /> Finish Setup
-            </button>
+            </Button>
           </div>
         )}
 
@@ -383,7 +392,8 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 Your account is verified, credentials are saved, and the social agent is configured.
               </p>
             </div>
-            <button onClick={async () => {
+            <Button
+              onClick={async () => {
                 // Save setup completion flag
                 await fetch('/api/settings/twitter_setup_complete', {
                   method: 'PUT',
@@ -392,9 +402,13 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 }).catch(() => {});
                 onComplete();
               }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors">
+              variant="solid"
+              color="violet"
+              size="3"
+              className="w-full"
+            >
               <BarChart2 size={14} /> Open Social Dashboard
-            </button>
+            </Button>
           </div>
         )}
       </div>

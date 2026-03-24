@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, Plus, ArrowLeft } from 'lucide-react';
+import { Badge, Button, Spinner } from '@radix-ui/themes';
 import XPlanThreadComposer from './XPlanThreadComposer';
 import { scheduleApi } from '../lib/api';
 
@@ -36,21 +37,18 @@ export default function XPlanListView() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadgeColor = (status: string): 'green' | 'red' | 'yellow' => {
     switch (status) {
-      case 'approved':
-        return 'bg-success-subtle text-success';
-      case 'rejected':
-        return 'bg-error-subtle text-error';
-      default:
-        return 'bg-warning-subtle text-warning';
+      case 'approved': return 'green';
+      case 'rejected': return 'red';
+      default: return 'yellow';
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-mission-control-bg">
-        <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -59,13 +57,15 @@ export default function XPlanListView() {
     return (
       <div className="flex flex-col h-full bg-mission-control-bg">
         <div className="p-4 border-b border-mission-control-border">
-          <button
+          <Button
             onClick={() => { setShowComposer(false); loadPlans(); }}
-            className="flex items-center gap-2 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            variant="ghost"
+            color="gray"
+            size="2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to list
-          </button>
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto">
           <XPlanThreadComposer />
@@ -82,13 +82,15 @@ export default function XPlanListView() {
           <FileText className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Content Plans</h3>
         </div>
-        <button
+        <Button
           onClick={() => setShowComposer(true)}
-          className="flex items-center gap-2 px-3 py-2 text-sm bg-info hover:bg-info/80 text-mission-control-text rounded-lg transition-colors"
+          variant="solid"
+          color="blue"
+          size="2"
         >
           <Plus className="w-4 h-4" />
           New Plan
-        </button>
+        </Button>
       </div>
 
       {/* List */}
@@ -98,12 +100,15 @@ export default function XPlanListView() {
             <FileText className="w-12 h-12 mx-auto mb-3 text-mission-control-text-dim" />
             <p className="font-medium text-mission-control-text">No content plans yet</p>
             <p className="text-sm mt-1">Create a content plan to start drafting tweets.</p>
-            <button
+            <Button
               onClick={() => setShowComposer(true)}
-              className="mt-4 px-4 py-2 text-sm bg-info hover:bg-info/80 text-mission-control-text rounded-lg transition-colors"
+              variant="solid"
+              color="blue"
+              size="2"
+              className="mt-4"
             >
               Create your first plan
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -114,15 +119,13 @@ export default function XPlanListView() {
                 <h4 className="text-sm font-bold text-mission-control-text">{plan.title}</h4>
               </div>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className="px-2 py-1 text-xs bg-info-subtle text-info rounded-full">
-                  {plan.content_type}
-                </span>
-                <span className="px-2 py-1 text-xs bg-review-subtle text-review rounded-full">
+                <Badge color="blue" variant="soft" radius="full">{plan.content_type}</Badge>
+                <Badge color="violet" variant="soft" radius="full">
                   {plan.thread_length} tweet{plan.thread_length > 1 ? 's' : ''}
-                </span>
-                <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(plan.status)}`}>
+                </Badge>
+                <Badge color={getStatusBadgeColor(plan.status)} variant="soft" radius="full">
                   {plan.status}
-                </span>
+                </Badge>
               </div>
               <p className="text-xs text-mission-control-text-dim">
                 Proposed by {plan.proposed_by} &middot; {new Date(plan.created_at).toLocaleDateString()}

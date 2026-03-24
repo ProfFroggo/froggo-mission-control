@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 import XPublishComposer from './XPublishComposer';
 
 interface XComposeModalProps {
@@ -38,12 +39,14 @@ export default function XComposeModal({ open, onClose }: XComposeModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
           <h2 className="text-sm font-semibold text-mission-control-text">New Post</h2>
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-bg-alt transition-colors"
+            variant="ghost"
+            color="gray"
+            size="2"
           >
             <X size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Composer */}

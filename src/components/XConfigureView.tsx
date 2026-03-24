@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bot, Zap, KeyRound } from 'lucide-react';
+import { Button, Badge, Spinner } from '@radix-ui/themes';
 import XAgentContentQueue from './XAgentContentQueue';
 import XAutomationsTab from './XAutomationsTab';
 
@@ -41,7 +42,7 @@ function CredentialsPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-6 h-6 border-2 border-info border-t-transparent rounded-full animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -62,13 +63,13 @@ function CredentialsPanel() {
         {Object.entries(keyLabels).map(([key, label]) => (
           <div key={key} className="flex items-center justify-between px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface">
             <span className="text-sm text-mission-control-text">{label}</span>
-            <span className={`text-xs px-2 py-1 rounded-full ${
-              keys[key]
-                ? 'bg-success-subtle text-success'
-                : 'bg-error-subtle text-error'
-            }`}>
+            <Badge
+              color={keys[key] ? 'grass' : 'red'}
+              variant="soft"
+              radius="full"
+            >
               {keys[key] ? 'Configured' : 'Missing'}
-            </span>
+            </Badge>
           </div>
         ))}
       </div>
@@ -87,18 +88,16 @@ export default function XConfigureView() {
       {/* Sub-tab bar */}
       <div className="flex items-center gap-1 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
         {SUB_TABS.map((tab) => (
-          <button
+          <Button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              activeSubTab === tab.id
-                ? 'bg-info-subtle text-info font-medium'
-                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'
-            }`}
+            variant={activeSubTab === tab.id ? 'soft' : 'ghost'}
+            color={activeSubTab === tab.id ? 'blue' : 'gray'}
+            size="2"
           >
             {tab.icon}
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
 

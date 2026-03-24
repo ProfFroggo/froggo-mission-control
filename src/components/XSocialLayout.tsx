@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { Share2, Plus, MessageSquare, X, Settings, Bell } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import type { XTab } from './XTwitterPage';
 import XAgentChatPane from './XAgentChatPane';
 
@@ -86,18 +87,17 @@ export default function XSocialLayout({
 
           {/* Tab bar inline in header */}
           {TABS.map((tab) => (
-            <button
+            <Button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-sm whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-info-subtle text-info font-medium'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'
-              }`}
+              variant={activeTab === tab.id ? 'soft' : 'ghost'}
+              color={activeTab === tab.id ? 'violet' : 'gray'}
+              size="1"
+              className="whitespace-nowrap"
             >
               <TabIcon name={tab.icon} size={15} />
               {tab.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -105,35 +105,37 @@ export default function XSocialLayout({
         <div className="flex items-center gap-2">
           {approvalBadge}
 
-          <button
+          <Button
             onClick={() => setChatOpen(!chatOpen)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              chatOpen
-                ? 'bg-info-subtle text-info font-medium'
-                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'
-            }`}
+            variant={chatOpen ? 'soft' : 'ghost'}
+            color={chatOpen ? 'violet' : 'gray'}
+            size="1"
             title="Toggle agent chat (Cmd+.)"
           >
             <MessageSquare size={15} />
             Agent
-          </button>
+          </Button>
 
-          <button
+          <IconButton
             onClick={onSettingsReset}
-            className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-bg-alt transition-colors"
+            variant="ghost"
+            color="gray"
+            size="1"
             title="Reconfigure credentials"
           >
             <Settings size={15} />
-          </button>
+          </IconButton>
 
-          <button
+          <Button
             onClick={onComposeOpen}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-info hover:bg-info/80 text-white text-sm font-medium rounded-lg transition-colors"
+            variant="solid"
+            color="violet"
+            size="1"
             title="New post (Cmd+N)"
           >
             <Plus size={15} />
             Compose
-          </button>
+          </Button>
         </div>
       </div>
 

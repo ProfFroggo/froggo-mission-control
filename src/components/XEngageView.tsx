@@ -27,6 +27,7 @@ import {
   Edit3,
   Check,
 } from 'lucide-react';
+import { Button, IconButton, Badge, Spinner, TextField, Select } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { scheduleApi, approvalApi, inboxApi } from '../lib/api';
 
@@ -868,7 +869,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
         <div className="flex items-center gap-2 mb-1.5 text-xs">
           {isPriority && <Star size={11} className="text-warning flex-shrink-0" />}
           <span className="font-medium text-mission-control-text">@{mention.author_username}</span>
-          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+          <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
             mention.mention_type === 'reply'
               ? mention.is_reply_to_us ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info'
               : mention.mention_type === 'quote' ? 'bg-warning-subtle text-warning'
@@ -878,12 +879,12 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           </span>
           {mention.author_followers != null && <span className="text-mission-control-text-dim">{mention.author_followers.toLocaleString()}</span>}
           {judgment?.confidence != null && (
-            <span className={`px-1 py-0.5 rounded text-[9px] ${judgment.confidence >= 0.8 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
+            <span className={`px-1 py-0.5 rounded text-xs ${judgment.confidence >= 0.8 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
               {Math.round(judgment.confidence * 100)}%
             </span>
           )}
-          {judgment?.safety_flags?.length > 0 && <span className="text-[9px] text-error">flagged</span>}
-          {lang && lang !== 'en' && <span className="px-1 py-0.5 rounded text-[9px] bg-info-subtle text-info">{lang.toUpperCase()}</span>}
+          {judgment?.safety_flags?.length > 0 && <span className="text-xs text-error">flagged</span>}
+          {lang && lang !== 'en' && <span className="px-1 py-0.5 rounded text-xs bg-info-subtle text-info">{lang.toUpperCase()}</span>}
           <span className="ml-auto text-mission-control-text-dim">
             {new Date(mention.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
@@ -892,7 +893,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
 
         {/* Parent context (compact) */}
         {mention.parent_tweet?.text && (
-          <div className="mb-1.5 px-2 py-1.5 rounded border border-mission-control-border bg-mission-control-bg text-[11px] text-mission-control-text-dim line-clamp-2">
+          <div className="mb-1.5 px-2 py-1.5 rounded border border-mission-control-border bg-mission-control-bg text-xs text-mission-control-text-dim line-clamp-2">
             <MessageCircle size={9} className="inline mr-1" />
             {mention.parent_tweet.author?.username ? `@${mention.parent_tweet.author.username}: ` : ''}{mention.parent_tweet.text}
           </div>
@@ -903,7 +904,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
         {mentionTranslation && <div className="text-xs text-mission-control-text-dim italic mb-1.5">{mentionTranslation}</div>}
 
         {/* Metrics row */}
-        <div className="flex items-center gap-3 text-[11px] text-mission-control-text-dim mb-2">
+        <div className="flex items-center gap-3 text-xs text-mission-control-text-dim mb-2">
           <span className="flex items-center gap-0.5"><Heart size={10} /> {mention.like_count}</span>
           <span className="flex items-center gap-0.5"><Repeat2 size={10} /> {mention.retweet_count}</span>
           <span className="flex items-center gap-0.5"><MessageCircle size={10} /> {mention.reply_count}</span>
@@ -928,7 +929,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           <>
             {aiLoading.has(mention.id) ? (
               <div className="flex items-center gap-2 text-xs text-mission-control-text-dim py-1">
-                <div className="w-3 h-3 border border-info border-t-transparent rounded-full animate-spin" />
+                <Spinner size="1" />
                 Generating...
               </div>
             ) : aiData?.replies?.length ? (
@@ -961,52 +962,59 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                           />
                         ) : (
                           <div className="px-2.5 py-1.5 text-xs">
-                            {isRec && !isSelected && <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-info text-white mr-1.5">BEST</span>}
+                            {isRec && !isSelected && <span className="text-xs font-bold px-1 py-0.5 rounded bg-info text-white mr-1.5">BEST</span>}
                             <span className="text-mission-control-text">{reply}</span>
-                            {replyEng && lang !== 'en' && <span className="block text-[10px] text-mission-control-text-dim italic mt-0.5">EN: {replyEng}</span>}
+                            {replyEng && lang !== 'en' && <span className="block text-xs text-mission-control-text-dim italic mt-0.5">EN: {replyEng}</span>}
                           </div>
                         )}
                       </div>
                       {isActive && (
-                        <button
+                        <IconButton
                           onClick={(e) => { e.stopPropagation(); setReplyText(reply); }}
-                          className="flex-shrink-0 p-1.5 mr-1 text-mission-control-text-dim hover:text-info"
+                          variant="ghost"
+                          color="gray"
+                          size="1"
                           title="Edit reply"
+                          className="flex-shrink-0 mr-1"
                         >
                           <Edit3 size={11} />
-                        </button>
+                        </IconButton>
                       )}
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <button onClick={() => generateAIReplies([mention])} className="text-xs text-info hover:underline mb-2 flex items-center gap-1">
+              <Button onClick={() => generateAIReplies([mention])} variant="ghost" color="blue" size="1" className="mb-2">
                 <Zap size={10} /> Generate replies
-              </button>
+              </Button>
             )}
 
             {/* Actions — always visible */}
             <div className="flex items-center gap-1.5 pt-1.5 border-t border-mission-control-border">
-              <button
+              <Button
                 onClick={() => {
                   const text = activeReplyText;
                   if (!text) { setSelectedMention(mention.id); return; }
                   handleApproveReply(mention, text);
                 }}
                 disabled={!activeReplyText}
-                className="px-3 py-1 text-xs bg-success/10 text-success hover:bg-success/20 rounded-lg transition-colors disabled:opacity-40 flex items-center gap-1"
+                variant="soft"
+                color="grass"
+                size="1"
               >
                 <CheckCircle size={11} /> Approve
-              </button>
+              </Button>
               <div className="relative">
-                <button
+                <Button
                   onClick={() => setShowSchedulePicker(showSchedulePicker === mention.id ? null : mention.id)}
                   disabled={!activeReplyText}
-                  className="px-3 py-1 text-xs text-info hover:bg-info/10 rounded-lg transition-colors disabled:opacity-40 flex items-center gap-1"
+                  variant="ghost"
+                  color="blue"
+                  size="1"
                 >
                   <Clock size={11} /> Schedule
-                </button>
+                </Button>
                 {showSchedulePicker === mention.id && (
                   <div className="absolute bottom-full left-0 mb-1 p-2 rounded-lg border border-mission-control-border bg-mission-control-surface shadow-lg z-20 flex items-center gap-2"
                     onClick={e => e.stopPropagation()}
@@ -1018,7 +1026,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                       min={new Date(Date.now() + 300000).toISOString().slice(0, 16)}
                       className="px-2 py-1 text-xs border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
                     />
-                    <button
+                    <Button
                       onClick={() => {
                         if (scheduleTime && activeReplyText) {
                           handleScheduleReply(mention, activeReplyText, new Date(scheduleTime).getTime());
@@ -1027,34 +1035,43 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                         }
                       }}
                       disabled={!scheduleTime}
-                      className="px-2 py-1 text-xs bg-info text-white rounded disabled:opacity-40"
+                      variant="solid"
+                      color="blue"
+                      size="1"
                     >
                       Set
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
-              <button
+              <Button
                 onClick={() => updateStatus(mention.id, 'ignored')}
-                className="px-3 py-1 text-xs text-mission-control-text-dim hover:text-error hover:bg-error/10 rounded-lg transition-colors flex items-center gap-1"
+                variant="ghost"
+                color="gray"
+                size="1"
               >
                 <Ban size={11} /> Reject
-              </button>
-              <button
+              </Button>
+              <IconButton
                 onClick={() => togglePriority(mention.author_username)}
-                className="p-1 rounded hover:bg-mission-control-bg-alt transition-colors ml-auto"
+                variant="ghost"
+                color={isPriority ? 'amber' : 'gray'}
+                size="1"
                 title={isPriority ? 'Remove priority' : 'Priority'}
+                className="ml-auto"
               >
-                {isPriority ? <StarOff size={12} className="text-warning" /> : <Star size={12} className="text-mission-control-text-dim" />}
-              </button>
-              <button
+                {isPriority ? <StarOff size={12} /> : <Star size={12} />}
+              </IconButton>
+              <IconButton
                 onClick={() => toggleIgnored(mention.author_username)}
-                className="p-1 rounded hover:bg-mission-control-bg-alt transition-colors"
+                variant="ghost"
+                color="gray"
+                size="1"
                 title="Mute user"
               >
-                <UserX size={12} className="text-mission-control-text-dim" />
-              </button>
-              {isSelected && <span className="text-[10px] text-mission-control-text-dim ml-1">{replyText.length}/280</span>}
+                <UserX size={12} />
+              </IconButton>
+              {isSelected && <span className="text-xs text-mission-control-text-dim ml-1">{replyText.length}/280</span>}
             </div>
           </>
         )}
@@ -1067,10 +1084,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-mission-control-text-dim">Loading mentions...</p>
-        </div>
+        <Spinner size="3" />
       </div>
     );
   }
@@ -1085,27 +1099,25 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
             <div className="text-lg font-semibold text-mission-control-text">Engagement Inbox</div>
           </div>
           <div className="flex items-center gap-2">
-          <button
+          <IconButton
             onClick={() => setShowSettings(!showSettings)}
-            className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-info-subtle text-info' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'}`}
+            variant={showSettings ? 'soft' : 'ghost'}
+            color={showSettings ? 'blue' : 'gray'}
+            size="2"
             title="Engagement settings"
           >
             <Settings size={16} />
-          </button>
-          <button
+          </IconButton>
+          <Button
             onClick={fetchNewMentions}
             disabled={fetching}
-            className="px-4 py-2 bg-info text-white rounded-lg hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+            variant="solid"
+            color="blue"
+            size="2"
           >
-            {fetching ? (
-              <>
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                Fetching...
-              </>
-            ) : (
-              <><RefreshCw size={16} /> Fetch New</>
-            )}
-          </button>
+            {fetching ? <Spinner size="1" /> : <RefreshCw size={16} />}
+            {fetching ? 'Fetching...' : 'Fetch New'}
+          </Button>
           </div>
         </div>
 
@@ -1119,7 +1131,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           </div>
           <div className="flex items-center gap-1.5">
             {counts.spam > 0 && (
-              <button
+              <Button
                 onClick={async () => {
                   const spamMentions = allMentions.filter(m => m.is_spam);
                   for (const m of spamMentions) {
@@ -1132,13 +1144,15 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                   showToast('success', `${spamMentions.length} spam ignored`);
                   loadMentions();
                 }}
-                className="px-2 py-1 text-xs text-error hover:bg-error/10 rounded transition-colors"
+                variant="ghost"
+                color="red"
+                size="1"
               >
                 Ignore all spam ({counts.spam})
-              </button>
+              </Button>
             )}
             {filteredMentions.length > 0 && activeFilter === 'pending' && (
-              <button
+              <Button
                 onClick={async () => {
                   const pending = filteredMentions.filter(m => m.reply_status === 'pending');
                   for (const m of pending) {
@@ -1151,10 +1165,12 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                   showToast('success', `${pending.length} mentions ignored`);
                   loadMentions();
                 }}
-                className="px-2 py-1 text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt rounded transition-colors"
+                variant="ghost"
+                color="gray"
+                size="1"
               >
                 Ignore all pending
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -1165,21 +1181,20 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           <div className="flex gap-2 flex-wrap">
             {(['all', 'hot', 'pending', 'replied', 'ignored', 'spam'] as FilterTab[]).map(tab => {
               const label = tab === 'hot' ? 'Hot' : tab === 'spam' ? 'Spam' : tab.charAt(0).toUpperCase() + tab.slice(1);
-              const icon = tab === 'hot' ? <TrendingUp size={12} className="mr-0.5" />
-                : tab === 'spam' ? <Ban size={12} className="mr-0.5" />
+              const icon = tab === 'hot' ? <TrendingUp size={12} />
+                : tab === 'spam' ? <Ban size={12} />
                 : null;
               return (
-                <button
+                <Button
                   key={tab}
                   onClick={() => setActiveFilter(tab)}
-                  className={`px-3 py-1 text-sm rounded-lg transition-colors flex items-center ${
-                    activeFilter === tab
-                      ? 'bg-info-subtle text-info font-medium'
-                      : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80 border border-mission-control-border'
-                  }`}
+                  variant={activeFilter === tab ? 'solid' : 'outline'}
+                  color={activeFilter === tab ? 'blue' : 'gray'}
+                  size="1"
+                  radius="full"
                 >
                   {icon}{label} ({counts[tab]})
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -1187,21 +1202,20 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           <div className="flex gap-2 flex-wrap">
             <span className="text-xs text-mission-control-text-dim self-center mr-1">Type:</span>
             {([
-              { id: 'replies' as FilterTab, label: 'Replies', icon: <MessageCircle size={12} className="mr-0.5" /> },
-              { id: 'quotes' as FilterTab, label: 'Quotes', icon: <Repeat2 size={12} className="mr-0.5" /> },
-              { id: 'direct' as FilterTab, label: 'Direct Mentions', icon: <Heart size={12} className="mr-0.5" /> },
+              { id: 'replies' as FilterTab, label: 'Replies', icon: <MessageCircle size={12} /> },
+              { id: 'quotes' as FilterTab, label: 'Quotes', icon: <Repeat2 size={12} /> },
+              { id: 'direct' as FilterTab, label: 'Direct Mentions', icon: <Heart size={12} /> },
             ]).map(tab => (
-              <button
+              <Button
                 key={tab.id}
                 onClick={() => setActiveFilter(tab.id)}
-                className={`px-3 py-1 text-xs rounded-lg transition-colors flex items-center ${
-                  activeFilter === tab.id
-                    ? 'bg-info-subtle text-info font-medium'
-                    : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80 border border-mission-control-border'
-                }`}
+                variant={activeFilter === tab.id ? 'solid' : 'outline'}
+                color={activeFilter === tab.id ? 'blue' : 'gray'}
+                size="1"
+                radius="full"
               >
                 {tab.icon}{tab.label} ({counts[tab.id]})
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -1211,24 +1225,26 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           <div className="flex flex-wrap items-center gap-4 mb-3">
             <div className="flex items-center gap-2">
               <label htmlFor="engage-min-likes" className="text-xs text-mission-control-text-dim">Min Likes:</label>
-              <input
+              <TextField.Root
                 id="engage-min-likes"
                 type="number"
-                value={minLikes}
+                value={String(minLikes)}
                 onChange={(e) => setMinLikes(parseInt(e.target.value) || 0)}
-                className="w-20 px-2 py-1 text-sm border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
                 min="0"
+                size="1"
+                style={{ width: '5rem' }}
               />
             </div>
             <div className="flex items-center gap-2">
               <label htmlFor="engage-min-retweets" className="text-xs text-mission-control-text-dim">Min Retweets:</label>
-              <input
+              <TextField.Root
                 id="engage-min-retweets"
                 type="number"
-                value={minRetweets}
+                value={String(minRetweets)}
                 onChange={(e) => setMinRetweets(parseInt(e.target.value) || 0)}
-                className="w-20 px-2 py-1 text-sm border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
                 min="0"
+                size="1"
+                style={{ width: '5rem' }}
               />
             </div>
           </div>
@@ -1246,17 +1262,16 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               {/* Default reply tier */}
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-1 block">Default Reply Approval Tier</label>
-                <select
-                  value={settings.defaultReplyTier}
-                  onChange={(e) => {
-                    const tier = Number(e.target.value) as 1 | 3;
-                    updateSetting('defaultReplyTier', tier);
-                  }}
-                  className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg bg-mission-control-bg text-mission-control-text"
+                <Select.Root
+                  value={String(settings.defaultReplyTier)}
+                  onValueChange={(v) => updateSetting('defaultReplyTier', Number(v) as 1 | 3)}
                 >
-                  <option value={3}>Tier 3 — Standard review</option>
-                  <option value={1}>Tier 1 — Fast-track (minimal review)</option>
-                </select>
+                  <Select.Trigger className="w-full" />
+                  <Select.Content>
+                    <Select.Item value="3">Tier 3 — Standard review</Select.Item>
+                    <Select.Item value="1">Tier 1 — Fast-track (minimal review)</Select.Item>
+                  </Select.Content>
+                </Select.Root>
               </div>
 
               {/* Auto-ignore low engagement */}
@@ -1323,40 +1338,44 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
         <div className="flex gap-4 flex-wrap">
         {/* Priority accounts collapsible */}
         <div className="flex-1 min-w-[200px]">
-          <button
+          <Button
             onClick={() => setShowPriorityPanel(v => !v)}
-            className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+            variant="ghost"
+            color="gray"
+            size="1"
           >
             <Star size={12} className="text-warning" />
             Priority accounts
             {priorityAccounts.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-xs bg-warning-subtle text-warning">
+              <Badge color="amber" variant="soft" radius="full" size="1">
                 {priorityAccounts.length}
-              </span>
+              </Badge>
             )}
             {showPriorityPanel ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-          </button>
+          </Button>
           {showPriorityPanel && (
             <div className="mt-2 p-3 rounded-lg border border-mission-control-border bg-mission-control-surface">
               <p className="text-xs text-mission-control-text-dim mb-2">
                 Priority accounts always appear first in the list.
               </p>
               <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
+                <TextField.Root
                   value={priorityInput}
                   onChange={e => setPriorityInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleAddPriority(); }}
+                  onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') handleAddPriority(); }}
                   placeholder="@username"
-                  className="flex-1 px-2 py-1 text-xs border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
+                  size="1"
+                  className="flex-1"
                 />
-                <button
+                <Button
                   onClick={handleAddPriority}
                   disabled={!priorityInput.trim()}
-                  className="px-3 py-1 text-xs rounded bg-info text-white disabled:opacity-50 transition-colors"
+                  variant="solid"
+                  color="blue"
+                  size="1"
                 >
                   Add
-                </button>
+                </Button>
               </div>
               {priorityAccounts.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
@@ -1366,9 +1385,9 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                       className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border bg-warning-subtle text-warning"
                     >
                       @{h}
-                      <button onClick={() => handleRemovePriority(h)} aria-label={`Remove @${h}`}>
-                        <span className="text-[10px]">&times;</span>
-                      </button>
+                      <IconButton onClick={() => handleRemovePriority(h)} aria-label={`Remove @${h}`} variant="ghost" color="gray" size="1">
+                        <span className="text-xs">&times;</span>
+                      </IconButton>
                     </span>
                   ))}
                 </div>
@@ -1379,40 +1398,44 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
 
         {/* Ignored accounts collapsible */}
         <div className="flex-1 min-w-[200px]">
-          <button
+          <Button
             onClick={() => setShowIgnoredPanel(v => !v)}
-            className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+            variant="ghost"
+            color="gray"
+            size="1"
           >
             <UserX size={12} className="text-error" />
             Ignored accounts
             {ignoredAccounts.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-xs bg-error-subtle text-error">
+              <Badge color="red" variant="soft" radius="full" size="1">
                 {ignoredAccounts.length}
-              </span>
+              </Badge>
             )}
             {showIgnoredPanel ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-          </button>
+          </Button>
           {showIgnoredPanel && (
             <div className="mt-2 p-3 rounded-lg border border-mission-control-border bg-mission-control-surface">
               <p className="text-xs text-mission-control-text-dim mb-2">
                 Mentions from ignored accounts are hidden from all filters except Ignored.
               </p>
               <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
+                <TextField.Root
                   value={ignoredInput}
                   onChange={e => setIgnoredInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleAddIgnored(); }}
+                  onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') handleAddIgnored(); }}
                   placeholder="@username"
-                  className="flex-1 px-2 py-1 text-xs border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
+                  size="1"
+                  className="flex-1"
                 />
-                <button
+                <Button
                   onClick={handleAddIgnored}
                   disabled={!ignoredInput.trim()}
-                  className="px-3 py-1 text-xs rounded bg-error/80 text-white disabled:opacity-50 transition-colors"
+                  variant="soft"
+                  color="red"
+                  size="1"
                 >
                   Ignore
-                </button>
+                </Button>
               </div>
               {ignoredAccounts.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
@@ -1422,9 +1445,9 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                       className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border bg-error-subtle text-error"
                     >
                       @{h}
-                      <button onClick={() => handleRemoveIgnored(h)} aria-label={`Unignore @${h}`}>
-                        <span className="text-[10px]">&times;</span>
-                      </button>
+                      <IconButton onClick={() => handleRemoveIgnored(h)} aria-label={`Unignore @${h}`} variant="ghost" color="gray" size="1">
+                        <span className="text-xs">&times;</span>
+                      </IconButton>
                     </span>
                   ))}
                 </div>

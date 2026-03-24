@@ -9,6 +9,7 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 import { Spinner } from './LoadingStates';
+import { Button, IconButton, TextArea } from '@radix-ui/themes';
 import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
 
 interface PostMetrics {
@@ -375,12 +376,15 @@ export function XEnhancedAnalyticsView() {
           <BarChart2 size={48} className="mx-auto mb-4 text-mission-control-text-dim opacity-30" />
           <p className="text-mission-control-text font-medium mb-1">Could not load analytics</p>
           <p className="text-sm text-mission-control-text-dim">Check your X API credentials.</p>
-          <button
+          <Button
             onClick={loadData}
-            className="mt-4 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent/90 transition-colors"
+            variant="solid"
+            color="blue"
+            size="2"
+            className="mt-4"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -403,40 +407,42 @@ export function XEnhancedAnalyticsView() {
           <div className="flex items-center gap-2">
             <div className="flex bg-mission-control-surface rounded-lg p-1 border border-mission-control-border">
               {(['7d', '30d', '90d'] as const).map((range) => (
-                <button
+                <Button
                   key={range}
                   onClick={() => setTimeRange(range)}
-                  className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                    timeRange === range
-                      ? 'bg-mission-control-accent text-white'
-                      : 'text-mission-control-text-dim hover:text-mission-control-text'
-                  }`}
+                  variant={timeRange === range ? 'solid' : 'ghost'}
+                  color={timeRange === range ? 'blue' : 'gray'}
+                  size="1"
                 >
                   {range === '7d' ? '7D' : range === '30d' ? '30D' : '90D'}
-                </button>
+                </Button>
               ))}
             </div>
-            <button
+            <IconButton
               onClick={loadData}
-              className="p-2 rounded-lg border border-mission-control-border hover:bg-mission-control-surface transition-colors text-mission-control-text-dim"
+              variant="outline"
+              color="gray"
+              size="2"
               title="Refresh"
             >
               <RefreshCw size={16} />
-            </button>
+            </IconButton>
             <div className="h-4 border-l border-mission-control-border" />
             {[
               { label: 'Weekly report', prompt: 'Generate a weekly performance report. Summarize post performance, engagement trends, top content, follower growth, and key insights. Use markdown tables.' },
               { label: 'Best times', prompt: 'Analyze my posting times vs engagement. When do my posts perform best? Recommend an optimal posting schedule for next week.' },
               { label: 'Content audit', prompt: 'Audit my content mix. What types of content get the most engagement? What should I post more/less of? Present findings as a table.' },
             ].map((action, i) => (
-              <button
+              <Button
                 key={i}
                 onClick={() => window.dispatchEvent(new CustomEvent('x-agent-chat-inject', { detail: { message: action.prompt } }))}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-info hover:bg-info-subtle/50 rounded-lg transition-colors"
+                variant="ghost"
+                color="blue"
+                size="1"
               >
                 <Sparkles size={10} />
                 {action.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -450,18 +456,17 @@ export function XEnhancedAnalyticsView() {
             { id: 'insights', label: 'Suggestions', icon: Lightbulb },
             { id: 'predictor', label: 'Before You Post', icon: Sparkles },
           ].map(({ id, label, icon: Icon }) => (
-            <button
+            <Button
               key={id}
               onClick={() => setView(id as AnalyticsView)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                view === id
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50'
-              }`}
+              variant={view === id ? 'solid' : 'outline'}
+              color={view === id ? 'blue' : 'gray'}
+              size="2"
+              className="whitespace-nowrap"
             >
               <Icon size={16} />
               {label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -624,12 +629,14 @@ export function XEnhancedAnalyticsView() {
                   <Lightbulb size={16} className="text-warning" />
                   Top Insights
                 </h3>
-                <button
+                <Button
                   onClick={() => setView('insights')}
-                  className="text-sm text-info hover:underline"
+                  variant="ghost"
+                  color="blue"
+                  size="1"
                 >
                   View all →
-                </button>
+                </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {data.suggestions.slice(0, 3).map((suggestion) => (
@@ -844,14 +851,16 @@ export function XEnhancedAnalyticsView() {
                   </p>
                 </div>
                 {recentTopPosts.length > 0 && (
-                  <button
+                  <Button
                     onClick={() => exportPostsCSV(recentTopPosts)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-mission-control-border rounded-lg hover:bg-mission-control-bg transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+                    variant="outline"
+                    color="gray"
+                    size="1"
                     title="Export CSV"
                   >
                     <Download size={13} />
                     Export CSV
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -1194,17 +1203,19 @@ export function XEnhancedAnalyticsView() {
 
             {/* Input */}
             <div>
-              <textarea
+              <TextArea
                 value={predictorDraft}
                 onChange={e => { setPredictorDraft(e.target.value); setPrediction(null); setPredictionError(null); }}
                 rows={5}
                 maxLength={280}
                 placeholder="Paste your draft tweet here..."
-                className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg resize-none focus:outline-none bg-mission-control-surface text-mission-control-text placeholder:text-mission-control-text-dim"
+                variant="soft"
+                resize="vertical"
+                className="w-full"
               />
               <div className="flex items-center justify-between mt-2">
                 <span className="text-xs text-mission-control-text-dim">{predictorDraft.length}/280</span>
-                <button
+                <Button
                   onClick={async () => {
                     if (!predictorDraft.trim()) return;
                     setPredicting(true);
@@ -1226,12 +1237,13 @@ export function XEnhancedAnalyticsView() {
                     }
                   }}
                   disabled={!predictorDraft.trim() || predicting}
-                  className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors disabled:opacity-50"
-                  style={{ background: 'var(--color-info)', color: '#fff' }}
+                  variant="solid"
+                  color="blue"
+                  size="2"
                 >
                   <Sparkles size={14} />
                   {predicting ? 'Predicting...' : 'Predict Performance'}
-                </button>
+                </Button>
               </div>
             </div>
 

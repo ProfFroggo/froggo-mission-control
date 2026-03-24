@@ -18,6 +18,7 @@ import {
   Square,
   Eye,
 } from 'lucide-react';
+import { Button, Spinner, TextArea } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -303,7 +304,7 @@ function DraftCard({
       {/* Feedback field */}
       {showFeedback && (
         <div className="mt-3 space-y-2">
-          <textarea
+          <TextArea
             value={feedbackText}
             onChange={(e) => setFeedbackText(e.target.value)}
             rows={2}
@@ -312,25 +313,25 @@ function DraftCard({
                 ? 'Describe what changes you want...'
                 : 'Reason for rejection (optional)...'
             }
-            className="w-full px-3 py-2 text-xs border border-mission-control-border rounded-lg resize-none focus:outline-none bg-mission-control-bg text-mission-control-text"
+            resize="vertical"
           />
           <div className="flex items-center gap-2">
-            <button
+            <Button
               onClick={handleFeedbackSubmit}
-              className={`px-3 py-1.5 text-xs rounded-lg ${
-                feedbackMode === 'changes'
-                  ? 'bg-warning-subtle text-warning'
-                  : 'bg-error-subtle text-error'
-              }`}
+              variant="soft"
+              color={feedbackMode === 'changes' ? 'yellow' : 'red'}
+              size="1"
             >
               {feedbackMode === 'changes' ? 'Send Feedback' : 'Reject Draft'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => { setShowFeedback(false); setFeedbackText(''); }}
-              className="px-3 py-1.5 text-xs rounded-lg bg-mission-control-surface text-mission-control-text-dim"
+              variant="ghost"
+              color="gray"
+              size="1"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -518,7 +519,7 @@ export function XAgentContentQueue() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-mission-control-bg">
-        <div className="w-6 h-6 border-2 border-info border-t-transparent rounded-full animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -572,38 +573,39 @@ export function XAgentContentQueue() {
           <label className="block text-sm font-medium text-mission-control-text mb-2">
             Content Brief
           </label>
-          <textarea
+          <TextArea
             value={briefText}
             onChange={(e) => setBriefText(e.target.value)}
             rows={4}
             placeholder="Describe your brand voice, key topics, posting frequency, and any restrictions the agent should follow..."
-            className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg resize-none focus:outline-none focus:ring-2 bg-mission-control-bg text-mission-control-text placeholder:text-mission-control-text-dim"
-            style={{ '--tw-ring-color': 'var(--color-info)' } as React.CSSProperties}
+            resize="vertical"
           />
           {/* Additional context / constraints */}
           <div className="mt-2">
             <label className="block text-xs font-medium mb-1 text-mission-control-text-dim">
               Additional context / constraints (added to next generation)
             </label>
-            <textarea
+            <TextArea
               value={briefContext}
               onChange={(e) => setBriefContext(e.target.value)}
               rows={2}
               placeholder="e.g. Focus on product launch this week. Avoid any competitor mentions. Use a conversational tone."
-              className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg resize-none focus:outline-none bg-mission-control-bg text-mission-control-text placeholder:text-mission-control-text-dim"
+              resize="vertical"
             />
           </div>
           <div className="flex items-center justify-between mt-2">
             <p className="text-xs text-mission-control-text-dim">
               Agents reference this brief when generating content.
             </p>
-            <button
+            <Button
               onClick={handleSaveBrief}
               disabled={saving || (briefText === settings.brief && !briefContext.trim())}
-              className="px-3 py-1.5 text-xs rounded-lg transition-colors disabled:opacity-50 bg-info text-white"
+              variant="solid"
+              color="violet"
+              size="1"
             >
-              {saving ? 'Saving...' : 'Save Brief'}
-            </button>
+              {saving ? <><Spinner size="1" /> Saving...</> : 'Save Brief'}
+            </Button>
           </div>
         </div>
 
@@ -656,21 +658,25 @@ export function XAgentContentQueue() {
             </div>
             <div className="flex items-center gap-2">
               {pendingSelectedCount > 0 && (
-                <button
+                <Button
                   onClick={handleBatchApprove}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium bg-success-subtle text-success"
+                  variant="soft"
+                  color="green"
+                  size="1"
                 >
                   <CheckSquare size={12} />
                   Approve selected ({pendingSelectedCount})
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 onClick={loadDrafts}
-                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                variant="ghost"
+                color="gray"
+                size="1"
               >
                 <RefreshCw size={12} />
                 Refresh
-              </button>
+              </Button>
             </div>
           </div>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, Send, Plus, Trash2, Eye } from 'lucide-react';
+import { Button, IconButton, Badge, Select, TextArea, Spinner } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { getCurrentUserName } from '../utils/auth';
 import { XImageAttachButton } from './XImageAttachment';
@@ -176,7 +177,7 @@ export default function XDraftComposer() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-mission-control-bg">
-        <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -191,13 +192,15 @@ export default function XDraftComposer() {
             <FileText className="w-5 h-5 text-info" />
             <h3 className="text-lg font-semibold text-mission-control-text">Create Draft</h3>
           </div>
-            <button
+            <Button
               onClick={() => setShowPreview(!showPreview)}
-              className="flex items-center gap-2 px-3 py-1 bg-review hover:bg-review/80 text-mission-control-text text-sm rounded-lg transition-colors"
+              variant="soft"
+              color="amber"
+              size="1"
             >
               <Eye className="w-4 h-4" />
               {showPreview ? 'Hide' : 'Show'} Preview
-            </button>
+            </Button>
         </div>
         <p className="text-sm text-mission-control-text-dim">
           Turn approved content plan into final draft with A/B versions.
@@ -212,28 +215,27 @@ export default function XDraftComposer() {
               <label htmlFor="content-plan" className="block text-sm font-medium text-mission-control-text mb-2">
                 Content Plan <span className="text-xs text-mission-control-text-dim">(optional)</span>
               </label>
-              <select
-                id="content-plan"
+              <Select.Root
                 value={selectedPlanId}
-                onChange={(e) => setSelectedPlanId(e.target.value)}
-                className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+                onValueChange={setSelectedPlanId}
                 disabled={submitting}
               >
-                <option value="">Select a content plan...</option>
-                {contentPlans.map((plan) => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.title} ({plan.thread_length} tweet{plan.thread_length > 1 ? 's' : ''})
-                  </option>
-                ))}
-              </select>
+                <Select.Trigger id="content-plan" className="w-full" />
+                <Select.Content>
+                  <Select.Item value="">Select a content plan...</Select.Item>
+                  {contentPlans.map((plan) => (
+                    <Select.Item key={plan.id} value={plan.id}>
+                      {plan.title} ({plan.thread_length} tweet{plan.thread_length > 1 ? 's' : ''})
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
               {selectedPlan && (
                 <div className="mt-2 flex items-center gap-2">
-                  <span className="px-2 py-1 text-xs bg-info-subtle text-info rounded-full">
-                    {selectedPlan.content_type}
-                  </span>
-                  <span className="px-2 py-1 text-xs bg-review-subtle text-review rounded-full">
+                  <Badge color="blue" variant="soft" radius="full">{selectedPlan.content_type}</Badge>
+                  <Badge color="amber" variant="soft" radius="full">
                     {selectedPlan.thread_length} tweet{selectedPlan.thread_length > 1 ? 's' : ''}
-                  </span>
+                  </Badge>
                 </div>
               )}
             </div>
@@ -246,19 +248,16 @@ export default function XDraftComposer() {
                 </span>
                 <div className="flex gap-2" role="radiogroup" aria-label="Version selection">
                   {['A', 'B', 'C'].map((v) => (
-                    <button
+                    <Button
                       key={v}
                       onClick={() => setVersion(v)}
-                      aria-pressed={version === v}
-                      className={`px-6 py-2 rounded-lg border-2 transition-colors ${
-                        version === v
-                          ? 'border-info bg-info/20 text-mission-control-text'
-                          : 'border-mission-control-border bg-mission-control-bg-alt text-mission-control-text-dim hover:border-mission-control-border/80'
-                      }`}
+                      variant={version === v ? 'solid' : 'outline'}
+                      color={version === v ? 'blue' : 'gray'}
+                      size="2"
                       disabled={submitting}
                     >
                       Version {v}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -270,14 +269,16 @@ export default function XDraftComposer() {
                     Tweets <span className="text-error">*</span>
                   </label>
                   {tweets.length < 10 && (
-                    <button
+                    <Button
                       onClick={addTweet}
-                      className="flex items-center gap-1 text-sm text-info hover:text-info"
+                      variant="ghost"
+                      color="blue"
+                      size="1"
                       disabled={submitting}
                     >
                       <Plus className="w-4 h-4" />
                       Add Tweet
-                    </button>
+                    </Button>
                   )}
                 </div>
 
@@ -287,17 +288,15 @@ export default function XDraftComposer() {
                       <div className="flex items-start gap-2">
                         <div className="flex-1">
                           <div className="relative">
-                            <textarea
+                            <TextArea
                               value={tweet}
                               onChange={(e) => handleTweetChange(index, e.target.value)}
                               placeholder={`Tweet ${index + 1}/${tweets.length}...`}
                               aria-label={`Tweet ${index + 1} content`}
                               rows={3}
-                              className={`w-full bg-mission-control-bg-alt text-mission-control-text placeholder-mission-control-text-dim border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 resize-none ${
-                                isOverLimit(tweet)
-                                  ? 'border-error focus:ring-error'
-                                  : 'border-mission-control-border focus:ring-info'
-                              }`}
+                              variant="soft"
+                              resize="vertical"
+                              color={isOverLimit(tweet) ? 'red' : undefined}
                               disabled={submitting}
                             />
                             <div className={`absolute bottom-2 right-2 text-xs font-mono ${
@@ -308,13 +307,15 @@ export default function XDraftComposer() {
                           </div>
                         </div>
                         {tweets.length > 1 && (
-                          <button
+                          <IconButton
                             onClick={() => removeTweet(index)}
-                            className="p-2 text-error hover:bg-error-subtle rounded-lg transition-colors"
+                            variant="soft"
+                            color="red"
+                            size="2"
                             disabled={submitting}
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </IconButton>
                         )}
                       </div>
                     </div>
@@ -374,35 +375,32 @@ export default function XDraftComposer() {
                   className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text"
                 />
               </div>
-              <button
+              <Button
                 onClick={handleSchedule}
                 disabled={scheduling || tweets.every(t => !t.trim()) || tweets.some(isOverLimit)}
-                className="px-6 py-2 bg-mission-control-accent hover:bg-mission-control-accent/80 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                variant="solid"
+                color="grass"
+                size="2"
               >
+                {scheduling ? <Spinner size="1" /> : null}
                 {scheduling ? 'Scheduling...' : 'Schedule'}
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Submit Button */}
           <div className="mt-4 pt-4 border-t border-mission-control-border">
-            <button
+            <Button
               onClick={handleSubmit}
               disabled={submitting || tweets.every(t => !t.trim()) || tweets.some(isOverLimit)}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-info hover:bg-info/80 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-mission-control-text font-medium rounded-lg transition-colors"
+              variant="solid"
+              color="grass"
+              size="3"
+              className="w-full"
             >
-              {submitting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-mission-control-text border-t-transparent rounded-full animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Send className="w-5 h-5" />
-                  Submit Version {version} for Approval
-                </>
-              )}
-            </button>
+              {submitting ? <Spinner size="2" /> : <Send className="w-5 h-5" />}
+              {submitting ? 'Submitting...' : `Submit Version ${version} for Approval`}
+            </Button>
           </div>
         </>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, ArrowLeft, Check, X, Send, CheckCheck, Loader2 } from 'lucide-react';
+import { FileText, Plus, ArrowLeft, Check, X, Send, CheckCheck } from 'lucide-react';
+import { Button, Badge, Spinner } from '@radix-ui/themes';
 import XDraftComposer from './XDraftComposer';
 import { XImageThumbnails } from './XImageAttachment';
 import { scheduleApi, approvalApi } from '../lib/api';
@@ -150,7 +151,7 @@ export default function XDraftListView() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-mission-control-bg">
-        <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -159,13 +160,15 @@ export default function XDraftListView() {
     return (
       <div className="flex flex-col h-full bg-mission-control-bg">
         <div className="p-4 border-b border-mission-control-border">
-          <button
+          <Button
             onClick={() => { setShowComposer(false); loadDrafts(); }}
-            className="flex items-center gap-2 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            variant="ghost"
+            color="gray"
+            size="2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to list
-          </button>
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto">
           <XDraftComposer />
@@ -189,27 +192,27 @@ export default function XDraftListView() {
         </div>
         <div className="flex items-center gap-2">
           {pendingDrafts.length > 0 && (
-            <button
+            <Button
               onClick={handleBulkApprove}
               disabled={approvingAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-success-subtle text-success border border-success/30 rounded-lg hover:bg-success/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              variant="solid"
+              color="grass"
+              size="2"
               title={`Approve all ${pendingDrafts.length} pending drafts`}
             >
-              {approvingAll ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <CheckCheck className="w-3.5 h-3.5" />
-              )}
+              {approvingAll ? <Spinner size="1" /> : <CheckCheck className="w-3.5 h-3.5" />}
               Approve all ({pendingDrafts.length})
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             onClick={() => setShowComposer(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-all duration-150"
+            variant="solid"
+            color="grass"
+            size="2"
           >
             <Plus className="w-4 h-4" />
             New Draft
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -218,22 +221,19 @@ export default function XDraftListView() {
         {PIPELINE_FILTERS.map((f) => {
           const count = f.id === 'all' ? drafts.length : drafts.filter(d => matchesFilter(d, f.id)).length;
           return (
-            <button
+            <Button
               key={f.id}
               onClick={() => setFilter(f.id)}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
-                filter === f.id
-                  ? 'bg-info text-mission-control-text font-medium'
-                  : 'bg-mission-control-bg-alt text-mission-control-text-dim hover:text-mission-control-text border border-mission-control-border'
-              }`}
+              variant={filter === f.id ? 'solid' : 'outline'}
+              color={filter === f.id ? 'blue' : 'gray'}
+              size="1"
+              radius="full"
             >
               {f.label}
               {count > 0 && (
-                <span className={`text-xs ${filter === f.id ? 'text-mission-control-text/70' : 'text-mission-control-text-dim'}`}>
-                  {count}
-                </span>
+                <span className="ml-1">{count}</span>
               )}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -249,12 +249,14 @@ export default function XDraftListView() {
             {filter === 'all' ? 'Create a draft to start writing tweets.' : `No drafts match the "${filter}" filter.`}
           </p>
           {filter === 'all' && (
-            <button
+            <Button
               onClick={() => setShowComposer(true)}
-              className="px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-all duration-150"
+              variant="solid"
+              color="grass"
+              size="2"
             >
               Create your first draft
-            </button>
+            </Button>
           )}
         </div>
       ) : (
@@ -275,12 +277,18 @@ export default function XDraftListView() {
               >
                 {/* Status + meta row */}
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-info-subtle text-info text-xs font-medium">
-                    Version {draft.version}
-                  </span>
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadge(draft.status)}`}>
+                  <Badge color="blue" variant="soft" radius="full">Version {draft.version}</Badge>
+                  <Badge
+                    color={
+                      draft.status === 'approved' ? 'grass' :
+                      draft.status === 'rejected' ? 'red' :
+                      draft.status === 'idea' ? 'blue' : 'amber'
+                    }
+                    variant="soft"
+                    radius="full"
+                  >
                     {draft.status}
-                  </span>
+                  </Badge>
                   {draft.proposed_by && (
                     <span className="text-xs text-mission-control-text-dim">
                       by {draft.proposed_by}
@@ -304,47 +312,45 @@ export default function XDraftListView() {
                 {/* Action buttons */}
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-mission-control-border">
                   {/* Promote to Publish */}
-                  <button
+                  <Button
                     onClick={() => handlePromoteToPublish(draft)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-mission-control-text-dim hover:text-info border border-mission-control-border hover:border-info rounded-lg transition-colors"
+                    variant="ghost"
+                    color="gray"
+                    size="1"
                     title="Move to Publish"
                   >
                     <Send className="w-3.5 h-3.5" />
                     Publish
-                  </button>
+                  </Button>
 
                   {/* Approve (if pending) */}
                   {isPending && (
-                    <button
+                    <Button
                       onClick={() => handleApprove(draft.id)}
                       disabled={isActionLoading}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-success border border-success/30 hover:bg-success/10 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      variant="solid"
+                      color="grass"
+                      size="1"
                       title="Approve draft"
                     >
-                      {isActionLoading ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Check className="w-3.5 h-3.5" />
-                      )}
+                      {isActionLoading ? <Spinner size="1" /> : <Check className="w-3.5 h-3.5" />}
                       Approve
-                    </button>
+                    </Button>
                   )}
 
                   {/* Reject */}
                   {!isRejected && (
-                    <button
+                    <Button
                       onClick={() => handleReject(draft.id)}
                       disabled={isActionLoading}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-error border border-error/30 hover:bg-error/10 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      variant="soft"
+                      color="red"
+                      size="1"
                       title="Reject draft"
                     >
-                      {isActionLoading ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <X className="w-3.5 h-3.5" />
-                      )}
+                      {isActionLoading ? <Spinner size="1" /> : <X className="w-3.5 h-3.5" />}
                       Reject
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
