@@ -22,7 +22,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
-import { Button, IconButton, Badge, Heading, Text, Spinner, TextField, TextArea, Select } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Heading, Text, Spinner, TextField, TextArea, Select, Box } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface Automation {
@@ -396,7 +396,7 @@ export default function XAutomationsTab() {
                     }}
                     size="2"
                     variant={isSelected ? 'soft' : 'ghost'}
-                    radius="medium"
+                   
                     className="flex items-start gap-3 p-4 w-full text-left h-auto"
                     style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}
                   >
@@ -527,7 +527,7 @@ export default function XAutomationsTab() {
                 onClick={() => setBuilderAiEngine('gemini')}
                 size="2"
                 variant={builderAiEngine === 'gemini' ? 'soft' : 'ghost'}
-                radius="medium"
+               
                 className="flex items-start gap-3 p-4 w-full h-auto"
                 style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}
               >
@@ -544,7 +544,7 @@ export default function XAutomationsTab() {
                 onClick={() => setBuilderAiEngine('claude')}
                 size="2"
                 variant={builderAiEngine === 'claude' ? 'soft' : 'ghost'}
-                radius="medium"
+               
                 className="flex items-start gap-3 p-4 w-full h-auto"
                 style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}
               >
@@ -594,7 +594,7 @@ export default function XAutomationsTab() {
                           size="2"
                           variant="ghost"
                           color="red"
-                          radius="medium"
+                         
                         >
                           <Trash2 size={16} />
                         </IconButton>
@@ -701,7 +701,7 @@ export default function XAutomationsTab() {
                     onClick={() => addAction(option.type)}
                     size="2"
                     variant="ghost"
-                    radius="medium"
+                   
                     className="flex items-center gap-2 w-full"
                     style={{ justifyContent: 'flex-start' }}
                   >
@@ -754,7 +754,7 @@ export default function XAutomationsTab() {
               onClick={closeBuilder}
               size="2"
               variant="ghost"
-              radius="medium"
+             
               className="flex-1"
             >
               Cancel
@@ -763,7 +763,7 @@ export default function XAutomationsTab() {
               onClick={saveAutomation}
               size="2"
               variant="soft"
-              radius="medium"
+             
               className="flex-1"
             >
               {editingAutomation ? 'Update Automation' : 'Create Automation'}
@@ -775,7 +775,7 @@ export default function XAutomationsTab() {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
+    <Box className="h-full overflow-y-auto">
       <div className="w-full p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -797,7 +797,7 @@ export default function XAutomationsTab() {
               }}
               size="2"
               variant="ghost"
-              radius="medium"
+             
             >
               <Sparkles size={16} />
               Create with AI
@@ -806,7 +806,7 @@ export default function XAutomationsTab() {
               onClick={() => openBuilder()}
               size="2"
               variant="soft"
-              radius="medium"
+             
             >
               <Plus size={16} />
               Manual
@@ -824,7 +824,7 @@ export default function XAutomationsTab() {
               onClick={() => openBuilder()}
               size="2"
               variant="soft"
-              radius="medium"
+             
             >
               Create your first automation
             </Button>
@@ -866,7 +866,7 @@ export default function XAutomationsTab() {
                         size="2"
                         variant={automation.enabled ? 'soft' : 'ghost'}
                         color={automation.enabled ? 'green' : 'gray'}
-                        radius="medium"
+                       
                         title={automation.enabled ? 'Disable' : 'Enable'}
                       >
                         <Power size={16} />
@@ -875,7 +875,7 @@ export default function XAutomationsTab() {
                         onClick={() => testAutomation(automation.id)}
                         size="2"
                         variant="ghost"
-                        radius="medium"
+                       
                         title="Test automation"
                       >
                         <Play size={16} />
@@ -884,7 +884,7 @@ export default function XAutomationsTab() {
                         onClick={() => openBuilder(automation)}
                         size="2"
                         variant="ghost"
-                        radius="medium"
+                       
                         title="Edit"
                       >
                         <Edit size={16} />
@@ -894,7 +894,7 @@ export default function XAutomationsTab() {
                         size="2"
                         variant="ghost"
                         color="red"
-                        radius="medium"
+                       
                         title="Delete"
                       >
                         <Trash2 size={16} />
@@ -949,7 +949,7 @@ export default function XAutomationsTab() {
             onClick={() => setShowLog(!showLog)}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             className="flex items-center gap-2 w-full text-left px-4 py-3"
             style={{ justifyContent: 'flex-start' }}
           >
@@ -1003,7 +1003,7 @@ export default function XAutomationsTab() {
                               onClick={() => setExpandedLogEntry(isExpanded ? null : entry.id)}
                               size="1"
                               variant="ghost"
-                              radius="medium"
+                             
                               className="flex items-center gap-3 w-full text-left px-3 py-2"
                               style={{ justifyContent: 'flex-start' }}
                             >
@@ -1059,7 +1059,7 @@ export default function XAutomationsTab() {
                         onClick={() => setLogDisplayLimit(prev => prev + 20)}
                         size="1"
                         variant="ghost"
-                        radius="medium"
+                       
                         className="mt-3 w-full"
                       >
                         Load more ({filteredLog.length - logDisplayLimit} remaining)
@@ -1072,6 +1072,6 @@ export default function XAutomationsTab() {
           )}
         </div>
       </div>
-    </div>
+    </Box>
   );
 }

@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Heart, Repeat2, MessageCircle, Clock, HelpCircle, Ban, CheckCircle, StickyNote, RefreshCw, Inbox } from 'lucide-react';
-import { Button, IconButton, Spinner, TextArea, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, TextArea, TextField, Flex } from '@radix-ui/themes';
 import { inboxApi, approvalApi } from '../lib/api';
 
 interface Mention {
@@ -343,7 +343,7 @@ export const XMentionsView: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="text-lg font-semibold text-mission-control-text">X Mentions</div>
@@ -400,6 +400,6 @@ export const XMentionsView: React.FC = () => {
           mentions.map(renderMention)
         )}
       </div>
-    </div>
+    </Flex>
   );
 };

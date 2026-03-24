@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PieChart, TrendingUp, AlertTriangle, Check } from 'lucide-react';
-import { Button, TextField } from '@radix-ui/themes';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import { CHART_COLORS } from '../lib/chartTheme';
 
 interface ContentMixData {
@@ -251,7 +251,7 @@ export const XContentMixTracker: React.FC = () => {
   const totalPosts = getTotalPosts();
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-surface p-6">
+    <Flex direction="column" height="100%" p="5" className="bg-mission-control-surface">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -265,23 +265,29 @@ export const XContentMixTracker: React.FC = () => {
         </div>
 
         {/* Period selector */}
-        <div className="flex gap-2">
-          <Button
+        <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
+          <button
+            type="button"
             onClick={() => setPeriod('week')}
-            variant={period === 'week' ? 'solid' : 'outline'}
-            color={period === 'week' ? 'blue' : 'gray'}
-            size="2"
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+              period === 'week'
+                ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+            }`}
           >
             Last Week
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
             onClick={() => setPeriod('month')}
-            variant={period === 'month' ? 'solid' : 'outline'}
-            color={period === 'month' ? 'blue' : 'gray'}
-            size="2"
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+              period === 'month'
+                ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+            }`}
           >
             Last Month
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -363,6 +369,6 @@ export const XContentMixTracker: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </Flex>
   );
 };

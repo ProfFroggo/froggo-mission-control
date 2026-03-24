@@ -19,7 +19,7 @@ import {
   Zap,
   HelpCircle,
 } from 'lucide-react';
-import { Button, IconButton, Spinner, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import MarkdownMessage from './MarkdownMessage';
 
@@ -365,7 +365,7 @@ export function XCompetitorTracker() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg overflow-y-auto">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg overflow-y-auto">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-2 mb-1">
@@ -518,7 +518,7 @@ export function XCompetitorTracker() {
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border border-mission-control-border text-mission-control-text"
                 >
                   @{h}
-                  <IconButton onClick={() => handleRemove(h)} size="1" variant="ghost" radius="medium" aria-label={`Remove @${h}`}>
+                  <IconButton onClick={() => handleRemove(h)} size="1" variant="ghost" aria-label={`Remove @${h}`}>
                     <X size={12} />
                   </IconButton>
                 </div>
@@ -587,7 +587,7 @@ export function XCompetitorTracker() {
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }
 

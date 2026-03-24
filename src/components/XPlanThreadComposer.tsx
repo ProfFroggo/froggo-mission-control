@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, Send, BookOpen, Megaphone, MessageCircle, Zap } from 'lucide-react';
-import { Button, Select, Spinner, TextArea, TextField } from '@radix-ui/themes';
+import { Button, Select, Spinner, TextArea, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { getCurrentUserName } from '../utils/auth';
 import { scheduleApi } from '../lib/api';
@@ -108,7 +108,7 @@ export default function XPlanThreadComposer() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg p-6">
+    <Flex direction="column" height="100%" p="5" className="bg-mission-control-bg">
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
           <FileText className="w-5 h-5 text-info" />
@@ -265,6 +265,6 @@ export default function XPlanThreadComposer() {
             </Button>
           </div>
         </>
-    </div>
+    </Flex>
   );
 }

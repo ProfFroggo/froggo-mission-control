@@ -1,7 +1,7 @@
 // Setup wizard for Social Media module — verifies X/Twitter API, wires agents, syncs data
 import { useState, useEffect, useCallback } from 'react';
 import { Twitter, Key, CheckCircle, AlertTriangle, ArrowRight, ExternalLink, RefreshCw, Eye, EyeOff, XCircle, User, BarChart2, Bot } from 'lucide-react';
-import { Button, Spinner, TextField } from '@radix-ui/themes';
+import { Button, Spinner, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface XSetupWizardProps {
@@ -155,7 +155,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
   const stepIdx = STEPS.findIndex(s => s.id === step);
 
   return (
-    <div className="flex items-center justify-center h-full p-8">
+    <Flex align="center" justify="center" height="100%" p="6">
       <div className="max-w-lg w-full space-y-6">
         {/* Header */}
         <div className="text-center">
@@ -414,6 +414,6 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Save, Trash2, ExternalLink, MessageCircle, User, Hash, Check, Send, Lightbulb } from 'lucide-react';
-import { Button, IconButton, Spinner, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, TextField, Flex } from '@radix-ui/themes';
 import { scheduleApi } from '../lib/api';
 import { showToast } from './Toast';
 
@@ -185,7 +185,7 @@ export function XResearchView() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
         <div className="flex items-center justify-between mb-4">
@@ -470,7 +470,7 @@ export function XResearchView() {
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }
 

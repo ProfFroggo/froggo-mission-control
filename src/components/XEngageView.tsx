@@ -27,7 +27,7 @@ import {
   Edit3,
   Check,
 } from 'lucide-react';
-import { Button, IconButton, Badge, Spinner, TextField, Select, Checkbox } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Spinner, TextField, Select, Checkbox, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { scheduleApi, approvalApi, inboxApi } from '../lib/api';
 
@@ -1090,7 +1090,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
         <div className="flex items-center justify-between mb-3">
@@ -1492,7 +1492,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           sortedMentions.map(renderMentionCard)
         )}
       </div>
-    </div>
+    </Flex>
   );
 };
 

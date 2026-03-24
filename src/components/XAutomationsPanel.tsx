@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button, IconButton, TextField, Select, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
 import {
   Plus, Settings, Play, Pause, Trash2, Edit,
   AlertCircle, CheckCircle, Clock, Zap,
@@ -223,7 +223,7 @@ export default function XAutomationsPanel() {
                           size="2"
                           variant="soft"
                           color={automation.enabled ? 'orange' : 'green'}
-                          radius="medium"
+                         
                           title={automation.enabled ? 'Pause' : 'Activate'}
                         >
                           {automation.enabled ? <Pause size={16} /> : <Play size={16} />}
@@ -235,7 +235,7 @@ export default function XAutomationsPanel() {
                           }}
                           size="2"
                           variant="ghost"
-                          radius="medium"
+                         
                           title="Edit"
                         >
                           <Edit size={16} />
@@ -245,7 +245,7 @@ export default function XAutomationsPanel() {
                           size="2"
                           variant="soft"
                           color="red"
-                          radius="medium"
+                         
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -391,7 +391,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
   };
   
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+    <Flex align="center" justify="center" className="fixed inset-0 modal-backdrop z-50">
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg w-full max-w-3xl mx-4 max-h-[90vh] overflow-auto">
         {/* Header */}
         <div className="p-6 border-b border-mission-control-border">
@@ -571,7 +571,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                       size="2"
                       variant="ghost"
                       color="red"
-                      radius="medium"
+                     
                     >
                       <Trash2 size={16} />
                     </IconButton>
@@ -651,6 +651,6 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

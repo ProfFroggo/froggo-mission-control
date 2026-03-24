@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, X, Send, FileText } from 'lucide-react';
-import { Button, Spinner, TextArea, TextField } from '@radix-ui/themes';
+import { Button, Spinner, TextArea, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
 import { scheduleApi } from '../lib/api';
@@ -78,7 +78,7 @@ export default function XResearchIdeaEditor() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg p-6">
+    <Flex direction="column" height="100%" p="5" className="bg-mission-control-bg">
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
           <FileText className="w-5 h-5 text-info" />
@@ -197,6 +197,6 @@ export default function XResearchIdeaEditor() {
           )}
         </Button>
       </div>
-    </div>
+    </Flex>
   );
 }

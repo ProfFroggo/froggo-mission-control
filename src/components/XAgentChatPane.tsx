@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Loader2, Users, AlertCircle, Zap, RotateCcw, Brain, BookOpen, MessageSquare, Archive } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import type { XTab } from './XTwitterPage';
 import MarkdownMessage from './MarkdownMessage';
 import { chatApi } from '../lib/api';
@@ -398,7 +398,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   }, [loading]);
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-surface">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
         <div className="flex items-center justify-between mb-2">
@@ -595,7 +595,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
             disabled={!input.trim() || loading}
             variant="solid"
             size="3"
-            radius="medium"
+           
             aria-label="Send"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
@@ -605,6 +605,6 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           Press Enter to send • Shift+Enter for new line
         </p>
       </div>
-    </div>
+    </Flex>
   );
 }

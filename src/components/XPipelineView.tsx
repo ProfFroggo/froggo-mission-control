@@ -25,7 +25,7 @@ import {
   Repeat2,
   MessageCircle,
 } from 'lucide-react';
-import { Button, IconButton, Badge, TextArea, TextField, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, Badge, TextArea, TextField, Spinner, Flex } from '@radix-ui/themes';
 import { approvalApi } from '../lib/api';
 import EpicCalendar from './EpicCalendar';
 import { showToast } from './Toast';
@@ -1265,7 +1265,7 @@ export default function XPipelineView() {
   }
 
   return (
-    <div className="relative flex flex-col h-full bg-mission-control-bg overflow-hidden">
+    <Flex direction="column" height="100%" className="relative bg-mission-control-bg overflow-hidden">
       {/* Stats bar */}
       <StatsBar counts={counts} total={items.length} />
 
@@ -1375,6 +1375,6 @@ export default function XPipelineView() {
           }}
         />
       )}
-    </div>
+    </Flex>
   );
 }

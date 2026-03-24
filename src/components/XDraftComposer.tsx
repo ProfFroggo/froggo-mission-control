@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, Send, Plus, Trash2, Eye } from 'lucide-react';
-import { Button, IconButton, Badge, Select, TextArea, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Select, TextArea, Spinner, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { getCurrentUserName } from '../utils/auth';
 import { XImageAttachButton } from './XImageAttachment';
@@ -185,7 +185,7 @@ export default function XDraftComposer() {
   const selectedPlan = contentPlans.find(p => p.id === selectedPlanId);
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg p-6">
+    <Flex direction="column" height="100%" p="5" className="bg-mission-control-bg">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -403,6 +403,6 @@ export default function XDraftComposer() {
             </Button>
           </div>
         </>
-    </div>
+    </Flex>
   );
 }

@@ -16,7 +16,7 @@ import {
   AlertCircle,
   RefreshCw,
 } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -252,7 +252,7 @@ export function XHashtagIntelligence() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg overflow-y-auto">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg overflow-y-auto">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-2 mb-1">
@@ -354,7 +354,7 @@ export function XHashtagIntelligence() {
                           aria-label="Insert into composer"
                           variant="ghost"
                           size="2"
-                          radius="medium"
+                         
                         >
                           <Copy size={14} />
                         </IconButton>
@@ -368,7 +368,7 @@ export function XHashtagIntelligence() {
                           variant="ghost"
                           color={savedTags.includes(result.tag) ? 'blue' : 'gray'}
                           size="2"
-                          radius="medium"
+                         
                         >
                           <Bookmark
                             size={14}
@@ -506,7 +506,7 @@ export function XHashtagIntelligence() {
                     aria-label="Insert"
                     variant="ghost"
                     size="1"
-                    radius="medium"
+                   
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Copy size={10} />
@@ -517,7 +517,7 @@ export function XHashtagIntelligence() {
                     variant="ghost"
                     color="red"
                     size="1"
-                    radius="medium"
+                   
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X size={10} />
@@ -636,7 +636,7 @@ export function XHashtagIntelligence() {
           )}
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }
 

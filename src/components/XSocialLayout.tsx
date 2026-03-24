@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { Share2, Plus, MessageSquare, Settings, Columns3, AtSign, Search, BarChart2, SlidersHorizontal } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import type { XTab } from './XTwitterPage';
 import XAgentChatPane from './XAgentChatPane';
 import TabNav, { type TabNavItem } from './TabNav';
@@ -57,7 +57,7 @@ export default function XSocialLayout({
   }, []);
 
   return (
-    <div className="h-full flex flex-col bg-mission-control-bg text-mission-control-text">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg text-mission-control-text">
       {/* Header */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
         {/* Title row */}
@@ -140,6 +140,6 @@ export default function XSocialLayout({
           )}
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, Plus, ArrowLeft } from 'lucide-react';
-import { Badge, Button, Spinner } from '@radix-ui/themes';
+import { Badge, Button, Spinner, Flex } from '@radix-ui/themes';
 import XPlanThreadComposer from './XPlanThreadComposer';
 import { scheduleApi } from '../lib/api';
 
@@ -75,7 +75,7 @@ export default function XPlanListView() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-2">
@@ -134,6 +134,6 @@ export default function XPlanListView() {
           ))}
         </div>
       )}
-    </div>
+    </Flex>
   );
 }

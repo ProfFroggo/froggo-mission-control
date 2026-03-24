@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BarChart2, TrendingUp, Eye, Activity, Download, Users, RefreshCw } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 
 interface AnalyticsSummary {
   followers: number;
@@ -158,7 +158,7 @@ export function XAnalyticsView() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="overflow-y-auto bg-mission-control-bg">
       <div className="max-w-5xl mx-auto p-6 space-y-6 w-full">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -176,7 +176,7 @@ export function XAnalyticsView() {
               onClick={loadData}
               size="2"
               variant="ghost"
-              radius="medium"
+             
               title="Refresh data"
               aria-label="Refresh data"
             >
@@ -305,7 +305,7 @@ export function XAnalyticsView() {
           </>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }
 

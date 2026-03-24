@@ -9,7 +9,7 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 import { Spinner } from './LoadingStates';
-import { Button, IconButton, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextArea, Flex } from '@radix-ui/themes';
 import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
 
 interface PostMetrics {
@@ -391,7 +391,7 @@ export function XEnhancedAnalyticsView() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg overflow-hidden">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg overflow-hidden">
       {/* Header */}
       <div className="border-b border-mission-control-border shrink-0">
         <div className="flex items-center justify-between p-4 pb-0">
@@ -405,17 +405,20 @@ export function XEnhancedAnalyticsView() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex bg-mission-control-surface rounded-lg p-1 border border-mission-control-border">
+            <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
               {(['7d', '30d', '90d'] as const).map((range) => (
-                <Button
+                <button
                   key={range}
+                  type="button"
                   onClick={() => setTimeRange(range)}
-                  variant={timeRange === range ? 'solid' : 'ghost'}
-                  color={timeRange === range ? 'blue' : 'gray'}
-                  size="1"
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    timeRange === range
+                      ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+                  }`}
                 >
                   {range === '7d' ? '7D' : range === '30d' ? '30D' : '90D'}
-                </Button>
+                </button>
               ))}
             </div>
             <IconButton
@@ -1350,7 +1353,7 @@ export function XEnhancedAnalyticsView() {
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }
 

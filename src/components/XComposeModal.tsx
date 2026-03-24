@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
+import { IconButton, Flex } from '@radix-ui/themes';
 import XPublishComposer from './XPublishComposer';
 
 interface XComposeModalProps {
@@ -27,7 +27,7 @@ export default function XComposeModal({ open, onClose }: XComposeModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <Flex justify="end" className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -54,6 +54,6 @@ export default function XComposeModal({ open, onClose }: XComposeModalProps) {
           <XPublishComposer onPostSuccess={onClose} />
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, Plus, ArrowLeft, Check, X, Send, CheckCheck } from 'lucide-react';
-import { Button, Badge, Spinner } from '@radix-ui/themes';
+import { Button, Badge, Spinner, Flex } from '@radix-ui/themes';
 import XDraftComposer from './XDraftComposer';
 import { XImageThumbnails } from './XImageAttachment';
 import { scheduleApi, approvalApi } from '../lib/api';
@@ -178,7 +178,7 @@ export default function XDraftListView() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-2">
@@ -217,23 +217,23 @@ export default function XDraftListView() {
       </div>
 
       {/* Pipeline filter pills */}
-      <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-mission-control-border overflow-x-auto">
+      <div className="flex items-center gap-1 px-4 py-2.5 border-b border-mission-control-border overflow-x-auto">
         {PIPELINE_FILTERS.map((f) => {
           const count = f.id === 'all' ? drafts.length : drafts.filter(d => matchesFilter(d, f.id)).length;
           return (
-            <Button
+            <button
               key={f.id}
+              type="button"
               onClick={() => setFilter(f.id)}
-              variant={filter === f.id ? 'soft' : 'ghost'}
-              color={filter === f.id ? 'blue' : 'gray'}
-              size="1"
-              radius="full"
+              className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                filter === f.id
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
+              }`}
             >
               {f.label}
-              {count > 0 && (
-                <span className="ml-1">{count}</span>
-              )}
-            </Button>
+              {count > 0 && <span>{count}</span>}
+            </button>
           );
         })}
       </div>
@@ -358,6 +358,6 @@ export default function XDraftListView() {
           })}
         </div>
       )}
-    </div>
+    </Flex>
   );
 }

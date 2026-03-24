@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Rocket, Plus, Trash2, Calendar, Clock, ChevronDown, ChevronUp, GripVertical, Send, MessageSquare, Sparkles } from 'lucide-react';
-import { Button, IconButton, Badge, Spinner, TextField, TextArea, Select } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Spinner, TextField, TextArea, Select, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface CampaignStage {
@@ -498,7 +498,7 @@ export default function XCampaignView() {
 
   // Campaign list + AI proposal banner
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-2">
           <Rocket className="w-5 h-5 text-info" />
@@ -623,6 +623,6 @@ export default function XCampaignView() {
           })}
         </div>
       ) : null}
-    </div>
+    </Flex>
   );
 }

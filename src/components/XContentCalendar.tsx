@@ -15,7 +15,7 @@ import {
   Calendar,
   RefreshCw,
 } from 'lucide-react';
-import { Button, IconButton, Badge, TextArea, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, Badge, TextArea, Spinner, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -575,8 +575,9 @@ export function XContentCalendar() {
   };
 
   return (
-    <div
-      className="flex flex-col h-full"
+    <Flex
+      direction="column"
+      height="100%"
       style={{ background: 'var(--mission-control-bg)' }}
     >
       {/* Header */}
@@ -770,7 +771,7 @@ export function XContentCalendar() {
           onClose={() => setNewPostDay(null)}
         />
       )}
-    </div>
+    </Flex>
   );
 }
 

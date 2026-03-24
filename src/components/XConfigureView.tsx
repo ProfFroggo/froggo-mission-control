@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bot, Zap, KeyRound } from 'lucide-react';
-import { Badge, Spinner } from '@radix-ui/themes';
+import { Badge, Spinner, Flex } from '@radix-ui/themes';
 import TabNav, { type TabNavItem } from './TabNav';
 import XAgentContentQueue from './XAgentContentQueue';
 import XAutomationsTab from './XAutomationsTab';
@@ -85,7 +85,7 @@ export default function XConfigureView() {
   const [activeSubTab, setActiveSubTab] = useState<ConfigSubTab>('agent-mode');
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Sub-tab bar */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
         <TabNav
@@ -102,6 +102,6 @@ export default function XConfigureView() {
         {activeSubTab === 'automations' && <XAutomationsTab />}
         {activeSubTab === 'credentials' && <CredentialsPanel />}
       </div>
-    </div>
+    </Flex>
   );
 }

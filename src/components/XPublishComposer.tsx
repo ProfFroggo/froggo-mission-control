@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Plus, Trash2, AlertCircle, CheckCircle, Image, Calendar, Clock, X, Lightbulb } from 'lucide-react';
-import { Button, IconButton, Spinner, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, TextArea, Flex } from '@radix-ui/themes';
 import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
 
@@ -154,7 +154,7 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
             size="2"
             variant="ghost"
             color="red"
-            radius="medium"
+           
             title="Remove tweet"
             aria-label="Remove tweet"
             className="mt-2"
@@ -543,7 +543,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
   const showThread = mode === 'thread';
 
   return (
-    <div ref={composerRef} className="flex flex-col h-full bg-mission-control-bg">
+    <Flex ref={composerRef} direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
       <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-mission-control-border">
         <div className="flex items-center gap-3">
@@ -598,7 +598,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
               onClick={() => setFailedPosts([])}
               size="1"
               variant="ghost"
-              radius="medium"
+             
               className="mt-2"
             >
               Dismiss
@@ -645,7 +645,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
               disabled={posting || schedulingLoading}
               size="2"
               variant="ghost"
-              radius="medium"
+             
             >
               <Image className="w-4 h-4" />
               Attach Image/Video
@@ -685,7 +685,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                 disabled={posting || schedulingLoading}
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
                 title="Remove media"
                 aria-label="Remove media"
                 className="flex-shrink-0"
@@ -719,7 +719,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
             disabled={posting}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             style={{ width: '100%', justifyContent: 'center' }}
           >
             <Plus className="w-4 h-4" />
@@ -806,7 +806,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
               onClick={() => { setShowConfirm(false); handlePost(); }}
               size="2"
               variant="solid"
-              radius="medium"
+             
             >
               Confirm
             </Button>
@@ -814,7 +814,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
               onClick={() => setShowConfirm(false)}
               size="2"
               variant="ghost"
-              radius="medium"
+             
             >
               Cancel
             </Button>
@@ -860,7 +860,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                 onClick={() => setResult(null)}
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
                 title="Dismiss"
                 aria-label="Dismiss"
                 className="flex-shrink-0"
@@ -909,7 +909,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                       onClick={() => editScheduledPost(post)}
                       size="1"
                       variant="ghost"
-                      radius="medium"
+                     
                       className="flex-shrink-0"
                     >
                       Edit
@@ -919,7 +919,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                       size="1"
                       variant="ghost"
                       color="red"
-                      radius="medium"
+                     
                       title="Cancel scheduled post"
                       aria-label="Cancel scheduled post"
                       className="flex-shrink-0"
@@ -965,7 +965,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
             disabled={posting || !tweets.some(t => t.trim())}
             size="3"
             variant="ghost"
-            radius="medium"
+           
             title="Save as idea — capture rough draft without polishing"
           >
             <Lightbulb className="w-5 h-5" />
@@ -984,7 +984,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
             disabled={isScheduleDisabled}
             size="3"
             variant={scheduling ? 'soft' : 'ghost'}
-            radius="medium"
+           
             title="Schedule for later"
           >
             <Calendar className="w-5 h-5" />
@@ -992,6 +992,6 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
           </Button>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Target, Zap } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import XResearchView from './XResearchView';
 import XCompetitorTracker from './XCompetitorTracker';
 
@@ -31,7 +31,7 @@ export default function XIntelligenceView() {
   const [activeSubTab, setActiveSubTab] = useState<IntelSubTab>('search');
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Sub-tab bar + AI actions */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center gap-1">
@@ -69,6 +69,6 @@ export default function XIntelligenceView() {
         {activeSubTab === 'search' && <XResearchView />}
         {activeSubTab === 'competitors' && <XCompetitorTracker />}
       </div>
-    </div>
+    </Flex>
   );
 }

@@ -18,7 +18,7 @@ import {
   Square,
   Eye,
 } from 'lucide-react';
-import { Button, IconButton, Spinner, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, TextArea, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -227,7 +227,7 @@ function DraftCard({
               size="1"
               variant="ghost"
               color={selected ? 'indigo' : 'gray'}
-              radius="medium"
+             
               aria-label={selected ? 'Deselect draft' : 'Select draft'}
             >
               {selected ? (
@@ -250,7 +250,7 @@ function DraftCard({
             size="1"
             variant={showPreview ? 'soft' : 'ghost'}
             color={showPreview ? 'indigo' : 'gray'}
-            radius="medium"
+           
             title="Toggle preview"
           >
             <Eye size={13} />
@@ -540,7 +540,7 @@ export function XAgentContentQueue() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg overflow-y-auto">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg overflow-y-auto">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-2 mb-1">
@@ -576,7 +576,7 @@ export function XAgentContentQueue() {
             size="2"
             variant="ghost"
             color={settings.enabled ? 'indigo' : 'gray'}
-            radius="medium"
+           
             aria-label={settings.enabled ? 'Disable agent mode' : 'Enable agent mode'}
           >
             {settings.enabled ? (
@@ -645,7 +645,7 @@ export function XAgentContentQueue() {
             size="2"
             variant="ghost"
             color={settings.autoApprove ? 'yellow' : 'gray'}
-            radius="medium"
+           
             aria-label={settings.autoApprove ? 'Disable auto-approve' : 'Enable auto-approve'}
           >
             {settings.autoApprove ? (
@@ -772,7 +772,7 @@ export function XAgentContentQueue() {
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }
 
