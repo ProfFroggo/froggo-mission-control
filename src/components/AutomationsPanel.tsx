@@ -6,6 +6,7 @@ import {
   RefreshCw, FileText, MessageSquare, Archive, Layers, List, History,
   Users, BarChart2,
 } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import AutomationBuilderModal from './AutomationBuilderModal';
 import AutomationStepBuilder, { type AutomationStepDef } from './AutomationStepBuilder';
 import AutomationRunLog from './AutomationRunLog';
@@ -263,12 +264,13 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
         <button
           onClick={() => onToggle(automation.id, automation.status)}
           title={isActive ? 'Pause automation' : 'Activate automation'}
+          aria-label={isActive ? 'Pause automation' : 'Activate automation'}
           style={{
             flexShrink: 0,
             width: 36,
             height: 20,
             borderRadius: 10,
-            background: isActive ? 'var(--mission-control-accent)' : 'var(--mission-control-border)',
+            background: isActive ? 'var(--accent-9)' : 'var(--gray-6)',
             border: 'none',
             cursor: 'pointer',
             position: 'relative',
@@ -304,62 +306,31 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
       </div>
 
       {/* Action row */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button
-          onClick={() => onRunNow(automation.id)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
-            background: 'var(--mission-control-accent)', color: 'white', border: 'none', cursor: 'pointer',
-          }}
-        >
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Button size="1" variant="solid" onClick={() => onRunNow(automation.id)}>
           <Play size={12} /> Run now
-        </button>
-        <button
-          onClick={() => onEdit(automation)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
-            background: 'transparent', color: 'var(--mission-control-text-dim)',
-            border: '1px solid var(--mission-control-border)', cursor: 'pointer',
-          }}
-        >
+        </Button>
+        <Button size="1" variant="ghost" onClick={() => onEdit(automation)}>
           <Edit2 size={12} /> Edit
-        </button>
-        <button
-          onClick={() => onOpenStepBuilder(automation)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
-            background: 'transparent', color: 'var(--mission-control-text-dim)',
-            border: '1px solid var(--mission-control-border)', cursor: 'pointer',
-          }}
-        >
+        </Button>
+        <Button size="1" variant="ghost" onClick={() => onOpenStepBuilder(automation)}>
           <List size={12} /> Steps
-        </button>
-        <button
-          onClick={() => onOpenRunLog(automation)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
-            background: 'transparent', color: 'var(--mission-control-text-dim)',
-            border: '1px solid var(--mission-control-border)', cursor: 'pointer',
-          }}
-        >
+        </Button>
+        <Button size="1" variant="ghost" onClick={() => onOpenRunLog(automation)}>
           <History size={12} /> History
-        </button>
-        <button
+        </Button>
+        <IconButton
+          size="1"
+          variant="ghost"
+          color="red"
+          radius="medium"
           onClick={() => onDelete(automation.id)}
-          style={{
-            marginLeft: 'auto',
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
-            background: 'transparent', color: 'var(--mission-control-text-dim)',
-            border: '1px solid var(--mission-control-border)', cursor: 'pointer',
-          }}
+          title="Delete automation"
+          aria-label="Delete automation"
+          style={{ marginLeft: 'auto' }}
         >
           <Trash2 size={12} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );
@@ -428,20 +399,15 @@ function TemplateCard({ template, onUse }: TemplateCardProps) {
       </div>
 
       {/* CTA */}
-      <button
+      <Button
         onClick={() => onUse(template)}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-          background: 'var(--mission-control-border)',
-          color: 'var(--mission-control-text)',
-          border: 'none', cursor: 'pointer', transition: 'background 0.15s',
-        }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--mission-control-accent)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--mission-control-border)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--mission-control-text)'; }}
+        size="2"
+        variant="soft"
+        radius="medium"
+        style={{ width: '100%', justifyContent: 'center' }}
       >
         Use template <ChevronRight size={14} />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -475,27 +441,12 @@ function EmptyState({ onNew, onBrowseTemplates }: { onNew: () => void; onBrowseT
         </p>
       </div>
       <div style={{ display: 'flex', gap: 10 }}>
-        <button
-          onClick={onNew}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-            background: 'var(--mission-control-accent)', color: 'white', border: 'none', cursor: 'pointer',
-          }}
-        >
+        <Button onClick={onNew} size="2" variant="solid" radius="medium">
           <Plus size={16} /> New Automation
-        </button>
-        <button
-          onClick={onBrowseTemplates}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-            background: 'var(--mission-control-border)', color: 'var(--mission-control-text)',
-            border: 'none', cursor: 'pointer',
-          }}
-        >
+        </Button>
+        <Button onClick={onBrowseTemplates} size="2" variant="soft" radius="medium">
           Browse templates
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -671,28 +622,12 @@ export default function AutomationsPanel() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => setTemplatesGalleryOpen(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 18px', borderRadius: 10, fontSize: 13, fontWeight: 600,
-              background: 'var(--mission-control-surface)', color: 'var(--mission-control-text)',
-              border: '1px solid var(--mission-control-border)', cursor: 'pointer',
-            }}
-          >
+          <Button onClick={() => setTemplatesGalleryOpen(true)} size="2" variant="soft" radius="medium">
             <Layers size={16} /> From Template
-          </button>
-          <button
-            onClick={handleNewAutomation}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 18px', borderRadius: 10, fontSize: 13, fontWeight: 600,
-              background: 'var(--mission-control-accent)', color: 'white', border: 'none',
-              cursor: 'pointer', boxShadow: '0 2px 8px color-mix(in srgb, var(--mission-control-accent) 40%, transparent)',
-            }}
-          >
+          </Button>
+          <Button onClick={handleNewAutomation} size="2" variant="solid" radius="medium">
             <Plus size={16} /> New Automation
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -709,9 +644,9 @@ export default function AutomationsPanel() {
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
-              background: activeTab === tab ? 'var(--mission-control-surface)' : 'transparent',
-              color: activeTab === tab ? 'var(--mission-control-text)' : 'var(--mission-control-text-dim)',
-              borderBottom: activeTab === tab ? '2px solid var(--mission-control-accent)' : '2px solid transparent',
+              background: activeTab === tab ? 'var(--color-surface)' : 'transparent',
+              color: activeTab === tab ? 'var(--gray-12)' : 'var(--gray-9)',
+              borderBottom: activeTab === tab ? '2px solid var(--accent-9)' : '2px solid transparent',
               transition: 'all 0.15s',
             }}
           >
@@ -726,38 +661,25 @@ export default function AutomationsPanel() {
           {/* Search + filter bar */}
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: 1, maxWidth: 380 }}>
-              <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--mission-control-text-dim)' }} />
-              <input
-                type="text"
+              <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-9)', pointerEvents: 'none', zIndex: 1 }} />
+              <TextField.Root
                 placeholder="Search automations..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 10px 8px 32px',
-                  borderRadius: 8,
-                  border: '1px solid var(--mission-control-border)',
-                  background: 'var(--mission-control-surface)',
-                  color: 'var(--mission-control-text)',
-                  fontSize: 13,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                size="2"
+                style={{ paddingLeft: 32 }}
               />
             </div>
-            <button
+            <IconButton
               onClick={fetchAutomations}
               title="Refresh"
-              style={{
-                padding: '8px', borderRadius: 8,
-                border: '1px solid var(--mission-control-border)',
-                background: 'var(--mission-control-surface)',
-                color: 'var(--mission-control-text-dim)',
-                cursor: 'pointer', display: 'flex', alignItems: 'center',
-              }}
+              aria-label="Refresh automations"
+              size="2"
+              variant="ghost"
+              radius="medium"
             >
               <RefreshCw size={14} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Automation list or empty state */}

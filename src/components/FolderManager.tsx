@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Folder, Plus, Edit2, Trash2, X, Check, FolderOpen, Tag, Zap, Star, Briefcase, User, Package, Flame, Lightbulb, Target, Pin, Bookmark, BookOpen, type LucideIcon } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import SmartFolderRuleEditor from './SmartFolderRuleEditor';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -182,20 +183,25 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
           <h2 className="text-lg font-semibold">Folder Management</h2>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors text-sm"
+            size="2"
+            variant="solid"
+            radius="medium"
           >
             <Plus size={14} />
             New Folder
-          </button>
+          </Button>
           {onClose && (
-            <button
+            <IconButton
               onClick={onClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
+              aria-label="Close"
             >
               <X size={16} />
-            </button>
+            </IconButton>
           )}
         </div>
       </div>
@@ -231,25 +237,22 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
               <div className="flex-1 space-y-2">
                 <div>
                   <label htmlFor="folder-name" className="block text-xs font-medium mb-1 text-mission-control-text-dim">Name</label>
-                  <input
+                  <TextField.Root
                     id="folder-name"
-                    type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Client Work"
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
-                    /* autoFocus removed for accessibility */
+                    size="2"
                   />
                 </div>
                 <div>
                   <label htmlFor="folder-description" className="block text-xs font-medium mb-1 text-mission-control-text-dim">Description (optional)</label>
-                  <input
+                  <TextField.Root
                     id="folder-description"
-                    type="text"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="e.g., Work-related discussions"
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+                    size="2"
                   />
                 </div>
               </div>
@@ -275,19 +278,13 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
 
             {/* Actions */}
             <div className="flex justify-end gap-2">
-              <button
-                onClick={cancelCreate}
-                className="px-3 py-1.5 text-sm bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
-              >
+              <Button onClick={cancelCreate} size="2" variant="ghost" radius="medium">
                 Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors"
-              >
+              </Button>
+              <Button onClick={handleCreate} size="2" variant="solid" radius="medium">
                 <Check size={14} />
                 Create
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -338,18 +335,16 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                       </div>
 
                       <div className="flex-1 space-y-2">
-                        <input
-                          type="text"
+                        <TextField.Root
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+                          size="2"
                         />
-                        <input
-                          type="text"
+                        <TextField.Root
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                           placeholder="Description (optional)"
-                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+                          size="2"
                         />
                       </div>
 
@@ -370,19 +365,13 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                     </div>
 
                     <div className="flex justify-end gap-2">
-                      <button
-                        onClick={cancelEdit}
-                        className="px-3 py-1.5 text-sm bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
-                      >
+                      <Button onClick={cancelEdit} size="2" variant="ghost" radius="medium">
                         Cancel
-                      </button>
-                      <button
-                        onClick={() => handleUpdate(folder.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors"
-                      >
+                      </Button>
+                      <Button onClick={() => handleUpdate(folder.id)} size="2" variant="solid" radius="medium">
                         <Check size={14} />
                         Save
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
@@ -412,35 +401,48 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {onSelect && (
-                        <button
+                        <IconButton
                           onClick={() => onSelect(folder.id)}
-                          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+                          size="2"
+                          variant="ghost"
+                          radius="medium"
                           title="View conversations"
+                          aria-label="View conversations"
                         >
                           <Tag size={14} />
-                        </button>
+                        </IconButton>
                       )}
-                      <button
+                      <IconButton
                         onClick={() => setEditingRuleId(folder.id)}
-                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+                        size="2"
+                        variant={folder.is_smart === 1 ? 'soft' : 'ghost'}
+                        radius="medium"
                         title="Smart folder rules"
+                        aria-label="Smart folder rules"
                       >
-                        <Zap size={14} className={folder.is_smart === 1 ? 'text-mission-control-accent' : ''} />
-                      </button>
-                      <button
+                        <Zap size={14} />
+                      </IconButton>
+                      <IconButton
                         onClick={() => startEdit(folder)}
-                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+                        size="2"
+                        variant="ghost"
+                        radius="medium"
                         title="Edit folder"
+                        aria-label="Edit folder"
                       >
                         <Edit2 size={14} />
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
                         onClick={() => handleDelete(folder.id, folder.name)}
-                        className="p-2 hover:bg-error-subtle text-error rounded-lg transition-colors"
+                        size="2"
+                        variant="ghost"
+                        color="red"
+                        radius="medium"
                         title="Delete folder"
+                        aria-label="Delete folder"
                       >
                         <Trash2 size={14} />
-                      </button>
+                      </IconButton>
                     </div>
                   </div>
                 )}

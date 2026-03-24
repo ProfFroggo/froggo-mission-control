@@ -11,7 +11,7 @@ import KnowledgeGraphPanel from './KnowledgeGraphPanel';
 import BrandAssetsPanel from './BrandAssetsPanel';
 import MarkdownMessage from './MarkdownMessage';
 // eslint-disable-next-line import/order
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Select, TextArea, Checkbox } from '@radix-ui/themes';
 
 const SCOPE_OPTIONS = [
   { value: 'all', label: 'Public' },
@@ -1016,54 +1016,58 @@ export default function KnowledgeBase() {
           </Button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          <input
+          <TextField.Root
             value={editing.title || ''}
             onChange={e => setEditing(v => ({ ...v, title: e.target.value }))}
             placeholder="Article title..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
+            size="2"
           />
           <div className="flex gap-2">
-            <select
+            <Select.Root
               value={editing.category || 'reference'}
-              onChange={e => setEditing(v => ({ ...v, category: e.target.value }))}
-              className="flex-1 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent"
+              onValueChange={v => setEditing(prev => ({ ...prev, category: v }))}
+              size="2"
             >
-              {allCategories.map(c => (
-                <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-              ))}
-            </select>
-            <select
+              <Select.Trigger style={{ flex: 1 }} />
+              <Select.Content>
+                {allCategories.map(c => (
+                  <Select.Item key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
+            <Select.Root
               value={editing.scope || 'all'}
-              onChange={e => setEditing(v => ({ ...v, scope: e.target.value }))}
-              className="flex-1 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent"
+              onValueChange={v => setEditing(prev => ({ ...prev, scope: v }))}
+              size="2"
             >
-              {SCOPE_OPTIONS.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
+              <Select.Trigger style={{ flex: 1 }} />
+              <Select.Content>
+                {SCOPE_OPTIONS.map(s => (
+                  <Select.Item key={s.value} value={s.value}>{s.label}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
             <label className="flex items-center gap-2 px-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text cursor-pointer select-none">
               <Pin size={13} className={editing.pinned ? 'text-warning' : 'text-mission-control-text-dim'} />
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={!!editing.pinned}
-                onChange={e => setEditing(v => ({ ...v, pinned: e.target.checked }))}
-                className="sr-only"
+                onCheckedChange={v => setEditing(prev => ({ ...prev, pinned: !!v }))}
               />
               Always inject
             </label>
           </div>
-          <input
+          <TextField.Root
             value={typeof editing.tags === 'string' ? editing.tags : (editing.tags || []).join(', ')}
             onChange={e => setEditing(v => ({ ...v, tags: e.target.value }))}
             placeholder="Tags: brand, design, tone (comma-separated)..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
+            size="2"
           />
-          <textarea
+          <TextArea
             value={editing.content || ''}
             onChange={e => setEditing(v => ({ ...v, content: e.target.value }))}
             placeholder="Write your guidelines in Markdown..."
             rows={18}
-            className="w-full px-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-mono focus:outline-none focus:border-info resize-none"
+            style={{ fontFamily: 'monospace', resize: 'none' }}
           />
           <p className="text-xs text-mission-control-text-dim">
             Markdown supported. Pinned articles are always injected into agent context. Use [[Article Title]] to link to other articles.
@@ -1209,15 +1213,17 @@ export default function KnowledgeBase() {
                 Graph
               </Button>
               <div className="relative" ref={templateDropdownRef}>
-                <button
+                <Button
+                  variant="outline"
+                  color="gray"
+                  size="1"
                   onClick={() => setShowTemplateDropdown(v => !v)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-xs transition-colors"
                   title="New from template"
                 >
                   <FileText size={12} />
                   Template
                   <ChevronDown size={10} />
-                </button>
+                </Button>
                 {showTemplateDropdown && (
                   <div className="absolute right-0 top-full mt-1 w-48 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-xl z-20 overflow-hidden">
                     {apiTemplates.length === 0 ? (
@@ -1227,7 +1233,7 @@ export default function KnowledgeBase() {
                         <button
                           key={t.id}
                           onClick={() => createFromTemplate(t.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs text-mission-control-text hover:bg-mission-control-border transition-colors"
+                          className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs text-mission-control-text hover:bg-mission-control-border transition-colors bg-transparent border-0 cursor-pointer"
                         >
                           <FileText size={11} className="text-mission-control-text-dim shrink-0" />
                           {t.label}
@@ -1248,8 +1254,7 @@ export default function KnowledgeBase() {
           </div>
 
           <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
+            <TextField.Root
               ref={searchInputRef}
               aria-label="Search knowledge base"
               value={search}
@@ -1258,38 +1263,42 @@ export default function KnowledgeBase() {
               onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
               onKeyDown={handleSearchKeyDown}
               placeholder="Search guidelines, brand voice, context..."
-              className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
-            />
-            {search && (
-              <IconButton
-                onClick={() => { setSearch(''); setSearchCursor(-1); }}
-                variant="ghost"
-                color="gray"
-                size="1"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2"
-                aria-label="Clear search"
-              >
-                <X size={12} />
-              </IconButton>
-            )}
+              size="2"
+            >
+              <TextField.Slot>
+                <Search size={13} />
+              </TextField.Slot>
+              {search && (
+                <TextField.Slot side="right">
+                  <IconButton
+                    onClick={() => { setSearch(''); setSearchCursor(-1); }}
+                    variant="ghost"
+                    color="gray"
+                    size="1"
+                    aria-label="Clear search"
+                  >
+                    <X size={12} />
+                  </IconButton>
+                </TextField.Slot>
+              )}
+            </TextField.Root>
           </div>
 
           {/* Filter pills */}
           <div className="flex gap-1 flex-wrap">
-            <button
+            <Button
+              size="1"
+              variant={showStarred ? 'soft' : 'ghost'}
+              color={showStarred ? 'amber' : 'gray'}
+              radius="full"
               onClick={() => setShowStarred(v => !v)}
-              className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-full text-xs transition-colors ${
-                showStarred
-                  ? 'bg-warning text-warning'
-                  : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
             >
               <Star size={10} fill={showStarred ? 'currentColor' : 'none'} />
               Starred
               {starred.size > 0 && (
                 <span className="ml-0.5 opacity-70">{starred.size}</span>
               )}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -1448,7 +1457,7 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
       {/* Add category */}
       {adding ? (
         <div className="px-1 pt-1">
-          <input
+          <TextField.Root
             ref={inputRef}
             value={newCat}
             onChange={e => setNewCat(e.target.value)}
@@ -1464,16 +1473,19 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
             }}
             onBlur={() => { if (!newCat.trim()) setAdding(false); }}
             placeholder="category name"
-            className="w-full px-2 py-1 rounded bg-mission-control-surface border border-mission-control-border text-xs focus:outline-none focus:border-mission-control-accent"
+            size="1"
           />
         </div>
       ) : (
-        <button
+        <Button
+          variant="ghost"
+          color="gray"
+          size="1"
           onClick={() => setAdding(true)}
-          className="w-full text-left px-2.5 py-1.5 rounded text-xs text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-surface transition-colors flex items-center gap-1"
+          style={{ width: '100%', justifyContent: 'flex-start' }}
         >
           <Plus size={11} /> Add Category
-        </button>
+        </Button>
       )}
 
       {/* Brand Assets section — separator */}
@@ -1531,43 +1543,58 @@ function ArticleCard({
           </span>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          <button
+          <IconButton
+            size="1"
+            variant="ghost"
+            color={isStarred ? 'amber' : 'gray'}
+            radius="medium"
             onClick={e => { e.stopPropagation(); onToggleStar(); }}
-            className={`p-1 rounded hover:bg-mission-control-border transition-colors ${isStarred ? 'text-warning' : 'text-mission-control-text-dim hover:text-warning'}`}
             aria-label={isStarred ? 'Unstar article' : 'Star article'}
           >
             <Star size={12} fill={isStarred ? 'currentColor' : 'none'} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            size="1"
+            variant="ghost"
+            color="gray"
+            radius="medium"
             onClick={e => { e.stopPropagation(); onVersionHistory(); }}
-            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text"
             aria-label="Version history"
             title="Version history"
           >
             <History size={12} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            size="1"
+            variant="ghost"
+            color="gray"
+            radius="medium"
             onClick={e => { e.stopPropagation(); onTogglePin(); }}
-            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-warning"
             aria-label={article.pinned ? 'Unpin article' : 'Pin article'}
             title={article.pinned ? 'Unpin' : 'Pin — always inject into agent context'}
           >
             <Pin size={12} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            size="1"
+            variant="ghost"
+            color="gray"
+            radius="medium"
             onClick={e => { e.stopPropagation(); onEdit(); }}
-            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
             aria-label="Edit article"
           >
             <Edit2 size={12} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            size="1"
+            variant="ghost"
+            color="red"
+            radius="medium"
             onClick={e => { e.stopPropagation(); onDelete(); }}
-            className="p-1 rounded hover:bg-mission-control-border text-error"
             aria-label="Delete article"
           >
             <Trash2 size={12} />
-          </button>
+          </IconButton>
         </div>
       </div>
       <p className="text-xs text-mission-control-text-dim line-clamp-2 mb-2">
@@ -1659,57 +1686,67 @@ function QuickCreateModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          <input
+          <TextField.Root
             autoFocus
             value={title}
             onChange={e => onChangeTitle(e.target.value)}
             placeholder="Article title (required)..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
+            size="2"
           />
 
           <div className="flex gap-2">
             <div className="flex-1">
-              <select
+              <Select.Root
                 value={category}
-                onChange={e => onChangeCategory(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent"
+                onValueChange={onChangeCategory}
+                size="2"
               >
-                {categories.map(c => (
-                  <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-                ))}
-                <option value="__custom__">New category...</option>
-              </select>
+                <Select.Trigger style={{ width: '100%' }} />
+                <Select.Content>
+                  {categories.map(c => (
+                    <Select.Item key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</Select.Item>
+                  ))}
+                  <Select.Item value="__custom__">New category...</Select.Item>
+                </Select.Content>
+              </Select.Root>
               {category === '__custom__' && (
-                <input
+                <TextField.Root
                   value={categoryCustom}
                   onChange={e => onChangeCategoryCustom(e.target.value)}
                   placeholder="Category name..."
-                  className="mt-1.5 w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
+                  size="2"
+                  style={{ marginTop: '0.375rem' }}
                 />
               )}
             </div>
 
-            <select
+            <Select.Root
               value={scope}
-              onChange={e => onChangeScope(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent"
+              onValueChange={onChangeScope}
+              size="2"
             >
-              {SCOPE_OPTIONS.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
+              <Select.Trigger />
+              <Select.Content>
+                {SCOPE_OPTIONS.map(s => (
+                  <Select.Item key={s.value} value={s.value}>{s.label}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
           </div>
 
           {/* Template / AI generation row */}
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <button
+              <Button
+                variant="outline"
+                color="gray"
+                size="1"
                 onClick={() => setShowTemplates(v => !v)}
-                className="w-full flex items-center gap-1.5 px-3 py-2 rounded bg-mission-control-border/30 border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-xs transition-colors"
+                style={{ width: '100%' }}
               >
                 <FileText size={12} />
                 Use template
-              </button>
+              </Button>
               {showTemplates && (
                 <div className="absolute top-full left-0 right-0 mt-1 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-xl z-10 overflow-hidden">
                   {ARTICLE_TEMPLATES.map(tmpl => {
@@ -1718,7 +1755,7 @@ function QuickCreateModal({
                       <button
                         key={tmpl.id}
                         onClick={() => applyTemplate(tmpl)}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs text-mission-control-text hover:bg-mission-control-border transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs text-mission-control-text hover:bg-mission-control-border transition-colors bg-transparent border-0 cursor-pointer"
                       >
                         <Icon size={12} className="text-mission-control-text-dim shrink-0" />
                         {tmpl.label}
@@ -1728,23 +1765,25 @@ function QuickCreateModal({
                 </div>
               )}
             </div>
-            <button
+            <Button
+              variant="outline"
+              color="gray"
+              size="1"
               onClick={onGenerate}
               disabled={!title.trim() || generating}
               title={title.trim() ? `Generate content for "${title}"` : 'Enter a title first'}
-              className="flex items-center gap-1.5 px-3 py-2 rounded bg-mission-control-border/30 border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-40 disabled:cursor-not-allowed text-xs transition-colors"
             >
               <Wand2 size={12} />
               {generating ? 'Generating...' : 'Generate with AI'}
-            </button>
+            </Button>
           </div>
 
-          <textarea
+          <TextArea
             value={content}
             onChange={e => onChangeContent(e.target.value)}
             placeholder="Article content (required)..."
             rows={10}
-            className="w-full px-3 py-2 rounded bg-mission-control-border/30 border border-mission-control-border text-mission-control-text text-sm font-mono focus:outline-none focus:border-info resize-none"
+            style={{ fontFamily: 'monospace', resize: 'none' }}
           />
         </div>
 
@@ -1809,12 +1848,14 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
             <span className="text-xs text-mission-control-text-dim">
               Preview — {new Date(previewVersion.editedAt).toLocaleString()}
             </span>
-            <button
+            <Button
+              size="1"
+              variant="ghost"
+              color="gray"
               onClick={() => onPreview(null)}
-              className="text-xs text-mission-control-text-dim hover:text-mission-control-text"
             >
               Close preview
-            </button>
+            </Button>
           </div>
           <div className="max-h-48 overflow-y-auto rounded bg-mission-control-surface border border-mission-control-border p-2 text-xs font-mono text-mission-control-text whitespace-pre-wrap">
             {displayContent.slice(0, 600)}{displayContent.length > 600 ? '...' : ''}
@@ -1849,10 +1890,10 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
               <button
                 key={v.id}
                 onClick={() => onPreview(previewVersion?.id === v.id ? null : v)}
-                className={`w-full text-left px-3 py-2.5 rounded transition-colors ${
+                className={`w-full text-left px-3 py-2.5 rounded transition-colors bg-transparent border cursor-pointer ${
                   previewVersion?.id === v.id
-                    ? 'bg-info/20 border border-info/40'
-                    : 'hover:bg-mission-control-border border border-transparent'
+                    ? 'bg-info/20 border-info/40'
+                    : 'border-transparent hover:bg-mission-control-border'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">

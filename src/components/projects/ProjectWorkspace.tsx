@@ -9,6 +9,7 @@ import {
   ChevronDown, ShieldAlert, ShieldCheck, Check, Flag,
   Activity, Calendar, BookOpen
 } from 'lucide-react';
+import { Button, IconButton, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
 import { getProjectIcon } from './projectIcons';
 import { projectsApi, agentApi } from '../../lib/api';
 import type { Project, ProjectMember, ProjectFile, ProjectMilestone } from '../../types/projects';
@@ -78,7 +79,7 @@ function ProgressRing({
         cy={size / 2}
         r={r}
         fill="none"
-        stroke="var(--color-border, #2d2d3a)"
+        stroke="var(--color-border, var(--gray-4))"
         strokeWidth={stroke}
       />
       <circle
@@ -184,12 +185,14 @@ function OverviewTab({
           <p className="text-sm text-mission-control-text leading-relaxed">
             {project.goal || <span className="text-mission-control-text-dim italic">No goal set — add one in settings.</span>}
           </p>
-          <button
+          <Button
             onClick={onDispatch}
-            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors"
+            size="1"
+            variant="soft"
+            style={{ marginTop: 'var(--space-3)' }}
           >
             <Bot size={12} /> Dispatch Agent
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -311,46 +314,49 @@ function MilestonesSection({ project }: { project: Project }) {
     <div>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Milestones</h3>
-        <button
+        <Button
           onClick={() => setAdding(v => !v)}
-          className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent/80 transition-colors"
+          size="1"
+          variant="ghost"
         >
           <Plus size={11} /> Add
-        </button>
+        </Button>
       </div>
 
       {adding && (
         <div className="mb-3 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-2">
-          <input
-            type="text"
+          <TextField.Root
             placeholder="Milestone title..."
             value={newTitle}
             onChange={e => setNewTitle(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
             autoFocus
-            className="w-full text-xs px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
+            size="1"
           />
-          <input
+          <TextField.Root
             type="date"
             value={newDue}
             onChange={e => setNewDue(e.target.value)}
-            className="w-full text-xs px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent/50"
+            size="1"
           />
-          <div className="flex gap-2">
-            <button
+          <Flex gap="2">
+            <Button
               onClick={handleAdd}
               disabled={saving || !newTitle.trim()}
-              className="flex-1 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors"
+              size="1"
+              variant="soft"
+              style={{ flex: 1 }}
             >
               {saving ? 'Saving...' : 'Add'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => { setAdding(false); setNewTitle(''); setNewDue(''); }}
-              className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors"
+              size="1"
+              variant="ghost"
             >
               Cancel
-            </button>
-          </div>
+            </Button>
+          </Flex>
         </div>
       )}
 
@@ -371,8 +377,8 @@ function MilestonesSection({ project }: { project: Project }) {
                   onClick={() => handleToggle(ms)}
                   className="relative z-10 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all"
                   style={{
-                    borderColor: ms.completed ? project.color : 'var(--color-border, #2d2d3a)',
-                    backgroundColor: ms.completed ? project.color : 'var(--color-bg, #0e0e16)',
+                    borderColor: ms.completed ? project.color : 'var(--color-border, var(--gray-4))',
+                    backgroundColor: ms.completed ? project.color : 'var(--color-bg, var(--color-background))',
                     marginLeft: -8,
                   }}
                   title={ms.completed ? 'Mark incomplete' : 'Mark complete'}
@@ -396,15 +402,16 @@ function MilestonesSection({ project }: { project: Project }) {
                     </p>
                   )}
                 </div>
-                <button
+                <IconButton
                   onClick={() => handleDelete(ms)}
-                  className="text-mission-control-text-dim hover:text-error transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  size="1"
+                  variant="ghost"
+                  radius="medium"
                   title="Delete milestone"
-                  tabIndex={0}
                   style={{ opacity: 0.5 }}
                 >
                   <X size={10} />
-                </button>
+                </IconButton>
               </div>
             );
           })}
@@ -478,13 +485,14 @@ function ContextEditor({ project }: { project: Project }) {
       {loading ? (
         <div className="flex items-center justify-center py-6"><Spinner size={14} /></div>
       ) : (
-        <textarea
+        <TextArea
           value={content}
           onChange={e => handleChange(e.target.value)}
           onBlur={handleBlur}
           rows={10}
-          placeholder="# Project Context\n\nDescribe the project context, constraints, and background here..."
-          className="w-full text-xs px-3 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 resize-y font-mono leading-relaxed"
+          placeholder="# Project Context&#10;&#10;Describe the project context, constraints, and background here..."
+          size="1"
+          style={{ fontFamily: 'monospace', lineHeight: '1.6', resize: 'vertical' }}
         />
       )}
     </div>
@@ -620,53 +628,56 @@ function AutomationsTab({ project }: { project: Project }) {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
         <span className="text-xs text-mission-control-text-dim">{items.length} automation{items.length !== 1 ? 's' : ''}</span>
-        <button
+        <Button
           onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1 px-2.5 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors"
+          size="1"
+          variant="soft"
         >
           <Plus size={12} /> Add Automation
-        </button>
+        </Button>
       </div>
       {showForm && (
         <div className="max-w-2xl mx-auto w-full px-4 py-3 bg-mission-control-surface/50 border-b border-mission-control-border space-y-2">
-          <select
-            value={newType}
-            onChange={e => setNewType(e.target.value)}
-            className="w-full text-xs px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none"
-          >
-            <option value="task">Task reminder</option>
-            <option value="report">Report generation</option>
-            <option value="review">Agent review</option>
-            <option value="alert">Alert</option>
-          </select>
-          <input
+          <Select.Root value={newType} onValueChange={setNewType} size="1">
+            <Select.Trigger style={{ width: '100%' }} />
+            <Select.Content>
+              <Select.Item value="task">Task reminder</Select.Item>
+              <Select.Item value="report">Report generation</Select.Item>
+              <Select.Item value="review">Agent review</Select.Item>
+              <Select.Item value="alert">Alert</Select.Item>
+            </Select.Content>
+          </Select.Root>
+          <TextField.Root
             type="text"
             placeholder="Automation description..."
             value={newContent}
             onChange={e => setNewContent(e.target.value)}
-            className="w-full text-xs px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none"
+            size="1"
           />
-          <input
+          <TextField.Root
             type="datetime-local"
             value={newSchedule}
             onChange={e => setNewSchedule(e.target.value)}
-            className="w-full text-xs px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none"
+            size="1"
           />
-          <div className="flex gap-2">
-            <button
+          <Flex gap="2">
+            <Button
               onClick={handleAdd}
               disabled={saving || !newContent.trim()}
-              className="flex-1 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors"
+              size="1"
+              variant="soft"
+              style={{ flex: 1 }}
             >
               {saving ? 'Saving...' : 'Save'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setShowForm(false)}
-              className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors"
+              size="1"
+              variant="ghost"
             >
               Cancel
-            </button>
-          </div>
+            </Button>
+          </Flex>
         </div>
       )}
       <div className="flex-1 overflow-y-auto">
@@ -800,31 +811,38 @@ function ApprovalsTab({ project }: { project: Project }) {
                 {a.context}
               </div>
             )}
-            <textarea
+            <TextArea
               value={feedback[a.id] || ''}
               onChange={e => setFeedback(prev => ({ ...prev, [a.id]: e.target.value }))}
               placeholder="Optional feedback or notes..."
               rows={2}
-              className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
+              size="2"
+              style={{ resize: 'none' }}
             />
-            <div className="flex gap-2">
-              <button
+            <Flex gap="2">
+              <Button
                 onClick={() => respond(a.id, 'approved')}
                 disabled={isBusy}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-success text-white text-xs font-semibold hover:brightness-110 disabled:opacity-50 transition-all"
+                size="2"
+                variant="soft"
+                color="green"
+                style={{ flex: 1 }}
               >
                 {isBusy ? <Spinner size={12} /> : <Check size={12} />}
                 {hasNote ? 'Approve with Feedback' : 'Approve & Continue'}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => respond(a.id, 'rejected')}
                 disabled={isBusy}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-error-border bg-error-subtle text-error text-xs font-semibold hover:bg-error/20 disabled:opacity-50 transition-all"
+                size="2"
+                variant="soft"
+                color="red"
+                style={{ flex: 1 }}
               >
                 {isBusy ? <Spinner size={12} /> : <X size={12} />}
                 {hasNote ? 'Reject with Reason' : 'Reject'}
-              </button>
-            </div>
+              </Button>
+            </Flex>
           </div>
         );
       })}
@@ -979,12 +997,14 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
               <p className="text-sm font-medium text-mission-control-text truncate">{selectedFile.name}</p>
               <p className="text-xs text-mission-control-text-dim">{formatBytes(selectedFile.size)} · {selectedFile.type}</p>
             </div>
-            <button
+            <IconButton
               onClick={() => setSelectedFile(null)}
-              className="p-1.5 hover:bg-mission-control-surface rounded-lg text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+              size="1"
+              variant="ghost"
+              radius="medium"
             >
               <X size={14} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Preview */}
@@ -1099,28 +1119,34 @@ function FilesTab({ project }: { project: Project }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-1 px-4 py-3 border-b border-mission-control-border">
-        <button
+        <Button
           onClick={() => setActiveSection('files')}
-          className={`px-3 py-1 text-xs rounded-full transition-colors ${activeSection === 'files' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
+          size="1"
+          variant={activeSection === 'files' ? 'soft' : 'ghost'}
+          radius="full"
         >
           Files ({files.length})
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => setActiveSection('memory')}
-          className={`px-3 py-1 text-xs rounded-full transition-colors ${activeSection === 'memory' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
+          size="1"
+          variant={activeSection === 'memory' ? 'soft' : 'ghost'}
+          radius="full"
         >
           Memory Search
-        </button>
+        </Button>
         {activeSection === 'files' && (
           <div className="ml-auto flex items-center gap-2">
-            <button
+            <IconButton
               onClick={load}
               disabled={loading}
-              className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors"
+              size="1"
+              variant="ghost"
+              radius="medium"
               title="Refresh files"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            </button>
+            </IconButton>
             <label className="flex items-center gap-1 px-2.5 py-1 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors cursor-pointer">
               <Upload size={12} /> {uploading ? 'Uploading...' : 'Upload'}
               <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
@@ -1136,21 +1162,23 @@ function FilesTab({ project }: { project: Project }) {
       {activeSection === 'memory' && (
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex gap-2 px-4 py-3 border-b border-mission-control-border">
-            <input
+            <TextField.Root
               type="text"
               placeholder="Search project memory..."
               value={memoryQuery}
               onChange={e => setMemoryQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleMemorySearch()}
-              className="flex-1 text-sm px-3 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
+              size="2"
+              style={{ flex: 1 }}
             />
-            <button
+            <Button
               onClick={handleMemorySearch}
               disabled={memoryLoading || !memoryQuery.trim()}
-              className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors"
+              size="2"
+              variant="soft"
             >
               {memoryLoading ? 'Searching...' : 'Search'}
-            </button>
+            </Button>
           </div>
           <div className="flex-1 overflow-y-auto">
             {memoryUnavailable ? (
@@ -1225,18 +1253,23 @@ function ProjectSettings({
   if (!editing) {
     return (
       <div className="absolute right-0 top-full mt-1 w-48 bg-mission-control-bg border border-mission-control-border rounded-lg shadow-xl z-20 py-1 overflow-hidden">
-        <button
+        <Button
           onClick={() => setEditing(true)}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-mission-control-text hover:bg-mission-control-surface transition-colors"
+          size="2"
+          variant="ghost"
+          style={{ width: '100%', justifyContent: 'flex-start' }}
         >
           <Edit3 size={14} /> Edit details
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleArchive}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-error hover:bg-error-subtle transition-colors"
+          size="2"
+          variant="ghost"
+          color="red"
+          style={{ width: '100%', justifyContent: 'flex-start' }}
         >
           <Trash2 size={14} /> Archive project
-        </button>
+        </Button>
       </div>
     );
   }
@@ -1245,35 +1278,39 @@ function ProjectSettings({
     <div className="absolute right-0 top-full mt-1 w-72 bg-mission-control-bg border border-mission-control-border rounded-lg shadow-xl z-20 p-4 space-y-3">
       <div>
         <label className="text-xs text-mission-control-text-dim mb-1 block">Name</label>
-        <input
+        <TextField.Root
           value={name}
           onChange={e => setName(e.target.value)}
-          className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent/50"
+          size="2"
         />
       </div>
       <div>
         <label className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1"><Target size={10} /> Goal</label>
-        <textarea
+        <TextArea
           value={goal}
           onChange={e => setGoal(e.target.value)}
           rows={3}
-          className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent/50 resize-none"
+          size="2"
+          style={{ resize: 'none' }}
         />
       </div>
       <div className="flex gap-2">
-        <button
+        <Button
           onClick={handleSave}
           disabled={saving}
-          className="flex-1 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors"
+          size="1"
+          variant="soft"
+          style={{ flex: 1 }}
         >
           {saving ? 'Saving...' : 'Save'}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => setEditing(false)}
-          className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors"
+          size="1"
+          variant="ghost"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -1410,12 +1447,14 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
         {/* Breadcrumb + members + actions */}
         <div className="flex items-center justify-between px-4 py-2.5">
           <div className="flex items-center gap-2 min-w-0">
-            <button
+            <Button
               onClick={onBack}
-              className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors flex-shrink-0"
+              size="1"
+              variant="ghost"
+              style={{ flexShrink: 0 }}
             >
               <ArrowLeft size={14} /> Projects
-            </button>
+            </Button>
             <span className="text-mission-control-text-dim flex-shrink-0">/</span>
             <span className="text-sm font-medium text-mission-control-text flex items-center gap-1.5 truncate">
               {(() => { const BcIcon = getProjectIcon(project.emoji); return <BcIcon size={14} style={{ color: project.color }} />; })()}
@@ -1435,27 +1474,31 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                 />
               ))}
             </div>
-            <button
+            <Button
               onClick={() => setShowMemberPanel(v => !v)}
-              className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface px-2 py-1 rounded-lg transition-colors"
+              size="1"
+              variant="ghost"
             >
               <Users size={12} /> {members.length}
               <ChevronDown size={10} />
-            </button>
+            </Button>
             <div className="w-px h-4 bg-mission-control-border" />
-            <button
+            <Button
               onClick={() => setShowDispatch(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-xs font-medium"
+              size="1"
+              variant="soft"
             >
               <Bot size={13} /> Dispatch Agent
-            </button>
+            </Button>
             <div className="relative">
-              <button
+              <IconButton
                 onClick={() => setShowSettings(v => !v)}
-                className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors"
+                size="2"
+                variant="ghost"
+                radius="medium"
               >
                 <Settings size={15} />
-              </button>
+              </IconButton>
               {showSettings && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowSettings(false)} />
@@ -1478,27 +1521,31 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                 <div key={m.agentId} className="flex items-center gap-1.5 bg-mission-control-surface border border-mission-control-border rounded-full px-2 py-1">
                   <AgentAvatar agentId={m.agentId} size="xs" />
                   <span className="text-xs text-mission-control-text">{(m as any).agentName || m.agentId}</span>
-                  <button
+                  <IconButton
                     onClick={() => handleRemoveMember(m.agentId)}
-                    className="text-mission-control-text-dim hover:text-error transition-colors"
+                    size="1"
+                    variant="ghost"
+                    radius="full"
                   >
                     <X size={10} />
-                  </button>
+                  </IconButton>
                 </div>
               ))}
               {availableAgents.length > 0 && (
                 <div className="relative">
-                  <select
-                    defaultValue=""
-                    onChange={e => { if (e.target.value) handleAddMember(e.target.value); e.target.value = ''; }}
-                    className="text-xs px-2 py-1 bg-mission-control-accent/20 border border-mission-control-accent/40 text-mission-control-accent rounded-full focus:outline-none cursor-pointer"
+                  <Select.Root
+                    key={members.length}
+                    onValueChange={val => { if (val) handleAddMember(val); }}
                     disabled={!!addingAgent}
+                    size="1"
                   >
-                    <option value="" disabled>+ Add agent</option>
-                    {availableAgents.map(a => (
-                      <option key={a.id} value={a.id}>{a.emoji ? `${a.emoji} ` : ''}{a.name}</option>
-                    ))}
-                  </select>
+                    <Select.Trigger placeholder="+ Add agent" radius="full" />
+                    <Select.Content>
+                      {availableAgents.map(a => (
+                        <Select.Item key={a.id} value={a.id}>{a.emoji ? `${a.emoji} ` : ''}{a.name}</Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
                 </div>
               )}
             </div>
@@ -1519,7 +1566,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                     : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
-                <Icon size={13} /> {tab.label}
+                <Icon size={13} />{tab.label}
               </button>
             );
           })}

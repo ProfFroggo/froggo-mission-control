@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Button, IconButton, TextField, TextArea } from '@radix-ui/themes';
 import {
   Mail,
   Inbox, Star, Archive, AlertTriangle,
@@ -406,18 +407,24 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
       {/* HTML/Plain toggle for HTML emails */}
       {htmlMode && (
         <div className="flex items-center gap-2 px-4 py-1.5 border-b border-mission-control-border bg-mission-control-bg/50">
-          <button
+          <Button
             onClick={() => setShowHtml(true)}
-            className={`text-xs px-2 py-0.5 rounded ${showHtml ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+            size="1"
+            variant={showHtml ? 'soft' : 'ghost'}
+            color={showHtml ? undefined : 'gray'}
+            radius="medium"
           >
-            <Code size={10} className="inline mr-1" />HTML
-          </button>
-          <button
+            <Code size={10} />HTML
+          </Button>
+          <Button
             onClick={() => setShowHtml(false)}
-            className={`text-xs px-2 py-0.5 rounded ${!showHtml ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+            size="1"
+            variant={!showHtml ? 'soft' : 'ghost'}
+            color={!showHtml ? undefined : 'gray'}
+            radius="medium"
           >
-            <FileText size={10} className="inline mr-1" />Plain
-          </button>
+            <FileText size={10} />Plain
+          </Button>
         </div>
       )}
 
@@ -471,7 +478,7 @@ function LeftPane({
       {/* All Messages */}
       <button
         onClick={() => { onSelectAccount(null); onSelectFolder('inbox'); }}
-        className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b border-mission-control-border transition-colors ${
+        className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b border-mission-control-border transition-colors w-full text-left ${
           selectedAccount === null ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'hover:bg-mission-control-border'
         }`}
       >
@@ -486,14 +493,17 @@ function LeftPane({
 
       {/* Accounts Section — grouped by channel type */}
       <div className="border-b border-mission-control-border">
-        <button
+        <Button
           onClick={() => setAccountsExpanded(!accountsExpanded)}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider text-mission-control-text-dim w-full hover:bg-mission-control-border/50"
+          size="1"
+          variant="ghost"
+          color="gray"
+          className="flex items-center gap-2 px-4 py-2 w-full text-xs font-bold uppercase tracking-wider"
         >
           {accountsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           Channels
           {loadingAccounts && <RefreshCw size={10} className="animate-spin ml-auto" />}
-        </button>
+        </Button>
         {accountsExpanded && (
           <div className="pb-2">
             {/* Group accounts by platform */}
@@ -513,7 +523,7 @@ function LeftPane({
                       <button
                         key={account.id}
                         onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
-                        className={`flex items-center gap-2.5 px-4 py-2 text-sm w-full transition-colors ${
+                        className={`flex items-center gap-2.5 px-4 py-2 text-sm w-full transition-colors text-left ${
                           selectedAccount === account.id
                             ? 'bg-mission-control-accent/10 text-mission-control-accent border-r-2 border-mission-control-accent'
                             : 'hover:bg-mission-control-border/50'
@@ -551,20 +561,23 @@ function LeftPane({
 
       {/* Folders Section */}
       <div>
-        <button
+        <Button
           onClick={() => setFoldersExpanded(!foldersExpanded)}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider text-mission-control-text-dim w-full hover:bg-mission-control-border/50"
+          size="1"
+          variant="ghost"
+          color="gray"
+          className="flex items-center gap-2 px-4 py-2 w-full text-xs font-bold uppercase tracking-wider"
         >
           {foldersExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           Folders
-        </button>
+        </Button>
         {foldersExpanded && (
           <div className="pb-2">
             {FOLDERS.map(folder => (
               <button
                 key={folder.id}
                 onClick={() => onSelectFolder(folder.id)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm w-full transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 text-sm w-full transition-colors text-left ${
                   selectedFolder === folder.id
                     ? 'bg-mission-control-accent/10 text-mission-control-accent'
                     : 'hover:bg-mission-control-border/50'
@@ -643,35 +656,41 @@ function CenterPane({
           <h2 className="font-semibold text-sm">{accountLabel}</h2>
           <div className="flex items-center gap-1">
             {unreadCount > 0 && onMarkAllRead && (
-              <button
+              <IconButton
                 onClick={onMarkAllRead}
                 title="Mark all as read"
-                className="flex items-center gap-1 p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim text-xs"
+                size="1"
+                variant="ghost"
+                color="gray"
+                radius="medium"
               >
                 <CheckCheck size={14} />
-              </button>
+              </IconButton>
             )}
-            <button
+            <IconButton
               onClick={onRefresh}
               disabled={loading || refreshing}
-              className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors disabled:opacity-50"
+              size="1"
+              variant="ghost"
+              color="gray"
+              radius="medium"
             >
               <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-            </button>
+            </IconButton>
           </div>
         </div>
         {/* Search */}
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-          <input
-            type="text"
-            aria-label="Search messages input"
-            value={searchQuery}
-            onChange={e => onSearchChange(e.target.value)}
-            placeholder="Search messages..."
-            className="w-full pl-9 pr-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
-          />
-        </div>
+        <TextField.Root
+          aria-label="Search messages input"
+          value={searchQuery}
+          onChange={e => onSearchChange(e.target.value)}
+          placeholder="Search messages..."
+          className="w-full"
+        >
+          <TextField.Slot>
+            <Search size={14} />
+          </TextField.Slot>
+        </TextField.Root>
       </div>
 
       {/* Message List */}
@@ -775,29 +794,39 @@ function CenterPane({
                   {/* Action buttons */}
                   {conv.platform !== 'system' && (
                     <div className="flex flex-col gap-0.5 flex-shrink-0 ml-1">
-                      <button
+                      <IconButton
                         onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
-                        className={`p-1 rounded hover:bg-mission-control-border transition-opacity ${
-                          conv.is_starred ? 'text-warning' : 'text-mission-control-text-dim opacity-0 group-hover:opacity-100'
-                        }`}
+                        size="1"
+                        variant="ghost"
+                        color={conv.is_starred ? 'yellow' : 'gray'}
+                        radius="medium"
                         title={conv.is_starred ? 'Unstar' : 'Star'}
+                        className={conv.is_starred ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'}
                       >
                         <Star size={14} fill={conv.is_starred ? 'currentColor' : 'none'} />
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
                         onClick={e => { e.stopPropagation(); onArchive(conv); }}
-                        className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-opacity"
+                        size="1"
+                        variant="ghost"
+                        color="gray"
+                        radius="medium"
                         title="Archive"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <Archive size={14} />
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
                         onClick={e => { e.stopPropagation(); onToggleRead(conv); }}
-                        className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-opacity"
+                        size="1"
+                        variant="ghost"
+                        color="gray"
+                        radius="medium"
                         title={conv.is_read ? 'Mark unread' : 'Mark read'}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         {conv.is_read ? <MailOpen size={14} /> : <Check size={14} />}
-                      </button>
+                      </IconButton>
                     </div>
                   )}
                 </div>
@@ -805,20 +834,26 @@ function CenterPane({
             ))}
             {hasMore && onLoadMore && (
               <div className="flex gap-2 px-2 py-2">
-                <button
+                <Button
                   onClick={onLoadMore}
-                  className="flex-1 py-2 text-sm text-mission-control-accent hover:bg-mission-control-surface/50 transition-colors flex items-center justify-center gap-1 rounded"
+                  size="2"
+                  variant="ghost"
+                  color="gray"
+                  className="flex-1"
                 >
                   <ChevronDown size={14} />
                   Load more (+50)
-                </button>
+                </Button>
                 {onLoadAll && (
-                  <button
+                  <Button
                     onClick={onLoadAll}
-                    className="flex-1 py-2 text-sm text-mission-control-accent hover:bg-mission-control-surface/50 transition-colors flex items-center justify-center gap-1 rounded"
+                    size="2"
+                    variant="ghost"
+                    color="gray"
+                    className="flex-1"
                   >
                     Load All
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -934,7 +969,7 @@ function InboxDashboard({
                   <button
                     key={msg.id}
                     onClick={() => onSelect(msg)}
-                    className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-3 hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-colors group"
+                    className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-3 hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-colors group cursor-pointer"
                   >
                     <div className="flex items-start gap-2">
                       <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
@@ -979,12 +1014,14 @@ function InboxDashboard({
                     <p className="text-sm truncate">{item.task.title}</p>
                     <p className="text-xs text-mission-control-text-dim truncate">From {item.from}{item.task.description ? ` — ${item.task.description}` : ''}</p>
                   </div>
-                  <button
+                  <Button
                     onClick={() => onCreateTask(item.task)}
-                    className="flex-shrink-0 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 rounded-md hover:bg-mission-control-accent/20 transition-all duration-150 font-medium"
+                    size="1"
+                    variant="soft"
+                    radius="medium"
                   >
                     Create
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -1258,22 +1295,29 @@ function RightPane({
             {conversation.subject || conversation.name || conversation.from || 'Message'}
           </h2>
           {onTriageWithAgent && (
-            <button
+            <Button
               onClick={onTriageWithAgent}
-              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-mission-control-accent/10 text-mission-control-accent hover:bg-mission-control-accent/20 transition-colors flex-shrink-0"
+              size="1"
+              variant="soft"
+              radius="medium"
+              className="flex-shrink-0"
               title="Send to Inbox Agent for triage"
             >
               <Bot size={13} />
               Triage
-            </button>
+            </Button>
           )}
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-mission-control-border flex-shrink-0"
+            size="2"
+            variant="ghost"
+            color="gray"
+            radius="medium"
+            className="flex-shrink-0"
             title="Close"
           >
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
         <div className="flex items-center gap-2 text-sm text-mission-control-text-dim">
           <span className={platformColor(conversation.platform)}>
@@ -1317,15 +1361,17 @@ function RightPane({
           {aiAnalysis.tasks.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-1.5">
               {aiAnalysis.tasks.map((task) => (
-                <button
+                <Button
                   key={task.title}
                   onClick={() => onCreateTask?.(task)}
-                  className="flex items-center gap-1 text-xs px-2 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 rounded-md hover:bg-mission-control-accent/20 transition-all duration-150"
+                  size="1"
+                  variant="soft"
+                  radius="medium"
                   title={task.description}
                 >
                   <ListPlus size={10} />
                   {task.title}
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -1334,15 +1380,18 @@ function RightPane({
           {aiAnalysis.events.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {aiAnalysis.events.map((event) => (
-                <button
+                <Button
                   key={event.title || `${event.date}-${event.time}`}
                   onClick={() => onCreateEvent?.(event)}
-                  className="flex items-center gap-1 text-xs px-2 py-1 bg-review-subtle text-review border border-review-border rounded-md hover:brightness-110 transition-all duration-150"
+                  size="1"
+                  variant="soft"
+                  color="violet"
+                  radius="medium"
                   title={`${event.date} ${event.time || ''} ${event.location || ''}`}
                 >
                   <CalendarPlus size={10} />
                   {event.title}
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -1416,12 +1465,15 @@ function RightPane({
               <Sparkles size={16} className="text-mission-control-accent" />
               <span className="text-sm font-semibold">AI Assistant</span>
             </div>
-            <button
+            <IconButton
               onClick={() => setShowAIPanel(false)}
-              className="p-1 rounded hover:bg-mission-control-border"
+              size="1"
+              variant="ghost"
+              color="gray"
+              radius="medium"
             >
               <X size={14} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Suggested Replies */}
@@ -1438,7 +1490,7 @@ function RightPane({
                   <button
                     key={reply.slice(0, 50)}
                     onClick={() => applySuggestion(reply)}
-                    className="w-full text-left p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent hover:bg-mission-control-accent/5 transition-colors text-sm"
+                    className="w-full text-left p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent hover:bg-mission-control-accent/5 transition-colors text-sm cursor-pointer"
                   >
                     {reply}
                   </button>
@@ -1452,23 +1504,24 @@ function RightPane({
             <span className="text-xs font-medium text-mission-control-text-dim mb-2 block">Response Planner</span>
             <p className="text-xs text-mission-control-text-dim mb-2">Tell AI what you want to say, and it&apos;ll draft the message for you</p>
             <div className="flex gap-2">
-              <input
-                type="text"
+              <TextField.Root
                 aria-label="AI response intent input"
                 value={aiIntent}
                 onChange={e => setAiIntent(e.target.value)}
                 placeholder="E.g., 'Confirm I'll handle this by tomorrow'"
-                className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     generateFromIntent();
                   }
                 }}
+                className="flex-1"
               />
-              <button
+              <Button
                 onClick={generateFromIntent}
                 disabled={!aiIntent.trim() || generatingFromIntent}
-                className="bg-mission-control-accent hover:bg-mission-control-accent/80 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm flex items-center gap-2"
+                size="2"
+                variant="solid"
+                radius="medium"
               >
                 {generatingFromIntent ? (
                   <>
@@ -1479,7 +1532,7 @@ function RightPane({
                     <Sparkles size={14} /> Generate
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1490,33 +1543,48 @@ function RightPane({
         <div className="px-5 py-2 border-t border-mission-control-border/50 bg-mission-control-surface/50 flex items-center gap-2 overflow-x-auto">
           <Sparkles size={11} className="text-mission-control-accent flex-shrink-0" />
           {aiAnalysis.reply_draft && (
-            <button
+            <Button
               onClick={() => setReplyText(aiAnalysis.reply_draft!)}
-              className="text-xs px-3 py-1.5 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 rounded-full hover:bg-mission-control-accent/20 transition-colors whitespace-nowrap"
+              size="1"
+              variant="soft"
+              radius="full"
+              className="whitespace-nowrap"
             >
               {aiAnalysis.reply_draft.length > 40 ? aiAnalysis.reply_draft.slice(0, 40) + '...' : aiAnalysis.reply_draft}
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             onClick={() => setReplyText('Thanks, got it!')}
-            className="text-xs px-3 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-full hover:border-mission-control-accent/30 transition-colors whitespace-nowrap"
+            size="1"
+            variant="soft"
+            color="gray"
+            radius="full"
+            className="whitespace-nowrap"
           >
             Thanks, got it!
-          </button>
-          <button
-            onClick={() => setReplyText("I&apos;ll look into this and get back to you.")}
-            className="text-xs px-3 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-full hover:border-mission-control-accent/30 transition-colors whitespace-nowrap"
+          </Button>
+          <Button
+            onClick={() => setReplyText("I'll look into this and get back to you.")}
+            size="1"
+            variant="soft"
+            color="gray"
+            radius="full"
+            className="whitespace-nowrap"
           >
             I&apos;ll look into this
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={generateReply}
             disabled={generating}
-            className="text-xs px-3 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-full hover:border-mission-control-accent/30 transition-colors whitespace-nowrap flex items-center gap-1"
+            size="1"
+            variant="soft"
+            color="gray"
+            radius="full"
+            className="whitespace-nowrap"
           >
             <Sparkles size={10} className={generating ? 'animate-spin' : ''} />
             Custom AI reply
-          </button>
+          </Button>
         </div>
       )}
 
@@ -1526,35 +1594,36 @@ function RightPane({
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-mission-control-text-dim">Reply</span>
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 onClick={() => setShowAIPanel(!showAIPanel)}
-                className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
-                  showAIPanel
-                    ? 'bg-mission-control-accent/20 text-mission-control-accent'
-                    : 'text-mission-control-accent hover:bg-mission-control-accent/10'
-                }`}
+                size="1"
+                variant={showAIPanel ? 'soft' : 'ghost'}
+                radius="medium"
               >
                 <Sparkles size={14} />
                 AI Assist
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={generateReply}
                 disabled={generating}
-                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-accent disabled:opacity-50"
+                size="1"
+                variant="ghost"
+                color="gray"
               >
                 <Sparkles size={14} className={generating ? 'animate-spin' : ''} />
                 {generating ? 'Generating...' : 'Quick Draft'}
-              </button>
+              </Button>
             </div>
           </div>
           <div className="flex gap-2">
-            <textarea
+            <TextArea
               ref={replyRef}
               aria-label="Reply message textarea"
               value={replyText}
               onChange={e => setReplyText(e.target.value)}
               placeholder="Write your reply..."
-              className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg p-2.5 text-sm resize-none h-20 focus:outline-none focus:border-mission-control-accent"
+              className="flex-1"
+              rows={3}
               onKeyDown={e => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                   handleSend();
@@ -1566,20 +1635,24 @@ function RightPane({
             <span className="text-xs text-mission-control-text-dim">⌘+Enter to send</span>
             <div className="flex gap-2">
               {replyText && (
-                <button
+                <Button
                   onClick={() => setReplyText('')}
-                  className="text-mission-control-text-dim hover:text-mission-control-text text-sm px-3 py-2"
+                  size="2"
+                  variant="ghost"
+                  color="gray"
                 >
                   Discard
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 onClick={handleSend}
                 disabled={!replyText.trim()}
-                className="bg-mission-control-accent hover:bg-mission-control-accent/80 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm flex items-center gap-2"
+                size="2"
+                variant="solid"
+                radius="medium"
               >
                 <Send size={14} /> Send
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -2310,13 +2383,17 @@ export default function CommsInbox3Pane() {
   return (
     <div className="h-full flex overflow-hidden relative">
       {/* Mobile sidebar toggle */}
-      <button
+      <IconButton
         onClick={() => setMobileSidebarOpen(true)}
-        className="md:hidden absolute top-3 left-3 z-30 p-2 rounded-lg bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border transition-colors"
+        size="2"
+        variant="soft"
+        color="gray"
+        radius="medium"
         aria-label="Open sidebar"
+        className="md:hidden absolute top-3 left-3 z-30"
       >
         <Menu size={16} />
-      </button>
+      </IconButton>
 
       {/* Mobile sidebar overlay */}
       {mobileSidebarOpen && (

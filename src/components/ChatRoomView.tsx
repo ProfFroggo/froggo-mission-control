@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Button, IconButton, TextField, TextArea } from '@radix-ui/themes';
 import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File, Search, Settings, Pin, Reply, ChevronDown } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
@@ -686,13 +687,15 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             ? 'bg-warning/10 border-warning/30'
             : 'bg-mission-control-surface'
         }`}>
-        <button
+        <IconButton
           onClick={onBack}
-          className="p-2 rounded-lg hover:bg-mission-control-border transition-colors"
+          size="2"
+          variant="ghost"
+          radius="medium"
           title="Back to chat"
         >
           <ArrowLeft size={18} />
-        </button>
+        </IconButton>
         <div className="flex items-center gap-2">
           {isTeamMeeting ? (
             <div className="w-10 h-10 rounded-full bg-warning flex items-center justify-center shadow-md">
@@ -757,65 +760,72 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
         <div className="ml-auto flex items-center gap-2">
           {/* Search toggle */}
-          <button
+          <IconButton
             onClick={() => { setShowSearch(v => !v); if (showSearch) setSearchQuery(''); }}
-            className={`p-2 rounded-lg transition-colors ${
-              showSearch
-                ? 'bg-mission-control-accent/15 text-mission-control-accent ring-1 ring-mission-control-accent/30'
-                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border'
-            }`}
+            size="2"
+            variant={showSearch ? 'soft' : 'ghost'}
+            radius="medium"
             title="Search messages (Cmd+F)"
           >
             <Search size={16} />
-          </button>
+          </IconButton>
           {/* Settings */}
-          <button
+          <IconButton
             onClick={() => setShowSettings(true)}
-            className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
             title="Room settings"
           >
             <Settings size={16} />
-          </button>
+          </IconButton>
           {/* Stop / Resume toggle */}
           {(loading || typingAgents.size > 0 || room.messages.some(m => m.streaming)) ? (
-            <button
+            <IconButton
               onClick={stopAll}
-              className="w-8 h-8 rounded-lg border-2 border-error text-error hover:bg-error hover:text-white transition-all duration-150 flex items-center justify-center"
+              size="2"
+              variant="outline"
+              color="red"
+              radius="medium"
               title="Stop all agents"
             >
               <Square size={14} fill="currentColor" />
-            </button>
+            </IconButton>
           ) : stopped ? (
-            <button
+            <IconButton
               onClick={resumeAgents}
-              className="w-8 h-8 rounded-lg bg-error text-white hover:brightness-110 transition-all duration-150 flex items-center justify-center"
+              size="2"
+              variant="solid"
+              color="red"
+              radius="medium"
               title="Resume agents"
             >
               <Square size={12} fill="white" />
-            </button>
+            </IconButton>
           ) : null}
           {/* Manage members */}
-          <button
+          <IconButton
             onClick={() => setShowManageMembers(true)}
-            className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
             title="Manage members"
           >
             <UserPlus size={18} />
-          </button>
+          </IconButton>
           {/* Voice meeting toggle */}
-          <button
+          <IconButton
             onClick={() => setVoiceMode(!voiceMode)}
-            className={`p-2 rounded-lg transition-colors ${
-              voiceMode
-                ? 'bg-success-subtle text-success ring-1 ring-success/50'
-                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border'
-            }`}
+            size="2"
+            variant={voiceMode ? 'soft' : 'ghost'}
+            color={voiceMode ? 'green' : undefined}
+            radius="medium"
             title={voiceMode ? 'Switch to text chat' : 'Start voice meeting'}
           >
             <Phone size={16} />
-          </button>
+          </IconButton>
           {!hideDelete && (
-          <button
+          <IconButton
             onClick={() => {
               showConfirm({
                 title: isTeamMeeting ? 'End Meeting' : 'Delete Room',
@@ -827,15 +837,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 onBack();
               });
             }}
-            className={`p-2 rounded-lg transition-colors ${
-              isTeamMeeting
-                ? 'text-warning hover:text-error hover:bg-error-subtle'
-                : 'text-mission-control-text-dim hover:text-error hover:bg-error-subtle'
-            }`}
+            size="2"
+            variant="ghost"
+            color="red"
+            radius="medium"
             title={isTeamMeeting ? 'End meeting' : 'Delete room'}
           >
             <Trash2 size={16} />
-          </button>
+          </IconButton>
           )}
         </div>
       </div>}
@@ -844,44 +853,51 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       {showSearch && (
         <div className="px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex items-center gap-2">
           <Search size={14} className="text-mission-control-text-dim shrink-0" />
-          <input
+          <TextField.Root
             ref={searchInputRef}
             value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); setSearchMatchIdx(0); }}
             placeholder="Search messages..."
-            className="flex-1 bg-transparent text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none"
+            size="2"
+            style={{ flex: 1 }}
           />
           {searchMatchIds.length > 0 && (
             <>
               <span className="text-xs text-mission-control-text-dim shrink-0">
                 {searchMatchIdx + 1}/{searchMatchIds.length}
               </span>
-              <button
+              <IconButton
                 onClick={() => setSearchMatchIdx(i => (i - 1 + searchMatchIds.length) % searchMatchIds.length)}
-                className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+                size="1"
+                variant="ghost"
+                radius="medium"
                 title="Previous match"
               >
                 <ChevronDown size={14} className="rotate-180" />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 onClick={() => setSearchMatchIdx(i => (i + 1) % searchMatchIds.length)}
-                className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+                size="1"
+                variant="ghost"
+                radius="medium"
                 title="Next match"
               >
                 <ChevronDown size={14} />
-              </button>
+              </IconButton>
             </>
           )}
           {searchQuery && searchMatchIds.length === 0 && (
             <span className="text-xs text-mission-control-text-dim shrink-0">No results</span>
           )}
-          <button
+          <IconButton
             onClick={() => { setShowSearch(false); setSearchQuery(''); }}
-            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+            size="1"
+            variant="ghost"
+            radius="medium"
             title="Close search"
           >
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
       )}
 
@@ -890,15 +906,16 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         <div className="px-4 py-2 border-b border-mission-control-border bg-mission-control-surface/80 flex items-center gap-2 text-xs">
           <Pin size={12} className="text-mission-control-accent shrink-0" />
           <span className="text-mission-control-text-dim truncate flex-1">{pinnedMessage.content.slice(0, 120)}</span>
-          <button
+          <Button
             onClick={() => {
               const el = document.getElementById(`msg-${pinnedMessage.id}`);
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }}
-            className="text-mission-control-accent hover:underline shrink-0"
+            size="1"
+            variant="ghost"
           >
             Jump
-          </button>
+          </Button>
         </div>
       )}
 
@@ -934,13 +951,15 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center max-w-sm mx-auto">
                   {["@all Let's discuss the sprint plan", "@all Team status update", "@Chief What are the priorities?"].map((q, i) => (
-                    <button
+                    <Button
                       key={i}
                       onClick={() => setInput(q)}
-                      className="px-3 py-1.5 text-xs bg-warning/10 border border-warning/30 rounded-lg hover:border-warning transition-all duration-150"
+                      size="1"
+                      variant="soft"
+                      color="amber"
                     >
                       {q}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </>
@@ -1058,26 +1077,26 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   <span className="text-xs tabular-nums text-mission-control-text-dim mt-1 px-1">{time}</span>
                   {/* Hover action buttons */}
                   <div className={`flex items-center gap-1 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'justify-end' : 'justify-start'}`}>
-                    <button
+                    <IconButton
                       onClick={() => setReplyToMsg(msg)}
                       title="Reply in thread"
-                      className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                      size="1"
+                      variant="ghost"
+                      radius="medium"
                     >
                       <Reply size={13} />
-                    </button>
-                    <button
+                    </IconButton>
+                    <IconButton
                       onClick={() => updateRoom(roomId, {
                         pinnedMessageId: room.pinnedMessageId === msg.id ? undefined : msg.id,
                       })}
                       title={room.pinnedMessageId === msg.id ? 'Unpin' : 'Pin message'}
-                      className={`p-1 rounded hover:bg-mission-control-border transition-colors ${
-                        room.pinnedMessageId === msg.id
-                          ? 'text-mission-control-accent'
-                          : 'text-mission-control-text-dim hover:text-mission-control-text'
-                      }`}
+                      size="1"
+                      variant={room.pinnedMessageId === msg.id ? 'soft' : 'ghost'}
+                      radius="medium"
                     >
                       <Pin size={13} />
-                    </button>
+                    </IconButton>
                   </div>
                   {/* Reactions */}
                   <MessageReactions messageId={msg.id} isUser={isUser} />
@@ -1187,12 +1206,17 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       <span className="text-xs text-mission-control-text-dim">{(att.size / 1024).toFixed(1)}KB</span>
                     </div>
                   )}
-                  <button
+                  <IconButton
                     onClick={() => removeAttachment(att.id)}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-error text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150"
+                    size="1"
+                    variant="solid"
+                    color="red"
+                    radius="full"
+                    style={{ position: 'absolute', top: '-6px', right: '-6px', opacity: 0 }}
+                    className="group-hover:opacity-100 transition-all duration-150"
                   >
                     <X size={12} />
-                  </button>
+                  </IconButton>
                 </div>
               );
             })}
@@ -1206,12 +1230,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             <span className="text-mission-control-text-dim truncate flex-1">
               Replying to: {replyToMsg.content.slice(0, 80)}
             </span>
-            <button
+            <IconButton
               onClick={() => setReplyToMsg(null)}
-              className="text-mission-control-text-dim hover:text-mission-control-text shrink-0"
+              size="1"
+              variant="ghost"
+              radius="medium"
             >
               <X size={12} />
-            </button>
+            </IconButton>
           </div>
         )}
 
@@ -1225,7 +1251,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   <button
                     key="all"
                     onClick={() => insertMention('all')}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors border-b border-mission-control-border"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors border-b border-mission-control-border text-left"
                   >
                     <div className="w-8 h-8 rounded-full bg-mission-control-accent/20 flex items-center justify-center">
                       <UsersRound size={16} className="text-mission-control-accent" />
@@ -1242,7 +1268,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 <button
                   key={id}
                   onClick={() => insertMention(id)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors text-left"
                 >
                   <AgentAvatar agentId={id} size="sm" />
                   <span className={`font-medium text-sm ${theme.text}`}>{agent?.name || id}</span>
@@ -1254,42 +1280,47 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         )}
 
         <div className="flex items-center gap-3">
-          <button
+          <IconButton
             onClick={() => fileInputRef.current?.click()}
-            className="p-3 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors self-stretch flex items-center"
+            size="3"
+            variant="ghost"
+            radius="medium"
             title="Attach file"
           >
             <Paperclip size={20} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={() => setShowMentions(!showMentions)}
-            className={`p-3 rounded-lg transition-all self-stretch flex items-center ${
-              showMentions ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
+            size="3"
+            variant={showMentions ? 'soft' : 'ghost'}
+            radius="medium"
             title="Mention an agent"
           >
             <AtSign size={20} />
-          </button>
+          </IconButton>
 
           <div className="flex-1 relative">
-            <textarea
+            <TextArea
               ref={inputRef}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder={`Message the room... (use @name to mention)`}
+              placeholder="Message the room... (use @name to mention)"
               rows={1}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
+              size="3"
+              style={{ resize: 'none' }}
             />
           </div>
 
-          <button
+          <IconButton
             onClick={handleSend}
             disabled={!input.trim() && attachments.length === 0}
-            className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50 self-stretch flex items-center"
+            size="3"
+            variant="soft"
+            radius="medium"
           >
             <Send size={20} />
-          </button>
+          </IconButton>
         </div>
       </div>
       </>
@@ -1312,7 +1343,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           >
             <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
               <h3 className="font-semibold">Manage Members</h3>
-              <button onClick={() => setShowManageMembers(false)} className="text-mission-control-text-dim hover:text-mission-control-text text-lg">✕</button>
+              <IconButton onClick={() => setShowManageMembers(false)} size="2" variant="ghost" radius="medium"><X size={16} /></IconButton>
             </div>
             <div className="p-4 overflow-y-auto flex-1 min-h-0 space-y-1">
               {agents.map((agent) => {
@@ -1327,7 +1358,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                         : [...room.agents, agent.id];
                       if (updated.length > 0) updateRoomAgents(roomId, updated);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${
                       inRoom ? 'bg-mission-control-accent/10 ring-1 ring-mission-control-accent/30' : 'hover:bg-mission-control-bg'
                     }`}
                   >

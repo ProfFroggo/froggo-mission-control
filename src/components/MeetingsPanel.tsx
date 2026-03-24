@@ -8,6 +8,7 @@
 // Review: 2026-02-17 - suppression retained, all patterns intentional
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Button, IconButton, TextField, Select, TextArea } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { 
   Mic, MicOff, Phone, PhoneOff, Loader2, 
@@ -1368,15 +1369,16 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                   {statusMessage}
                 </span>
               )}
-              <button
+              <IconButton
+                size="2"
+                variant={isMuted ? 'soft' : 'ghost'}
+                color={isMuted ? 'red' : 'gray'}
+                radius="medium"
                 onClick={toggleMuted}
-                className={`p-2.5 rounded-lg transition-all ${isMuted 
-                  ? 'bg-error-subtle text-error hover:bg-error-subtle' 
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'}`}
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
-              </button>
+              </IconButton>
             </div>
           </div>
         </div>
@@ -1386,46 +1388,38 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       <div className="shrink-0 border-b border-mission-control-border bg-mission-control-surface/50">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex gap-1">
-            <button
+            <Button
               onClick={() => { setActiveView('current'); setSelectedMeeting(null); }}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-                activeView === 'current' 
-                  ? 'border-mission-control-accent text-mission-control-accent' 
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              variant={activeView === 'current' ? 'soft' : 'ghost'}
+              size="2"
+              className="px-4 py-3 text-sm font-medium border-b-2 transition-all"
             >
               Current Meeting
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setActiveView('history')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-                activeView === 'history' 
-                  ? 'border-mission-control-accent text-mission-control-accent' 
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              variant={activeView === 'history' ? 'soft' : 'ghost'}
+              size="2"
+              className="px-4 py-3 text-sm font-medium border-b-2 transition-all"
             >
               Meetings
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setActiveView('transcribe')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-                activeView === 'transcribe' 
-                  ? 'border-mission-control-accent text-mission-control-accent' 
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              variant={activeView === 'transcribe' ? 'soft' : 'ghost'}
+              size="2"
+              className="px-4 py-3 text-sm font-medium border-b-2 transition-all"
             >
               Upload Audio
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setActiveView('upload-transcript')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-                activeView === 'upload-transcript'
-                  ? 'border-mission-control-accent text-mission-control-accent'
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              variant={activeView === 'upload-transcript' ? 'soft' : 'ghost'}
+              size="2"
+              className="px-4 py-3 text-sm font-medium border-b-2 transition-all"
             >
               Upload Transcript
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -1454,12 +1448,16 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               {formatDuration(elapsedTime)} · {audioDevices.find(d => d.deviceId === selectedDeviceId)?.label?.split('(')[0].trim() || 'Default mic'}
                             </p>
                           </div>
-                          <button
+                          <Button
                             onClick={endMeeting}
-                            className="flex-shrink-0 px-4 py-2 bg-error hover:bg-error/80 text-white rounded-lg font-medium flex items-center gap-2 text-sm transition-colors"
+                            size="2"
+                            variant="solid"
+                            color="red"
+                            radius="medium"
+                            className="flex-shrink-0"
                           >
                             <PhoneOff size={15} /> End
-                          </button>
+                          </Button>
                         </div>
 
                         {/* Audio waveform */}
@@ -1512,61 +1510,58 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Title</label>
-                          <input
-                            type="text"
+                          <TextField.Root
                             value={meetingTitle}
                             onChange={(e) => { setMeetingTitle(e.target.value); setStartError(null); }}
                             onKeyDown={(e) => { if (e.key === 'Escape') { setShowTitleInput(false); setStartError(null); } }}
                             placeholder="Meeting title (optional)"
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
                             autoFocus
+                            className="w-full"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Agenda</label>
-                          <textarea
+                          <TextArea
                             value={meetingAgenda}
                             onChange={(e) => setMeetingAgenda(e.target.value)}
                             placeholder="Topics to discuss..."
                             rows={2}
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
+                            className="w-full"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Participants</label>
-                          <input
-                            type="text"
+                          <TextField.Root
                             value={meetingParticipants}
                             onChange={(e) => setMeetingParticipants(e.target.value)}
                             placeholder="Names, comma-separated"
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
+                            className="w-full"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Notes</label>
-                          <textarea
+                          <TextArea
                             value={meetingNotes}
                             onChange={(e) => setMeetingNotes(e.target.value)}
                             placeholder="Pre-meeting notes..."
                             rows={2}
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
+                            className="w-full"
                           />
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Microphone</label>
-                          <select
-                            value={selectedDeviceId}
-                            onChange={e => setSelectedDeviceId(e.target.value)}
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent text-sm"
-                          >
-                            <option value="">System Default</option>
-                            {audioDevices.map(d => (
-                              <option key={d.deviceId} value={d.deviceId}>
-                                {d.label || `Microphone ${d.deviceId.slice(0, 8)}`}
-                              </option>
-                            ))}
-                          </select>
+                          <Select.Root value={selectedDeviceId || ''} onValueChange={setSelectedDeviceId}>
+                            <Select.Trigger className="w-full" />
+                            <Select.Content>
+                              <Select.Item value="">System Default</Select.Item>
+                              {audioDevices.map(d => (
+                                <Select.Item key={d.deviceId} value={d.deviceId}>
+                                  {d.label || `Microphone ${d.deviceId.slice(0, 8)}`}
+                                </Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
                         </div>
 
                         {startError && (
@@ -1577,19 +1572,26 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         )}
 
                         <div className="flex gap-3">
-                          <button
+                          <Button
                             onClick={startMeeting}
-                            className="flex-1 py-3.5 bg-success hover:bg-success/80 text-white rounded-lg text-lg font-semibold flex items-center justify-center gap-3 transition-all shadow-lg shadow-success/20"
+                            size="3"
+                            variant="solid"
+                            color="green"
+                            radius="medium"
+                            className="flex-1"
                           >
                             <Mic size={24} />
                             Start Recording
-                          </button>
-                          <button
+                          </Button>
+                          <IconButton
                             onClick={() => { setShowTitleInput(false); setStartError(null); }}
-                            className="px-5 py-3.5 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-all"
+                            size="3"
+                            variant="ghost"
+                            color="gray"
+                            radius="medium"
                           >
-                            <X size={20} className="text-mission-control-text-dim" />
-                          </button>
+                            <X size={20} />
+                          </IconButton>
                         </div>
                       </div>
                     ) : (
@@ -1601,13 +1603,17 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         <p className="text-mission-control-text-dim mb-6 max-w-md mx-auto">
                           Record, transcribe, and extract action items from your meetings with AI-powered transcription.
                         </p>
-                        <button
+                        <Button
                           onClick={() => setShowTitleInput(true)}
-                          className="px-8 py-4 bg-success hover:bg-success/80 text-white rounded-lg text-lg font-semibold flex items-center justify-center gap-3 transition-all shadow-lg shadow-success/20 mx-auto"
+                          size="3"
+                          variant="solid"
+                          color="green"
+                          radius="medium"
+                          className="mx-auto"
                         >
                           <Phone size={24} />
                           New Meeting
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -1621,14 +1627,16 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         <Calendar size={18} className="text-mission-control-accent" />
                         <h3 className="font-medium text-mission-control-text">Upcoming Meetings</h3>
                       </div>
-                      <button 
+                      <Button
                         onClick={loadUpcomingEvents}
                         disabled={loadingUpcomingEvents}
-                        className="text-xs text-mission-control-text-dim hover:text-mission-control-accent"
+                        size="1"
+                        variant="ghost"
+                        color="gray"
                       >
                         <Loader2 size={12} className={loadingUpcomingEvents ? 'animate-spin inline' : 'hidden'} />
                         Refresh
-                      </button>
+                      </Button>
                     </div>
                     <div className="divide-y divide-mission-control-border">
                       {upcomingEvents.slice(0, 5).map((event) => {
@@ -1705,13 +1713,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             </span>
                           </div>
                           {pendingItems.length > 0 && (
-                            <button
+                            <Button
                               onClick={approveAllPending}
-                              className="text-sm text-success hover:text-success flex items-center gap-1"
+                              size="1"
+                              variant="ghost"
+                              color="green"
                             >
                               <CheckCircle2 size={14} />
                               Approve All
-                            </button>
+                            </Button>
                           )}
                         </div>
                         <div className="divide-y divide-mission-control-border">
@@ -1724,30 +1734,35 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             >
                               {editingItemId === item.id ? (
                                 <div className="space-y-3">
-                                  <input
-                                    type="text"
+                                  <TextField.Root
                                     value={editingText}
                                     onChange={(e) => setEditingText(e.target.value)}
-                                    className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') saveEditedItem();
                                       if (e.key === 'Escape') cancelEditing();
                                     }}
+                                    className="w-full"
                                   />
                                   <div className="flex gap-2">
-                                    <button
+                                    <Button
                                       onClick={saveEditedItem}
-                                      className="px-3 py-1.5 bg-success text-white rounded-lg text-sm hover:bg-success/80 flex items-center gap-1"
+                                      size="1"
+                                      variant="solid"
+                                      color="green"
+                                      radius="medium"
                                     >
                                       <Check size={14} />
                                       Save & Approve
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                       onClick={cancelEditing}
-                                      className="px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm hover:bg-mission-control-border text-mission-control-text-dim"
+                                      size="1"
+                                      variant="ghost"
+                                      color="gray"
+                                      radius="medium"
                                     >
                                       Cancel
-                                    </button>
+                                    </Button>
                                   </div>
                                 </div>
                               ) : (
@@ -1780,27 +1795,36 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   </div>
                                   {item.status === 'pending' && (
                                     <div className="flex items-center gap-1">
-                                      <button
+                                      <IconButton
                                         onClick={() => approveActionItem(item.id)}
-                                        className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
+                                        size="2"
+                                        variant="ghost"
+                                        color="green"
+                                        radius="medium"
                                         title="Approve"
                                       >
                                         <Check size={16} />
-                                      </button>
-                                      <button
+                                      </IconButton>
+                                      <IconButton
                                         onClick={() => startEditingItem(item)}
-                                        className="p-2 hover:bg-mission-control-bg rounded-lg text-mission-control-text-dim transition-all"
+                                        size="2"
+                                        variant="ghost"
+                                        color="gray"
+                                        radius="medium"
                                         title="Edit"
                                       >
                                         <Edit3 size={16} />
-                                      </button>
-                                      <button
+                                      </IconButton>
+                                      <IconButton
                                         onClick={() => dismissActionItem(item.id)}
-                                        className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
+                                        size="2"
+                                        variant="ghost"
+                                        color="red"
+                                        radius="medium"
                                         title="Dismiss"
                                       >
                                         <XCircle size={16} />
-                                      </button>
+                                      </IconButton>
                                     </div>
                                   )}
                                 </div>
@@ -1813,17 +1837,20 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             <p className="text-sm text-mission-control-text-dim">
                               {approvedItems.length} item{approvedItems.length > 1 ? 's' : ''} ready to create as tasks
                             </p>
-                            <button
+                            <Button
                               onClick={async () => {
                                 const count = await createTasksFromApproved();
                                 setMeetingEndSummary(prev => prev ? { ...prev, tasksCreated: count } : null);
                                 addActivity({ type: 'system', message: `Created ${count} tasks from meeting`, timestamp: Date.now() });
                               }}
-                              className="px-4 py-2 bg-success hover:bg-success/80 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all"
+                              size="2"
+                              variant="solid"
+                              color="green"
+                              radius="medium"
                             >
                               <Plus size={16} />
                               Create Tasks
-                            </button>
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -1849,31 +1876,36 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             >
                               {editingProposedTask === task.id ? (
                                 <div className="space-y-3">
-                                  <input
-                                    type="text"
+                                  <TextField.Root
                                     value={editingProposedText}
                                     onChange={(e) => setEditingProposedText(e.target.value)}
-                                    className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text"
                                     placeholder="Edit task title..."
+                                    className="w-full"
                                   />
                                   <div className="flex gap-2">
-                                    <button
+                                    <Button
                                       onClick={() => {
-                                        setProposedTasks(prev => prev.map(t => 
+                                        setProposedTasks(prev => prev.map(t =>
                                           t.id === task.id ? { ...t, title: editingProposedText, status: 'approved' as const } : t
                                         ));
                                         setEditingProposedTask(null);
                                       }}
-                                      className="px-3 py-1.5 bg-success text-white rounded-lg text-sm"
+                                      size="1"
+                                      variant="solid"
+                                      color="green"
+                                      radius="medium"
                                     >
                                       Save
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                       onClick={() => setEditingProposedTask(null)}
-                                      className="px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text"
+                                      size="1"
+                                      variant="ghost"
+                                      color="gray"
+                                      radius="medium"
                                     >
                                       Cancel
-                                    </button>
+                                    </Button>
                                   </div>
                                 </div>
                               ) : (
@@ -1894,30 +1926,39 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   </div>
                                   {task.status === 'pending' && (
                                     <div className="flex items-center gap-1 shrink-0">
-                                      <button
+                                      <IconButton
                                         onClick={() => approveProposedTask(task.id)}
-                                        className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
+                                        size="2"
+                                        variant="ghost"
+                                        color="green"
+                                        radius="medium"
                                         title="Approve & Create Task"
                                       >
                                         <CheckCircle2 size={16} />
-                                      </button>
-                                      <button
+                                      </IconButton>
+                                      <IconButton
                                         onClick={() => {
                                           setEditingProposedTask(task.id);
                                           setEditingProposedText(task.title);
                                         }}
-                                        className="p-2 hover:bg-mission-control-bg rounded-lg text-mission-control-text-dim transition-all"
+                                        size="2"
+                                        variant="ghost"
+                                        color="gray"
+                                        radius="medium"
                                         title="Edit"
                                       >
                                         <Edit3 size={16} />
-                                      </button>
-                                      <button
+                                      </IconButton>
+                                      <IconButton
                                         onClick={() => rejectProposedTask(task.id)}
-                                        className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
+                                        size="2"
+                                        variant="ghost"
+                                        color="red"
+                                        radius="medium"
                                         title="Reject"
                                       >
                                         <XCircle size={16} />
-                                      </button>
+                                      </IconButton>
                                     </div>
                                   )}
                                 </div>
@@ -1952,25 +1993,32 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
                     {/* Actions */}
                     <div className="flex gap-3">
-                      <button
+                      <Button
                         onClick={sendMeetingSummary}
-                        className="flex-1 px-4 py-3 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:border-success-border transition-all"
+                        size="2"
+                        variant="soft"
+                        color="gray"
+                        radius="medium"
+                        className="flex-1"
                       >
                         <MessageSquare size={18} />
                         Send to Mission Control
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => {
                           setMeetingTranscript([]);
                           setMeetingActionItems([]);
                           setMeetingEndSummary(null);
                           setAiSummary(null);
                         }}
-                        className="px-4 py-3 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:border-error-border text-mission-control-text-dim transition-all"
+                        size="2"
+                        variant="ghost"
+                        color="red"
+                        radius="medium"
                       >
                         <Trash2 size={18} />
                         Clear
-                      </button>
+                      </Button>
                     </div>
                   </>
                 )}
@@ -1983,22 +2031,27 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                   <div className="space-y-6">
                     {/* Meeting Detail Header */}
                     <div className="flex items-center justify-between">
-                      <button 
+                      <Button
                         onClick={() => { setSelectedMeeting(null); setMeetingChatMessages([]); }}
-                        className="flex items-center gap-2 text-mission-control-text-dim hover:text-mission-control-text transition-all"
+                        size="2"
+                        variant="ghost"
+                        color="gray"
                       >
                         <ChevronRight size={16} className="rotate-180" />
                         Back to list
-                      </button>
+                      </Button>
                       <div className="flex items-center gap-2">
-                        <button
+                        <Button
                           onClick={() => exportMeeting(selectedMeeting)}
-                          className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent transition-all"
+                          size="2"
+                          variant="soft"
+                          color="gray"
+                          radius="medium"
                         >
                           <Download size={14} />
                           Export
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={async () => {
                             if (!selectedMeeting.id) return;
                             try {
@@ -2008,13 +2061,16 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               showToast('success', 'Meeting archived');
                             } catch { showToast('error', 'Failed to archive'); }
                           }}
-                          className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent transition-all"
+                          size="2"
+                          variant="soft"
+                          color="gray"
+                          radius="medium"
                           title="Archive meeting"
                         >
                           <Archive size={14} />
                           Archive
-                        </button>
-                        <button
+                        </Button>
+                        <IconButton
                           onClick={async () => {
                             if (!selectedMeeting.id) return;
                             try {
@@ -2024,11 +2080,14 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               showToast('success', 'Meeting deleted');
                             } catch { showToast('error', 'Failed to delete'); }
                           }}
-                          className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-error-border rounded-lg text-sm text-error hover:bg-error-subtle transition-all"
+                          size="2"
+                          variant="soft"
+                          color="red"
+                          radius="medium"
                           title="Delete meeting"
                         >
                           <Trash2 size={14} />
-                        </button>
+                        </IconButton>
                       </div>
                     </div>
 
@@ -2172,7 +2231,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                 </div>
                                 {proposal.status === 'pending' && (
                                   <div className="flex items-center gap-1 shrink-0">
-                                    <button
+                                    <IconButton
                                       onClick={async () => {
                                         // Update local state
                                         const updated = selectedMeeting.storedTaskProposals!.map(p =>
@@ -2201,23 +2260,29 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                           showToast('error', 'Failed to create task');
                                         }
                                       }}
-                                      className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
+                                      size="2"
+                                      variant="ghost"
+                                      color="green"
+                                      radius="medium"
                                       title="Approve — creates task assigned to agent"
                                     >
                                       <CheckCircle2 size={16} />
-                                    </button>
-                                    <button
+                                    </IconButton>
+                                    <IconButton
                                       onClick={() => {
                                         const updated = selectedMeeting.storedTaskProposals!.map(p =>
                                           p.id === proposal.id ? { ...p, status: 'rejected' as const } : p
                                         );
                                         setSelectedMeeting({ ...selectedMeeting, storedTaskProposals: updated });
                                       }}
-                                      className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
+                                      size="2"
+                                      variant="ghost"
+                                      color="red"
+                                      radius="medium"
                                       title="Reject"
                                     >
                                       <XCircle size={16} />
-                                    </button>
+                                    </IconButton>
                                   </div>
                                 )}
                                 {proposal.status === 'approved' && (
@@ -2266,25 +2331,27 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           </div>
                         )}
                         <div className="flex gap-2">
-                          <input
-                            type="text"
+                          <TextField.Root
                             value={meetingChatInput}
                             onChange={(e) => setMeetingChatInput(e.target.value)}
-                            onKeyDown={(e) => { 
-                              if (e.key === 'Enter' && !e.shiftKey && meetingChatInput.trim()) 
-                                askAboutMeeting(selectedMeeting, meetingChatInput); 
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey && meetingChatInput.trim())
+                                askAboutMeeting(selectedMeeting, meetingChatInput);
                             }}
                             placeholder="What were the main topics discussed?"
-                            className="flex-1 px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
                             disabled={meetingChatProcessing}
+                            className="flex-1"
                           />
-                          <button
+                          <IconButton
                             onClick={() => askAboutMeeting(selectedMeeting, meetingChatInput)}
                             disabled={!meetingChatInput.trim() || meetingChatProcessing}
-                            className="px-4 py-2.5 bg-success hover:bg-success/80 text-white rounded-lg disabled:opacity-50 transition-all"
+                            size="2"
+                            variant="solid"
+                            color="green"
+                            radius="medium"
                           >
                             {meetingChatProcessing ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                          </button>
+                          </IconButton>
                         </div>
                       </div>
                     </div>
@@ -2294,14 +2361,16 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Meetings List */}
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-heading-3">Meetings</h2>
-                      <button 
-                        onClick={loadPastMeetings} 
+                      <Button
+                        onClick={loadPastMeetings}
                         disabled={loadingPastMeetings}
-                        className="text-sm text-mission-control-text-dim hover:text-mission-control-accent flex items-center gap-1"
+                        size="1"
+                        variant="ghost"
+                        color="gray"
                       >
                         {loadingPastMeetings ? <Spinner size={14} /> : <Loader2 size={14} />}
                         Refresh
-                      </button>
+                      </Button>
                     </div>
 
                     {loadingPastMeetings ? (
@@ -2327,7 +2396,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           <button
                             key={meeting.id || meeting.filepath}
                             onClick={() => setSelectedMeeting(meeting)}
-                            className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-4 hover:border-mission-control-accent transition-all group"
+                            className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-4 hover:border-mission-control-accent transition-all group cursor-pointer"
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div>
@@ -2437,12 +2506,16 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       <p className="font-medium text-error">Upload failed</p>
                       <p className="text-sm text-mission-control-text-dim mt-1">{uploadError}</p>
                     </div>
-                    <button
+                    <IconButton
                       onClick={() => setUploadError(null)}
-                      className="ml-auto p-1 hover:bg-error-subtle rounded-lg text-error"
+                      size="1"
+                      variant="ghost"
+                      color="red"
+                      radius="medium"
+                      className="ml-auto"
                     >
                       <X size={14} />
-                    </button>
+                    </IconButton>
                   </div>
                 )}
 
@@ -2516,7 +2589,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         View the full meeting to review and approve tasks.
                       </p>
                       <div className="flex items-center gap-2">
-                        <button
+                        <Button
                           onClick={async () => {
                             await loadPastMeetings();
                             // Find the most recent meeting and select it
@@ -2558,11 +2631,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             }
                             setActiveView('history');
                           }}
-                          className="px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent-dim transition-all"
+                          size="2"
+                          variant="solid"
+                          radius="medium"
                         >
                           View Meeting
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => {
                             setTranscriptionSaved(false);
                             setTranscriptionResult('');
@@ -2572,10 +2647,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             setUploadError(null);
                             setTasksCreatedCount(0);
                           }}
-                          className="px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent transition-all"
+                          size="2"
+                          variant="soft"
+                          color="gray"
+                          radius="medium"
                         >
                           Upload Another
-                        </button>
+                        </Button>
                       </div>
                     </div>
 
@@ -2596,7 +2674,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             setActiveView('history');
                             loadPastMeetings();
                           }}
-                          className="w-full p-3 bg-mission-control-surface border border-mission-control-border rounded-xl flex items-center gap-3 hover:border-mission-control-accent/50 transition-all text-left"
+                          className="w-full p-3 bg-mission-control-surface border border-mission-control-border rounded-xl flex items-center gap-3 hover:border-mission-control-accent/50 transition-all text-left cursor-pointer"
                         >
                           <div className="w-8 h-8 rounded-lg bg-info-subtle flex items-center justify-center shrink-0">
                             <FileText size={16} className="text-info" />
@@ -2629,37 +2707,43 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       <div className="space-y-3">
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Meeting Name</label>
-                          <input
-                            type="text"
+                          <TextField.Root
                             value={transcriptionFileName}
                             onChange={(e) => setTranscriptionFileName(e.target.value)}
                             placeholder="Name this meeting..."
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
+                            className="w-full"
                           />
                         </div>
                         <div className="flex gap-3">
-                          <button
+                          <Button
                             onClick={saveTranscriptionAsMeeting}
                             disabled={transcriptionSaving}
-                            className="flex-1 py-3 bg-success hover:bg-success/80 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                            size="2"
+                            variant="solid"
+                            color="green"
+                            radius="medium"
+                            className="flex-1"
                           >
                             {transcriptionSaving ? (
                               <><Loader2 size={18} className="animate-spin" /> Processing...</>
                             ) : (
                               <><Check size={18} /> Save to Meetings</>
                             )}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={async () => {
                               const success = await copyToClipboard(transcriptionResult);
                               if (!success) {
                                 alert('Failed to copy transcription. Please copy manually.');
                               }
                             }}
-                            className="px-4 py-3 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent transition-all"
+                            size="2"
+                            variant="soft"
+                            color="gray"
+                            radius="medium"
                           >
                             Copy Text
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -2671,18 +2755,24 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         Summary and tasks have been generated. View in the Meetings tab.
                       </p>
                       <div className="flex gap-3 justify-center">
-                        <button
+                        <Button
                           onClick={() => { setActiveView('history'); setTranscriptionResult(''); setTranscriptionSaved(false); }}
-                          className="px-4 py-2 bg-success hover:bg-success/80 text-white rounded-lg text-sm font-medium transition-all"
+                          size="2"
+                          variant="solid"
+                          color="green"
+                          radius="medium"
                         >
                           View Meetings
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => { setTranscriptionResult(''); setTranscriptionSaved(false); setTranscriptionProgress(0); }}
-                          className="px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent transition-all"
+                          size="2"
+                          variant="soft"
+                          color="gray"
+                          radius="medium"
                         >
                           Upload Another
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -2710,15 +2800,14 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           >
                             {editingProposedTask === task.id ? (
                               <div className="space-y-3">
-                                <input
-                                  type="text"
+                                <TextField.Root
                                   value={editingProposedText}
                                   onChange={(e) => setEditingProposedText(e.target.value)}
-                                  className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text"
                                   placeholder="Edit task title..."
+                                  className="w-full"
                                 />
                                 <div className="flex gap-2">
-                                  <button
+                                  <Button
                                     onClick={() => {
                                       setProposedTasks(prev => prev.map(t =>
                                         t.id === task.id ? { ...t, title: editingProposedText, status: 'approved' as const } : t
@@ -2726,16 +2815,22 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       approveProposedTask(task.id);
                                       setEditingProposedTask(null);
                                     }}
-                                    className="px-3 py-1.5 bg-success text-white rounded-lg text-sm"
+                                    size="1"
+                                    variant="solid"
+                                    color="green"
+                                    radius="medium"
                                   >
                                     Save & Approve
-                                  </button>
-                                  <button
+                                  </Button>
+                                  <Button
                                     onClick={() => setEditingProposedTask(null)}
-                                    className="px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text"
+                                    size="1"
+                                    variant="ghost"
+                                    color="gray"
+                                    radius="medium"
                                   >
                                     Cancel
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             ) : (
@@ -2758,30 +2853,39 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                 </div>
                                 {task.status === 'pending' && (
                                   <div className="flex items-center gap-1 shrink-0">
-                                    <button
+                                    <IconButton
                                       onClick={() => approveProposedTask(task.id)}
-                                      className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
+                                      size="2"
+                                      variant="ghost"
+                                      color="green"
+                                      radius="medium"
                                       title="Approve — add to Kanban"
                                     >
                                       <CheckCircle2 size={16} />
-                                    </button>
-                                    <button
+                                    </IconButton>
+                                    <IconButton
                                       onClick={() => {
                                         setEditingProposedTask(task.id);
                                         setEditingProposedText(task.title);
                                       }}
-                                      className="p-2 hover:bg-mission-control-bg rounded-lg text-mission-control-text-dim transition-all"
+                                      size="2"
+                                      variant="ghost"
+                                      color="gray"
+                                      radius="medium"
                                       title="Edit & Approve"
                                     >
                                       <Edit3 size={16} />
-                                    </button>
-                                    <button
+                                    </IconButton>
+                                    <IconButton
                                       onClick={() => rejectProposedTask(task.id)}
-                                      className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
+                                      size="2"
+                                      variant="ghost"
+                                      color="red"
+                                      radius="medium"
                                       title="Reject"
                                     >
                                       <XCircle size={16} />
-                                    </button>
+                                    </IconButton>
                                   </div>
                                 )}
                               </div>

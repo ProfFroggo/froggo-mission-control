@@ -12,6 +12,7 @@ import {
   ChevronDown, ChevronRight, Volume2, VolumeX, ExternalLink,
   MessageSquare, Calendar
 } from 'lucide-react';
+import { Button, IconButton, Select, Checkbox } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import IconBadge from './IconBadge';
@@ -185,52 +186,62 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
     <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
       {/* Context-specific navigation */}
       {group === 'Tasks' && (
-        <button
+        <IconButton
+          size="2"
+          variant="ghost"
+          radius="medium"
           onClick={(e) => navigateTo('kanban', e)}
-          className="p-1.5 hover:bg-info-subtle text-info rounded-lg transition-colors"
           title="View task"
         >
           <ExternalLink size={14} />
-        </button>
+        </IconButton>
       )}
       {group === 'Approvals' && (
-        <button
+        <IconButton
+          size="2"
+          variant="ghost"
+          radius="medium"
           onClick={(e) => navigateTo('approvals', e)}
-          className="p-1.5 hover:bg-warning-subtle text-warning rounded-lg transition-colors"
           title="Review"
         >
           <ExternalLink size={14} />
-        </button>
+        </IconButton>
       )}
       {group === 'Agents' && (
-        <button
+        <IconButton
+          size="2"
+          variant="ghost"
+          radius="medium"
           onClick={(e) => navigateTo('agents', e)}
-          className="p-1.5 hover:bg-review-subtle text-review rounded-lg transition-colors"
           title="View agent"
         >
           <ExternalLink size={14} />
-        </button>
+        </IconButton>
       )}
 
       {/* Mark read */}
       {!notif.read && (
-        <button
+        <IconButton
+          size="2"
+          variant="ghost"
+          radius="medium"
           onClick={(e) => { e.stopPropagation(); onMarkRead(notif.id); }}
-          className="p-1.5 hover:bg-success-subtle text-success rounded-lg transition-colors"
           title="Mark as read"
         >
           <Check size={14} />
-        </button>
+        </IconButton>
       )}
 
       {/* Dismiss */}
-      <button
+      <IconButton
+        size="2"
+        variant="ghost"
+        radius="medium"
         onClick={(e) => { e.stopPropagation(); onDismiss(notif.id); }}
-        className="p-1.5 hover:bg-mission-control-border text-mission-control-text-dim rounded-lg transition-colors"
         title="Dismiss"
       >
         <X size={14} />
-      </button>
+      </IconButton>
     </div>
   );
 }
@@ -425,12 +436,14 @@ export default function NotificationsPanelV2() {
       <div className="h-full flex flex-col">
         <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
           <div className="flex items-center gap-3">
-            <button
+            <IconButton
+              size="2"
+              variant="ghost"
+              radius="medium"
               onClick={() => setShowSettings(false)}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             >
               <X size={20} />
-            </button>
+            </IconButton>
             <div>
               <h1 className="text-lg font-semibold text-mission-control-text">Notification Settings</h1>
               <p className="text-sm text-mission-control-text-dim">Configure notification preferences</p>
@@ -452,19 +465,22 @@ export default function NotificationsPanelV2() {
               {pushPermission === 'unsupported' ? (
                 <span className="text-xs text-mission-control-text-dim">Not supported</span>
               ) : pushEnabled && pushPermission === 'granted' ? (
-                <button
+                <Button
+                  size="1"
+                  variant="soft"
+                  color="red"
                   onClick={handleDisablePush}
-                  className="px-3 py-1.5 text-xs bg-error-subtle text-error rounded-lg hover:bg-error-subtle/80 transition-colors"
                 >
                   Disable
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
+                  size="1"
+                  variant="soft"
                   onClick={handleRequestPush}
-                  className="px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors"
                 >
                   Enable browser notifications
-                </button>
+                </Button>
               )}
             </div>
             <p className="text-xs text-mission-control-text-dim pl-6">
@@ -503,31 +519,45 @@ export default function NotificationsPanelV2() {
                     <div className="flex-1">
                       <div className="font-medium mb-1">{config?.label || pref.type}</div>
                       <div className="grid grid-cols-2 gap-3 mt-3">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="checkbox" checked={pref.enabled} onChange={(e) => handleTogglePreference(pref.type, 'enabled', e.target.checked)} className="rounded" />
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={pref.enabled}
+                            onCheckedChange={(v) => handleTogglePreference(pref.type, 'enabled', !!v)}
+                          />
                           <span>Enabled</span>
                         </label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="checkbox" checked={pref.show_desktop} disabled={!pref.enabled} onChange={(e) => handleTogglePreference(pref.type, 'show_desktop', e.target.checked)} className="rounded" />
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={pref.show_desktop}
+                            disabled={!pref.enabled}
+                            onCheckedChange={(v) => handleTogglePreference(pref.type, 'show_desktop', !!v)}
+                          />
                           <span>Desktop notification</span>
                         </label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="checkbox" checked={pref.play_sound} disabled={!pref.enabled} onChange={(e) => handleTogglePreference(pref.type, 'play_sound', e.target.checked)} className="rounded" />
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={pref.play_sound}
+                            disabled={!pref.enabled}
+                            onCheckedChange={(v) => handleTogglePreference(pref.type, 'play_sound', !!v)}
+                          />
                           <span>Play sound</span>
                         </label>
                         <div className="flex items-center gap-2 text-sm">
                           <span>Min priority:</span>
-                          <select
+                          <Select.Root
                             value={pref.min_priority}
                             disabled={!pref.enabled}
-                            onChange={(e) => handleTogglePreference(pref.type, 'min_priority', e.target.value)}
-                            className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-xs text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                            onValueChange={(v) => handleTogglePreference(pref.type, 'min_priority', v)}
+                            size="1"
                           >
-                            <option value="low">Low</option>
-                            <option value="normal">Normal</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
-                          </select>
+                            <Select.Trigger />
+                            <Select.Content>
+                              <Select.Item value="low">Low</Select.Item>
+                              <Select.Item value="normal">Normal</Select.Item>
+                              <Select.Item value="high">High</Select.Item>
+                              <Select.Item value="urgent">Urgent</Select.Item>
+                            </Select.Content>
+                          </Select.Root>
                         </div>
                       </div>
                     </div>
@@ -568,69 +598,73 @@ export default function NotificationsPanelV2() {
 
           <div className="flex gap-2 items-center flex-wrap">
             {/* Sound quick toggle */}
-            <button
+            <IconButton
+              size="2"
+              variant={soundEnabled ? 'soft' : 'ghost'}
+              radius="medium"
               onClick={() => saveSoundPref(!soundEnabled)}
-              className={`p-2 rounded-lg transition-colors ${
-                soundEnabled
-                  ? 'bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'
-              }`}
               title={soundEnabled ? 'Mute notification sounds' : 'Enable notification sounds'}
             >
               {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-            </button>
+            </IconButton>
 
             {/* Push notification quick toggle */}
-            <button
+            <IconButton
+              size="2"
+              variant={pushEnabled && pushPermission === 'granted' ? 'soft' : 'ghost'}
+              radius="medium"
               onClick={pushEnabled ? handleDisablePush : handleRequestPush}
-              className={`p-2 rounded-lg transition-colors ${
-                pushEnabled && pushPermission === 'granted'
-                  ? 'bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'
-              }`}
               title={pushEnabled && pushPermission === 'granted' ? 'Disable browser notifications' : 'Enable browser notifications'}
             >
               {pushEnabled && pushPermission === 'granted' ? <Bell size={16} /> : <BellOff size={16} />}
-            </button>
+            </IconButton>
 
             {notifications.length > 0 && (
-              <button
+              <Button
+                size="2"
+                variant="ghost"
+                color="gray"
                 onClick={handleDismissAll}
-                className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
                 title="Dismiss all notifications"
               >
                 <X size={14} />
                 Dismiss all
-              </button>
+              </Button>
             )}
 
             {stats.unread > 0 && (
-              <button
+              <Button
+                size="2"
+                variant="ghost"
+                color="gray"
                 onClick={handleMarkAllRead}
-                className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
                 title="Mark all as read"
               >
                 <CheckCheck size={14} />
                 Mark all read
-              </button>
+              </Button>
             )}
 
-            <button
+            <Button
+              size="2"
+              variant="ghost"
+              color="gray"
               onClick={loadNotifications}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               Refresh
-            </button>
+            </Button>
 
-            <button
+            <IconButton
+              size="2"
+              variant="ghost"
+              radius="medium"
               onClick={() => setShowSettings(true)}
-              className="p-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
               title="Settings"
             >
               <Settings size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -642,17 +676,15 @@ export default function NotificationsPanelV2() {
               : f === 'urgent' ? stats.urgent
               : stats.actionable;
             return (
-              <button
+              <Button
                 key={f}
+                size="2"
+                variant={filter === f ? 'soft' : 'ghost'}
+                color={filter === f ? undefined : 'gray'}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  filter === f
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)} ({count || 0})
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -674,7 +706,7 @@ export default function NotificationsPanelV2() {
                   {/* Collapsible group header */}
                   <button
                     onClick={() => toggleGroup(group)}
-                    className="w-full flex items-center gap-2 mb-2 group/header"
+                    className="w-full flex items-center gap-2 mb-2 group/header bg-transparent border-0 p-0 cursor-pointer"
                   >
                     {isCollapsed
                       ? <ChevronRight size={14} className="text-mission-control-text-dim flex-shrink-0" />
@@ -780,21 +812,25 @@ export default function NotificationsPanelV2() {
                                 {(isTask || isApproval) && !notif.read && (
                                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-mission-control-border/30">
                                     {isTask && (
-                                      <button
+                                      <Button
+                                        size="1"
+                                        variant="soft"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           window.dispatchEvent(new CustomEvent('navigate', { detail: 'kanban' }));
                                           handleMarkRead(notif.id);
                                         }}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-info-subtle text-info text-xs font-medium rounded-lg hover:bg-info-subtle/80 transition-colors"
                                       >
                                         <Eye size={12} />
                                         View Task
-                                      </button>
+                                      </Button>
                                     )}
                                     {isApproval && (
                                       <>
-                                        <button
+                                        <Button
+                                          size="1"
+                                          variant="soft"
+                                          color="green"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             if (notif.source_id) {
@@ -807,12 +843,14 @@ export default function NotificationsPanelV2() {
                                             handleDismiss(notif.id);
                                             showToast('success', 'Approved');
                                           }}
-                                          className="flex items-center gap-1.5 px-3 py-1.5 bg-success-subtle text-success text-xs font-medium rounded-lg hover:bg-success-subtle/80 transition-colors"
                                         >
                                           <Check size={12} />
                                           Approve
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button
+                                          size="1"
+                                          variant="soft"
+                                          color="red"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             if (notif.source_id) {
@@ -825,22 +863,23 @@ export default function NotificationsPanelV2() {
                                             handleDismiss(notif.id);
                                             showToast('info', 'Denied');
                                           }}
-                                          className="flex items-center gap-1.5 px-3 py-1.5 bg-error-subtle text-error text-xs font-medium rounded-lg hover:bg-error-subtle/80 transition-colors"
                                         >
                                           <X size={12} />
                                           Deny
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button
+                                          size="1"
+                                          variant="soft"
+                                          color="amber"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             window.dispatchEvent(new CustomEvent('navigate', { detail: 'approvals' }));
                                             handleMarkRead(notif.id);
                                           }}
-                                          className="flex items-center gap-1.5 px-3 py-1.5 bg-warning-subtle text-warning text-xs font-medium rounded-lg hover:bg-warning-subtle/80 transition-colors"
                                         >
                                           <Eye size={12} />
                                           Review
-                                        </button>
+                                        </Button>
                                       </>
                                     )}
                                   </div>
@@ -870,7 +909,7 @@ export default function NotificationsPanelV2() {
       <div className="border-t border-mission-control-border">
         <button
           onClick={() => setShowQuickPrefs(prev => !prev)}
-          className="w-full flex items-center gap-2 px-5 py-3 text-xs font-semibold text-mission-control-text-dim hover:bg-mission-control-border/40 transition-colors"
+          className="w-full flex items-center gap-2 px-5 py-3 text-xs font-semibold text-mission-control-text-dim hover:bg-mission-control-border/40 transition-colors bg-transparent border-0 cursor-pointer"
         >
           {showQuickPrefs ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           Notification Preferences

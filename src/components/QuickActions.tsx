@@ -268,11 +268,11 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
           <button
             key={agent.id}
             onClick={() => onSelect(agent)}
-            className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm ${
-              activeCall?.agentId === agent.id
-                ? 'bg-error-subtle border border-error-border'
-                : 'hover:bg-mission-control-border'
-            }`}
+            className="w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm"
+            style={{
+              background: activeCall?.agentId === agent.id ? 'var(--red-a3)' : 'transparent',
+              border: activeCall?.agentId === agent.id ? '1px solid var(--red-6)' : '1px solid transparent',
+            }}
           >
             <AgentAvatar agentId={agent.id} size="sm" />
             <div className="flex-1 min-w-0">
@@ -337,11 +337,11 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
             <button
               key={agent.id}
               onClick={() => setSelectedAgent(agent)}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors ${
-                selectedAgent.id === agent.id
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-border hover:bg-mission-control-border/80'
-              }`}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors"
+              style={{
+                background: selectedAgent.id === agent.id ? 'var(--accent-9)' : 'var(--gray-4)',
+                color: selectedAgent.id === agent.id ? 'white' : undefined,
+              }}
             >
               <AgentAvatar agentId={agent.id} size="xs" />
               {agent.name}
@@ -349,7 +349,8 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
           ))}
           <button
             onClick={() => setShowAllAgents(!showAllAgents)}
-            className="px-2 py-1 rounded-full text-xs bg-mission-control-border hover:bg-mission-control-border/80 transition-colors"
+            className="px-2 py-1 rounded-full text-xs transition-colors"
+            style={{ background: 'var(--gray-4)' }}
           >
             {showAllAgents ? 'Less' : 'More...'}
           </button>
@@ -360,11 +361,11 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
               <button
                 key={agent.id}
                 onClick={() => { setSelectedAgent(agent); setShowAllAgents(false); }}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors ${
-                  selectedAgent.id === agent.id
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-border hover:bg-mission-control-border/80'
-                }`}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors"
+                style={{
+                  background: selectedAgent.id === agent.id ? 'var(--accent-9)' : 'var(--gray-4)',
+                  color: selectedAgent.id === agent.id ? 'white' : undefined,
+                }}
               >
                 <AgentAvatar agentId={agent.id} size="xs" />
                 {agent.name}
@@ -469,7 +470,8 @@ function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
         {TASK_STATUSES.map(s => (
           <button
             key={s.value}
-            className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-mission-control-border hover:bg-mission-control-border/80 transition-colors"
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors"
+            style={{ background: 'var(--gray-4)' }}
             title={`View ${s.label} tasks`}
           >
             <s.icon size={10} className={s.color} />
@@ -492,11 +494,11 @@ function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
                   <button
                     key={s.value}
                     onClick={() => updateTaskStatus(task.id, s.value)}
-                    className={`px-1.5 py-0.5 rounded text-[9px] transition-colors ${
-                      task.status === s.value
-                        ? 'bg-mission-control-accent text-white'
-                        : 'bg-mission-control-border hover:bg-mission-control-border/80 text-mission-control-text-dim'
-                    }`}
+                    className="px-1.5 py-0.5 rounded text-[9px] transition-colors"
+                    style={{
+                      background: task.status === s.value ? 'var(--accent-9)' : 'var(--gray-4)',
+                      color: task.status === s.value ? 'white' : 'var(--gray-9)',
+                    }}
                     title={`Set to ${s.label}`}
                   >
                     {s.label}
@@ -1237,7 +1239,10 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <button
                 key={agent.id}
                 onClick={() => handleStartAgentChat(agent)}
-                className="w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm hover:bg-mission-control-border"
+                className="w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm"
+                style={{ background: 'transparent' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--gray-4)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
               >
                 <AgentAvatar agentId={agent.id} size="sm" />
                 <div className="flex-1 min-w-0">
@@ -1358,76 +1363,101 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         {state.isCollapsed ? (
           <>
             {/* Primary: Call button (collapsed) */}
-            <button
+            <IconButton
               onClick={() => {
                 closeAllModals();
                 if (activeCall) { setCallDialogOpen(!callDialogOpen); }
                 else { setAgentCallModalOpen(!agentCallModalOpen); }
               }}
-              className={`p-2.5 rounded-full transition-colors ${
-                callRinging ? 'bg-warning text-white animate-pulse'
-                : activeCall ? 'bg-error text-white' : 'hover:bg-mission-control-border'
-              }`}
+              size="2"
+              variant={callRinging ? 'solid' : activeCall ? 'solid' : 'ghost'}
+              color={callRinging ? 'yellow' : activeCall ? 'red' : 'gray'}
+              radius="full"
               title={activeCall ? activeCall.agentName : 'Call Agent'}
+              className={callRinging ? 'animate-pulse' : ''}
               style={isFloating ? noDrag : {}}
             >
-              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} className="text-mission-control-text-dim" />}
-            </button>
+              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
+            </IconButton>
             {activeCall && (
               <span className="inline-flex items-center gap-1 text-xs font-medium text-error" style={isFloating ? noDrag : {}}>
                 <span className="w-1.5 h-1.5 bg-error rounded-full animate-pulse" />
                 {activeCall.agentName}
               </span>
             )}
-            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-mission-control-border transition-colors" title="Expand toolbar" style={isFloating ? noDrag : {}}>
-              <ChevronLeft size={16} className="text-mission-control-text-dim" />
-            </button>
+            <IconButton
+              onClick={toggleCollapse}
+              size="2"
+              variant="ghost"
+              color="gray"
+              radius="full"
+              title="Expand toolbar"
+              style={isFloating ? noDrag : {}}
+            >
+              <ChevronLeft size={16} />
+            </IconButton>
           </>
         ) : (
           <>
             {/* Standard actions */}
-            <button onClick={onSearch} className="p-2.5 rounded-full hover:bg-mission-control-border transition-colors" title="Search (⌘/)" style={isFloating ? noDrag : {}}>
-              <Search size={16} className="text-mission-control-text-dim" />
-            </button>
+            <IconButton
+              onClick={onSearch}
+              size="2"
+              variant="ghost"
+              color="gray"
+              radius="full"
+              title="Search (⌘/)"
+              style={isFloating ? noDrag : {}}
+            >
+              <Search size={16} />
+            </IconButton>
 
             {/* Agent Chat button */}
-            <button
+            <IconButton
               onClick={() => {
                 closeAllModals();
                 if (agentChatOpen) { setAgentChatOpen(false); }
                 else { setAgentChatModalOpen(!agentChatModalOpen); }
               }}
-              className={`p-2.5 rounded-full transition-colors ${
-                agentChatOpen || agentChatModalOpen ? 'bg-mission-control-accent text-white' : 'hover:bg-mission-control-border'
-              }`}
+              size="2"
+              variant={agentChatOpen || agentChatModalOpen ? 'soft' : 'ghost'}
+              color={agentChatOpen || agentChatModalOpen ? 'violet' : 'gray'}
+              radius="full"
               title="Chat with Agent"
               style={isFloating ? noDrag : {}}
             >
-              <MessageSquare size={16} className={agentChatOpen || agentChatModalOpen ? '' : 'text-mission-control-text-dim'} />
-            </button>
+              <MessageSquare size={16} />
+            </IconButton>
 
-            {/* Primary: Call button (was where meeting button was) */}
-            <button
+            {/* Primary: Call button */}
+            <IconButton
               onClick={() => {
                 closeAllModals();
                 if (activeCall) { setCallDialogOpen(!callDialogOpen); }
                 else { setAgentCallModalOpen(!agentCallModalOpen); }
               }}
-              className={`p-2.5 rounded-full transition-colors ${
-                callRinging ? 'bg-warning text-white animate-pulse'
-                : activeCall ? 'bg-error text-white hover:bg-error/80'
-                : agentCallModalOpen ? 'bg-mission-control-accent text-white'
-                : 'hover:bg-mission-control-border'
-              }`}
+              size="2"
+              variant={callRinging ? 'solid' : activeCall ? 'solid' : agentCallModalOpen ? 'soft' : 'ghost'}
+              color={callRinging ? 'yellow' : activeCall ? 'red' : agentCallModalOpen ? 'violet' : 'gray'}
+              radius="full"
               title={activeCall ? `In call with ${activeCall.agentName}` : 'Call Agent'}
+              className={callRinging ? 'animate-pulse' : ''}
               style={isFloating ? noDrag : {}}
             >
               {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
-            </button>
+            </IconButton>
 
-            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-mission-control-border transition-colors" title="Collapse toolbar" style={isFloating ? noDrag : {}}>
-              <ChevronRight size={16} className="text-mission-control-text-dim" />
-            </button>
+            <IconButton
+              onClick={toggleCollapse}
+              size="2"
+              variant="ghost"
+              color="gray"
+              radius="full"
+              title="Collapse toolbar"
+              style={isFloating ? noDrag : {}}
+            >
+              <ChevronRight size={16} />
+            </IconButton>
           </>
         )}
       </div>

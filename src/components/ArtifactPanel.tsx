@@ -19,6 +19,7 @@ import {
   WifiOff,
   type LucideIcon,
 } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { useArtifactStore, type Artifact, type ArtifactType } from '../store/artifactStore';
 import MarkdownMessage from './MarkdownMessage';
 
@@ -263,10 +264,14 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
 
   if (isCollapsed) {
     return (
-      <button
+      <IconButton
         onClick={toggleCollapse}
-        className="fixed right-0 top-1/2 -translate-y-1/2 bg-mission-control-surface border-l border-y border-mission-control-border rounded-l-lg p-2 hover:bg-mission-control-bg transition-colors z-10"
+        size="2"
+        variant="ghost"
+        radius="medium"
         title="Open Artifacts"
+        className="fixed right-0 top-1/2 -translate-y-1/2 border-l border-y border-mission-control-border rounded-l-lg rounded-r-none z-10"
+        style={{ position: 'fixed' }}
       >
         <ChevronLeft size={20} className="text-mission-control-text-dim" />
         {displayArtifacts.length > 0 && (
@@ -274,7 +279,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
             {displayArtifacts.length}
           </span>
         )}
-      </button>
+      </IconButton>
     );
   }
 
@@ -309,13 +314,16 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
             </span>
           )}
         </div>
-        <button
+        <IconButton
           onClick={toggleCollapse}
-          className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
+          size="2"
+          variant="ghost"
+          radius="medium"
           title="Collapse panel"
+          aria-label="Collapse panel"
         >
-          <ChevronRight size={18} className="text-mission-control-text-dim" />
-        </button>
+          <ChevronRight size={18} />
+        </IconButton>
       </div>
 
       {/* Artifact List or Detail View */}
@@ -323,32 +331,64 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Artifact Header — single compact row */}
           <div className="flex items-center gap-2 px-3 py-2 border-b border-mission-control-border">
-            <button
+            <IconButton
               onClick={() => selectArtifact(null)}
-              className="p-1 rounded hover:bg-mission-control-border transition-colors flex-shrink-0"
+              size="1"
+              variant="ghost"
+              radius="medium"
+              className="flex-shrink-0"
+              aria-label="Back"
             >
-              <ChevronLeft size={15} className="text-mission-control-text-dim" />
-            </button>
+              <ChevronLeft size={15} />
+            </IconButton>
             <span className="font-medium text-sm truncate flex-1 min-w-0">{selectedArtifact.title}</span>
             <span className={`px-1.5 py-0.5 rounded text-xs border flex-shrink-0 ${ARTIFACT_COLORS[selectedArtifact.type]}`}>
               {selectedArtifact.type}
             </span>
             <span className="text-xs text-mission-control-text-dim flex-shrink-0 tabular-nums">v{selectedArtifact.currentVersion}</span>
             <div className="flex items-center gap-1 flex-shrink-0">
-              <button onClick={() => handleCopy(selectedArtifact.content, selectedArtifact.id)} className={`p-1.5 rounded hover:bg-mission-control-border transition-colors flex items-center gap-1 text-xs ${copiedId === selectedArtifact.id ? 'text-success' : 'text-mission-control-text-dim hover:text-mission-control-text'}`} title="Copy">
-                <Copy size={13} />{copiedId === selectedArtifact.id && <span>Copied!</span>}
-              </button>
-              <button onClick={() => handleDownload(selectedArtifact)} className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text" title="Download"><Download size={13} /></button>
-              <button
+              <IconButton
+                onClick={() => handleCopy(selectedArtifact.content, selectedArtifact.id)}
+                size="1"
+                variant={copiedId === selectedArtifact.id ? 'soft' : 'ghost'}
+                radius="medium"
+                title="Copy"
+                aria-label="Copy"
+              >
+                <Copy size={13} />
+                {copiedId === selectedArtifact.id && <span className="text-xs">Copied!</span>}
+              </IconButton>
+              <IconButton
+                onClick={() => handleDownload(selectedArtifact)}
+                size="1"
+                variant="ghost"
+                radius="medium"
+                title="Download"
+                aria-label="Download"
+              >
+                <Download size={13} />
+              </IconButton>
+              <IconButton
                 onClick={() => setShowVersionHistory(!showVersionHistory)}
-                className={`p-1.5 rounded transition-colors ${showVersionHistory ? 'text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border'}`}
+                size="1"
+                variant={showVersionHistory ? 'soft' : 'ghost'}
+                radius="medium"
                 title="Version history"
-              ><History size={13} /></button>
-              <button
+                aria-label="Version history"
+              >
+                <History size={13} />
+              </IconButton>
+              <IconButton
                 onClick={() => { if (confirm('Delete this artifact?')) { deleteArtifact(selectedArtifact.id); selectArtifact(null); } }}
-                className="p-1.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+                size="1"
+                variant="ghost"
+                color="red"
+                radius="medium"
                 title="Delete"
-              ><Trash2 size={13} /></button>
+                aria-label="Delete"
+              >
+                <Trash2 size={13} />
+              </IconButton>
             </div>
           </div>
 
@@ -400,6 +440,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                           ? 'border-mission-control-accent text-mission-control-accent'
                           : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
                       }`}
+                      style={{ background: 'none' }}
                     >
                       <TabIcon size={14} className="mr-1.5" />
                       {label}
@@ -408,24 +449,30 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 })}
               </div>
               <div className="flex items-center gap-1 ml-2">
-                <button
+                <IconButton
                   onClick={() => setReloadKey(k => k + 1)}
-                  className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+                  size="1"
+                  variant="ghost"
+                  radius="medium"
                   title="Reload preview"
+                  aria-label="Reload preview"
                 >
                   <RefreshCw size={14} />
-                </button>
+                </IconButton>
                 {viewTab === 'preview' && (
-                  <button
+                  <IconButton
                     onClick={() => {
                       const win = window.open('', '_blank');
                       if (win) { win.document.write(selectedArtifact.content); win.document.close(); }
                     }}
-                    className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+                    size="1"
+                    variant="ghost"
+                    radius="medium"
                     title="Open in new window"
+                    aria-label="Open in new window"
                   >
                     <Expand size={14} />
-                  </button>
+                  </IconButton>
                 )}
               </div>
             </div>
@@ -450,20 +497,21 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                   Local Dev Server URL
                 </label>
                 <div className="flex gap-2">
-                  <input
-                    type="text"
+                  <TextField.Root
                     value={portUrl}
                     onChange={e => setPortUrl(e.target.value)}
                     placeholder="http://localhost:3000"
-                    className="flex-1 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
+                    size="2"
+                    className="flex-1"
                     onKeyDown={e => { if (e.key === 'Enter') setLoadedPortUrl(portUrl); }}
                   />
-                  <button
+                  <Button
                     onClick={() => setLoadedPortUrl(portUrl)}
-                    className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                    size="2"
+                    variant="solid"
                   >
                     Load
-                  </button>
+                  </Button>
                 </div>
                 <p className="text-xs text-mission-control-text-dim">
                   Only works if a local dev server is running on that port
@@ -484,12 +532,14 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                       <WifiOff size={32} className="opacity-50" />
                       <p className="text-sm font-medium text-mission-control-text">Could not connect to localhost</p>
                       <p className="text-xs text-mission-control-text-dim">Make sure the dev server is running on that port</p>
-                      <button
+                      <Button
                         onClick={() => { setPortUrl(''); setLoadedPortUrl(''); setPortError(false); }}
-                        className="mt-1 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-xs hover:bg-mission-control-border transition-colors"
+                        size="1"
+                        variant="ghost"
+                        radius="medium"
                       >
                         Try again
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -522,7 +572,8 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                   <button
                     key={artifact.id}
                     onClick={() => selectArtifact(artifact.id)}
-                    className="w-full text-left p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors"
+                    className="w-full text-left p-3 rounded-lg transition-colors"
+                    style={{ background: 'var(--mission-control-bg)', border: '1px solid var(--mission-control-border)' }}
                   >
                     <div className="flex items-start gap-2">
                       <div className={`p-2 rounded border ${colorClass} flex-shrink-0`}>
