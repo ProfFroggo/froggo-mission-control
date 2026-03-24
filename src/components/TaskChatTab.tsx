@@ -3,7 +3,7 @@ import { Send, Bot, User, MessageSquare } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 import SessionStatsBar from './SessionStatsBar';
 // eslint-disable-next-line import/order
-import { IconButton, Spinner, TextArea, Flex } from '@radix-ui/themes';
+import { IconButton, Spinner, TextArea, Flex, Box } from '@radix-ui/themes';
 
 interface Message {
   role: 'user' | 'agent' | 'system';
@@ -106,37 +106,37 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
 
   if (!agentId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-16 gap-3 text-center">
+      <Flex direction="column" align="center" justify="center" height="100%" py="9" gap="3" className="text-center">
         <MessageSquare size={32} className="text-mission-control-text-dim opacity-40" />
         <p className="text-sm font-medium text-mission-control-text">No agent assigned</p>
         <p className="text-xs text-mission-control-text-dim">Assign an agent to this task to enable chat.</p>
-      </div>
+      </Flex>
     );
   }
 
   return (
     <Flex direction="column" className="flex-1 min-h-0 overflow-hidden">
       {/* Context banner */}
-      <div className="px-4 py-2 border-b border-mission-control-border flex flex-col gap-1.5 flex-shrink-0 bg-mission-control-bg">
-        <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+      <Flex direction="column" gap="2" px="4" py="2" className="border-b border-mission-control-border flex-shrink-0 bg-mission-control-bg">
+        <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
           <Bot size={12} />
           <span>Direct session — {agentName} has full task context and memory</span>
-        </div>
+        </Flex>
         <SessionStatsBar sessionKey={sessionKey} onCompact={() => sendMessage('/compact')} />
-      </div>
+      </Flex>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+      <Box p="4" className="flex-1 overflow-y-auto space-y-3 min-h-0">
         {loading && (
-          <div className="flex items-center justify-center py-8">
+          <Flex align="center" justify="center" py="6">
             <Spinner size="3" />
-          </div>
+          </Flex>
         )}
 
         {!loading && messages.length === 0 && (
-          <div className="flex items-center justify-center py-8 text-mission-control-text-dim text-sm">
+          <Flex align="center" justify="center" py="6" className="text-mission-control-text-dim text-sm">
             No messages yet. Ask {agentName} anything about this task.
-          </div>
+          </Flex>
         )}
 
         {messages.map((msg, i) => (
@@ -144,11 +144,11 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
             key={`${msg.timestamp}-${i}`}
             className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
           >
-            <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white ${
+            <Flex align="center" justify="center" className={`flex-shrink-0 w-7 h-7 rounded-full text-white ${
               msg.role === 'user' ? 'bg-mission-control-accent' : 'bg-success'
             }`}>
               {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
-            </div>
+            </Flex>
             <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${
               msg.role === 'user'
                 ? 'bg-mission-control-accent/20 text-mission-control-text rounded-tr-sm'
@@ -170,26 +170,26 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
 
         {/* Thinking indicator */}
         {sending && (
-          <div className="flex gap-2">
-            <div className="flex-shrink-0 w-7 h-7 rounded-full bg-success flex items-center justify-center text-white">
+          <Flex gap="2">
+            <Flex align="center" justify="center" className="flex-shrink-0 w-7 h-7 rounded-full bg-success text-white">
               <Bot size={12} />
-            </div>
+            </Flex>
             <div className="px-3 py-2 rounded-lg rounded-tl-sm bg-mission-control-surface border border-mission-control-border">
-              <div className="flex gap-1 items-center">
+              <Flex gap="1" align="center">
                 <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
+              </Flex>
             </div>
-          </div>
+          </Flex>
         )}
 
         <div ref={bottomRef} />
-      </div>
+      </Box>
 
       {/* Input */}
-      <div className="p-3 border-t border-mission-control-border flex-shrink-0">
-        <div className="flex gap-2">
+      <Box p="3" className="border-t border-mission-control-border flex-shrink-0">
+        <Flex gap="2">
           <TextArea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -209,8 +209,8 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
           >
             <Send size={16} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Box>
     </Flex>
   );
 }
