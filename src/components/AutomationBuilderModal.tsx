@@ -5,6 +5,7 @@ import {
   ChevronDown, ChevronUp, AlertCircle,
 } from 'lucide-react';
 import type { Automation, AutomationStep, TriggerType } from './AutomationsPanel';
+import { Button, IconButton, Heading, Text, Spinner, Select, TextField, TextArea } from '@radix-ui/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -574,52 +575,40 @@ export default function AutomationBuilderModal({
                 <p style={{ fontSize: 13, color: 'var(--mission-control-text-dim)', lineHeight: 1.6, marginBottom: 16 }}>
                   Describe your automation in plain English. The agent will parse it into structured steps that you can review and refine.
                 </p>
-                <textarea
+                <TextArea
                   ref={descRef}
+                  variant="soft"
                   value={nlDescription}
-                  onChange={e => setNlDescription(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNlDescription(e.target.value)}
                   placeholder={'Every Monday morning, have the researcher agent find trending topics and post a summary to the team chat.'}
                   rows={5}
-                  style={{
-                    ...inputStyle,
-                    resize: 'vertical',
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    fontFamily: 'inherit',
-                  }}
+                  style={{ fontSize: 14, lineHeight: 1.6, fontFamily: 'inherit', width: '100%' }}
                 />
                 {nlError && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'color-mix(in srgb, #f59e0b 12%, transparent)', border: '1px solid color-mix(in srgb, #f59e0b 30%, transparent)' }}>
-                    <AlertCircle size={14} style={{ color: '#f59e0b', flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: '#f59e0b' }}>{nlError}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'color-mix(in srgb, var(--warning) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 30%, transparent)' }}>
+                    <AlertCircle size={14} style={{ color: 'var(--warning)', flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, color: 'var(--warning)' }}>{nlError}</span>
                   </div>
                 )}
               </div>
-              <button
+              <Button
+                variant="solid"
+                size="3"
                 onClick={handleBuildWithAI}
                 disabled={!nlDescription.trim() || nlParsing}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  padding: '12px 24px', borderRadius: 10, fontSize: 14, fontWeight: 600,
-                  background: !nlDescription.trim() || nlParsing ? 'var(--mission-control-border)' : 'var(--mission-control-accent)',
-                  color: !nlDescription.trim() || nlParsing ? 'var(--mission-control-text-dim)' : '#fff',
-                  border: 'none', cursor: !nlDescription.trim() || nlParsing ? 'default' : 'pointer',
-                }}
+                style={{ width: '100%' }}
               >
-                <Bot size={16} />
+                {nlParsing ? <Spinner size="1" /> : <Bot size={16} />}
                 <Wand2 size={16} />
                 {nlParsing ? 'Building...' : 'Build with AI'}
-              </button>
+              </Button>
 
               <div style={{ borderTop: '1px solid var(--mission-control-border)', paddingTop: 16, marginTop: 4 }}>
                 <p style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', textAlign: 'center' }}>
                   Or{' '}
-                  <button
-                    onClick={() => setMode('manual')}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mission-control-accent)', fontSize: 12, fontWeight: 600, padding: 0 }}
-                  >
+                  <Button variant="ghost" size="1" onClick={() => setMode('manual')} style={{ padding: 0, height: 'auto', display: 'inline' }}>
                     switch to the manual builder
-                  </button>
+                  </Button>
                   {' '}to configure each step yourself.
                 </p>
               </div>
@@ -634,22 +623,21 @@ export default function AutomationBuilderModal({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={labelStyle}>Automation name</label>
-                  <input
-                    type="text"
+                  <TextField.Root
                     placeholder="e.g. Daily Content Brief"
                     value={draft.name}
-                    onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
-                    style={inputStyle}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDraft(d => ({ ...d, name: e.target.value }))}
                   />
                 </div>
                 <div>
                   <label style={labelStyle}>Description (optional)</label>
-                  <textarea
+                  <TextArea
+                    variant="soft"
                     placeholder="What does this automation do?"
                     value={draft.description}
-                    onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDraft(d => ({ ...d, description: e.target.value }))}
                     rows={2}
-                    style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+                    style={{ fontFamily: 'inherit', width: '100%' }}
                   />
                 </div>
               </div>
@@ -672,8 +660,10 @@ export default function AutomationBuilderModal({
                     const TIcon = triggerIcons[t];
                     const active = draft.trigger_type === t;
                     return (
-                      <button
+                      <Button
                         key={t}
+                        variant={active ? 'solid' : 'outline'}
+                        size="1"
                         onClick={() => {
                           const defaultConfigs: Record<TriggerType, TriggerConfig> = {
                             schedule: { time: '09:00', frequency: 'daily' } as TriggerScheduleConfig,
@@ -683,17 +673,10 @@ export default function AutomationBuilderModal({
                           };
                           setDraft(d => ({ ...d, trigger_type: t, trigger_config: defaultConfigs[t] }));
                         }}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          padding: '6px 12px', borderRadius: 8, border: '1px solid',
-                          borderColor: active ? 'var(--mission-control-accent)' : 'var(--mission-control-border)',
-                          background: active ? 'color-mix(in srgb, var(--mission-control-accent) 15%, transparent)' : 'var(--mission-control-surface)',
-                          color: active ? 'var(--mission-control-accent)' : 'var(--mission-control-text-dim)',
-                          fontSize: 12, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize',
-                        }}
+                        style={{ textTransform: 'capitalize' }}
                       >
                         <TIcon size={13} /> {t}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -703,37 +686,40 @@ export default function AutomationBuilderModal({
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     <div style={{ flex: '1 1 120px' }}>
                       <label style={labelStyle}>Time (HH:MM)</label>
-                      <input
+                      <TextField.Root
                         type="time"
                         value={scheduleConfig.time ?? '09:00'}
-                        onChange={e => setDraft(d => ({ ...d, trigger_config: { ...scheduleConfig, time: e.target.value } }))}
-                        style={inputStyle}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDraft(d => ({ ...d, trigger_config: { ...scheduleConfig, time: e.target.value } }))}
                       />
                     </div>
                     <div style={{ flex: '1 1 140px' }}>
                       <label style={labelStyle}>Frequency</label>
-                      <select
+                      <Select.Root
                         value={scheduleConfig.frequency ?? 'daily'}
-                        onChange={e => setDraft(d => ({ ...d, trigger_config: { ...scheduleConfig, frequency: e.target.value as Frequency } }))}
-                        style={selectStyle}
+                        onValueChange={val => setDraft(d => ({ ...d, trigger_config: { ...scheduleConfig, frequency: val as Frequency } }))}
                       >
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                      </select>
+                        <Select.Trigger style={{ width: '100%' }} />
+                        <Select.Content>
+                          <Select.Item value="daily">Daily</Select.Item>
+                          <Select.Item value="weekly">Weekly</Select.Item>
+                          <Select.Item value="monthly">Monthly</Select.Item>
+                        </Select.Content>
+                      </Select.Root>
                     </div>
                     {scheduleConfig.frequency === 'weekly' && (
                       <div style={{ flex: '1 1 140px' }}>
                         <label style={labelStyle}>Day of week</label>
-                        <select
+                        <Select.Root
                           value={scheduleConfig.dayOfWeek ?? 'monday'}
-                          onChange={e => setDraft(d => ({ ...d, trigger_config: { ...scheduleConfig, dayOfWeek: e.target.value as DayOfWeek } }))}
-                          style={selectStyle}
+                          onValueChange={val => setDraft(d => ({ ...d, trigger_config: { ...scheduleConfig, dayOfWeek: val as DayOfWeek } }))}
                         >
-                          {DAYS_OF_WEEK.map(d => (
-                            <option key={d.value} value={d.value}>{d.label}</option>
-                          ))}
-                        </select>
+                          <Select.Trigger style={{ width: '100%' }} />
+                          <Select.Content>
+                            {DAYS_OF_WEEK.map(d => (
+                              <Select.Item key={d.value} value={d.value}>{d.label}</Select.Item>
+                            ))}
+                          </Select.Content>
+                        </Select.Root>
                       </div>
                     )}
                   </div>
@@ -742,26 +728,27 @@ export default function AutomationBuilderModal({
                 {draft.trigger_type === 'event' && (
                   <div>
                     <label style={labelStyle}>Event type</label>
-                    <select
+                    <Select.Root
                       value={eventConfig.event ?? 'task.created'}
-                      onChange={e => setDraft(d => ({ ...d, trigger_config: { event: e.target.value } }))}
-                      style={selectStyle}
+                      onValueChange={val => setDraft(d => ({ ...d, trigger_config: { event: val } }))}
                     >
-                      {EVENTS.map(ev => (
-                        <option key={ev.value} value={ev.value}>{ev.label}</option>
-                      ))}
-                    </select>
+                      <Select.Trigger style={{ width: '100%' }} />
+                      <Select.Content>
+                        {EVENTS.map(ev => (
+                          <Select.Item key={ev.value} value={ev.value}>{ev.label}</Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Root>
                   </div>
                 )}
 
                 {draft.trigger_type === 'webhook' && (
                   <div>
                     <label style={labelStyle}>Webhook URL (generated on save)</label>
-                    <input
-                      type="text"
+                    <TextField.Root
                       disabled
                       placeholder="/api/automations/webhook/[id]"
-                      style={{ ...inputStyle, opacity: 0.5 }}
+                      style={{ opacity: 0.5 }}
                     />
                   </div>
                 )}
@@ -779,17 +766,9 @@ export default function AutomationBuilderModal({
                   <label style={labelStyle}>
                     Step 2 — Actions ({draft.steps.length} step{draft.steps.length !== 1 ? 's' : ''})
                   </label>
-                  <button
-                    onClick={addStep}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      padding: '5px 12px', borderRadius: 7, border: '1px solid var(--mission-control-border)',
-                      background: 'var(--mission-control-surface)', color: 'var(--mission-control-text)',
-                      fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                    }}
-                  >
+                  <Button variant="outline" size="1" onClick={addStep}>
                     <Plus size={13} /> Add step
-                  </button>
+                  </Button>
                 </div>
 
                 {draft.steps.length === 0 ? (
@@ -832,39 +811,16 @@ export default function AutomationBuilderModal({
               background: 'var(--mission-control-surface)',
             }}
           >
-            <button
-              onClick={onClose}
-              style={{
-                padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-                background: 'transparent', color: 'var(--mission-control-text-dim)',
-                border: '1px solid var(--mission-control-border)', cursor: 'pointer',
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => handleSave(false)}
-              style={{
-                padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-                background: 'var(--mission-control-border)', color: 'var(--mission-control-text)',
-                border: 'none', cursor: 'pointer',
-              }}
-            >
-              Save as draft
-            </button>
-            <button
+            <Button variant="outline" size="2" onClick={onClose}>Cancel</Button>
+            <Button variant="soft" size="2" onClick={() => handleSave(false)}>Save as draft</Button>
+            <Button
+              variant="solid"
+              size="2"
               onClick={() => handleSave(true)}
               disabled={!draft.name.trim() || draft.steps.length === 0}
-              style={{
-                padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                background: !draft.name.trim() || draft.steps.length === 0 ? 'var(--mission-control-border)' : 'var(--mission-control-accent)',
-                color: !draft.name.trim() || draft.steps.length === 0 ? 'var(--mission-control-text-dim)' : '#fff',
-                border: 'none',
-                cursor: !draft.name.trim() || draft.steps.length === 0 ? 'default' : 'pointer',
-              }}
             >
               Activate
-            </button>
+            </Button>
           </div>
         )}
       </div>

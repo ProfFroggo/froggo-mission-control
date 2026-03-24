@@ -170,34 +170,23 @@ const TEMPLATES: Template[] = [
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: AutomationStatus }) {
-  const map: Record<AutomationStatus, { label: string; color: string }> = {
-    active:  { label: 'Active',  color: 'var(--status-active, #22c55e)' },
-    paused:  { label: 'Paused',  color: 'var(--status-paused, #f59e0b)' },
-    draft:   { label: 'Draft',   color: 'var(--mission-control-text-dim)' },
-    error:   { label: 'Error',   color: 'var(--status-error, #ef4444)' },
+  const map: Record<AutomationStatus, { label: string; className: string }> = {
+    active:  { label: 'Active',  className: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-subtle text-success text-xs font-medium' },
+    paused:  { label: 'Paused',  className: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-subtle text-warning text-xs font-medium' },
+    draft:   { label: 'Draft',   className: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mission-control-border text-mission-control-text-dim text-xs font-medium' },
+    error:   { label: 'Error',   className: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-subtle text-error text-xs font-medium' },
   };
-  const { label, color } = map[status];
+  const { label, className } = map[status];
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 4,
-        fontSize: 11,
-        fontWeight: 600,
-        padding: '2px 8px',
-        borderRadius: 999,
-        background: `color-mix(in srgb, ${color} 15%, transparent)`,
-        color,
-      }}
-    >
+    <span className={className}>
       <span
         style={{
           width: 6,
           height: 6,
           borderRadius: '50%',
-          background: color,
+          background: 'currentColor',
           display: 'inline-block',
+          flexShrink: 0,
         }}
       />
       {label}
@@ -303,13 +292,13 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
 
       {/* Meta row: last run, next run */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 11, color: 'var(--mission-control-text-dim)' }}>
+        <span style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', fontVariantNumeric: 'tabular-nums' }}>
           Last run: {formatTime(automation.lastRun)}
         </span>
-        <span style={{ fontSize: 11, color: 'var(--mission-control-text-dim)' }}>
+        <span style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', fontVariantNumeric: 'tabular-nums' }}>
           Next run: {formatTime(automation.nextRun)}
         </span>
-        <span style={{ fontSize: 11, color: 'var(--mission-control-text-dim)' }}>
+        <span style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', fontVariantNumeric: 'tabular-nums' }}>
           {automation.steps.length} step{automation.steps.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -384,11 +373,11 @@ interface TemplateCardProps {
 }
 
 const CATEGORY_COLORS: Record<TemplateCategory, string> = {
-  Content:   'var(--category-content, #6366f1)',
-  Social:    'var(--category-social, #ec4899)',
-  Reporting: 'var(--category-reporting, #0ea5e9)',
-  Tasks:     'var(--category-tasks, #22c55e)',
-  Alerts:    'var(--category-alerts, #f59e0b)',
+  Content:   'var(--review)',
+  Social:    'var(--danger)',
+  Reporting: 'var(--info)',
+  Tasks:     'var(--success)',
+  Alerts:    'var(--warning)',
 };
 
 function TemplateCard({ template, onUse }: TemplateCardProps) {
@@ -426,7 +415,7 @@ function TemplateCard({ template, onUse }: TemplateCardProps) {
           </span>
           <span
             style={{
-              fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+              fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
               background: `color-mix(in srgb, ${color} 15%, transparent)`, color,
             }}
           >

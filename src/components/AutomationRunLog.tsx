@@ -55,18 +55,18 @@ function formatDuration(ms?: number): string {
 
 function StatusIcon({ status }: { status: string }) {
   switch (status) {
-    case 'success': return <CheckCircle size={14} style={{ color: 'var(--status-active, #22c55e)', flexShrink: 0 }} />;
-    case 'failed':  return <XCircle size={14} style={{ color: 'var(--status-error, #ef4444)', flexShrink: 0 }} />;
-    case 'running': return <RefreshCw size={14} style={{ color: '#f59e0b', flexShrink: 0, animation: 'spin 1s linear infinite' }} />;
+    case 'success': return <CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} />;
+    case 'failed':  return <XCircle size={14} style={{ color: 'var(--error)', flexShrink: 0 }} />;
+    case 'running': return <RefreshCw size={14} style={{ color: 'var(--warning)', flexShrink: 0, animation: 'spin 1s linear infinite' }} />;
     default:        return <AlertCircle size={14} style={{ color: 'var(--mission-control-text-dim)', flexShrink: 0 }} />;
   }
 }
 
 function statusColor(status: string): string {
   switch (status) {
-    case 'success': return 'var(--status-active, #22c55e)';
-    case 'failed':  return 'var(--status-error, #ef4444)';
-    case 'running': return '#f59e0b';
+    case 'success': return 'var(--success)';
+    case 'failed':  return 'var(--error)';
+    case 'running': return 'var(--warning)';
     default:        return 'var(--mission-control-text-dim)';
   }
 }
@@ -93,7 +93,7 @@ function RunRow({ run }: { run: AutomationRun }) {
         <StatusIcon status={run.status} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--mission-control-text)' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--mission-control-text)', fontVariantNumeric: 'tabular-nums' }}>
               {formatTs(run.startedAt)}
             </span>
             <Badge
@@ -104,13 +104,13 @@ function RunRow({ run }: { run: AutomationRun }) {
             </Badge>
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 2 }}>
-            <span style={{ fontSize: 11, color: 'var(--mission-control-text-dim)', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <span style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', display: 'flex', alignItems: 'center', gap: 3, fontVariantNumeric: 'tabular-nums' }}>
               <Clock size={10} /> {formatDuration(run.duration)}
             </span>
-            <span style={{ fontSize: 11, color: 'var(--mission-control-text-dim)' }}>
+            <span style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', fontVariantNumeric: 'tabular-nums' }}>
               {run.stepsRun} step{run.stepsRun !== 1 ? 's' : ''} run
             </span>
-            <span style={{ fontSize: 11, color: 'var(--mission-control-text-dim)' }}>
+            <span style={{ fontSize: 12, color: 'var(--mission-control-text-dim)' }}>
               via {run.triggeredBy}
             </span>
           </div>
@@ -137,14 +137,14 @@ function RunRow({ run }: { run: AutomationRun }) {
               >
                 <StatusIcon status={sr.status} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--mission-control-text)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mission-control-text)' }}>
                     Step {sr.stepIndex + 1}: {sr.type}
                   </div>
                   {sr.output && (
-                    <div style={{ fontSize: 11, color: 'var(--mission-control-text-dim)', marginTop: 2 }}>{sr.output}</div>
+                    <div style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', marginTop: 2 }}>{sr.output}</div>
                   )}
                   {sr.error && (
-                    <div style={{ fontSize: 11, color: 'var(--status-error, #ef4444)', marginTop: 2 }}>{sr.error}</div>
+                    <div style={{ fontSize: 12, color: 'var(--error)', marginTop: 2 }}>{sr.error}</div>
                   )}
                 </div>
               </div>
@@ -262,16 +262,16 @@ export default function AutomationRunLog({ automationId, automationName, onClose
           )}
 
           {error && (
-            <div style={{ padding: '12px 14px', borderRadius: 8, background: 'color-mix(in srgb, var(--status-error, #ef4444) 10%, transparent)', color: 'var(--status-error, #ef4444)', fontSize: 13 }}>
+            <div style={{ padding: '12px 14px', borderRadius: 8, background: 'color-mix(in srgb, var(--error) 10%, transparent)', color: 'var(--error)', fontSize: 13 }}>
               {error}
             </div>
           )}
 
           {!loading && !error && runs.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--mission-control-text-dim)' }}>
-              <Clock size={32} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.4 }} />
-              <p style={{ fontSize: 14, margin: 0 }}>No runs recorded yet.</p>
-              <p style={{ fontSize: 12, margin: '4px 0 0' }}>Click Re-run to execute this automation now.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', textAlign: 'center', gap: 12 }}>
+              <Clock size={32} style={{ color: 'var(--mission-control-text-dim)', opacity: 0.5 }} />
+              <p style={{ fontSize: 14, fontWeight: 500, margin: 0, color: 'var(--mission-control-text)' }}>No runs recorded yet.</p>
+              <p style={{ fontSize: 12, margin: 0, color: 'var(--mission-control-text-dim)', maxWidth: 280 }}>Click Re-run to execute this automation now.</p>
             </div>
           )}
 

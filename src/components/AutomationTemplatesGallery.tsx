@@ -167,10 +167,10 @@ const BUILT_IN_TEMPLATES: AutomationTemplate[] = [
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const CATEGORY_COLORS: Record<TemplateCategory, string> = {
-  Workflow:     '#6366f1',
-  Notification: '#f59e0b',
-  AI:           '#8b5cf6',
-  Data:         '#0ea5e9',
+  Workflow:     'var(--review)',
+  Notification: 'var(--warning)',
+  AI:           'var(--review)',
+  Data:         'var(--info)',
 };
 
 const ALL_CATEGORIES: TemplateCategory[] = ['Workflow', 'Notification', 'AI', 'Data'];
@@ -265,7 +265,7 @@ function StepPreview({ steps }: { steps: TemplateStep[] }) {
               borderRadius: 5,
               background: 'var(--mission-control-accent)',
               color: '#fff',
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
@@ -275,10 +275,10 @@ function StepPreview({ steps }: { steps: TemplateStep[] }) {
             {i + 1}
           </span>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--mission-control-text)' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mission-control-text)' }}>
               {step.label}
             </div>
-            <div style={{ fontSize: 11, color: 'var(--mission-control-text-dim)', marginTop: 1 }}>
+            <div style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', marginTop: 1 }}>
               {step.type}
             </div>
           </div>
@@ -421,16 +421,14 @@ export default function AutomationTemplatesGallery({ onClose, onUseTemplate }: P
               }}
             >
               <div>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--mission-control-text)', margin: 0 }}>
-                  {selectedTemplate.name}
-                </h3>
+                <Heading size="3" weight="bold" style={{ display: 'block' }}>{selectedTemplate.name}</Heading>
                 <p style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', margin: '6px 0 0', lineHeight: 1.6 }}>
                   {selectedTemplate.description}
                 </p>
               </div>
 
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mission-control-text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mission-control-text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
                   Trigger
                 </div>
                 <div
@@ -454,34 +452,22 @@ export default function AutomationTemplatesGallery({ onClose, onUseTemplate }: P
               </div>
 
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mission-control-text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mission-control-text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
                   Steps ({selectedTemplate.steps.length})
                 </div>
                 <StepPreview steps={selectedTemplate.steps} />
               </div>
 
-              <button
+              <Button
+                variant="solid"
+                size="3"
                 onClick={handleUse}
                 disabled={creating}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  padding: '12px',
-                  borderRadius: 10,
-                  border: 'none',
-                  background: creating ? 'var(--mission-control-border)' : 'var(--mission-control-accent)',
-                  color: '#fff',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: creating ? 'not-allowed' : 'pointer',
-                  marginTop: 'auto',
-                }}
+                style={{ marginTop: 'auto', width: '100%' }}
               >
-                <Plus size={16} />
+                {creating ? <Spinner size="1" /> : <Plus size={16} />}
                 {creating ? 'Creating...' : 'Use this template'}
-              </button>
+              </Button>
             </div>
           )}
         </div>

@@ -205,7 +205,7 @@ export default function XDraftListView() {
           )}
           <button
             onClick={() => setShowComposer(true)}
-            className="flex items-center gap-2 px-3 py-2 text-sm bg-info hover:bg-info/80 text-mission-control-text rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-all duration-150"
           >
             <Plus className="w-4 h-4" />
             New Draft
@@ -240,24 +240,22 @@ export default function XDraftListView() {
 
       {/* List */}
       {filteredDrafts.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-mission-control-text-dim">
-            <FileText className="w-12 h-12 mx-auto mb-3 text-mission-control-text-dim" />
-            <p className="font-medium text-mission-control-text">
-              {filter === 'all' ? 'No drafts yet' : `No ${filter} yet`}
-            </p>
-            <p className="text-sm mt-1">
-              {filter === 'all' ? 'Create a draft to start writing tweets.' : `No drafts match the "${filter}" filter.`}
-            </p>
-            {filter === 'all' && (
-              <button
-                onClick={() => setShowComposer(true)}
-                className="mt-4 px-4 py-2 text-sm bg-info hover:bg-info/80 text-mission-control-text rounded-lg transition-colors"
-              >
-                Create your first draft
-              </button>
-            )}
-          </div>
+        <div className="flex flex-col items-center justify-center h-full py-16 text-center gap-3">
+          <FileText size={32} className="text-mission-control-text-dim opacity-50" />
+          <p className="text-sm font-medium text-mission-control-text">
+            {filter === 'all' ? 'No drafts yet' : `No ${filter} yet`}
+          </p>
+          <p className="text-xs text-mission-control-text-dim max-w-xs">
+            {filter === 'all' ? 'Create a draft to start writing tweets.' : `No drafts match the "${filter}" filter.`}
+          </p>
+          {filter === 'all' && (
+            <button
+              onClick={() => setShowComposer(true)}
+              className="px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-all duration-150"
+            >
+              Create your first draft
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -277,10 +275,10 @@ export default function XDraftListView() {
               >
                 {/* Status + meta row */}
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className="px-2 py-1 text-xs bg-success-subtle text-success rounded-full">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-info-subtle text-info text-xs font-medium">
                     Version {draft.version}
                   </span>
-                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(draft.status)}`}>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadge(draft.status)}`}>
                     {draft.status}
                   </span>
                   {draft.proposed_by && (

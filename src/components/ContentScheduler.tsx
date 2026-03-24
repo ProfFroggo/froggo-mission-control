@@ -455,7 +455,7 @@ export default function ContentScheduler() {
               }`}>
                 {item.status}
               </span>
-              <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
+              <span className="text-xs text-mission-control-text-dim flex items-center gap-1 tabular-nums">
                 <Clock size={10} />
                 {formatScheduledTime(item.scheduledFor)}
               </span>
@@ -674,12 +674,12 @@ export default function ContentScheduler() {
                 <h1 className="text-lg font-semibold">Schedule Queue</h1>
                 {/* Items-this-week badge */}
                 {thisWeekItems.length > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-info-subtle text-info border border-info-border font-medium">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-info-subtle text-info border border-info-border font-medium tabular-nums">
                     {thisWeekItems.length} this week
                   </span>
                 )}
               </div>
-              <p className="text-xs text-mission-control-text-dim">
+              <p className="text-xs text-mission-control-text-dim tabular-nums">
                 {pendingCount} pending • {sentCount} sent
               </p>
             </div>
@@ -745,9 +745,11 @@ export default function ContentScheduler() {
                     : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
-                {f === 'pending' && `Pending (${pendingCount})`}
-                {f === 'sent'    && `Sent (${sentCount})`}
-                {f === 'all'     && `All (${items.length})`}
+                <span className="tabular-nums">
+                  {f === 'pending' && `Pending (${pendingCount})`}
+                  {f === 'sent'    && `Sent (${sentCount})`}
+                  {f === 'all'     && `All (${items.length})`}
+                </span>
               </button>
             ))}
           </div>
@@ -817,7 +819,7 @@ export default function ContentScheduler() {
               aria-label="Content"
             />
             {formType === 'tweet' && (
-              <div className="text-xs text-mission-control-text-dim text-right">{formContent.length}/280</div>
+              <div className="text-xs text-mission-control-text-dim text-right tabular-nums">{formContent.length}/280</div>
             )}
 
             {/* Media */}

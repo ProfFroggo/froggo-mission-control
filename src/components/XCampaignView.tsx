@@ -447,7 +447,7 @@ export default function XCampaignView() {
                             className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-info"
                           />
                           <div className={`text-xs mt-1 ${countChars(stage.content) > 280 ? 'text-error' : 'text-mission-control-text-dim'}`}>
-                            {countChars(stage.content)}/280
+                            <span className="tabular-nums">{countChars(stage.content)}/280</span>
                           </div>
                         </div>
 
@@ -573,11 +573,11 @@ export default function XCampaignView() {
             const stageCount = campaign.stages?.length || 0;
             const daySpan = campaign.stages ? Math.max(...campaign.stages.map((s: any) => s.dayOffset || 0), 0) + 1 : 0;
             const statusColors: Record<string, string> = {
-              draft: 'bg-mission-control-bg-alt text-mission-control-text-dim',
-              ready: 'bg-warning-subtle text-warning',
-              scheduled: 'bg-info-subtle text-info',
-              active: 'bg-success-subtle text-success',
-              completed: 'bg-mission-control-bg-alt text-mission-control-text-dim',
+              draft: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mission-control-border text-mission-control-text-dim text-xs font-medium',
+              ready: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-subtle text-warning text-xs font-medium',
+              scheduled: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-info-subtle text-info text-xs font-medium',
+              active: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-subtle text-success text-xs font-medium',
+              completed: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mission-control-border text-mission-control-text-dim text-xs font-medium',
             };
             return (
               <div
@@ -590,14 +590,14 @@ export default function XCampaignView() {
               >
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="text-sm font-bold text-mission-control-text">{campaign.title || 'Untitled Campaign'}</h4>
-                  <span className={`px-2 py-1 text-xs rounded-full ${statusColors[campaign.status] || statusColors.draft}`}>
+                  <span className={statusColors[campaign.status] || statusColors.draft}>
                     {campaign.status}
                   </span>
                 </div>
                 {campaign.subject && (
                   <p className="text-xs text-mission-control-text-dim mb-2 line-clamp-2">{campaign.subject}</p>
                 )}
-                <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
+                <div className="flex items-center gap-3 text-xs text-mission-control-text-dim tabular-nums">
                   <span>{stageCount} stage{stageCount !== 1 ? 's' : ''}</span>
                   <span>{daySpan} day{daySpan !== 1 ? 's' : ''}</span>
                   <span>{new Date(campaign.created_at).toLocaleDateString()}</span>

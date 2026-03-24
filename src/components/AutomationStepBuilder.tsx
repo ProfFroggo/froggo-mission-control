@@ -597,7 +597,7 @@ export default function AutomationStepBuilder({ automationId, initialSteps = [],
           }}
         >
           {error && (
-            <p style={{ fontSize: 12, color: 'var(--status-error, #ef4444)', margin: 0 }}>{error}</p>
+            <p style={{ fontSize: 13, color: 'var(--error)', margin: 0 }}>{error}</p>
           )}
           <div style={{ display: 'flex', gap: 8 }}>
             <Button variant="outline" onClick={onClose} style={{ flex: 1 }}>

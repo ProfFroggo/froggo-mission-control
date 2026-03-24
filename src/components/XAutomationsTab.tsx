@@ -794,12 +794,13 @@ export default function XAutomationsTab() {
 
         {/* Automations List */}
         {automations.length === 0 ? (
-          <div className="text-center py-16 bg-mission-control-surface rounded-lg border border-mission-control-border">
-            <Zap size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="text-mission-control-text-dim mb-4">No automations yet</p>
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3 bg-mission-control-surface rounded-lg border border-mission-control-border">
+            <Zap size={32} className="text-mission-control-text-dim opacity-50" />
+            <p className="text-sm font-medium text-mission-control-text">No automations yet</p>
+            <p className="text-xs text-mission-control-text-dim max-w-xs">Build IFTTT-style rules to automate your X account responses and actions.</p>
             <button
               onClick={() => openBuilder()}
-              className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
+              className="px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-all duration-150"
             >
               Create your first automation
             </button>
@@ -819,10 +820,10 @@ export default function XAutomationsTab() {
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold">{automation.name}</h3>
                         <span
-                          className={`px-2 py-1 rounded-full text-xs ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
                             automation.enabled
                               ? 'bg-success-subtle text-success'
-                              : 'bg-mission-control-surface text-mission-control-text-dim'
+                              : 'bg-mission-control-border text-mission-control-text-dim'
                           }`}
                         >
                           {automation.enabled ? 'Active' : 'Disabled'}
@@ -898,7 +899,7 @@ export default function XAutomationsTab() {
                   </div>
 
                   {automation.total_executions > 0 && (
-                    <div className="mt-4 pt-4 border-t border-mission-control-border flex items-center justify-between text-sm text-mission-control-text-dim">
+                    <div className="mt-4 pt-4 border-t border-mission-control-border flex items-center justify-between text-sm text-mission-control-text-dim tabular-nums">
                       <span>Executed {automation.total_executions} times</span>
                       {automation.last_executed_at && (
                         <span>
@@ -970,7 +971,7 @@ export default function XAutomationsTab() {
                               className="flex items-center gap-3 w-full text-left px-3 py-2 text-xs hover:bg-mission-control-border/20 transition-colors"
                             >
                               {isExpanded ? <ChevronDown size={12} className="flex-shrink-0" /> : <ChevronRight size={12} className="flex-shrink-0" />}
-                              <span className="text-mission-control-text-dim w-28 flex-shrink-0">
+                              <span className="text-mission-control-text-dim w-28 flex-shrink-0 tabular-nums">
                                 {new Date(entry.executed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                               </span>
                               <span className="text-mission-control-text font-medium flex-1 truncate">{automationName}</span>
@@ -978,7 +979,7 @@ export default function XAutomationsTab() {
                               <span className="text-mission-control-text-dim flex-shrink-0 truncate max-w-[120px]">
                                 {actionsTaken.map((a: any) => a.type).join(', ') || 'no actions'}
                               </span>
-                              <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] flex-shrink-0 ${
+                              <span className={`ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                                 entry.status === 'executed' ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
                               }`}>
                                 {entry.status}
@@ -987,15 +988,15 @@ export default function XAutomationsTab() {
 
                             {isExpanded && (
                               <div className="px-3 pb-3 pt-1 border-t border-mission-control-border space-y-2">
-                                <div className="text-[11px] text-mission-control-text-dim">
+                                <div className="text-xs text-mission-control-text-dim">
                                   <span className="font-medium text-mission-control-text">Automation ID:</span> {entry.automation_id}
                                 </div>
                                 {actionsTaken.length > 0 && (
                                   <div>
-                                    <div className="text-[11px] font-medium text-mission-control-text mb-1">Actions taken:</div>
+                                    <div className="text-xs font-medium text-mission-control-text mb-1">Actions taken:</div>
                                     <div className="space-y-1">
                                       {actionsTaken.map((a: any, i: number) => (
-                                        <div key={i} className="text-[11px] text-mission-control-text-dim bg-mission-control-surface rounded px-2 py-1">
+                                        <div key={i} className="text-xs text-mission-control-text-dim bg-mission-control-surface rounded px-2 py-1">
                                           <span className="font-medium">{a.type}</span>
                                           {a.status && <span className="ml-2 opacity-70">{a.status}</span>}
                                           {a.approval_id && <span className="ml-2 opacity-50">approval: {a.approval_id}</span>}
@@ -1005,7 +1006,7 @@ export default function XAutomationsTab() {
                                   </div>
                                 )}
                                 {entry.error && (
-                                  <div className="text-[11px] text-error bg-error-subtle rounded px-2 py-1">
+                                  <div className="text-xs text-error bg-error-subtle rounded px-2 py-1">
                                     {entry.error}
                                   </div>
                                 )}
