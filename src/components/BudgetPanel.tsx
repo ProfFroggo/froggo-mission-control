@@ -1860,8 +1860,8 @@ export default function BudgetPanel() {
                           <div className="text-[10px] text-mission-control-text-dim">{cat.invoice_count || 0} invoices</div>
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          <button onClick={() => setCategoryModal({ mode: 'edit', data: cat })} className="p-1 rounded hover:bg-mission-control-border/50 text-mission-control-text-dim transition-colors" title="Edit"><Pencil size={11} /></button>
-                          <button onClick={() => setConfirmDelete({ type: 'category', id: cat.id, label: cat.name })} className="p-1 rounded hover:bg-error/10 text-mission-control-text-dim hover:text-error transition-colors" title="Delete"><Trash2 size={11} /></button>
+                          <IconButton variant="ghost" size="1" onClick={() => setCategoryModal({ mode: 'edit', data: cat })} title="Edit"><Pencil size={11} /></IconButton>
+                          <IconButton variant="ghost" size="1" color="red" onClick={() => setConfirmDelete({ type: 'category', id: cat.id, label: cat.name })} title="Delete"><Trash2 size={11} /></IconButton>
                         </div>
                       </div>
 
@@ -1960,18 +1960,12 @@ export default function BudgetPanel() {
 
                       {/* View invoices action */}
                       <div className="border-t border-mission-control-border/50 pt-2 flex items-center justify-between">
-                        <button
-                          onClick={() => { setCategoryFilter(cat.id); setTab('invoices'); }}
-                          className="flex items-center gap-1 text-[10px] text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
-                        >
+                        <Button variant="ghost" size="1" onClick={() => { setCategoryFilter(cat.id); setTab('invoices'); }}>
                           <FileText size={10} /> View invoices
-                        </button>
-                        <button
-                          onClick={() => { setActiveQuarterId(cat.quarter_id); setCategoryFilter(cat.id); setTab('invoices'); setInvoiceModal({ mode: 'create' }); }}
-                          className="flex items-center gap-1 text-[10px] text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
-                        >
+                        </Button>
+                        <Button variant="ghost" size="1" onClick={() => { setActiveQuarterId(cat.quarter_id); setCategoryFilter(cat.id); setTab('invoices'); setInvoiceModal({ mode: 'create' }); }}>
                           <Plus size={10} /> Add invoice
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   );
@@ -2092,13 +2086,12 @@ export default function BudgetPanel() {
                 )}
 
                 <div className="flex items-center gap-2 justify-end pt-1">
-                  <button onClick={() => setImportPreview(null)} className="px-3 py-2 text-xs rounded-xl border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors">
+                  <Button variant="ghost" size="1" onClick={() => setImportPreview(null)}>
                     Back
-                  </button>
-                  <button onClick={handleConfirmImport} disabled={isImporting}
-                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-mission-control-accent text-white hover:brightness-110 transition-all disabled:opacity-50">
+                  </Button>
+                  <Button variant="solid" size="1" onClick={handleConfirmImport} disabled={isImporting}>
                     {isImporting ? <><Loader2 size={11} className="animate-spin" /> Importing…</> : <><CheckCircle size={11} /> Import Budget</>}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
