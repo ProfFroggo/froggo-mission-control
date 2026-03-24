@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { MessageSquare, Trash2 } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
+import { IconButton, Flex } from '@radix-ui/themes';
 import { gateway } from '../../lib/gateway';
 import { buildMemoryContext, buildChapterContext, buildOutlineContext } from '../../lib/writingContext';
 import { useChatPaneStore, type ChatMessage as ChatMessageType } from '../../store/chatPaneStore';
@@ -164,7 +164,7 @@ export default function ChatPane() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-surface border-r border-mission-control-border dark">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface border-r border-mission-control-border dark">
       {/* Header */}
       <div className="px-3 py-2 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -178,7 +178,7 @@ export default function ChatPane() {
             onClick={handleClearChat}
             size="1"
             variant="ghost"
-            radius="medium"
+           
             title="Clear conversation"
             aria-label="Clear conversation"
           >
@@ -227,6 +227,6 @@ export default function ChatPane() {
 
       {/* Input */}
       <ChatInput onSend={handleSendMessage} disabled={streaming} />
-    </div>
+    </Flex>
   );
 }

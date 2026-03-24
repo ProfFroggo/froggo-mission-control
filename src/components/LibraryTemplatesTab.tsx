@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, IconButton, TextField, Select, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
 import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star, StarOff, LayoutTemplate } from 'lucide-react';
 import EmptyState from './EmptyState';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -170,7 +170,7 @@ export default function LibraryTemplatesTab() {
   });
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* Toolbar */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
@@ -253,7 +253,7 @@ export default function LibraryTemplatesTab() {
                       onClick={() => handleStar(template.id)}
                       size="1"
                       variant="ghost"
-                      radius="medium"
+                     
                     >
                       {template.starred ? (
                         <Star size={14} className="text-warning fill-yellow-400" />
@@ -323,7 +323,7 @@ export default function LibraryTemplatesTab() {
                             onClick={() => handleCopy(template)}
                             size="1"
                             variant="ghost"
-                            radius="medium"
+                           
                             title="Copy"
                           >
                             <Copy size={14} />
@@ -332,7 +332,7 @@ export default function LibraryTemplatesTab() {
                             onClick={() => handleEdit(template)}
                             size="1"
                             variant="ghost"
-                            radius="medium"
+                           
                             title="Edit"
                           >
                             <Edit3 size={14} />
@@ -342,7 +342,7 @@ export default function LibraryTemplatesTab() {
                             size="1"
                             variant="ghost"
                             color="red"
-                            radius="medium"
+                           
                             title="Delete"
                           >
                             <Trash2 size={14} />
@@ -432,6 +432,6 @@ export default function LibraryTemplatesTab() {
         cancelLabel={config.cancelLabel}
         type={config.type}
       />
-    </div>
+    </Flex>
   );
 }

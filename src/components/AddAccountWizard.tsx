@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, ArrowRight, ArrowLeft, Check, Loader2, Mail, Calendar, HardDrive, Users, CheckCircle, AlertTriangle } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import { AccountProvider, DataType, AddAccountRequest } from '../types/accounts';
 import { useUserSettings } from '../store/userSettings';
 import { accountsApi } from '../lib/api';
@@ -169,7 +169,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <Flex align="center" justify="center" p="4" className="fixed inset-0 bg-black/50 z-50">
       <div className="bg-mission-control-surface rounded-xl border border-mission-control-border max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
@@ -190,7 +190,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
             size="2"
             variant="ghost"
             color="gray"
-            radius="medium"
+           
             aria-label="Close wizard"
           >
             <X size={20} />
@@ -526,6 +526,6 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

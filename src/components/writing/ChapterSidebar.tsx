@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useWritingStore } from '../../store/writingStore';
 import ChapterListItem from './ChapterListItem';
 import { ArrowLeft, Plus, ChevronDown } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import {
   DndContext,
   closestCenter,
@@ -85,14 +85,14 @@ export default function ChapterSidebar() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-mission-control-surface border-r border-mission-control-border flex-shrink-0 min-w-0">
+    <Flex direction="column" width="100%" height="100%" className="bg-mission-control-surface border-r border-mission-control-border flex-shrink-0 min-w-0">
       {/* Header */}
       <div className="px-3 py-3 border-b border-mission-control-border flex-shrink-0">
         <div className="flex items-center gap-2">
           <IconButton
             size="1"
             variant="ghost"
-            radius="medium"
+           
             onClick={closeProject}
             title="Back to projects"
           >
@@ -194,6 +194,6 @@ export default function ChapterSidebar() {
           </DndContext>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

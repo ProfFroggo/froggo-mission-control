@@ -2,7 +2,7 @@
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import {
   Megaphone, Plus, Search, RefreshCw, AlertCircle, LayoutGrid, List
 } from 'lucide-react';
@@ -119,7 +119,7 @@ export default function CampaignsPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg0">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg0">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ export default function CampaignsPanel() {
             disabled={refreshing}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             title="Refresh"
           >
             <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
@@ -282,6 +282,6 @@ export default function CampaignsPanel() {
           onCreated={handleCampaignCreated}
         />
       )}
-    </div>
+    </Flex>
   );
 }

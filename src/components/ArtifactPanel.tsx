@@ -19,7 +19,7 @@ import {
   WifiOff,
   type LucideIcon,
 } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import { useArtifactStore, type Artifact, type ArtifactType } from '../store/artifactStore';
 import MarkdownMessage from './MarkdownMessage';
 
@@ -268,7 +268,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
         onClick={toggleCollapse}
         size="2"
         variant="ghost"
-        radius="medium"
+       
         title="Open Artifacts"
         className="fixed right-0 top-1/2 -translate-y-1/2 border-l border-y border-mission-control-border rounded-l-lg rounded-r-none z-10"
         style={{ position: 'fixed' }}
@@ -284,8 +284,10 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
   }
 
   return (
-    <div
-      className="relative border-l border-mission-control-border bg-mission-control-surface flex flex-col h-full flex-shrink-0"
+    <Flex
+      direction="column"
+      height="100%"
+      className="relative border-l border-mission-control-border bg-mission-control-surface flex-shrink-0"
       style={{ width }}
     >
       {/* Resize handle */}
@@ -318,7 +320,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
           onClick={toggleCollapse}
           size="2"
           variant="ghost"
-          radius="medium"
+         
           title="Collapse panel"
           aria-label="Collapse panel"
         >
@@ -335,7 +337,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
               onClick={() => selectArtifact(null)}
               size="1"
               variant="ghost"
-              radius="medium"
+             
               className="flex-shrink-0"
               aria-label="Back"
             >
@@ -351,7 +353,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 onClick={() => handleCopy(selectedArtifact.content, selectedArtifact.id)}
                 size="1"
                 variant={copiedId === selectedArtifact.id ? 'soft' : 'ghost'}
-                radius="medium"
+               
                 title="Copy"
                 aria-label="Copy"
               >
@@ -362,7 +364,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 onClick={() => handleDownload(selectedArtifact)}
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
                 title="Download"
                 aria-label="Download"
               >
@@ -372,7 +374,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 onClick={() => setShowVersionHistory(!showVersionHistory)}
                 size="1"
                 variant={showVersionHistory ? 'soft' : 'ghost'}
-                radius="medium"
+               
                 title="Version history"
                 aria-label="Version history"
               >
@@ -383,7 +385,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 size="1"
                 variant="ghost"
                 color="red"
-                radius="medium"
+               
                 title="Delete"
                 aria-label="Delete"
               >
@@ -454,7 +456,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                   onClick={() => setReloadKey(k => k + 1)}
                   size="1"
                   variant="ghost"
-                  radius="medium"
+                 
                   title="Reload preview"
                   aria-label="Reload preview"
                 >
@@ -468,7 +470,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                     }}
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                     title="Open in new window"
                     aria-label="Open in new window"
                   >
@@ -537,7 +539,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                         onClick={() => { setPortUrl(''); setLoadedPortUrl(''); setPortError(false); }}
                         size="1"
                         variant="ghost"
-                        radius="medium"
+                       
                       >
                         Try again
                       </Button>
@@ -608,6 +610,6 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
           )}
         </div>
       )}
-    </div>
+    </Flex>
   );
 }

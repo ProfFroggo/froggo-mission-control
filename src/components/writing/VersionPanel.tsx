@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { X, Save, GitCompare, RotateCcw, Trash2, Loader2 } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import { useWritingStore } from '../../store/writingStore';
 import { useVersionStore } from '../../store/versionStore';
 import VersionDiff from './VersionDiff';
@@ -95,14 +95,14 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
   };
 
   return (
-    <div className="w-80 h-full flex flex-col bg-mission-control-surface border-l border-mission-control-border flex-shrink-0">
+    <Flex direction="column" height="100%" className="w-80 bg-mission-control-surface border-l border-mission-control-border flex-shrink-0">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-mission-control-border">
         <h3 className="text-xs font-semibold text-mission-control-text uppercase tracking-wide">Versions</h3>
         <IconButton
           size="1"
           variant="ghost"
-          radius="medium"
+         
           onClick={onClose}
           title="Close versions panel"
         >
@@ -158,7 +158,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                     <IconButton
                       size="1"
                       variant="ghost"
-                      radius="medium"
+                     
                       onClick={() => handleCompare(v.id)}
                       disabled={diffLoading}
                       title="Compare with current"
@@ -168,7 +168,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                     <IconButton
                       size="1"
                       variant="ghost"
-                      radius="medium"
+                     
                       onClick={() => {
                         setRestoreTarget({ id: v.id, label: v.label });
                         restoreDialog.showConfirm({
@@ -185,7 +185,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                     <IconButton
                       size="1"
                       variant="ghost"
-                      radius="medium"
+                     
                       onClick={() => {
                         setDeleteTarget({ id: v.id, label: v.label });
                         deleteDialog.showConfirm({
@@ -247,6 +247,6 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
         onConfirm={handleDeleteConfirm}
         {...deleteDialog.config}
       />
-    </div>
+    </Flex>
   );
 }

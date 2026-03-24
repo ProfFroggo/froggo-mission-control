@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, BookOpen, RefreshCw } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -76,8 +76,11 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className={`fixed inset-0 z-50 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
     >
       <button
         type="button"
@@ -99,7 +102,7 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
             variant="ghost"
             color="gray"
             size="2"
-            radius="medium"
+           
           >
             <X size={18} />
           </IconButton>
@@ -154,6 +157,6 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

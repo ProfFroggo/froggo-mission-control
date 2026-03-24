@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { AlertCircle, Loader2, CheckCircle } from 'lucide-react';
-import { Button, IconButton, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextArea, Flex } from '@radix-ui/themes';
 import { gateway } from '../../lib/gateway';
 import {
   buildConversationPrompt,
@@ -258,7 +258,7 @@ export default function WizardChat() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-surface">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Error banners */}
       {(extractionError || error) && (
         <div className="px-4 py-2 bg-error-subtle border-b border-error-border flex items-center gap-2">
@@ -327,7 +327,7 @@ export default function WizardChat() {
           <IconButton
             size="3"
             variant="solid"
-            radius="medium"
+           
             onClick={handleSendClick}
             disabled={streaming || step === 'extracting'}
             title="Send message"
@@ -339,6 +339,6 @@ export default function WizardChat() {
           </IconButton>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

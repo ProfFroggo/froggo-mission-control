@@ -1,6 +1,6 @@
 import { useState, useEffect, memo, useRef } from 'react';
 import { MessageSquare, RefreshCw, MessageCircle, Send, Gamepad2, Globe, Lock, Briefcase, Mic, Clock, Settings, WifiOff, Inbox, Bot } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import { SkeletonList } from './Skeleton';
 import { gateway } from '../lib/gateway';
 import type { LucideIcon } from 'lucide-react';
@@ -124,7 +124,7 @@ const ActivityFeed = memo(function ActivityFeed() {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -138,7 +138,7 @@ const ActivityFeed = memo(function ActivityFeed() {
           <IconButton
             size="2"
             variant="ghost"
-            radius="medium"
+           
             onClick={fetchSessions}
             disabled={loading || !connected}
             title="Refresh"
@@ -250,7 +250,7 @@ const ActivityFeed = memo(function ActivityFeed() {
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 });
 
