@@ -246,7 +246,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                         <div className="font-semibold text-lg mb-1 flex items-center gap-2">
                           {info.name}
                           {info.comingSoon && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-warning/20 text-mission-control-warning">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-warning-subtle text-warning">
                               Coming Soon
                             </span>
                           )}

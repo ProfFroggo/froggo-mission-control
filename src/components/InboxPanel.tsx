@@ -52,7 +52,7 @@ const getInjectionWarning = (item: InboxItem): InjectionWarning | null => {
 const riskStyles: Record<string, { bg: string; text: string; border: string }> = {
   critical: { bg: 'bg-error-subtle', text: 'text-error', border: 'border-error-border' },
   high: { bg: 'bg-warning-subtle', text: 'text-warning', border: 'border-warning-border' },
-  medium: { bg: 'bg-mission-control-surface', text: 'text-mission-control-text-muted', border: 'border-mission-control-border' },
+  medium: { bg: 'bg-mission-control-surface', text: 'text-mission-control-text-dim', border: 'border-mission-control-border' },
   low: { bg: 'bg-success-subtle', text: 'text-success', border: 'border-success-border' },
 };
 

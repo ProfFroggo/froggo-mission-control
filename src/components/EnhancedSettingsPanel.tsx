@@ -1021,7 +1021,7 @@ function TokenBudgetSection() {
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${Math.min(pct, 100)}%`,
-                    backgroundColor: isOver ? 'var(--mission-control-error)' : isWarn ? 'var(--mission-control-warning)' : 'var(--mission-control-accent)',
+                    backgroundColor: isOver ? 'var(--color-error)' : isWarn ? 'var(--color-warning)' : 'var(--mission-control-accent)',
                   }}
                 />
               </div>

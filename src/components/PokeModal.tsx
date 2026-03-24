@@ -331,7 +331,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
       case 'review': return 'text-warning';
       case 'human-review': return 'text-error';
       case 'done': return 'text-success';
-      default: return 'text-mission-control-text-muted';
+      default: return 'text-mission-control-text-dim';
     }
   };
 
@@ -345,7 +345,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             <h2 className="text-base font-semibold text-mission-control-text truncate">
               Poke: {taskTitle}
             </h2>
-            <div className="flex items-center gap-3 text-xs text-mission-control-text-muted">
+            <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
               {task && (
                 <>
                   <span className={`flex items-center gap-1 ${getStatusColor(task.status)}`}>
@@ -384,7 +384,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[500px]">
         {/* History loading state */}
         {!historyLoaded && (
-          <div className="flex items-center justify-center h-full text-mission-control-text-muted text-sm">
+          <div className="flex items-center justify-center h-full text-mission-control-text-dim text-sm">
             <Loader2 size={16} className="animate-spin mr-2" />
             Loading...
           </div>
@@ -399,7 +399,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                 msg.role === 'user'
                   ? 'bg-mission-control-accent/20 text-mission-control-accent ml-auto rounded-br-md'
                   : msg.role === 'system'
-                  ? 'bg-mission-control-border/30 text-mission-control-text-muted italic text-xs'
+                  ? 'bg-mission-control-border/30 text-mission-control-text-dim italic text-xs'
                   : 'bg-mission-control-bg-alt text-mission-control-text rounded-bl-md'
               }`}
             >
@@ -425,7 +425,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         {(loading || sending) && !streamingContent && (
           <div className="flex justify-start">
             <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-mission-control-bg-alt">
-              <Loader2 size={16} className="animate-spin text-mission-control-text-muted" />
+              <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
             </div>
           </div>
         )}
@@ -457,7 +457,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             <Send size={16} />
           </IconButton>
         </div>
-        <p className="text-[10px] text-mission-control-text-muted/40 mt-1.5 text-center">
+        <p className="text-[10px] text-mission-control-text-dim/40 mt-1.5 text-center">
           Task-scoped conversation • Responses have personality 🐸
         </p>
       </div>

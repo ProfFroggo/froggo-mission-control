@@ -44,3 +44,8 @@ sbom.json
 .claude/worktrees/
 .next-verify/
 .next-coder-lcp/
+.next-lcp-payload-fix/
+.next-sm-verify2/
+.next-state-machine-verify/
+*.cpuprofile
+*.report.html

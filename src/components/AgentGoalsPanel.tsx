@@ -39,8 +39,8 @@ function DeadlineBadge({ deadline }: { deadline: string }) {
   const color = days > 14
     ? 'var(--mission-control-success)'
     : days >= 7
-    ? 'var(--mission-control-warning)'
-    : 'var(--mission-control-error)';
+    ? 'var(--color-warning)'
+    : 'var(--color-error)';
 
   const label = days < 0
     ? `${Math.abs(days)}d overdue`
@@ -70,8 +70,8 @@ function GoalProgressBar({ current, target, status }: { current: string; target:
       : pct >= 75
       ? 'var(--mission-control-success)'
       : pct >= 40
-      ? 'var(--mission-control-warning)'
-      : 'var(--mission-control-error)';
+      ? 'var(--color-warning)'
+      : 'var(--color-error)';
 
     return (
       <div className="space-y-1">
@@ -95,9 +95,9 @@ function GoalProgressBar({ current, target, status }: { current: string; target:
   const statusColor = status === 'completed'
     ? 'var(--mission-control-success)'
     : status === 'cancelled'
-    ? 'var(--mission-control-error)'
+    ? 'var(--color-error)'
     : status === 'paused'
-    ? 'var(--mission-control-warning)'
+    ? 'var(--color-warning)'
     : 'var(--mission-control-info)';
 
   return (

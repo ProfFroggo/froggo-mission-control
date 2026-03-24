@@ -185,7 +185,7 @@ function ReviewCard({
           {task.assignedTo ? (
             <AgentAvatar agentId={task.assignedTo} size="sm" />
           ) : (
-            <div className="w-7 h-7 rounded-full bg-mission-control-bg2 flex items-center justify-center text-mission-control-text-dim text-xs font-bold">
+            <div className="w-7 h-7 rounded-full bg-mission-control-surface flex items-center justify-center text-mission-control-text-dim text-xs font-bold">
               ?
             </div>
           )}
