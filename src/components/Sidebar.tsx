@@ -203,6 +203,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
         <Button
           onClick={onOpenSearch}
           variant="ghost"
+          color="gray"
           size="2"
           radius="medium"
           className={`w-full ${expanded ? 'justify-start' : 'justify-center'}`}
@@ -306,6 +307,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               onClick={openEditModal}
               size="2"
               variant="ghost"
+              color="gray"
               radius="medium"
               className="no-drag"
               title="Edit Panels (⌘⇧E)"
@@ -320,6 +322,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               onClick={onOpenHelp}
               size="2"
               variant="ghost"
+              color="gray"
               radius="medium"
               className="no-drag"
               title="Help (⌘H)"
@@ -334,6 +337,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               onClick={onOpenShortcuts}
               size="2"
               variant="ghost"
+              color="gray"
               radius="medium"
               className="no-drag"
               title="Keyboard shortcuts (?)"
@@ -347,6 +351,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             onClick={() => handleNavigate('settings')}
             size="2"
             variant={currentView === 'settings' ? 'soft' : 'ghost'}
+            color={currentView === 'settings' ? undefined : 'gray'}
             radius="medium"
             className="no-drag"
             title="Settings (⌘,)"
@@ -360,6 +365,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             onClick={() => setExpanded(!expanded)}
             size="2"
             variant="ghost"
+            color="gray"
             radius="medium"
             className="no-drag"
             title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
