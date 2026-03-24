@@ -1912,32 +1912,23 @@ export default function EnhancedSettingsPanel() {
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="accent-color-picker" className="block text-sm font-medium text-mission-control-text mb-2">Accent Color</label>
-                    <div className="flex gap-2 flex-wrap mb-3">
-                      {['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#10b981'].map((color) => (
-                        <button
-                          key={color}
-                          onClick={() => setSettings(s => ({ ...s, accentColor: color }))}
-                          className={`w-12 h-12 rounded-full border-2 transition-transform hover:scale-110 ${
-                            settings.accentColor === color ? 'border-white dark:border-white/80 scale-110 shadow-lg' : 'border-transparent'
-                          }`}
-                          style={{ backgroundColor: color }}
-                          aria-label={`Accent color ${color}`}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label htmlFor="custom-accent-color" className="text-sm font-medium text-mission-control-text">Custom:</label>
-                      <input
-                        id="custom-accent-color"
-                        type="color"
-                        aria-label="Custom accent color picker"
-                        value={settings.accentColor}
-                        onChange={(e) => setSettings(s => ({ ...s, accentColor: e.target.value }))}
-                        className="h-10 w-20 rounded-lg border border-mission-control-border cursor-pointer"
-                      />
-                      <span className="text-sm font-mono text-mission-control-text-dim">{settings.accentColor}</span>
-                    </div>
+                    <label htmlFor="ui-scale-select" className="block text-sm font-medium text-mission-control-text mb-2">UI Scale</label>
+                    <select
+                      id="ui-scale-select"
+                      aria-label="UI Scale selector"
+                      defaultValue="95%"
+                      onChange={(e) => {
+                        const scaling = e.target.value as '90%' | '95%' | '100%' | '105%' | '110%';
+                        window.dispatchEvent(new CustomEvent('radixScalingChange', { detail: { scaling } }));
+                      }}
+                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                    >
+                      <option value="90%">90%</option>
+                      <option value="95%">95%</option>
+                      <option value="100%">100%</option>
+                      <option value="105%">105%</option>
+                      <option value="110%">110%</option>
+                    </select>
                   </div>
                 </div>
               </CollapsibleSection>

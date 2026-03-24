@@ -6,6 +6,7 @@ import {
   ChevronDown, ChevronRight, ZoomIn, ZoomOut, Calendar,
   AlertCircle,
 } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { taskApi } from '../lib/api';
 import { Spinner } from './LoadingStates';
 
@@ -41,7 +42,7 @@ const STATUS_GROUPS: Record<string, string[]> = {
 const STATUS_COLORS: Record<string, string> = {
   'To Do':       'var(--color-warning, #f59e0b)',
   'In Progress': 'var(--color-info, #3b82f6)',
-  'Review':      'var(--color-accent, #6366f1)',
+  'Review':      'var(--mission-control-accent, #6e56cf)',
   'Done':        'var(--color-success, #22c55e)',
 };
 
@@ -75,7 +76,8 @@ function TaskBar({ task, startMs, pxPerDay, rowHeight, color, onClick }: TaskBar
   const isDone = task.status === 'done';
 
   return (
-    <button
+    <Button
+      variant="solid"
       onClick={onClick}
       title={task.title}
       style={{
@@ -87,7 +89,6 @@ function TaskBar({ task, startMs, pxPerDay, rowHeight, color, onClick }: TaskBar
         backgroundColor: color,
         opacity: isDone ? 0.5 : 0.85,
         borderRadius: 4,
-        border: 'none',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
@@ -95,6 +96,7 @@ function TaskBar({ task, startMs, pxPerDay, rowHeight, color, onClick }: TaskBar
         paddingRight: 6,
         overflow: 'hidden',
         whiteSpace: 'nowrap',
+        minWidth: 0,
       }}
     >
       <span
@@ -109,7 +111,7 @@ function TaskBar({ task, startMs, pxPerDay, rowHeight, color, onClick }: TaskBar
       >
         {task.title}
       </span>
-    </button>
+    </Button>
   );
 }
 
@@ -133,14 +135,14 @@ function DayHeader({ startMs, days, pxPerDay }: { startMs: number; days: number;
         style={{
           width: pxPerDay,
           flexShrink: 0,
-          borderRight: '1px solid var(--color-mission-control-border, #2d2d3a)',
+          borderRight: '1px solid var(--mission-control-border, #2a2a2a)',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: isToday ? 'var(--color-accent, #6366f1)' + '22' : undefined,
+          backgroundColor: isToday ? 'var(--mission-control-accent, #6e56cf)' + '22' : undefined,
           fontSize: 10,
-          color: isToday ? 'var(--color-accent, #6366f1)' : 'var(--color-text-dim, #6b7280)',
+          color: isToday ? 'var(--mission-control-accent, #6e56cf)' : 'var(--color-text-dim, #6b7280)',
           fontWeight: isToday ? 700 : 400,
           userSelect: 'none',
         }}
@@ -154,7 +156,7 @@ function DayHeader({ startMs, days, pxPerDay }: { startMs: number; days: number;
   }
 
   return (
-    <div style={{ display: 'flex', height: 32, borderBottom: '1px solid var(--color-mission-control-border, #2d2d3a)' }}>
+    <div style={{ display: 'flex', height: 32, borderBottom: '1px solid var(--mission-control-border, #2a2a2a)' }}>
       {cells}
     </div>
   );
@@ -258,41 +260,40 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
       <div className="flex items-center gap-2 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
         <span className="text-xs text-mission-control-text-dim mr-2">Zoom:</span>
         {(['week', 'month', 'quarter'] as ZoomLevel[]).map(z => (
-          <button
+          <Button
             key={z}
+            variant={zoom === z ? 'solid' : 'outline'}
+            size="1"
             onClick={() => setZoom(z)}
-            className={`px-2.5 py-1 text-xs rounded transition-colors ${
-              zoom === z
-                ? 'bg-mission-control-accent text-white'
-                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface border border-mission-control-border'
-            }`}
           >
             {ZOOM_CONFIG[z].label}
-          </button>
+          </Button>
         ))}
         <div className="ml-auto flex items-center gap-1">
-          <button
+          <IconButton
+            variant="ghost"
+            size="1"
             onClick={() => {
               const levels: ZoomLevel[] = ['week', 'month', 'quarter'];
               const idx = levels.indexOf(zoom);
               if (idx > 0) setZoom(levels[idx - 1]);
             }}
-            className="p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             title="Zoom in"
           >
             <ZoomIn size={14} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            size="1"
             onClick={() => {
               const levels: ZoomLevel[] = ['week', 'month', 'quarter'];
               const idx = levels.indexOf(zoom);
               if (idx < levels.length - 1) setZoom(levels[idx + 1]);
             }}
-            className="p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             title="Zoom out"
           >
             <ZoomOut size={14} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -300,18 +301,19 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
       <div className="flex flex-1 overflow-hidden">
         {/* Label column (fixed) */}
         <div
-          style={{ width: LABEL_W, flexShrink: 0, borderRight: '1px solid var(--color-mission-control-border, #2d2d3a)' }}
+          style={{ width: LABEL_W, flexShrink: 0, borderRight: '1px solid var(--mission-control-border, #2a2a2a)' }}
           className="overflow-hidden bg-mission-control-surface"
         >
           {/* header spacer */}
-          <div style={{ height: 32, borderBottom: '1px solid var(--color-mission-control-border, #2d2d3a)' }} />
+          <div style={{ height: 32, borderBottom: '1px solid var(--mission-control-border, #2a2a2a)' }} />
           {orderedGroups.map(g => {
             const isCollapsed = collapsed[g];
             const groupTasks = groups[g];
             return (
               <div key={g}>
                 {/* Group header */}
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => toggleGroup(g)}
                   style={{ height: ROW_H, width: '100%' }}
                   className="flex items-center gap-2 px-3 text-xs font-semibold text-mission-control-text bg-mission-control-bg0 hover:bg-mission-control-surface/60 transition-colors border-b border-mission-control-border"
@@ -328,7 +330,7 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
                     }}
                   />
                   {g} ({groupTasks.length})
-                </button>
+                </Button>
                 {/* Task rows */}
                 {!isCollapsed && groupTasks.map(task => (
                   <div
@@ -379,14 +381,14 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
                 <div key={g}>
                   {/* Group header row (blank) */}
                   <div
-                    style={{ height: ROW_H, borderBottom: '1px solid var(--color-mission-control-border, #2d2d3a)' }}
+                    style={{ height: ROW_H, borderBottom: '1px solid var(--mission-control-border, #2a2a2a)' }}
                     className="bg-mission-control-bg0"
                   />
                   {/* Task rows */}
                   {!isCollapsed && groupTasks.map(task => (
                     <div
                       key={task.id}
-                      style={{ height: ROW_H, position: 'relative', borderBottom: '1px solid var(--color-mission-control-border, #2d2d3a)' }}
+                      style={{ height: ROW_H, position: 'relative', borderBottom: '1px solid var(--mission-control-border, #2a2a2a)' }}
                     >
                       <TaskBar
                         task={task}
