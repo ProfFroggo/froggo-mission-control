@@ -208,8 +208,8 @@ export default function ModuleBuilderPage() {
           {tasksCreated && moduleId ? (
             <div className="flex flex-col h-full overflow-y-auto p-5 gap-4">
               {/* Post-build success state */}
-              <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
-                <p className="text-sm font-medium text-green-400">Build queued — {createdTaskIds.length} tasks created</p>
+              <div className="rounded-lg border border-success/30 bg-success/10 px-4 py-3">
+                <p className="text-sm font-medium text-success">Build queued — {createdTaskIds.length} tasks created</p>
                 <p className="text-xs text-mission-control-text-dim mt-0.5">{spec.name}</p>
               </div>
               <ModuleBuildProgress moduleId={moduleId} />

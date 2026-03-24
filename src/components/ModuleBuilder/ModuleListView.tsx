@@ -63,7 +63,7 @@ function MiniProgress({ moduleId, taskIds, onBuild }: MiniProgressProps) {
     <div className="mt-3">
       <div className="flex items-center justify-between text-[10px] text-mission-control-text-dim mb-1">
         {allDone ? (
-          <span className="flex items-center gap-1 text-green-400">
+          <span className="flex items-center gap-1 text-success">
             <CheckCircle2 size={10} /> Complete
           </span>
         ) : (
@@ -184,17 +184,17 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
                 <div className="flex items-center justify-between mb-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
                     mod.status === 'built' || mod.status === 'finished'
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-yellow-500/20 text-yellow-400'
+                      ? 'bg-success/20 text-success'
+                      : 'bg-warning/20 text-warning'
                   }`}>
                     {mod.status === 'built' || mod.status === 'finished' ? 'Built' : 'In Progress'}
                   </span>
                   <button
                     onClick={(e) => handleDelete(e, mod.id, mod.name)}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-error/20 rounded transition-all"
                     title="Delete module"
                   >
-                    <Trash2 size={14} className="text-red-400" />
+                    <Trash2 size={14} className="text-error" />
                   </button>
                 </div>
 

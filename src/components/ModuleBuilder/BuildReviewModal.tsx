@@ -14,7 +14,7 @@ interface Props {
 
 const agentColors: Record<string, string> = {
   coder: 'bg-info/20 text-info',
-  'senior-coder': 'bg-purple-500/20 text-purple-400',
+  'senior-coder': 'bg-review/20 text-review',
   designer: 'bg-pink-500/20 text-pink-400',
   writer: 'bg-success-subtle text-success',
   clara: 'bg-review-subtle text-review',

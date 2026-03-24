@@ -708,7 +708,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           </div>
 
           {creationError && (
-            <div className="px-3 py-2.5 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+            <div className="px-3 py-2.5 bg-error/10 border border-error/30 rounded-lg text-error text-sm">
               {creationError}
             </div>
           )}
@@ -1018,7 +1018,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                   <div key={i} className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
                     <span className="flex-1 text-sm text-mission-control-text truncate">{f.name}</span>
                     <span className="text-xs text-mission-control-text-dim">{(f.size / 1024).toFixed(0)}KB</span>
-                    <button onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))} className="p-1 text-mission-control-text-dim hover:text-red-400 transition-colors">
+                    <button onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))} className="p-1 text-mission-control-text-dim hover:text-error transition-colors">
                       <Trash2 size={12} />
                     </button>
                   </div>
@@ -1057,7 +1057,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             <div>
               <span className="font-semibold text-mission-control-text text-sm">Campaign Planner</span>
               <div className="flex items-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 <span className="text-xs text-mission-control-text-dim">Active</span>
               </div>
             </div>

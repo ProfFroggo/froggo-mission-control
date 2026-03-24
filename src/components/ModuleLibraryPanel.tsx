@@ -230,7 +230,7 @@ function InteractiveStarRating({ value, onChange }: { value: number; onChange: (
 function HealthDot({ status }: { status: ModuleHealthStatus }) {
   const cls =
     status === 'healthy' ? 'bg-success' :
-    status === 'warning' ? 'bg-amber-400' :
+    status === 'warning' ? 'bg-warning' :
     'bg-error';
   return (
     <span
@@ -854,7 +854,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
             <span className="text-success">{healthSummary.healthy}</span>
             {' '}healthy
             {healthSummary.warning > 0 && (
-              <span>, <span className="text-amber-400">{healthSummary.warning}</span> warning{healthSummary.warning > 1 ? 's' : ''}</span>
+              <span>, <span className="text-warning">{healthSummary.warning}</span> warning{healthSummary.warning > 1 ? 's' : ''}</span>
             )}
             {healthSummary.error > 0 && (
               <span>, <span className="text-error">{healthSummary.error}</span> error{healthSummary.error > 1 ? 's' : ''}</span>
@@ -1060,7 +1060,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                     {module.requiredApis.map(api => (
                       <span
                         key={`api-${api}`}
-                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border border-amber-400/30 bg-amber-400/10 text-amber-400"
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border border-warning/30 bg-warning/10 text-warning"
                         title="API key required"
                       >
                         <Key size={9} />
@@ -1085,7 +1085,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                           className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border ${
                             installed
                               ? 'border-success-border bg-success-subtle text-success'
-                              : 'border-amber-400/30 bg-amber-400/10 text-amber-400'
+                              : 'border-warning/30 bg-warning/10 text-warning'
                           }`}
                           title={installed ? `Agent ${agentId} installed` : `Requires agent: ${agentId}`}
                         >

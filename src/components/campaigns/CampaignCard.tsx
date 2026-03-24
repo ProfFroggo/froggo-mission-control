@@ -8,13 +8,13 @@ import { CHANNEL_ICONS, CHANNEL_LABELS } from './channelIcons';
 import type { Campaign } from '../../types/campaigns';
 
 export const TYPE_COLORS: Record<string, string> = {
-  paid:       'text-orange-400 bg-orange-400/10 border-orange-400/20',
-  organic:    'text-green-400 bg-green-400/10 border-green-400/20',
-  social:     'text-blue-400 bg-blue-400/10 border-blue-400/20',
-  email:      'text-purple-400 bg-purple-400/10 border-purple-400/20',
+  paid:       'text-danger bg-danger/10 border-danger/20',
+  organic:    'text-success bg-success/10 border-success/20',
+  social:     'text-info bg-info/10 border-info/20',
+  email:      'text-review bg-review/10 border-review/20',
   clm:        'text-pink-400 bg-pink-400/10 border-pink-400/20',
   content:    'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
-  pr:         'text-amber-400 bg-amber-400/10 border-amber-400/20',
+  pr:         'text-warning bg-warning/10 border-warning/20',
   influencer: 'text-rose-400 bg-rose-400/10 border-rose-400/20',
   seo:        'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
   product:    'text-mission-control-accent bg-mission-control-accent/10 border-mission-control-accent/20',
@@ -37,10 +37,10 @@ export const TYPE_LABELS: Record<string, string> = {
 
 export const STATUS_CONFIG: Record<string, { label: string; cls: string; dot?: boolean }> = {
   draft:     { label: 'Draft',     cls: 'text-mission-control-text-dim bg-muted-subtle border-muted-border' },
-  planning:  { label: 'Planning',  cls: 'text-blue-400 bg-blue-400/10 border-blue-400/20' },
-  live:      { label: 'Live',      cls: 'text-green-400 bg-green-400/10 border-green-400/20', dot: true },
-  paused:    { label: 'Paused',    cls: 'text-amber-400 bg-amber-400/10 border-amber-400/20' },
-  completed: { label: 'Completed', cls: 'text-purple-400 bg-purple-400/10 border-purple-400/20' },
+  planning:  { label: 'Planning',  cls: 'text-info bg-info/10 border-info/20' },
+  live:      { label: 'Live',      cls: 'text-success bg-success/10 border-success/20', dot: true },
+  paused:    { label: 'Paused',    cls: 'text-warning bg-warning/10 border-warning/20' },
+  completed: { label: 'Completed', cls: 'text-review bg-review/10 border-review/20' },
   archived:  { label: 'Archived',  cls: 'text-mission-control-text-dim/50 bg-muted-subtle/50 border-muted-border/50' },
 };
 
@@ -114,7 +114,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
                 {typeLabel}
               </span>
               <span className={`flex-shrink-0 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${sc.cls}`}>
-                {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />}
+                {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />}
                 {sc.label}
               </span>
             </div>
@@ -218,7 +218,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
       {/* Status + channels row */}
       <div className="flex items-center gap-2 mb-3">
         <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${sc.cls}`}>
-          {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />}
+          {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />}
           {sc.label}
         </span>
         <div className="flex items-center gap-1 ml-1">

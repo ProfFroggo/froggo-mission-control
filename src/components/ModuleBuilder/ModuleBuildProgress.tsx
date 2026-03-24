@@ -25,11 +25,11 @@ interface Props {
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
   'todo': <Circle size={14} className="text-mission-control-text-dim" />,
-  'internal-review': <Eye size={14} className="text-yellow-400" />,
-  'in-progress': <Clock size={14} className="text-blue-400" />,
-  'agent-review': <Eye size={14} className="text-orange-400" />,
-  'human-review': <User size={14} className="text-purple-400" />,
-  'done': <CheckCircle2 size={14} className="text-green-400" />,
+  'internal-review': <Eye size={14} className="text-warning" />,
+  'in-progress': <Clock size={14} className="text-info" />,
+  'agent-review': <Eye size={14} className="text-danger" />,
+  'human-review': <User size={14} className="text-review" />,
+  'done': <CheckCircle2 size={14} className="text-success" />,
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -135,7 +135,7 @@ export default function ModuleBuildProgress({ moduleId }: Props) {
       {/* Footer actions */}
       <div className="px-4 py-3 border-t border-mission-control-border flex items-center gap-3">
         {allDone ? (
-          <div className="flex items-center gap-2 text-sm text-green-400 font-medium">
+          <div className="flex items-center gap-2 text-sm text-success font-medium">
             <CheckCircle2 size={16} />
             Module complete
           </div>

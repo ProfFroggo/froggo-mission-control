@@ -28,7 +28,7 @@ const complexityColors: Record<string, string> = {
 
 const agentColors: Record<string, string> = {
   coder: 'bg-info/20 text-info',
-  'senior-coder': 'bg-purple-500/20 text-purple-400',
+  'senior-coder': 'bg-review/20 text-review',
   designer: 'bg-pink-500/20 text-pink-400',
   writer: 'bg-success-subtle text-success',
   researcher: 'bg-cyan-500/20 text-cyan-400',
@@ -178,7 +178,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
           <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Code2 size={13} /> manifest.json
           </h3>
-          <pre className="bg-mission-control-bg0 text-green-400 text-xs p-3 rounded-lg overflow-x-auto font-mono">
+          <pre className="bg-mission-control-bg0 text-success text-xs p-3 rounded-lg overflow-x-auto font-mono">
 {JSON.stringify({
   id: spec.id,
   name: spec.name,
@@ -230,7 +230,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
             ))}
             {spec.externalApis?.map(api => (
               <li key={api} className="text-sm text-mission-control-text flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-review" />
                 {api}
               </li>
             ))}
