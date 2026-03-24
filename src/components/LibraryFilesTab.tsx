@@ -1228,7 +1228,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 ) : (detailFile.mimeType === 'application/pdf' || detailFile.name.toLowerCase().endsWith('.pdf')) ? (
                   <iframe
                     src={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
-                    className="w-full rounded-lg bg-white"
+                    className="w-full rounded-lg bg-[--color-surface]"
                     style={{ height: 200 }}
                     title={detailFile.name}
                   />
@@ -1259,7 +1259,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 <a
                   href={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
                   download={detailFile.name}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-xs w-full justify-center"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-[--accent-9] text-[--accent-contrast] rounded-lg hover:bg-[--accent-10] transition-colors text-xs w-full justify-center"
                 >
                   <Download size={13} />
                   Download

@@ -101,7 +101,7 @@ export default function SpecPreviewPanel({
               {tab.icon}
               {tab.label}
               {(tab.badge ?? 0) > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-[9px] rounded-full bg-mission-control-accent text-white font-bold">
+                <span className="ml-1 px-1.5 py-0.5 text-[9px] rounded-full bg-[--accent-9] text-[--accent-contrast] font-bold">
                   {tab.badge}
                 </span>
               )}

@@ -190,7 +190,6 @@ export default function PromptDialog({
             onClick={handleSubmit}
             loading={isSubmitting || loading}
             disabled={!value.trim()}
-            className="px-4 py-2 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {confirmLabel}
           </LoadingButton>

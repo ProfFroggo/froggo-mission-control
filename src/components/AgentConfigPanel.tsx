@@ -892,8 +892,8 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                       size="1"
                       style={{ width: '100%' }}
                     />
-                    <Select.Root value={newMcp.transport} onValueChange={(val) => setNewMcp(m => ({ ...m, transport: val as 'stdio' | 'http' }))}>
-                      <Select.Trigger size="1" style={{ width: '100%' }} />
+                    <Select.Root size="1" value={newMcp.transport} onValueChange={(val) => setNewMcp(m => ({ ...m, transport: val as 'stdio' | 'http' }))}>
+                      <Select.Trigger style={{ width: '100%' }} />
                       <Select.Content>
                         <Select.Item value="stdio">stdio — local process</Select.Item>
                         <Select.Item value="http">HTTP / SSE — remote endpoint</Select.Item>
@@ -966,11 +966,11 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     <span className="text-xs font-medium text-mission-control-text">New Credential</span>
                     <Button variant="ghost" size="1" onClick={() => { setShowAddKey(false); setNewKey({ name: '', service: '', key: '' }); }}>Cancel</Button>
                   </div>
-                  <Select.Root onValueChange={(val) => {
+                  <Select.Root size="1" onValueChange={(val) => {
                       const preset = API_PRESETS.find(p => p.service === val);
                       if (preset) setNewKey(k => ({ ...k, service: preset.service, name: preset.service ? preset.label : k.name }));
                     }}>
-                    <Select.Trigger size="1" style={{ width: '100%' }} />
+                    <Select.Trigger style={{ width: '100%' }} />
                     <Select.Content>
                       {API_PRESETS.map(p => (
                         <Select.Item key={p.label} value={p.service || '__custom__'}>{p.label}</Select.Item>

@@ -506,11 +506,8 @@ export function MissionControlComposer({
           fontSize: "var(--font-size-2)",
           lineHeight: "1.55",
           fontFamily: "inherit",
-          minHeight: 22,
-          maxHeight: 160,
-          overflow: "auto",
         }}
-        className="placeholder:text-[var(--gray-9)]"
+        className="min-h-[22px] max-h-[160px] overflow-auto placeholder:text-[var(--gray-9)]"
         placeholder={placeholder ?? "Message… (Enter to send, Shift+Enter for newline)"}
         submitMode="enter"
         disabled={disabled}

@@ -959,7 +959,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               <Filter size={16} className="flex-shrink-0" aria-hidden="true" />
               Filters
               {activeFiltersCount > 0 && (
-                <span className="px-1.5 py-0.5 bg-mission-control-accent text-white text-xs rounded-full flex-shrink-0 whitespace-nowrap">
+                <span className="px-1.5 py-0.5 bg-[--accent-9] text-[--accent-contrast] text-xs rounded-full flex-shrink-0 whitespace-nowrap">
                   {activeFiltersCount}
                 </span>
               )}
@@ -1142,8 +1142,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 <div className="icon-text-tight">
                   <FolderOpen size={16} className="text-mission-control-text-dim flex-shrink-0" aria-hidden="true" />
                   <label className="sr-only" htmlFor="filter-project">Project</label>
-                  <Select.Root value={filters.project} onValueChange={(val) => setFilters(f => ({ ...f, project: val }))}>
-                    <Select.Trigger id="filter-project" size="1" />
+                  <Select.Root size="1" value={filters.project} onValueChange={(val) => setFilters(f => ({ ...f, project: val }))}>
+                    <Select.Trigger id="filter-project" />
                     <Select.Content>
                       {projects.map(p => (
                         <Select.Item key={p} value={p}>{p === 'all' ? 'All Projects' : p}</Select.Item>
@@ -1157,8 +1157,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               <div className="icon-text-tight">
                 <Bot size={16} className="text-mission-control-text-dim flex-shrink-0" aria-hidden="true" />
                 <label className="sr-only" htmlFor="filter-assignee">Assignee</label>
-                <Select.Root value={filters.assignee} onValueChange={(val) => setFilters(f => ({ ...f, assignee: val }))}>
-                  <Select.Trigger id="filter-assignee" size="1" />
+                <Select.Root size="1" value={filters.assignee} onValueChange={(val) => setFilters(f => ({ ...f, assignee: val }))}>
+                  <Select.Trigger id="filter-assignee" />
                   <Select.Content>
                     <Select.Item value="all">All Assignees</Select.Item>
                     <Select.Item value="unassigned">Unassigned</Select.Item>
@@ -1425,8 +1425,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       <div className="absolute top-full left-0 mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[180px]">
                         <div className="p-2 border-b border-mission-control-border">
                           <div className="text-xs font-semibold text-mission-control-text-dim mb-1">Agent</div>
-                          <Select.Root value={settings.filterAgent} onValueChange={(val) => updateColumnSetting(column.id, 'filterAgent', val)}>
-                            <Select.Trigger size="1" style={{ width: '100%' }} />
+                          <Select.Root size="1" value={settings.filterAgent} onValueChange={(val) => updateColumnSetting(column.id, 'filterAgent', val)}>
+                            <Select.Trigger style={{ width: '100%' }} />
                             <Select.Content>
                               <Select.Item value="all">All Agents</Select.Item>
                               <Select.Item value="unassigned">Unassigned</Select.Item>
@@ -1438,8 +1438,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                         </div>
                         <div className="p-2">
                           <div className="text-xs font-semibold text-mission-control-text-dim mb-1">Priority</div>
-                          <Select.Root value={settings.filterPriority} onValueChange={(val) => updateColumnSetting(column.id, 'filterPriority', val as TaskPriority | 'all')}>
-                            <Select.Trigger size="1" style={{ width: '100%' }} />
+                          <Select.Root size="1" value={settings.filterPriority} onValueChange={(val) => updateColumnSetting(column.id, 'filterPriority', val as TaskPriority | 'all')}>
+                            <Select.Trigger style={{ width: '100%' }} />
                             <Select.Content>
                               <Select.Item value="all">All Priorities</Select.Item>
                               {PRIORITIES.map(p => (

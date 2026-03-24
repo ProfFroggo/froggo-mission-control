@@ -31,10 +31,10 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputWrapperRef = useRef<HTMLDivElement>(null);
+  const inputWrapperRef = useRef<HTMLInputElement>(null);
 
   const focusInput = () => {
-    inputWrapperRef.current?.querySelector('input')?.focus();
+    inputWrapperRef.current?.focus();
   };
 
   useEffect(() => {
