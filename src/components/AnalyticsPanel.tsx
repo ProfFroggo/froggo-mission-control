@@ -16,6 +16,7 @@ import {
   Download,
 } from 'lucide-react';
 import { Button, IconButton } from '@radix-ui/themes';
+import TabNav from './TabNav';
 import TaskTrendsChart from './TaskTrendsChart';
 import AgentUtilizationChart from './AgentUtilizationChart';
 import ProductivityHeatmap from './ProductivityHeatmap';
@@ -149,80 +150,58 @@ export default function AnalyticsPanel() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-mission-control-accent/20 rounded-lg">
-            <BarChart3 size={24} className="text-mission-control-accent" />
+      {/* Header + tabs wrapper */}
+      <div className="border-b border-mission-control-border bg-mission-control-surface">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-mission-control-accent/20 rounded-lg">
+              <BarChart3 size={24} className="text-mission-control-accent" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-mission-control-text">Analytics & Insights</h1>
+              <p className="text-sm text-mission-control-text-dim">Comprehensive productivity tracking and performance metrics</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-semibold text-mission-control-text">Analytics & Insights</h1>
-            <p className="text-sm text-mission-control-text-dim">Comprehensive productivity tracking and performance metrics</p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          {/* Time range selector */}
-          <div className="flex gap-1">
+          <div className="flex items-center gap-2">
+            {/* Time range selector */}
             {(['7d', '30d', '90d'] as const).map((range) => (
               <Button
                 key={range}
-                size="2"
-                variant={timeRange === range ? 'solid' : 'ghost'}
-                color={timeRange === range ? 'indigo' : 'gray'}
+                size="1"
+                variant={timeRange === range ? 'soft' : 'ghost'}
+                color={timeRange === range ? undefined : 'gray'}
                 onClick={() => setTimeRange(range)}
               >
-                {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
+                {range === '7d' ? '7d' : range === '30d' ? '30d' : '90d'}
               </Button>
             ))}
+            <IconButton size="2" variant="ghost" color="gray" radius="medium" onClick={loadAnalytics} title="Refresh">
+              <RefreshCw size={16} />
+            </IconButton>
+            <Button size="2" variant="soft" onClick={exportData}>
+              <Download size={16} />
+              Export
+            </Button>
           </div>
-
-          <IconButton
-            size="2"
-            variant="ghost"
-            radius="medium"
-            onClick={loadAnalytics}
-            title="Refresh"
-          >
-            <RefreshCw size={16} />
-          </IconButton>
-
-          <Button
-            size="2"
-            variant="solid"
-            onClick={exportData}
-          >
-            <Download size={16} />
-            Export
-          </Button>
         </div>
+
+        {/* Tab nav — flush with header border */}
+        <TabNav
+          tabs={[
+            { id: 'overview', label: 'Overview', icon: Activity },
+            { id: 'tasks', label: 'Task Trends', icon: Target },
+            { id: 'agents', label: 'Agent Performance', icon: Users },
+            { id: 'time', label: 'Time Tracking', icon: Clock },
+            { id: 'projects', label: 'Projects', icon: Calendar },
+          ]}
+          activeTab={view}
+          onTabChange={(id) => setView(id as AnalyticsView)}
+        />
       </div>
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto p-4">
-
-      {/* View selector */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-        {[
-          { id: 'overview', label: 'Overview', icon: Activity },
-          { id: 'tasks', label: 'Task Trends', icon: Target },
-          { id: 'agents', label: 'Agent Performance', icon: Users },
-          { id: 'time', label: 'Time Tracking', icon: Clock },
-          { id: 'projects', label: 'Projects', icon: Calendar },
-        ].map(({ id, label, icon: Icon }) => (
-          <Button
-            key={id}
-            size="2"
-            variant={view === id ? 'solid' : 'surface'}
-            color={view === id ? 'indigo' : 'gray'}
-            onClick={() => setView(id as AnalyticsView)}
-            className="whitespace-nowrap"
-          >
-            <Icon size={16} />
-            {label}
-          </Button>
-        ))}
-      </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">

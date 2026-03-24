@@ -419,14 +419,14 @@ export default function ReportsPanel() {
     <div className="h-full flex flex-col">
       {/* ── Header ── */}
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <FileText className="text-mission-control-accent" size={20} />
-            Productivity Reports
-          </h2>
-          <p className="text-sm text-mission-control-text-dim mt-1">
-            Weekly, monthly summaries and data exports
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+            <FileText size={24} className="text-mission-control-accent" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-mission-control-text">Productivity Reports</h2>
+            <p className="text-sm text-mission-control-text-dim mt-0.5">Weekly, monthly summaries and data exports</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -436,7 +436,8 @@ export default function ReportsPanel() {
               <Button
                 key={r.value}
                 onClick={() => { setQuickRange(r.value); setCustomFrom(''); setCustomTo(''); }}
-                variant={quickRange === r.value && !customFrom ? 'solid' : 'ghost'}
+                variant={quickRange === r.value && !customFrom ? 'soft' : 'ghost'}
+                color={quickRange === r.value && !customFrom ? undefined : 'gray'}
                 size="1"
               >
                 {r.label}
@@ -470,7 +471,8 @@ export default function ReportsPanel() {
               <Button
                 key={type}
                 onClick={() => setReportType(type)}
-                variant={reportType === type ? 'solid' : 'ghost'}
+                variant={reportType === type ? 'soft' : 'ghost'}
+                color={reportType === type ? undefined : 'gray'}
                 size="2"
                 className="capitalize"
               >
