@@ -1,4 +1,5 @@
 import { Users, Bot, CheckSquare, Activity, Gamepad2, MessageCircle, Monitor, CheckCircle, Settings, Send as SendPlane } from 'lucide-react';
+import { Heading, Text, Flex } from '@radix-ui/themes';
 import { formatTimeAgo } from '../utils/formatting';
 import { useStore } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -22,9 +23,9 @@ export default function QuickStatsWidget() {
     return (
       <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
         <div className="p-4 border-b border-mission-control-border">
-          <h2 className="font-semibold flex items-center gap-2">
+          <Heading size="3" weight="medium" className="flex items-center gap-2">
             <Activity size={16} className="text-mission-control-accent" /> Quick Stats
-          </h2>
+          </Heading>
         </div>
         <WidgetLoading variant="skeleton" lines={4} />
       </div>
@@ -74,9 +75,10 @@ export default function QuickStatsWidget() {
   return (
     <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
       <div className="p-4 border-b border-mission-control-border">
-        <h2 className="font-semibold flex items-center gap-2">
-          <Activity size={16} className="text-mission-control-accent" /> Quick Stats
-        </h2>
+        <Flex align="center" gap="2">
+          <Activity size={16} className="text-mission-control-accent" />
+          <Text weight="bold">Quick Stats</Text>
+        </Flex>
       </div>
 
       <div className="p-4 space-y-4">
@@ -161,7 +163,7 @@ export default function QuickStatsWidget() {
               <div className="space-y-1">
                 <div className="w-full bg-mission-control-border rounded-full h-2 overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all"
+                    className="h-full bg-success transition-all"
                     style={{ width: `${(completedToday.length / totalToday) * 100}%` }}
                   />
                 </div>

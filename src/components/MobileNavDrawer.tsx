@@ -4,8 +4,8 @@ import {
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
   FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone, Zap,
 } from 'lucide-react';
+import { IconButton, Text, Badge, Flex, Box } from '@radix-ui/themes';
 import { usePanelConfigStore } from '../store/panelConfig';
-import { NumberBadge } from './BadgeWrapper';
 import { ViewRegistry } from '../core/ViewRegistry';
 
 // Mirror of BUILTIN_PANEL_ICONS from Sidebar — must stay in sync
@@ -102,20 +102,22 @@ export default function MobileNavDrawer({
         }`}
       >
         {/* Drawer header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
-          <span className="text-sm font-semibold text-mission-control-text">Navigation</span>
-          <button
+        <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border">
+          <Text size="2" weight="bold" className="text-mission-control-text">Navigation</Text>
+          <IconButton
+            variant="ghost"
+            color="gray"
+            size="2"
             onClick={onClose}
-            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all"
             aria-label="Close navigation"
           >
             <X size={18} aria-hidden="true" />
-          </button>
-        </div>
+          </IconButton>
+        </Flex>
 
         {/* Search button */}
         {onOpenSearch && (
-          <div className="px-3 pt-3 pb-1">
+          <Box className="px-3 pt-3 pb-1">
             <button
               onClick={() => { onOpenSearch(); onClose(); }}
               className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all border border-mission-control-border/50"
@@ -123,11 +125,11 @@ export default function MobileNavDrawer({
             >
               <Search size={16} className="flex-shrink-0" aria-hidden="true" />
               <span className="flex-1 text-sm text-left truncate">Search...</span>
-              <kbd className="text-[10px] px-1.5 py-0.5 bg-mission-control-border/80 rounded font-mono flex-shrink-0">
+              <kbd className="text-xs px-1.5 py-0.5 bg-mission-control-border/80 rounded font-mono flex-shrink-0">
                 K
               </kbd>
             </button>
-          </div>
+          </Box>
         )}
 
         {/* Nav items */}
@@ -167,21 +169,22 @@ export default function MobileNavDrawer({
                   <Icon size={20} className="flex-shrink-0" aria-hidden="true" />
                   <span className="text-sm font-medium flex-1 text-left truncate">{label}</span>
                   {shortcutNum !== undefined && (
-                    <kbd className={`text-[10px] px-1.5 py-0.5 rounded font-mono flex-shrink-0 ${
+                    <kbd className={`text-xs px-1.5 py-0.5 rounded font-mono flex-shrink-0 ${
                       isActive ? 'bg-white/20 text-white' : 'bg-mission-control-border/80 text-mission-control-text-dim'
                     }`}>
                       {shortcutNum}
                     </kbd>
                   )}
                   {badge > 0 && (
-                    <NumberBadge
-                      count={badge}
-                      maxCount={99}
-                      position="inline"
-                      variant={isActive ? 'secondary' : 'primary'}
-                      size="sm"
+                    <Badge
+                      color={isActive ? 'gray' : 'indigo'}
+                      variant="soft"
+                      size="1"
+                      radius="full"
                       className={isActive ? 'bg-mission-control-text/20 text-mission-control-text' : 'bg-mission-control-accent/20 text-mission-control-accent'}
-                    />
+                    >
+                      {badge > 99 ? '99+' : badge}
+                    </Badge>
                   )}
                 </button>
               );
@@ -189,7 +192,7 @@ export default function MobileNavDrawer({
         </nav>
 
         {/* Bottom actions */}
-        <div className="p-3 border-t border-mission-control-border space-y-1">
+        <Box className="p-3 border-t border-mission-control-border space-y-1">
           {onOpenEditPanels && (
             <button
               onClick={() => { onOpenEditPanels(); onClose(); }}
@@ -225,7 +228,7 @@ export default function MobileNavDrawer({
             <Settings size={18} aria-hidden="true" />
             <span className="text-sm font-medium">Settings</span>
           </button>
-        </div>
+        </Box>
       </div>
     </>
   );

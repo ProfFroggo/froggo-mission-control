@@ -7,7 +7,7 @@
 
 import { LucideIcon, Inbox, CheckCircle, Search, FolderOpen, Bell, Layout, Wallet, Package } from 'lucide-react';
 import { ReactNode } from 'react';
-import { Flex, Heading, Text, Button } from '@radix-ui/themes';
+import { Button } from '@radix-ui/themes';
 
 interface EmptyStateAction {
   label: string;
@@ -118,9 +118,7 @@ export default function EmptyState(props: EmptyStateProps) {
   const title = isPreset ? presets[props.type].title : props.title;
   const desc = description || (isPreset ? presets[props.type].description : undefined);
 
-  const paddingClasses = PADDING_CLASSES[effectiveSize];
   const iconSize = ICON_SIZES[effectiveSize];
-  const titleSize = effectiveSize === 'sm' ? '3' : effectiveSize === 'lg' ? '5' : '4';
 
   // Render action button or element
   const renderAction = (): React.ReactElement | null => {
@@ -135,7 +133,7 @@ export default function EmptyState(props: EmptyStateProps) {
       <Button
         onClick={actionConfig.onClick}
         variant={actionConfig.variant === 'secondary' ? 'surface' : 'soft'}
-        color={actionConfig.variant === 'secondary' ? 'gray' : 'grass'}
+        color={actionConfig.variant === 'secondary' ? 'gray' : 'violet'}
         size="2"
       >
         {actionConfig.label}
@@ -144,34 +142,27 @@ export default function EmptyState(props: EmptyStateProps) {
   };
 
   return (
-    <Flex
-      direction="column"
-      align="center"
-      gap="3"
-      className={`empty-state ${paddingClasses} ${className}`}
+    <div
+      className={`flex flex-col items-center justify-center h-full py-16 gap-3 text-center px-6 ${className}`}
       role="status"
       aria-live="polite"
     >
-      <div className="empty-state-icon">
+      {Icon && (
         <Icon
           size={iconSize}
-          className="text-mission-control-text-dim/40"
+          className="text-mission-control-text-dim opacity-40"
           aria-hidden="true"
         />
-      </div>
+      )}
 
-      <Heading size={titleSize as '3' | '4' | '5'} color="gray" className="empty-state-title">
-        {title}
-      </Heading>
+      <p className="text-sm font-semibold text-mission-control-text">{title}</p>
 
       {desc && (
-        <Text size="2" color="gray" align="center" className="empty-state-description">
-          {desc}
-        </Text>
+        <p className="text-xs text-mission-control-text-dim max-w-xs">{desc}</p>
       )}
 
       {renderAction()}
-    </Flex>
+    </div>
   );
 }
 

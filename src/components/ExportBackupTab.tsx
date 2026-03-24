@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { Download, Upload, Database, Clock, HardDrive, CheckCircle, AlertTriangle, Trash2, RefreshCw } from 'lucide-react';
+import { Button, Switch, Checkbox, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { taskApi, agentApi, chatApi, settingsApi } from '../lib/api';
@@ -227,7 +228,7 @@ export default function ExportBackupTab() {
             </div>
             <div className="text-2xl font-semibold">{formatBytes(stats.databaseSize)}</div>
           </div>
-          
+
           <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
             <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
               <HardDrive size={16} />
@@ -236,7 +237,7 @@ export default function ExportBackupTab() {
             <div className="text-2xl font-semibold">{stats.backupCount}</div>
             <div className="text-xs text-mission-control-text-dim">{formatBytes(stats.totalBackupSize)} total</div>
           </div>
-          
+
           <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
             <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
               <Clock size={16} />
@@ -246,7 +247,7 @@ export default function ExportBackupTab() {
               {stats.lastBackupDate ? formatDate(stats.lastBackupDate) : 'Never'}
             </div>
           </div>
-          
+
           <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
             <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
               <Download size={16} />
@@ -263,63 +264,65 @@ export default function ExportBackupTab() {
           <Download size={20} />
           Export Data
         </h2>
-        
+
         <div className="space-y-4">
           {/* Format Selector */}
           <div>
             <span className="block text-sm text-mission-control-text-dim mb-2">Export Format</span>
             <div className="flex gap-2" role="radiogroup" aria-label="Export format">
-              <button
+              <Button
                 onClick={() => setExportFormat('json')}
-                className={`px-4 py-2 rounded-lg border transition-colors ${
-                  exportFormat === 'json'
-                    ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                    : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/50'
-                }`}
+                variant={exportFormat === 'json' ? 'soft' : 'outline'}
+                color={exportFormat === 'json' ? 'grass' : 'gray'}
+                size="2"
               >
                 JSON
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setExportFormat('csv')}
-                className={`px-4 py-2 rounded-lg border transition-colors ${
-                  exportFormat === 'csv'
-                    ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                    : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/50'
-                }`}
+                variant={exportFormat === 'csv' ? 'soft' : 'outline'}
+                color={exportFormat === 'csv' ? 'grass' : 'gray'}
+                size="2"
               >
                 CSV
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Export Buttons */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <button
+            <Button
               onClick={handleExportTasks}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-bg hover:bg-mission-control-surface border border-mission-control-border rounded-lg transition-colors disabled:opacity-50"
+              variant="soft"
+              color="gray"
+              size="2"
             >
               <Download size={16} />
               Export Tasks
-            </button>
-            
-            <button
+            </Button>
+
+            <Button
               onClick={handleExportAgentLogs}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-bg hover:bg-mission-control-surface border border-mission-control-border rounded-lg transition-colors disabled:opacity-50"
+              variant="soft"
+              color="gray"
+              size="2"
             >
               <Download size={16} />
               Export Agent Logs
-            </button>
-            
-            <button
+            </Button>
+
+            <Button
               onClick={handleExportChatHistory}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-bg hover:bg-mission-control-surface border border-mission-control-border rounded-lg transition-colors disabled:opacity-50"
+              variant="soft"
+              color="gray"
+              size="2"
             >
               <Download size={16} />
               Export Chat History
-            </button>
+            </Button>
           </div>
 
           <div className="text-xs text-mission-control-text-dim">
@@ -334,30 +337,31 @@ export default function ExportBackupTab() {
           <HardDrive size={20} />
           Database Backup
         </h2>
-        
+
         <div className="space-y-4">
           {/* Backup Options */}
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={includeAttachments}
-                onChange={(e) => setIncludeAttachments(e.target.checked)}
-                className="w-4 h-4 rounded border-mission-control-border bg-mission-control-bg checked:bg-mission-control-accent"
+                onCheckedChange={(checked) => setIncludeAttachments(checked === true)}
+                size="2"
               />
               <span className="text-sm">Include attachments (larger file size)</span>
             </label>
           </div>
 
           {/* Create Backup Button */}
-          <button
+          <Button
             onClick={handleCreateBackup}
             disabled={loading}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-mission-control-accent hover:bg-mission-control-accent/80 text-white rounded-lg transition-colors disabled:opacity-50 w-full md:w-auto"
+            variant="solid"
+            color="violet"
+            size="2"
           >
             <Database size={16} />
             Create Backup Now
-          </button>
+          </Button>
 
           {/* Auto-Backup Settings */}
           <div className="pt-4 border-t border-mission-control-border">
@@ -366,16 +370,11 @@ export default function ExportBackupTab() {
                 <div className="font-medium">Scheduled Auto-Backups</div>
                 <div className="text-sm text-mission-control-text-dim">Automatically backup database daily</div>
               </div>
-              <button
-                onClick={() => setAutoBackupEnabled(!autoBackupEnabled)}
-                className={`w-12 h-6 rounded-full transition-colors ${
-                  autoBackupEnabled ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-                }`}
-              >
-                <div className={`w-5 h-5 rounded-full bg-mission-control-text shadow transition-transform ${
-                  autoBackupEnabled ? 'translate-x-6' : 'translate-x-0.5'
-                }`} />
-              </button>
+              <Switch
+                size="2"
+                checked={autoBackupEnabled}
+                onCheckedChange={setAutoBackupEnabled}
+              />
             </div>
 
             {autoBackupEnabled && (
@@ -392,24 +391,28 @@ export default function ExportBackupTab() {
             <label htmlFor="backup-count" className="block text-sm font-medium mb-2">Retention Policy</label>
             <div className="flex items-center gap-3">
               <span className="text-sm text-mission-control-text-dim">Keep last</span>
-              <input
+              <TextField.Root
                 id="backup-count"
                 type="number"
                 min="1"
                 max="100"
-                value={keepBackupsCount}
+                value={String(keepBackupsCount)}
                 onChange={(e) => setKeepBackupsCount(parseInt(e.target.value) || 10)}
-                className="w-20 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-center"
+                size="2"
+                style={{ width: '5rem', textAlign: 'center' }}
               />
               <span className="text-sm text-mission-control-text-dim">backups</span>
-              <button
+              <Button
                 onClick={handleCleanupBackups}
                 disabled={loading}
-                className="ml-auto flex items-center gap-2 px-4 py-2 bg-mission-control-bg hover:bg-mission-control-surface border border-mission-control-border rounded-lg transition-colors disabled:opacity-50"
+                variant="soft"
+                color="gray"
+                size="2"
+                className="ml-auto"
               >
                 <Trash2 size={14} />
                 Cleanup Now
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -426,13 +429,15 @@ export default function ExportBackupTab() {
             <Database size={20} />
             Available Backups
           </h2>
-          <button
+          <Button
             onClick={loadBackups}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
+            variant="ghost"
+            color="gray"
+            size="2"
           >
             <RefreshCw size={14} />
             Refresh
-          </button>
+          </Button>
         </div>
 
         {backups.length === 0 ? (
@@ -466,14 +471,16 @@ export default function ExportBackupTab() {
                       Latest
                     </span>
                   )}
-                  <button
+                  <Button
                     onClick={() => handleRestoreBackup(backup.path)}
                     disabled={loading}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-mission-control-accent/10 hover:bg-mission-control-accent/20 text-mission-control-accent rounded transition-colors disabled:opacity-50"
+                    variant="soft"
+                    color="violet"
+                    size="2"
                   >
                     <Upload size={14} />
                     Restore
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -487,7 +494,7 @@ export default function ExportBackupTab() {
           <AlertTriangle size={20} />
           Danger Zone
         </h2>
-        
+
         <div className="space-y-3 text-sm">
           <div className="flex items-start gap-2">
             <CheckCircle size={16} className="text-success flex-shrink-0 mt-0.5" />

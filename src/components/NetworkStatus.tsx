@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { WifiOff, Wifi, X } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useEventBus } from '../lib/useEventBus';
 
@@ -44,44 +45,19 @@ export default function NetworkStatus() {
       <div
         role="alert"
         aria-live="assertive"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          padding: '8px 16px',
-          background: 'var(--warning, #d97706)',
-          color: '#fff',
-          fontSize: '14px',
-          fontWeight: 500,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-        }}
+        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-2 px-4 py-2 bg-warning text-white text-sm font-medium shadow-md"
       >
         <WifiOff size={16} aria-hidden />
         <span>No internet connection. Some features may be unavailable.</span>
-        <button
+        <IconButton
+          variant="ghost"
+          size="1"
           onClick={() => setDismissed(true)}
           aria-label="Dismiss offline notification"
-          style={{
-            marginLeft: '8px',
-            padding: '2px',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            opacity: 0.8,
-            lineHeight: 1,
-          }}
+          className="ml-2 text-white opacity-80 hover:opacity-100"
         >
           <X size={16} />
-        </button>
+        </IconButton>
       </div>
     );
   }
@@ -91,23 +67,7 @@ export default function NetworkStatus() {
       <div
         role="status"
         aria-live="polite"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          padding: '8px 16px',
-          background: 'var(--success, #16a34a)',
-          color: '#fff',
-          fontSize: '14px',
-          fontWeight: 500,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-        }}
+        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-2 px-4 py-2 bg-success text-white text-sm font-medium shadow-md"
       >
         <Wifi size={16} aria-hidden />
         <span>Back online</span>

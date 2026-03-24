@@ -79,7 +79,7 @@ export function UnreadDot({ show, size = 'md', pulse = false }: UnreadDotProps) 
 
   return (
     <div className={`
-      rounded-full bg-blue-500 flex-shrink-0
+      rounded-full bg-info flex-shrink-0
       ${sizeClasses[size]}
       ${pulse ? 'animate-pulse' : ''}
     `} />
@@ -97,7 +97,7 @@ export function UnrepliedIndicator({ show, count, compact = false }: UnrepliedIn
 
   if (compact) {
     return (
-      <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse flex-shrink-0" />
+      <div className="w-2 h-2 rounded-full bg-warning animate-pulse flex-shrink-0" />
     );
   }
 

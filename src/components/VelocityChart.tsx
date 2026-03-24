@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, Loader2, Download, Copy, Check } from 'lucide-react';
+import { TrendingUp, Download, Copy, Check } from 'lucide-react';
+import { Button, Spinner } from '@radix-ui/themes';
 
 interface WeekBucket {
   weekStart: string;
@@ -90,7 +91,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
   if (loading) {
     return (
       <div className="h-64 flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-mission-control-text-dim" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -136,22 +137,26 @@ export default function VelocityChart({ weeks = 8 }: Props) {
           <span className="text-xs text-mission-control-text-dim">last {weeks} weeks</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="surface"
+            color="gray"
+            size="1"
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
             title="Export velocity as CSV"
           >
             <Download size={12} />
             CSV
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="surface"
+            color="gray"
+            size="1"
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
             title="Copy to clipboard"
           >
             {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
-          </button>
+          </Button>
         </div>
       </div>
 

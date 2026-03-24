@@ -3,6 +3,8 @@ import {
   MessageSquare, CheckCircle, Search, Send, X,
   ChevronLeft, ChevronRight, GripVertical, Mic, MicOff, Phone, PhoneOff, ListTodo, Play, Sparkles, Monitor, Camera, CameraOff,
 } from 'lucide-react';
+import { IconButton, Button, Text, Flex, TextArea, Select, Spinner } from '@radix-ui/themes';
+import { TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
 import { chatApi, authHeaders } from '../lib/api';
@@ -209,51 +211,55 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
 
   return (
     <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-3 max-h-[28rem] overflow-y-auto`}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium flex items-center gap-2">
+      <Flex align="center" justify="between" className="mb-2">
+        <Text size="2" weight="medium" className="flex items-center gap-2">
           <Phone size={14} className="text-mission-control-accent" />
           {activeCall ? 'Active Call' : 'Call Agent'}
-        </h3>
-        <div className="flex items-center gap-1">
-          <button
+        </Text>
+        <Flex align="center" gap="1">
+          <IconButton
+            variant={showSettings ? 'soft' : 'ghost'}
+            color={showSettings ? 'indigo' : 'gray'}
+            size="1"
             onClick={() => setShowSettings(s => !s)}
-            className={`p-1 rounded transition-colors ${showSettings ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'hover:bg-mission-control-border'}`}
             title="Mic settings"
+            aria-label="Microphone settings"
           >
             <Mic size={13} />
-          </button>
-          <button onClick={onClose} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
-        </div>
-      </div>
+          </IconButton>
+          <IconButton variant="ghost" color="gray" size="1" onClick={onClose} aria-label="Close">
+            <X size={14} />
+          </IconButton>
+        </Flex>
+      </Flex>
 
       {/* Mic settings panel */}
       {showSettings && (
         <div className="mb-3 p-2 bg-mission-control-bg border border-mission-control-border rounded-lg">
-          <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider mb-1.5 flex items-center gap-1">
+          <div className="text-xs text-mission-control-text-dim uppercase tracking-wider mb-1.5 flex items-center gap-1">
             <Mic size={10} /> Microphone Input
           </div>
           {micDevices.length === 0 ? (
             <p className="text-xs text-mission-control-text-dim">No microphone devices found</p>
           ) : (
-            <select
-              value={selectedMic}
-              onChange={e => handleMicChange(e.target.value)}
-              className="w-full text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="default">System Default</option>
-              {micDevices.map(d => (
-                <option key={d.deviceId} value={d.deviceId}>
-                  {d.label || `Microphone ${d.deviceId.slice(0, 8)}`}
-                </option>
-              ))}
-            </select>
+            <Select.Root value={selectedMic} onValueChange={handleMicChange} size="1">
+              <Select.Trigger className="w-full" />
+              <Select.Content>
+                <Select.Item value="default">System Default</Select.Item>
+                {micDevices.map(d => (
+                  <Select.Item key={d.deviceId} value={d.deviceId}>
+                    {d.label || `Microphone ${d.deviceId.slice(0, 8)}`}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
           )}
         </div>
       )}
 
       {activeCall && (
         <div className="mb-2 p-2 bg-error-subtle border border-error-border rounded-lg flex items-center gap-2">
-          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+          <span className="w-2 h-2 bg-error rounded-full animate-pulse" />
           <span className="text-xs text-error">In call with {activeCall.agentName}</span>
         </div>
       )}
@@ -271,7 +277,7 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
             <AgentAvatar agentId={agent.id} size="sm" />
             <div className="flex-1 min-w-0">
               <div className="font-medium text-xs">{agent.name}</div>
-              <div className="text-[10px] text-mission-control-text-dim truncate">{agent.role}</div>
+              <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>
             </div>
             {activeCall?.agentId === agent.id && (
               <PhoneOff size={14} className="text-error" />
@@ -305,23 +311,25 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
 
   return (
     <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-4`}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium flex items-center gap-2">
+      <Flex align="center" justify="between" className="mb-3">
+        <Text size="2" weight="medium" className="flex items-center gap-2">
           <Sparkles size={14} className="text-mission-control-accent" />
           Context Chat
-        </h3>
-        <button onClick={onClose} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
-      </div>
+        </Text>
+        <IconButton variant="ghost" color="gray" size="1" onClick={onClose} aria-label="Close">
+          <X size={14} />
+        </IconButton>
+      </Flex>
 
       {/* Context indicator */}
       <div className="mb-3 p-2 bg-mission-control-accent/10 border border-mission-control-accent/20 rounded-lg">
-        <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Current Context</div>
+        <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Current Context</div>
         <div className="text-xs font-medium text-mission-control-accent">{viewLabel}</div>
       </div>
 
       {/* Suggested agents */}
       <div className="mb-3">
-        <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider mb-1.5">
+        <div className="text-xs text-mission-control-text-dim uppercase tracking-wider mb-1.5">
           Suggested for {viewLabel}
         </div>
         <div className="flex gap-1.5 flex-wrap">
@@ -367,11 +375,12 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
       </div>
 
       {/* Message */}
-      <textarea
+      <TextArea
         value={message}
         onChange={e => setMessage(e.target.value)}
         placeholder={`Ask ${selectedAgent.name} about ${viewLabel}...`}
-        className="w-full h-20 bg-mission-control-bg border border-mission-control-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
+        rows={3}
+        size="2"
         onKeyDown={e => {
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && message.trim()) {
             onStartChat(selectedAgent, message);
@@ -381,8 +390,12 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
         }}
       />
       <div className="flex justify-between items-center mt-2">
-        <span className="text-[10px] text-mission-control-text-dim">⌘+Enter to send</span>
-        <button
+        <span className="text-xs text-mission-control-text-dim">⌘+Enter to send</span>
+        <Button
+          size="2"
+          variant="solid"
+          color="violet"
+          disabled={!message.trim()}
           onClick={() => {
             if (message.trim()) {
               onStartChat(selectedAgent, message);
@@ -390,12 +403,10 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
               onClose();
             }
           }}
-          disabled={!message.trim()}
-          className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 text-sm"
         >
           <Send size={12} />
           Chat with {selectedAgent.name}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -443,20 +454,22 @@ function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
 
   return (
     <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-3 max-h-80 overflow-y-auto`}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium flex items-center gap-2">
+      <Flex align="center" justify="between" className="mb-2">
+        <Text size="2" weight="medium" className="flex items-center gap-2">
           <ListTodo size={14} className="text-mission-control-accent" />
           Task Shortcuts
-        </h3>
-        <button onClick={onClose} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
-      </div>
+        </Text>
+        <IconButton variant="ghost" color="gray" size="1" onClick={onClose} aria-label="Close">
+          <X size={14} />
+        </IconButton>
+      </Flex>
 
       {/* Quick status filters */}
       <div className="flex gap-1 mb-2">
         {TASK_STATUSES.map(s => (
           <button
             key={s.value}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] bg-mission-control-border hover:bg-mission-control-border/80 transition-colors"
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-mission-control-border hover:bg-mission-control-border/80 transition-colors"
             title={`View ${s.label} tasks`}
           >
             <s.icon size={10} className={s.color} />
@@ -1027,34 +1040,37 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       {/* Quick Message Modal */}
       {quickMessageOpen && !state.isCollapsed && (
         <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-4`}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-medium flex items-center gap-2">
+          <Flex align="center" justify="between" className="mb-3">
+            <Text weight="medium" className="flex items-center gap-2">
               <MessageSquare size={16} className="text-mission-control-accent" />
               Quick Message
-            </h3>
-            <button onClick={() => setQuickMessageOpen(false)} className="p-1 hover:bg-mission-control-border rounded">
+            </Text>
+            <IconButton variant="ghost" color="gray" size="1" onClick={() => setQuickMessageOpen(false)} aria-label="Close">
               <X size={16} />
-            </button>
-          </div>
-          <textarea
+            </IconButton>
+          </Flex>
+          <TextArea
             value={quickMessage}
             onChange={e => setQuickMessage(e.target.value)}
             placeholder="Ask Mission Control something quick..."
-            className="w-full h-24 bg-mission-control-bg border border-mission-control-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
+            rows={4}
+            size="2"
             onKeyDown={e => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleQuickMessage();
             }}
           />
-          <div className="flex justify-end mt-2">
-            <button
-              onClick={handleQuickMessage}
+          <Flex justify="end" mt="2">
+            <Button
+              size="2"
+              variant="solid"
+              color="violet"
               disabled={!quickMessage.trim() || sending}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50"
+              onClick={handleQuickMessage}
             >
               <Send size={14} />
               {sending ? 'Sending...' : 'Send'}
-            </button>
-          </div>
+            </Button>
+          </Flex>
         </div>
       )}
 
@@ -1091,9 +1107,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                   src={`/api/agents/${activeCall.agentId}/avatar`}
                   alt={activeCall.agentName}
                   className={`w-32 h-32 rounded-full object-cover border-4 transition-all duration-300 ${
-                    callRinging ? 'border-yellow-500 animate-pulse scale-95'
-                    : callSpeaking ? 'border-green-500 scale-110 shadow-lg shadow-green-500/30'
-                    : callListening ? 'border-blue-500 scale-105 shadow-lg shadow-blue-500/20'
+                    callRinging ? 'border-warning animate-pulse scale-95'
+                    : callSpeaking ? 'border-success scale-110 shadow-lg'
+                    : callListening ? 'border-info scale-105 shadow-lg'
                     : 'border-mission-control-border'
                   }`}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -1111,7 +1127,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                   </div>
                 </div>
                 {callVideoMode !== 'none' && (
-                  <span className="text-[10px] bg-success-subtle text-white px-2 py-0.5 rounded-full">
+                  <span className="text-xs bg-success-subtle text-white px-2 py-0.5 rounded-full">
                     {callVideoMode === 'screen' ? 'Screen' : 'Camera'}
                   </span>
                 )}
@@ -1119,9 +1135,16 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             </div>
 
             {/* Close button */}
-            <button onClick={() => setCallDialogOpen(false)} className="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full text-white/80 hover:text-white transition-colors">
+            <IconButton
+              variant="ghost"
+              color="gray"
+              size="1"
+              onClick={() => setCallDialogOpen(false)}
+              className="absolute top-2 right-2 bg-black/40 hover:bg-black/60 text-white/80 hover:text-white"
+              aria-label="Close call window"
+            >
               <X size={12} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Transcript */}
@@ -1135,7 +1158,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <div key={i} className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] px-2.5 py-1.5 rounded-lg ${
                   entry.role === 'user' ? 'bg-mission-control-accent text-white'
-                  : entry.role === 'system' ? 'bg-mission-control-bg text-mission-control-text-dim italic text-[10px]'
+                  : entry.role === 'system' ? 'bg-mission-control-bg text-mission-control-text-dim italic text-xs'
                   : 'bg-mission-control-border/50 text-mission-control-text'
                 }`}>
                   {entry.text}
@@ -1146,26 +1169,45 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
           {/* Controls bar */}
           <div className="flex items-center justify-center gap-3 px-3 py-3 border-t border-mission-control-border bg-mission-control-bg/50">
-            <button onClick={toggleCallMute} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callMuted ? 'bg-error-subtle text-error' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'} disabled:opacity-30`}
-              title={callMuted ? 'Unmute' : 'Mute'}>
+            <IconButton
+              variant={callMuted ? 'soft' : 'ghost'}
+              color={callMuted ? 'red' : 'gray'}
+              size="2"
+              onClick={toggleCallMute}
+              disabled={!callConnected}
+              title={callMuted ? 'Unmute' : 'Mute'}
+            >
               {callMuted ? <MicOff size={16} /> : <Mic size={16} />}
-            </button>
-            <button onClick={toggleCallScreen} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'screen' ? 'bg-success-subtle text-success' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'} disabled:opacity-30`}
-              title="Share Screen">
+            </IconButton>
+            <IconButton
+              variant={callVideoMode === 'screen' ? 'soft' : 'ghost'}
+              color={callVideoMode === 'screen' ? 'green' : 'gray'}
+              size="2"
+              onClick={toggleCallScreen}
+              disabled={!callConnected}
+              title="Share Screen"
+            >
               <Monitor size={16} />
-            </button>
-            <button onClick={toggleCallCamera} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'camera' ? 'bg-success-subtle text-success' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'} disabled:opacity-30`}
-              title="Camera">
+            </IconButton>
+            <IconButton
+              variant={callVideoMode === 'camera' ? 'soft' : 'ghost'}
+              color={callVideoMode === 'camera' ? 'green' : 'gray'}
+              size="2"
+              onClick={toggleCallCamera}
+              disabled={!callConnected}
+              title="Camera"
+            >
               {callVideoMode === 'camera' ? <CameraOff size={16} /> : <Camera size={16} />}
-            </button>
-            <button onClick={endActiveCall}
-              className="p-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
-              title="End Call">
+            </IconButton>
+            <IconButton
+              variant="solid"
+              color="red"
+              size="2"
+              onClick={endActiveCall}
+              title="End Call"
+            >
               <PhoneOff size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}
@@ -1181,13 +1223,15 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       {/* Agent Chat Picker */}
       {agentChatModalOpen && !state.isCollapsed && (
         <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-3 max-h-80 overflow-y-auto`}>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium flex items-center gap-2">
+          <Flex align="center" justify="between" className="mb-2">
+            <Text size="2" weight="medium" className="flex items-center gap-2">
               <MessageSquare size={14} className="text-mission-control-accent" />
               Chat with Agent
-            </h3>
-            <button onClick={() => setAgentChatModalOpen(false)} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
-          </div>
+            </Text>
+            <IconButton variant="ghost" color="gray" size="1" onClick={() => setAgentChatModalOpen(false)} aria-label="Close">
+              <X size={14} />
+            </IconButton>
+          </Flex>
           <div className="space-y-1">
             {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
               <button
@@ -1198,7 +1242,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 <AgentAvatar agentId={agent.id} size="sm" />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-xs">{agent.name}</div>
-                  <div className="text-[10px] text-mission-control-text-dim truncate">{agent.role}</div>
+                  <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>
                 </div>
               </button>
             ))}
@@ -1215,12 +1259,12 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <AgentAvatar agentId={chatAgent.id} size="sm" />
               <div>
                 <div className="text-xs font-semibold">{chatAgent.name}</div>
-                <div className="text-[10px] text-mission-control-text-dim">{chatLoading ? 'Typing...' : 'Online'}</div>
+                <div className="text-xs text-mission-control-text-dim">{chatLoading ? 'Typing...' : 'Online'}</div>
               </div>
             </div>
-            <button onClick={() => setAgentChatOpen(false)} className="p-1 hover:bg-mission-control-border rounded">
+            <IconButton variant="ghost" color="gray" size="1" onClick={() => setAgentChatOpen(false)} aria-label="Close chat">
               <X size={12} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Messages */}
@@ -1252,21 +1296,24 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
           {/* Input */}
           <div className="px-3 py-2.5 border-t border-mission-control-border bg-mission-control-surface flex gap-2">
-            <input
-              type="text"
+            <TextField.Root
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
               placeholder={`Message ${chatAgent.name}...`}
-              className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-mission-control-accent"
+              size="1"
+              className="flex-1"
             />
-            <button
-              onClick={sendChatMessage}
+            <IconButton
+              variant="solid"
+              color="violet"
+              size="2"
               disabled={!chatInput.trim() || chatLoading}
-              className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-40 transition-colors"
+              onClick={sendChatMessage}
+              aria-label="Send message"
             >
               <Send size={12} />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}
@@ -1318,8 +1365,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 else { setAgentCallModalOpen(!agentCallModalOpen); }
               }}
               className={`p-2.5 rounded-full transition-colors ${
-                callRinging ? 'bg-yellow-500 text-white animate-pulse'
-                : activeCall ? 'bg-red-500 text-white' : 'hover:bg-mission-control-border'
+                callRinging ? 'bg-warning text-white animate-pulse'
+                : activeCall ? 'bg-error text-white' : 'hover:bg-mission-control-border'
               }`}
               title={activeCall ? activeCall.agentName : 'Call Agent'}
               style={isFloating ? noDrag : {}}
@@ -1327,8 +1374,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               {activeCall ? <PhoneOff size={16} /> : <Phone size={16} className="text-mission-control-text-dim" />}
             </button>
             {activeCall && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-error" style={isFloating ? noDrag : {}}>
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-error" style={isFloating ? noDrag : {}}>
+                <span className="w-1.5 h-1.5 bg-error rounded-full animate-pulse" />
                 {activeCall.agentName}
               </span>
             )}
@@ -1367,8 +1414,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 else { setAgentCallModalOpen(!agentCallModalOpen); }
               }}
               className={`p-2.5 rounded-full transition-colors ${
-                callRinging ? 'bg-yellow-500 text-white animate-pulse'
-                : activeCall ? 'bg-red-500 text-white hover:bg-red-600'
+                callRinging ? 'bg-warning text-white animate-pulse'
+                : activeCall ? 'bg-error text-white hover:bg-error/80'
                 : agentCallModalOpen ? 'bg-mission-control-accent text-white'
                 : 'hover:bg-mission-control-border'
               }`}

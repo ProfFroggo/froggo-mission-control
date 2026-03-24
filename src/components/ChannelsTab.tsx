@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, ChevronDown, ChevronRight, LogOut, Wifi, WifiOff, MessageSquare, Gamepad2, MessageCircle, Briefcase, Mail, Globe, Radio, Send as SendPlane } from 'lucide-react';
+import { Button, IconButton, Badge, Spinner } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -108,15 +109,20 @@ export default function ChannelsTab() {
           {channels.length} channel{channels.length !== 1 ? 's' : ''} •{' '}
           {channels.reduce((n, c) => n + c.accounts.filter(a => a.connected).length, 0)} connected accounts
         </div>
-        <button onClick={loadChannels} disabled={loading}
-          className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80">
+        <Button
+          variant="soft"
+          color="gray"
+          size="2"
+          onClick={loadChannels}
+          disabled={loading}
+        >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
-        </button>
+        </Button>
       </div>
 
       {loading && channels.length === 0 ? (
-        <div className="flex items-center justify-center py-12 text-mission-control-text-dim">
-          <RefreshCw size={24} className="animate-spin mr-3" /> Loading channels...
+        <div className="flex items-center justify-center py-12 gap-2 text-mission-control-text-dim">
+          <Spinner size="2" /> Loading channels...
         </div>
       ) : channels.length === 0 ? (
         <div className="text-center py-12 text-mission-control-text-dim">
@@ -151,11 +157,12 @@ export default function ChannelsTab() {
                   </div>
                   <div className="flex items-center gap-2">
                     {hasError && <span className="w-2 h-2 rounded-full bg-error" title="Has errors" />}
-                    <span className={`px-2 py-0.5 rounded text-xs ${
-                      connectedCount > 0 ? 'bg-success-subtle text-success' : 'bg-mission-control-bg0/20 text-mission-control-text-dim'
-                    }`}>
+                    <Badge
+                      color={connectedCount > 0 ? 'green' : 'gray'}
+                      variant="soft"
+                    >
                       {connectedCount > 0 ? 'Online' : 'Offline'}
-                    </span>
+                    </Badge>
                     {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                   </div>
                 </div>
@@ -167,7 +174,7 @@ export default function ChannelsTab() {
                     ) : channel.accounts.map((account, i) => (
                       <div key={i} className="p-4 border-b border-mission-control-border last:border-b-0 hover:bg-mission-control-border/40">
                         <div className="flex items-center gap-3">
-                          <div className={`p-1.5 rounded ${account.connected ? 'bg-success-subtle' : 'bg-mission-control-bg0/20'}`}>
+                          <div className={`p-1.5 rounded ${account.connected ? 'bg-success-subtle' : 'bg-mission-control-bg'}`}>
                             {account.connected ? <Wifi size={14} className="text-success" /> : <WifiOff size={14} className="text-mission-control-text-dim" />}
                           </div>
                           <div className="flex-1">
@@ -190,13 +197,16 @@ export default function ChannelsTab() {
                               <div className="text-xs text-error mt-1">{account.lastError}</div>
                             )}
                           </div>
-                          <button
+                          <IconButton
+                            variant="ghost"
+                            size="2"
+                            color="red"
                             onClick={e => { e.stopPropagation(); handleLogout(channel.id, account.accountId); }}
-                            className="p-2 hover:bg-error-subtle text-mission-control-text-dim hover:text-error rounded-lg transition-colors"
                             title="Logout"
+                            aria-label={`Logout ${account.name || account.accountId}`}
                           >
                             <LogOut size={14} />
-                          </button>
+                          </IconButton>
                         </div>
                       </div>
                     ))}

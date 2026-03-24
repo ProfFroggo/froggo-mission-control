@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MessageSquare, Brain, BookOpen, RotateCcw, Zap, RefreshCw } from 'lucide-react';
+import { IconButton, Text, Flex } from '@radix-ui/themes';
 
 interface SessionStats {
   messageCount: number;
@@ -52,44 +53,64 @@ export default function SessionStatsBar({
   const statusDot = isDisconnected ? 'bg-error' : 'bg-success';
   const dotColor = contextPct > 80 ? 'bg-error' : contextPct > 50 ? 'bg-warning' : 'bg-success';
   const barColor = contextPct > 80 ? 'bg-error' : contextPct > 50 ? 'bg-warning' : 'bg-success';
-  const iconBtn = 'p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors';
 
   return (
-    <div className={`flex flex-col gap-1 flex-shrink-0 ${className}`}>
+    <Flex direction="column" gap="1" className={`flex-shrink-0 ${className}`}>
 
       {/* Row 1: status + icon actions + context */}
-      <div className="flex items-center gap-1.5">
-        <span className="flex items-center gap-1.5 text-[11px] text-mission-control-text-dim border border-mission-control-border rounded-full px-2 py-0.5">
+      <Flex align="center" gap="2">
+        <span className="flex items-center gap-1.5 text-xs text-mission-control-text-dim border border-mission-control-border rounded-full px-2 py-0.5">
           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusDot}`} />
           {statusText}
         </span>
 
         {isDisconnected ? (
-          <button onClick={onReconnect} title="Reconnect" className={iconBtn}>
+          <IconButton
+            variant="ghost"
+            color="gray"
+            size="1"
+            onClick={onReconnect}
+            title="Reconnect"
+            aria-label="Reconnect"
+          >
             <RefreshCw className="w-3.5 h-3.5" />
-          </button>
+          </IconButton>
         ) : (
-          <button onClick={onReset} title="New session" className={iconBtn}>
+          <IconButton
+            variant="ghost"
+            color="gray"
+            size="1"
+            onClick={onReset}
+            title="New session"
+            aria-label="New session"
+          >
             <RotateCcw className="w-3.5 h-3.5" />
-          </button>
+          </IconButton>
         )}
 
-        <button onClick={onCompact} title="Compact — summarize context" className={iconBtn}>
+        <IconButton
+          variant="ghost"
+          color="gray"
+          size="1"
+          onClick={onCompact}
+          title="Compact — summarize context"
+          aria-label="Compact context"
+        >
           <Zap className="w-3.5 h-3.5" />
-        </button>
+        </IconButton>
 
         {/* Context bar + % */}
-        <div className="flex items-center gap-1 text-[11px] text-mission-control-text-dim">
+        <Flex align="center" gap="1" className="text-xs text-mission-control-text-dim">
           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
           <div className="w-12 h-1 bg-mission-control-border rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(100, contextPct)}%` }} />
           </div>
-          <span>{contextPct}%</span>
-        </div>
-      </div>
+          <Text size="1" color="gray">{contextPct}%</Text>
+        </Flex>
+      </Flex>
 
       {/* Row 2: msg / memory / KB counts */}
-      <div className="flex items-center gap-3 text-[11px] text-mission-control-text-dim">
+      <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
         <span className="flex items-center gap-1">
           <MessageSquare className="w-3 h-3 flex-shrink-0" />
           {stats.messageCount} msgs
@@ -102,8 +123,8 @@ export default function SessionStatsBar({
           <BookOpen className="w-3 h-3 flex-shrink-0" />
           {stats.kbArticleCount} KB articles
         </span>
-      </div>
+      </Flex>
 
-    </div>
+    </Flex>
   );
 }

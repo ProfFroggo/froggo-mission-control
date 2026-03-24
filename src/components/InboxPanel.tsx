@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, CheckCheck, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles, Play } from 'lucide-react';
+import { Button, IconButton, Badge, TextField, TextArea, Spinner } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { SkeletonInbox } from './Skeleton';
@@ -1075,71 +1076,87 @@ export default function InboxPanel() {
           </div>
           
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="soft"
+              color="gray"
+              size="2"
               onClick={() => setShowKeyboardHelp(true)}
-              className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
               title="Keyboard shortcuts (?)"
             >
-              <span className="text-xs font-mono">⌨️</span>
+              <span className="text-xs font-mono">⌨</span>
               Shortcuts
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="soft"
+              color="gray"
+              size="2"
               onClick={handleMarkAllRead}
               disabled={markingAllRead || pendingItems.length === 0}
-              className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title="Mark all as read"
             >
               {markingAllRead
-                ? <Loader2 size={16} className="flex-shrink-0 animate-spin" />
+                ? <Spinner size="1" />
                 : <CheckCheck size={16} className="flex-shrink-0" />}
               Mark all read
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="soft"
+              color="gray"
+              size="2"
               onClick={loadInbox}
-              className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
             >
               <RefreshCw size={16} className={`flex-shrink-0 ${loading ? 'animate-spin' : ''}`} />
               Refresh
-            </button>
+            </Button>
             {selectedIds.size > 0 ? (
               <div className="icon-text">
                 <span className="text-sm text-mission-control-text-dim">{selectedIds.size} selected</span>
-                <button
+                <Button
+                  variant="solid"
+                  color="violet"
+                  size="2"
                   onClick={handleBulkApprove}
-                  className="icon-text px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
                 >
-                   <CheckCircle size={16} className="flex-shrink-0" />
+                  <CheckCircle size={16} className="flex-shrink-0" />
                   Approve
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="solid"
+                  color="red"
+                  size="2"
                   onClick={handleBulkReject}
-                  className="icon-text px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
                 >
-                   <XCircle size={16} className="flex-shrink-0" />
+                  <XCircle size={16} className="flex-shrink-0" />
                   Reject
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  color="gray"
+                  size="2"
                   onClick={clearSelection}
-                  className="px-2 py-2 text-mission-control-text-dim hover:text-mission-control-text transition-colors text-sm"
                 >
                   Clear
-                </button>
+                </Button>
               </div>
             ) : pendingItems.length > 1 && (
               <div className="icon-text">
-                <button
+                <Button
+                  variant="ghost"
+                  color="gray"
+                  size="2"
                   onClick={selectAll}
-                  className="text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                 >
                   Select all
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="solid"
+                  color="violet"
+                  size="2"
                   onClick={handleApproveAll}
-                  className="icon-text px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                 >
-                   <CheckCircle size={16} className="flex-shrink-0" />
+                  <CheckCircle size={16} className="flex-shrink-0" />
                   Approve All
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -1147,149 +1164,128 @@ export default function InboxPanel() {
 
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-4">
-          <button
+          <Button
+            variant={activeTab === 'all' ? 'solid' : 'soft'}
+            color={activeTab === 'all' ? 'violet' : 'gray'}
+            size="2"
             onClick={() => { setActiveTab('all'); setFocusedIndex(0); }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'all'
-                ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
-                : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
-            }`}
           >
             <Inbox size={16} className="flex-shrink-0" />
             All
-            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-              activeTab === 'all' ? 'bg-mission-control-text/20' : 'bg-mission-control-bg'
-            }`}>
+            <Badge color={activeTab === 'all' ? 'violet' : 'gray'} variant="soft" className="ml-1">
               {pendingItems.length}
-            </span>
-          </button>
-          <button
+            </Badge>
+          </Button>
+          <Button
+            variant={activeTab === 'approvals' ? 'solid' : 'soft'}
+            color={activeTab === 'approvals' ? 'violet' : 'gray'}
+            size="2"
             onClick={() => { setActiveTab('approvals'); setFocusedIndex(0); }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'approvals'
-                ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
-                : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
-            }`}
           >
             <ShieldAlert size={16} className="flex-shrink-0" />
             Approvals
-            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-              activeTab === 'approvals' ? 'bg-mission-control-text/20' : 'bg-mission-control-bg'
-            }`}>
+            <Badge color={activeTab === 'approvals' ? 'violet' : 'gray'} variant="soft" className="ml-1">
               {pendingItems.filter(i => !isReviewItem(i)).length}
-            </span>
-          </button>
-          <button
+            </Badge>
+          </Button>
+          <Button
+            variant={activeTab === 'reviews' ? 'solid' : 'soft'}
+            color={activeTab === 'reviews' ? 'violet' : 'gray'}
+            size="2"
             onClick={() => { setActiveTab('reviews'); setFocusedIndex(0); }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'reviews'
-                ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
-                : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
-            }`}
           >
             <CheckCircle size={16} className="flex-shrink-0" />
             Reviews
-            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-              activeTab === 'reviews' ? 'bg-mission-control-text/20' : 'bg-mission-control-bg'
-            }`}>
+            <Badge color={activeTab === 'reviews' ? 'violet' : 'gray'} variant="soft" className="ml-1">
               {pendingItems.filter(i => isReviewItem(i)).length}
-            </span>
-          </button>
+            </Badge>
+          </Button>
         </div>
 
         {/* Sort Controls */}
         <div className="flex items-center gap-3 mb-3">
           <span className="text-xs text-mission-control-text-dim font-medium">Sort by:</span>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant={sortMode === 'priority' ? 'solid' : 'soft'}
+              color={sortMode === 'priority' ? 'blue' : 'gray'}
+              size="1"
               onClick={() => setSortMode('priority')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                sortMode === 'priority'
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
-              }`}
             >
-               <TrendingUp size={14} className="flex-shrink-0" />
+              <TrendingUp size={14} className="flex-shrink-0" />
               Priority
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={sortMode === 'time' ? 'solid' : 'soft'}
+              color={sortMode === 'time' ? 'blue' : 'gray'}
+              size="1"
               onClick={() => setSortMode('time')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                sortMode === 'time'
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
-              }`}
             >
-               <Clock size={14} className="flex-shrink-0" />
+              <Clock size={14} className="flex-shrink-0" />
               Time
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={sortMode === 'type' ? 'solid' : 'soft'}
+              color={sortMode === 'type' ? 'blue' : 'gray'}
+              size="1"
               onClick={() => setSortMode('type')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                sortMode === 'type'
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
-              }`}
             >
-               <Filter size={14} className="flex-shrink-0" />
+              <Filter size={14} className="flex-shrink-0" />
               Type
-            </button>
-            <button
+            </Button>
+            <IconButton
+              variant="soft"
+              color="gray"
+              size="1"
               onClick={() => setSortAscending(!sortAscending)}
-              className="p-1.5 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/70 transition-colors"
               title={sortAscending ? 'Ascending' : 'Descending'}
+              aria-label={sortAscending ? 'Ascending' : 'Descending'}
             >
               {sortAscending ? <ArrowUp size={16} className="flex-shrink-0" /> : <ArrowDown size={16} className="flex-shrink-0" />}
-            </button>
+            </IconButton>
           </div>
-          
+
           {/* View Mode Toggle */}
           <div className="icon-text ml-auto">
             <span className="text-xs text-mission-control-text-dim font-medium">View:</span>
-            <button
+            <Button
+              variant={viewMode === 'lanes' ? 'solid' : 'soft'}
+              color={viewMode === 'lanes' ? 'blue' : 'gray'}
+              size="1"
               onClick={() => setViewMode(viewMode === 'list' ? 'lanes' : 'list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                viewMode === 'lanes'
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
-              }`}
               title="Toggle priority lanes (v)"
             >
-               <Inbox size={24} className="flex-shrink-0" />
+              <Inbox size={16} className="flex-shrink-0" />
               {viewMode === 'list' ? 'List' : 'Lanes'}
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Filters */}
         <div className="flex gap-2 flex-wrap">
-          <button
+          <Button
+            variant={filter === 'all' ? 'solid' : 'soft'}
+            color={filter === 'all' ? 'blue' : 'gray'}
+            size="1"
             onClick={() => setFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              filter === 'all' 
-                ? 'bg-mission-control-accent text-white' 
-                : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
-            }`}
           >
             All ({pendingItems.length})
-          </button>
+          </Button>
           {Object.entries(typeConfig).map(([type, config]) => {
             const Icon = config.icon;
             const count = pendingItems.filter(i => i.type === type).length;
             if (count === 0) return null;
             return (
-              <button
+              <Button
                 key={type}
+                variant={filter === type ? 'solid' : 'soft'}
+                color={filter === type ? 'blue' : 'gray'}
+                size="1"
                 onClick={() => setFilter(type as ApprovalType)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  filter === type
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
-                }`}
               >
                 <Icon size={16} className="flex-shrink-0" />
                 {config.label} ({count})
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -1339,9 +1335,9 @@ export default function InboxPanel() {
                         <div className="flex-1 min-w-0">
                           <div className="icon-text flex-wrap">
                             <span className="font-semibold text-sm flex items-center gap-1"><AlertTriangle size={14} className="text-warning shrink-0" /> Potential {warning.type.replace('_', ' ')}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded ${style.bg} font-medium uppercase`}>
+                            <Badge color={warning.risk === 'critical' ? 'red' : warning.risk === 'high' ? 'orange' : warning.risk === 'medium' ? 'amber' : 'gray'} variant="solid" className="uppercase">
                               {warning.risk} risk
-                            </span>
+                            </Badge>
                           </div>
                           <p className="text-xs opacity-80 mt-0.5">
                             Pattern detected: <code className="bg-mission-control-bg/20 px-1 rounded">{warning.pattern}</code>
@@ -1366,9 +1362,9 @@ export default function InboxPanel() {
                       <IconBadge icon={Icon} size={18} color={config.color} />
                       <div className="flex-1 min-w-0">
                         <div className="icon-text mb-1 flex-wrap">
-                          <span className="text-xs font-medium px-2 py-0.5 bg-mission-control-border rounded">
+                          <Badge color="gray" variant="soft">
                             {getApprovalTypeConfig(item.type).label}
-                          </span>
+                          </Badge>
                           
                           {/* Keyboard hint for focused item */}
                           {isFocused && (
@@ -1382,27 +1378,31 @@ export default function InboxPanel() {
                           {/* Priority Badge */}
                           {item.priority_score !== undefined && item.priority_score !== null && (
                             (() => {
-                              const { label, color } = getPriorityLevel(item.priority_score);
+                              const { label } = getPriorityLevel(item.priority_score);
                               return (
-                                <span
-                                  className={`text-xs font-medium px-2 py-0.5 rounded flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap ${color}`}
+                                <Badge
+                                  color="indigo"
+                                  variant="soft"
                                   title={`Priority Score: ${item.priority_score}`}
+                                  className="flex-shrink-0 whitespace-nowrap"
                                 >
                                   <TrendingUp size={14} className="flex-shrink-0" />
-                                  <span className="flex-shrink-0">{label} ({item.priority_score})</span>
-                                </span>
+                                  {label} ({item.priority_score})
+                                </Badge>
                               );
                             })()
                           )}
                           
                           {/* Warning badge in header too for collapsed view */}
                           {getInjectionWarning(item) && (
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap ${
-                              riskStyles[getInjectionWarning(item)!.risk]?.bg
-                            } ${riskStyles[getInjectionWarning(item)!.risk]?.text}`}>
+                            <Badge
+                              color={getInjectionWarning(item)!.risk === 'critical' ? 'red' : getInjectionWarning(item)!.risk === 'high' ? 'orange' : getInjectionWarning(item)!.risk === 'medium' ? 'amber' : 'gray'}
+                              variant="solid"
+                              className="flex-shrink-0 whitespace-nowrap"
+                            >
                               <AlertTriangle size={14} className="flex-shrink-0" />
-                              <span className="flex-shrink-0">{getInjectionWarning(item)!.risk.toUpperCase()}</span>
-                            </span>
+                              {getInjectionWarning(item)!.risk.toUpperCase()}
+                            </Badge>
                           )}
                           <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                              <Clock size={14} className="flex-shrink-0" />
@@ -1433,26 +1433,26 @@ export default function InboxPanel() {
                     </div>
 
                     <div className="flex gap-2">
-                      <button
+                      <IconButton
+                        variant={selectedItemForAI?.id === item.id && showAIPanel ? 'solid' : 'ghost'}
+                        color={selectedItemForAI?.id === item.id && showAIPanel ? 'blue' : 'gray'}
+                        size="2"
                         onClick={() => handleToggleAIPanel(item)}
-                        className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${
-                          selectedItemForAI?.id === item.id && showAIPanel
-                            ? 'bg-mission-control-accent text-white'
-                            : ''
-                        }`}
                         title="AI Assistance"
                         aria-label="AI Assistance"
                       >
-                         <Sparkles size={16} className="flex-shrink-0" />
-                      </button>
-                      <button
+                        <Sparkles size={16} className="flex-shrink-0" />
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        color="gray"
+                        size="2"
                         onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
                         title={isExpanded ? "Collapse" : "Expand"}
                         aria-label={isExpanded ? "Collapse item" : "Expand item"}
                       >
-                        {isExpanded ?  <ChevronUp size={16} className="flex-shrink-0" /> :  <ChevronDown size={16} className="flex-shrink-0" />}
-                      </button>
+                        {isExpanded ? <ChevronUp size={16} className="flex-shrink-0" /> : <ChevronDown size={16} className="flex-shrink-0" />}
+                      </IconButton>
                     </div>
                   </div>
 
@@ -1523,29 +1523,34 @@ export default function InboxPanel() {
                       {/* Feedback Form */}
                       {showFeedback && (
                         <div className="mb-4 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                          <textarea
+                          <TextArea
                             value={feedbackText}
                             onChange={(e) => setFeedbackText(e.target.value)}
                             placeholder="Enter your feedback for revision..."
-                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-2 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
+                            variant="soft"
                             rows={3}
+                            className="w-full"
                           />
                           <div className="flex gap-2 mt-2">
-                            <button
+                            <Button
+                              variant="solid"
+                              color="violet"
+                              size="2"
                               onClick={() => handleAdjust(item)}
-                              className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent/90 transition-colors"
                             >
                               Send Feedback
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="soft"
+                              color="gray"
+                              size="2"
                               onClick={() => {
                                 setFeedbackId(null);
                                 setFeedbackText('');
                               }}
-                              className="px-3 py-1.5 bg-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:bg-mission-control-border/70 transition-colors"
                             >
                               Cancel
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -1556,7 +1561,7 @@ export default function InboxPanel() {
                           loading={processingItems.has(item.id)}
                           onClick={() => handleApprove(item)}
                           variant="primary"
-                          className="bg-green-500 hover:bg-green-600"
+                          className="bg-success hover:bg-success/80"
                           icon={ <Check size={16} className="flex-shrink-0" />}
                         >
                           Approve
@@ -1591,14 +1596,15 @@ export default function InboxPanel() {
       {completedItems.length > 0 && (
         <div className="border-t border-mission-control-border bg-mission-control-surface/50">
           <button
+            type="button"
             onClick={() => setShowCompleted(!showCompleted)}
-            className="w-full p-4 flex items-center justify-between hover:bg-mission-control-surface/70 transition-colors"
+            className="w-full p-4 flex items-center justify-between hover:bg-mission-control-surface/70 transition-colors text-left"
           >
             <div className="icon-text text-sm text-mission-control-text-dim">
-               <CheckCircle size={16} className="flex-shrink-0" />
+              <CheckCircle size={16} className="flex-shrink-0" />
               Completed ({completedItems.length})
             </div>
-            {showCompleted ?  <ChevronUp size={16} className="flex-shrink-0" /> :  <ChevronDown size={16} className="flex-shrink-0" />}
+            {showCompleted ? <ChevronUp size={16} className="flex-shrink-0" /> : <ChevronDown size={16} className="flex-shrink-0" />}
           </button>
           
           {showCompleted && (
@@ -1618,13 +1624,16 @@ export default function InboxPanel() {
                         <div className="text-xs text-mission-control-text-dim">{formatTime(item.created ?? '')}</div>
                       </div>
                     </div>
-                    <div className={`text-xs px-2 py-1 rounded ${
-                      item.status === 'approved' ? 'bg-success-subtle text-success' :
-                      item.status === 'rejected' ? 'bg-error-subtle text-error' :
-                      'bg-info-subtle text-info'
-                    }`}>
+                    <Badge
+                      color={
+                        item.status === 'approved' ? 'grass' :
+                        item.status === 'rejected' ? 'red' :
+                        'blue'
+                      }
+                      variant="soft"
+                    >
                       {item.status}
-                    </div>
+                    </Badge>
                   </div>
                 );
               })}
@@ -1651,9 +1660,8 @@ export default function InboxPanel() {
           >
             <h3 className="text-heading-3 mb-4">Why are you rejecting this?</h3>
             <p className="text-sm text-mission-control-text-dim mb-4">This helps me learn what you don&apos;t want.</p>
-            <input
+            <TextField.Root
               ref={rejectInputRef}
-              type="text"
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               onKeyDown={(e) => {
@@ -1661,21 +1669,25 @@ export default function InboxPanel() {
                 if (e.key === 'Escape') setRejectDialogItem(null);
               }}
               placeholder="e.g., Too promotional, wrong tone, not relevant..."
-              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded text-sm mb-4"
+              className="w-full mb-4"
             />
             <div className="flex gap-2 justify-end">
-              <button
+              <Button
+                variant="ghost"
+                color="gray"
+                size="2"
                 onClick={() => setRejectDialogItem(null)}
-                className="px-4 py-2 text-sm text-mission-control-text-dim hover:text-white transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="soft"
+                color="red"
+                size="2"
                 onClick={confirmReject}
-                className="px-4 py-2 bg-error-subtle text-error hover:bg-error-subtle rounded text-sm transition-colors"
               >
                 Reject
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1765,11 +1777,15 @@ export default function InboxPanel() {
               {!scheduleModal.showDatePicker ? (
                 <>
                   {/* Initial state: Send Now / Schedule */}
-                  <button
+                  <Button
+                    variant="solid"
+                    color="violet"
+                    size="3"
+                    className="flex-1 min-w-0 justify-center"
                     onClick={async () => {
                       const item = scheduleModal.item;
                       setScheduleModal(null);
-                      
+
                       // For emails (Stage 2), send via email:send IPC
                       if (item.type === 'email') {
                         let metadata: any = {};
@@ -1778,20 +1794,20 @@ export default function InboxPanel() {
                             metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
                           } catch { /* ignore */ }
                         }
-                        
+
                         const recipient = metadata.recipient || metadata.to;
                         const subject = metadata.subject || 'No Subject';
                         const account = metadata.account;
-                        
+
                         if (!recipient) {
                           showToast('error', 'No recipient', 'Email needs a recipient address');
                           return;
                         }
-                        
+
                         // Optimistic UI
                         setItems(prev => prev.filter(i => i.id !== item.id));
                         showToast('info', 'Sending email...', `To: ${recipient}`);
-                        
+
                         try {
                           const result = await fetch('/api/inbox/send-email', {
                             method: 'POST',
@@ -1801,7 +1817,7 @@ export default function InboxPanel() {
 
                           if (result?.success) {
                             await inboxApi.update(Number(item.id), { status: 'approved' });
-                            showToast('success', 'Email sent ✓', `To: ${recipient}`);
+                            showToast('success', 'Email sent', `To: ${recipient}`);
                           } else {
                             showToast('error', 'Email failed', result?.error);
                             loadInbox(); // Revert
@@ -1816,38 +1832,46 @@ export default function InboxPanel() {
                       // For tweets, use existing executeApproval
                       executeApproval(item);
                     }}
-                    className="flex-1 min-w-0 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
                   >
-                     <Send size={16} className="flex-shrink-0" />
+                    <Send size={16} className="flex-shrink-0" />
                     Send Now
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="solid"
+                    color="violet"
+                    size="3"
+                    className="flex-1 min-w-0 justify-center"
                     onClick={() => setScheduleModal({ ...scheduleModal, showDatePicker: true })}
-                    className="flex-1 min-w-0 flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium"
                   >
-                     <Calendar size={16} className="flex-shrink-0" />
+                    <Calendar size={16} className="flex-shrink-0" />
                     Schedule
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <>
                   {/* Schedule picker state: Back / Confirm */}
-                  <button
+                  <Button
+                    variant="soft"
+                    color="gray"
+                    size="3"
                     onClick={() => setScheduleModal({ ...scheduleModal, showDatePicker: false })}
-                    className="px-4 py-3 bg-mission-control-surface text-mission-control-text-dim rounded-lg hover:bg-mission-control-border transition-colors"
                   >
                     Back
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="solid"
+                    color="violet"
+                    size="3"
+                    className="flex-1 min-w-0 justify-center"
                     onClick={async () => {
                       if (!scheduleModal.date || !scheduleModal.time) {
                         showToast('error', 'Please select date and time');
                         return;
                       }
-                      
+
                       const scheduledFor = `${scheduleModal.date}T${scheduleModal.time}:00`;
                       const item = scheduleModal.item;
-                      
+
                       // Parse metadata for email details
                       let metadata: any = {};
                       if (item.metadata) {
@@ -1855,7 +1879,7 @@ export default function InboxPanel() {
                           metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
                         } catch { /* ignore */ }
                       }
-                      
+
                       // Add to schedule
                       try {
                         const result = await scheduleApi.create({
@@ -1873,7 +1897,7 @@ export default function InboxPanel() {
                           // Remove from inbox
                           setItems(prev => prev.filter(i => i.id !== item.id));
                           await inboxApi.update(Number(item.id), { status: 'scheduled' });
-                          
+
                           const friendlyTime = new Date(scheduledFor).toLocaleString(undefined, {
                             weekday: 'short',
                             month: 'short',
@@ -1888,26 +1912,28 @@ export default function InboxPanel() {
                       } catch (e: unknown) {
                         showToast('error', 'Schedule error', e instanceof Error ? e.message : String(e));
                       }
-                      
+
                       setScheduleModal(null);
                     }}
                     disabled={!scheduleModal.date || !scheduleModal.time}
-                    className="flex-1 min-w-0 flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                     <CalendarClock size={16} className="flex-shrink-0" />
+                    <CalendarClock size={16} className="flex-shrink-0" />
                     Confirm Schedule
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
 
             {/* Cancel link */}
-            <button
+            <Button
+              variant="ghost"
+              color="gray"
+              size="2"
+              className="w-full mt-3 justify-center"
               onClick={() => setScheduleModal(null)}
-              className="w-full mt-3 py-2 text-sm text-mission-control-text-dim hover:text-white transition-colors"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -1933,14 +1959,16 @@ export default function InboxPanel() {
                 <h2 className="text-heading-2 mb-1">Keyboard Shortcuts</h2>
                 <p className="text-sm text-mission-control-text-dim">Gmail-style navigation and actions</p>
               </div>
-              <button
+              <IconButton
+                variant="ghost"
+                size="2"
+                color="gray"
                 onClick={() => setShowKeyboardHelp(false)}
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                 title="Close"
                 aria-label="Close keyboard shortcuts"
               >
-                 <X size={20} className="flex-shrink-0" />
-              </button>
+                <X size={20} className="flex-shrink-0" />
+              </IconButton>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
@@ -2057,17 +2085,24 @@ export default function InboxPanel() {
 
             {/* Actions */}
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="soft"
+                color="gray"
+                size="3"
+                className="flex-1 min-w-0 justify-center"
                 onClick={() => {
                   setShowAgentWarning(false);
                   setActiveAgentSession(null);
                   setPendingApprovalItem(null);
                 }}
-                className="flex-1 min-w-0 px-4 py-3 bg-mission-control-surface text-mission-control-text-dim rounded-lg hover:bg-mission-control-border transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="solid"
+                color="amber"
+                size="3"
+                className="flex-1 min-w-0 justify-center"
                 onClick={async () => {
                   setAbortingAgent(true);
                   try {
@@ -2077,7 +2112,7 @@ export default function InboxPanel() {
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ agentId: activeAgentSession.sessionId }),
                     }).then(r => r.json());
-                    
+
                     if (result?.success) {
                       showToast('success', 'Agent aborted', 'Proceeding with approval...');
                       
@@ -2108,20 +2143,19 @@ export default function InboxPanel() {
                   }
                 }}
                 disabled={abortingAgent}
-                className="flex-1 min-w-0 flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50"
               >
                 {abortingAgent ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" />
+                    <Spinner size="1" />
                     Aborting...
                   </>
                 ) : (
                   <>
-                     <XCircle size={16} className="flex-shrink-0" />
+                    <XCircle size={16} className="flex-shrink-0" />
                     Abort & Approve
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </button>

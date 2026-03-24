@@ -1,5 +1,6 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw, Bug, XCircle } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import { createLogger } from '../utils/logger';
 import { showToast } from './Toast';
 
@@ -129,30 +130,39 @@ Time: ${new Date().toISOString()}
 
             {/* Action Buttons */}
             <div className="space-y-2">
-              <button
+              <Button
                 onClick={this.handleRetry}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium"
+                variant="solid"
+                color="violet"
+                size="3"
+                className="w-full"
               >
                 <RefreshCw size={18} />
                 Try Again
-              </button>
+              </Button>
 
               <div className="flex gap-2">
-                <button
+                <Button
                   onClick={this.handleReportError}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-bg border border-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border transition-colors text-sm"
+                  variant="surface"
+                  color="gray"
+                  size="2"
+                  className="flex-1"
                 >
                   <Bug size={16} />
                   Report Error
-                </button>
+                </Button>
 
-                <button
+                <Button
                   onClick={() => window.location.reload()}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-bg border border-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border transition-colors text-sm"
+                  variant="surface"
+                  color="gray"
+                  size="2"
+                  className="flex-1"
                 >
                   <XCircle size={16} />
                   Reload App
-                </button>
+                </Button>
               </div>
             </div>
 

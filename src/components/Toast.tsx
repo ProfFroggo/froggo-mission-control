@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 import { AlertRegion } from './LiveRegion';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -58,13 +59,16 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
           <div className="text-sm opacity-80 mt-0.5">{toast.message}</div>
         )}
       </div>
-      <button
+      <IconButton
+        variant="ghost"
+        color="gray"
+        size="1"
         onClick={() => onDismiss(toast.id)}
-        className="flex-shrink-0 p-1 hover:bg-mission-control-text/10 rounded transition-colors"
         aria-label="Dismiss notification"
+        className="flex-shrink-0"
       >
         <X size={14} />
-      </button>
+      </IconButton>
     </div>
   );
 }

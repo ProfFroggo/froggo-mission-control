@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Heading, Spinner } from '@radix-ui/themes';
 import { Zap, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 
 interface TokenSummary {
@@ -82,9 +83,9 @@ export default function TokenSummaryWidget() {
 
   if (loading) {
     return (
-      <div className="p-4 flex flex-col items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mission-control-accent"></div>
-        <p className="text-xs text-mission-control-text-dim mt-2">Loading...</p>
+      <div className="p-4 flex flex-col items-center justify-center gap-2 h-full">
+        <Spinner size="3" />
+        <p className="text-xs text-mission-control-text-dim">Loading...</p>
       </div>
     );
   }
@@ -112,7 +113,7 @@ export default function TokenSummaryWidget() {
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <Zap size={16} className="text-mission-control-accent" />
-        <h3 className="text-sm font-semibold text-mission-control-text">Token Usage</h3>
+        <Heading size="2" weight="bold">Token Usage</Heading>
         <span className="text-xs text-mission-control-text-dim ml-auto">Today</span>
       </div>
 
@@ -122,7 +123,7 @@ export default function TokenSummaryWidget() {
         <div className="flex items-baseline justify-between">
           <span className="text-xs text-mission-control-text-dim">Total</span>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-mission-control-text">{formatTokens(summary.totalTokens)}</span>
+            <span className="text-2xl font-bold tabular-nums text-mission-control-text">{formatTokens(summary.totalTokens)}</span>
             <span className="text-xs text-mission-control-text-dim">tokens</span>
           </div>
         </div>
@@ -132,7 +133,7 @@ export default function TokenSummaryWidget() {
           <span className="text-xs text-mission-control-text-dim">Cost</span>
           <div className="flex items-center gap-1.5">
             <DollarSign size={14} className="text-mission-control-text-dim" />
-            <span className="text-lg font-semibold text-mission-control-text">{formatCost(summary.totalCost)}</span>
+            <span className="text-lg font-semibold font-mono tabular-nums text-mission-control-text">{formatCost(summary.totalCost)}</span>
           </div>
         </div>
 

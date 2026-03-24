@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Video, RefreshCw, ChevronRight, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Video, RefreshCw, ChevronRight } from 'lucide-react';
+import { Button, IconButton, Heading, Spinner } from '@radix-ui/themes';
 
 interface TodayCalendarWidgetProps {
   onNavigate?: (view: 'schedule') => void;
@@ -89,25 +90,17 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
         <div className="flex items-center gap-2">
           <Calendar size={16} className="text-info" />
           <div>
-            <h2 className="font-semibold">Today&apos;s Schedule</h2>
+            <Heading size="3" weight="medium">Today&apos;s Schedule</Heading>
             <p className="text-xs text-mission-control-text-dim">{dateStr}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={loadTodayEvents}
-            disabled={loading}
-            className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
-            title="Refresh"
-          >
+          <IconButton variant="ghost" size="2" onClick={loadTodayEvents} disabled={loading} title="Refresh">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
-          <button 
-            onClick={() => onNavigate?.('schedule')}
-            className="flex items-center gap-1 text-sm text-mission-control-accent hover:underline"
-          >
+          </IconButton>
+          <Button variant="ghost" size="1" onClick={() => onNavigate?.('schedule')} className="flex items-center gap-1 text-sm text-mission-control-accent hover:underline">
             View All <ChevronRight size={14} />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -115,18 +108,15 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
       <div className="max-h-64 overflow-y-auto">
         {loading ? (
           <div className="p-6 text-center">
-            <Loader2 size={24} className="mx-auto mb-2 animate-spin text-mission-control-text-dim" />
+            <Spinner size="3" />
             <p className="text-sm text-mission-control-text-dim">Loading events...</p>
           </div>
         ) : error ? (
           <div className="p-6 text-center text-error">
             <p className="text-sm">{error}</p>
-            <button 
-              onClick={loadTodayEvents}
-              className="mt-2 text-xs text-mission-control-accent hover:underline"
-            >
+            <Button variant="ghost" size="1" onClick={loadTodayEvents} className="mt-2 text-xs text-mission-control-accent hover:underline">
               Retry
-            </button>
+            </Button>
           </div>
         ) : events.length === 0 ? (
           <div className="p-6 text-center">
@@ -146,7 +136,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                 <div 
                   key={event.id} 
                   className={`p-3 hover:bg-mission-control-bg/50 transition-colors ${
-                    happening ? 'bg-info-subtle border-l-2 border-l-blue-400' : ''
+                    happening ? 'bg-info-subtle border-l-2 border-l-info' : ''
                   }`}
                 >
                   <div className="flex items-start gap-2">
@@ -166,7 +156,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                           }`}>
                             {event.summary}
                             {happening && (
-                              <span className="ml-2 px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+                              <span className="ml-2 px-1.5 py-0.5 bg-info text-white text-xs rounded-full">
                                 Now
                               </span>
                             )}
@@ -206,12 +196,9 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
             
             {events.length > 5 && (
               <div className="p-2 text-center">
-                <button 
-                  onClick={() => onNavigate?.('schedule')}
-                  className="text-xs text-mission-control-accent hover:underline"
-                >
+                <Button variant="ghost" size="1" onClick={() => onNavigate?.('schedule')} className="text-xs text-mission-control-accent hover:underline">
                   +{events.length - 5} more event{events.length - 5 > 1 ? 's' : ''}
-                </button>
+                </Button>
               </div>
             )}
           </div>

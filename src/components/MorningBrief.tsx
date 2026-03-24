@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sun, Moon, Inbox, Calendar, AlertCircle, CheckCircle, ChevronRight, Sparkles, Cloud, Activity, Bot, Users, AtSign } from 'lucide-react';
+import { Button, Heading, Spinner } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 
 interface TwitterMention {
@@ -406,8 +407,9 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
   if (loading) {
     return (
-      <div className="fixed inset-0 modal-backdrop backdrop-blur-sm z-50 flex items-center justify-center">
-        <div className="animate-pulse text-mission-control-accent text-xl">Loading your brief...</div>
+      <div className="fixed inset-0 modal-backdrop backdrop-blur-sm z-50 flex items-center justify-center gap-3">
+        <Spinner size="3" />
+        <span className="text-sm text-mission-control-text-dim">Loading your brief...</span>
       </div>
     );
   }
@@ -417,14 +419,11 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
     return (
       <div className="fixed inset-0 modal-backdrop backdrop-blur-lg z-50 flex items-center justify-center p-4">
         <div className="glass-modal rounded-3xl shadow-2xl max-w-lg w-full p-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Good morning 👋</h1>
+          <Heading size="6" weight="bold" mb="4">Good morning 👋</Heading>
           <p className="text-mission-control-text-dim mb-6">Couldn&apos;t load your brief data.</p>
-          <button
-            onClick={onDismiss}
-            className="px-6 py-3 bg-mission-control-accent text-white rounded-lg font-medium hover:bg-mission-control-accent/80 transition-colors"
-          >
+          <Button variant="solid" color="violet" size="3" onClick={onDismiss}>
             Continue to Dashboard
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -450,7 +449,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         {/* Header */}
         <div className="p-8 text-center border-b border-mission-control-border bg-gradient-to-br from-mission-control-accent/10 to-transparent">
           <div className="mb-4">{getIcon()}</div>
-          <h1 className="text-3xl font-bold mb-2">{brief.greeting} 👋</h1>
+          <Heading size="7" weight="bold" mb="2">{brief.greeting} 👋</Heading>
           <p className="text-mission-control-text-dim">
             {hasItems ? "Here's what needs your attention" : "All clear! Nothing urgent right now."}
           </p>
@@ -475,9 +474,12 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
           {/* Pending Approvals */}
           {brief.pendingApprovals > 0 && (
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="3"
+              style={{ width: '100%', padding: '1rem', justifyContent: 'flex-start' }}
               onClick={() => { onDismiss(); onNavigate('inbox'); }}
-              className="w-full p-4 bg-mission-control-bg rounded-lg hover:bg-mission-control-border transition-colors text-left group"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -491,7 +493,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                 </div>
                 <ChevronRight size={20} className="text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
               </div>
-            </button>
+            </Button>
           )}
 
           {/* Gibraltar Weather */}
@@ -537,7 +539,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.sessionStats && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
               <div className="flex items-center gap-2 mb-3">
-                <Users size={16} className="text-cyan-400" />
+                <Users size={16} className="text-info" />
                 <span className="font-medium">Session Activity</span>
               </div>
               <div className="space-y-3">
@@ -576,7 +578,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                     <div className="text-xs text-mission-control-text-dim mb-2">By Channel</div>
                     <div className="flex gap-2 flex-wrap">
                       {brief.sessionStats.channels.slice(0, 4).map((channel, i) => (
-                        <span key={i} className="px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded text-xs">
+                        <span key={i} className="px-2 py-1 bg-info-subtle text-info rounded text-xs">
                           {channel.name} ({channel.count})
                         </span>
                       ))}
@@ -693,19 +695,13 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-mission-control-border bg-mission-control-bg">
-          <button
-            onClick={onDismiss}
-            className="w-full py-3 bg-mission-control-accent text-white rounded-lg font-medium hover:bg-mission-control-accent/90 transition-colors"
-          >
+        <div className="p-4 border-t border-mission-control-border bg-mission-control-bg flex flex-col gap-2">
+          <Button variant="solid" color="violet" size="3" onClick={onDismiss} className="w-full">
             {hasItems ? "Let's get to work" : "Start your day"}
-          </button>
-          <button
-            onClick={onDismiss}
-            className="w-full py-2 text-mission-control-text-dim text-sm hover:text-mission-control-text mt-2"
-          >
+          </Button>
+          <Button variant="ghost" color="gray" size="2" onClick={onDismiss} className="w-full">
             Don&apos;t show again today
-          </button>
+          </Button>
         </div>
       </div>
     </div>

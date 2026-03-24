@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, Zap, AlertCircle, ChevronDown, Info, Star } from 'lucide-react';
+import { TrendingUp, Zap, AlertCircle, ChevronDown, Info, Star, X } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 import { settingsApi } from '../lib/api';
 
 // Priority indicator component
@@ -23,28 +24,28 @@ export function PriorityIndicator({
 
   const configs = {
     critical: {
-      color: 'bg-red-500',
+      color: 'bg-error',
       textColor: 'text-error',
       label: 'Critical',
       icon: Zap,
       pulse: true
     },
     high: {
-      color: 'bg-orange-500',
+      color: 'bg-warning',
       textColor: 'text-warning',
       label: 'High',
       icon: AlertCircle,
       pulse: false
     },
     normal: {
-      color: 'bg-blue-500',
+      color: 'bg-info',
       textColor: 'text-info',
       label: 'Normal',
       icon: TrendingUp,
       pulse: false
     },
     low: {
-      color: 'bg-mission-control-bg0',
+      color: 'bg-mission-control-border',
       textColor: 'text-mission-control-text-dim',
       label: 'Low',
       icon: ChevronDown,
@@ -87,21 +88,30 @@ export function PriorityExplanation({
 
   return (
     <div className="relative">
-      <button
+      <IconButton
+        variant="ghost"
+        size="1"
+        color="gray"
         onClick={() => setIsOpen(!isOpen)}
-        className="p-1 hover:bg-mission-control-border rounded-lg transition-colors"
         title="Why is this priority?"
+        aria-label="Why is this priority?"
       >
-        <Info size={14} className="text-mission-control-text-dim" />
-      </button>
+        <Info size={14} />
+      </IconButton>
       
       {isOpen && (
         <div className="absolute top-full right-0 mt-2 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl p-4 min-w-[320px] z-50">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-semibold text-sm">Priority Calculation</h4>
-            <button onClick={() => setIsOpen(false)} className="text-mission-control-text-dim hover:text-mission-control-text">
-              ×
-            </button>
+            <IconButton
+              variant="ghost"
+              size="1"
+              color="gray"
+              onClick={() => setIsOpen(false)}
+              aria-label="Close"
+            >
+              <X size={14} />
+            </IconButton>
           </div>
           
           <div className="space-y-2 mb-3">

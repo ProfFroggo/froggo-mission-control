@@ -37,9 +37,9 @@ export default function BadgeWrapper({
   const variantClasses = {
     'primary': 'bg-mission-control-accent text-white',
     'secondary': 'bg-mission-control-border text-mission-control-text',
-    'danger': 'bg-red-500 text-white',
-    'warning': 'bg-orange-500 text-white',
-    'success': 'bg-green-500 text-white',
+    'danger': 'bg-error text-white',
+    'warning': 'bg-warning text-white',
+    'success': 'bg-success text-white',
   };
 
   // Size classes - increased min-width to properly accommodate "99+"
@@ -126,9 +126,9 @@ export function DotBadge({
   const variantClasses = {
     'primary': 'bg-mission-control-accent',
     'secondary': 'bg-mission-control-border',
-    'danger': 'bg-red-500',
-    'warning': 'bg-orange-500',
-    'success': 'bg-green-500',
+    'danger': 'bg-error',
+    'warning': 'bg-warning',
+    'success': 'bg-success',
   };
 
   const positionClasses = {

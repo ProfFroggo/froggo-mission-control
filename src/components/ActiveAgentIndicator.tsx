@@ -107,7 +107,7 @@ export default function ActiveAgentIndicator({
         {/* Pulsing outer ring */}
         <div className={`absolute ${dotSize} bg-success-subtle rounded-full animate-ping`} />
         {/* Solid inner dot */}
-        <div className={`relative ${dotSize} bg-green-500 rounded-full`} />
+        <div className={`relative ${dotSize} bg-success rounded-full`} />
       </div>
       
       {showLabel && agentName && (

@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { Star, Plus, Edit, Trash2, Save, X, CheckCircle, Bot, Briefcase, Target, Users, Heart, ShoppingBag } from 'lucide-react';
+import { Button, IconButton, Select, TextField, TextArea, Spinner } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { settingsApi } from '../lib/api';
@@ -30,7 +31,7 @@ const CATEGORY_OPTIONS = [
   { value: 'client', label: 'Client', icon: <Briefcase size={12} />, color: 'text-info' },
   { value: 'stakeholder', label: 'Stakeholder', icon: <Target size={12} />, color: 'text-warning' },
   { value: 'team', label: 'Team', icon: <Users size={12} />, color: 'text-success' },
-  { value: 'family', label: 'Family', icon: <Heart size={12} />, color: 'text-pink-400' },
+  { value: 'family', label: 'Family', icon: <Heart size={12} />, color: 'text-error' },
 ];
 
 const TYPE_OPTIONS = [
@@ -48,7 +49,7 @@ export default function VIPSettingsPanel() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
-  
+
   // Form state
   const [formData, setFormData] = useState({
     identifier: '',
@@ -201,47 +202,46 @@ export default function VIPSettingsPanel() {
             Manage important senders and priority boosts
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-info-subtle hover:bg-info-subtle 
-                   text-info rounded-lg transition-colors"
+          variant="soft"
+          color="gray"
+          size="2"
         >
           <Plus size={16} />
           Add VIP
-        </button>
+        </Button>
       </div>
 
       {/* Category Filter */}
       <div className="flex gap-2 px-6 py-3 border-b border-mission-control-border/50 overflow-x-auto">
-        <button
+        <Button
           onClick={() => setCategoryFilter(null)}
-          className={`px-3 py-1.5 rounded-lg text-sm transition-colors whitespace-nowrap ${
-            categoryFilter === null
-              ? 'bg-mission-control-surface text-white'
-              : 'text-mission-control-text-dim hover:bg-mission-control-surface/50'
-          }`}
+          variant={categoryFilter === null ? 'soft' : 'ghost'}
+          color="gray"
+          size="2"
         >
           All
-        </button>
+        </Button>
         {CATEGORY_OPTIONS.map(cat => (
-          <button
+          <Button
             key={cat.value}
             onClick={() => setCategoryFilter(cat.value)}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors whitespace-nowrap ${
-              categoryFilter === cat.value
-                ? 'bg-mission-control-surface text-white'
-                : 'text-mission-control-text-dim hover:bg-mission-control-surface/50'
-            }`}
+            variant={categoryFilter === cat.value ? 'soft' : 'ghost'}
+            color="gray"
+            size="2"
           >
             <span className="inline-flex items-center gap-1">{cat.icon} {cat.label}</span>
-          </button>
+          </Button>
         ))}
       </div>
 
       {/* VIP List */}
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         {loading ? (
-          <div className="text-center text-mission-control-text-dim py-12">Loading...</div>
+          <div className="flex items-center justify-center py-12 gap-2 text-mission-control-text-dim">
+            <Spinner size="2" /> Loading...
+          </div>
         ) : vips.length === 0 ? (
           <div className="text-center text-mission-control-text-dim py-12">
             <Star size={48} className="mx-auto mb-4 opacity-20" />
@@ -256,38 +256,33 @@ export default function VIPSettingsPanel() {
             return (
               <div
                 key={vip.id}
-                className="bg-mission-control-bg/50 border border-mission-control-border/50 rounded-lg p-4 hover:border-mission-control-border 
-                         transition-colors"
+                className="bg-mission-control-bg/50 border border-mission-control-border/50 rounded-lg p-4 hover:border-mission-control-border transition-colors"
               >
                 {isEditing ? (
                   // Edit Form
                   <div className="space-y-3">
                     <div>
                       <label htmlFor="vip-label" className="block text-sm text-mission-control-text-dim mb-1">Label</label>
-                      <input
+                      <TextField.Root
                         id="vip-label"
-                        type="text"
+                        size="2"
                         value={formData.label}
                         onChange={e => setFormData({ ...formData, label: e.target.value })}
-                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
-                                 focus:outline-none focus:border-mission-control-accent"
                       />
                     </div>
                     <div>
                       <label htmlFor="vip-category" className="block text-sm text-mission-control-text-dim mb-1">Category</label>
-                      <select
-                        id="vip-category"
+                      <Select.Root
                         value={formData.category}
-                        onChange={e => setFormData({ ...formData, category: e.target.value })}
-                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
-                                 focus:outline-none focus:border-mission-control-accent"
+                        onValueChange={val => setFormData({ ...formData, category: val })}
                       >
-                        {CATEGORY_OPTIONS.map(cat => (
-                          <option key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </option>
-                        ))}
-                      </select>
+                        <Select.Trigger />
+                        <Select.Content>
+                          {CATEGORY_OPTIONS.map(cat => (
+                            <Select.Item key={cat.value} value={cat.value}>{cat.label}</Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Root>
                     </div>
                     <div>
                       <label htmlFor="vip-boost" className="block text-sm text-mission-control-text-dim mb-1">
@@ -305,33 +300,35 @@ export default function VIPSettingsPanel() {
                     </div>
                     <div>
                       <label htmlFor="vip-notes" className="block text-sm text-mission-control-text-dim mb-1">Notes</label>
-                      <textarea
+                      <TextArea
                         id="vip-notes"
                         value={formData.notes}
                         onChange={e => setFormData({ ...formData, notes: e.target.value })}
                         rows={2}
-                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
-                                 focus:outline-none focus:border-mission-control-accent"
+                        size="2"
+                        variant="soft"
                         placeholder="Why is this person a VIP?"
                       />
                     </div>
                     <div className="flex gap-2">
-                      <button
+                      <Button
                         onClick={() => handleUpdate(vip.id)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-success-subtle hover:bg-success-subtle
-                                 text-success rounded transition-colors"
+                        variant="solid"
+                        color="violet"
+                        size="2"
                       >
                         <Save size={14} />
                         Save
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={resetForm}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-surface hover:bg-mission-control-border
-                                 text-white rounded transition-colors"
+                        variant="soft"
+                        color="gray"
+                        size="2"
                       >
                         <X size={14} />
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
@@ -351,22 +348,24 @@ export default function VIPSettingsPanel() {
                         )}
                       </div>
                       <div className="flex gap-1">
-                        <button
+                        <IconButton
                           onClick={() => startEdit(vip)}
-                          className="p-1.5 text-mission-control-text-dim hover:text-info hover:bg-info-subtle rounded
-                                   transition-colors"
+                          variant="ghost"
+                          color="gray"
+                          size="2"
                           title="Edit"
                         >
                           <Edit size={16} />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton
                           onClick={() => handleRemove(vip.id, vip.label)}
-                          className="p-1.5 text-mission-control-text-dim hover:text-error hover:bg-error-subtle rounded
-                                   transition-colors"
+                          variant="ghost"
+                          color="red"
+                          size="2"
                           title="Remove"
                         >
                           <Trash2 size={16} />
-                        </button>
+                        </IconButton>
                       </div>
                     </div>
 
@@ -402,9 +401,15 @@ export default function VIPSettingsPanel() {
           <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-mission-control-text">Add VIP Sender</h3>
-              <button type="button" onClick={resetForm} className="text-mission-control-text-dim hover:text-white">
+              <IconButton
+                type="button"
+                onClick={resetForm}
+                variant="ghost"
+                color="gray"
+                size="2"
+              >
                 <X size={20} />
-              </button>
+              </IconButton>
             </div>
 
             <div className="space-y-4">
@@ -412,14 +417,12 @@ export default function VIPSettingsPanel() {
                 <label htmlFor="vip-identifier" className="block text-sm text-mission-control-text-dim mb-1">
                   Identifier <span className="text-error">*</span>
                 </label>
-                <input
+                <TextField.Root
                   id="vip-identifier"
-                  type="text"
+                  size="2"
                   value={formData.identifier}
                   onChange={e => setFormData({ ...formData, identifier: e.target.value })}
                   placeholder="email@example.com, +1234567890, @username, domain.com"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
-                           focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
 
@@ -427,59 +430,53 @@ export default function VIPSettingsPanel() {
                 <label htmlFor="vip-type" className="block text-sm text-mission-control-text-dim mb-1">
                   Type
                 </label>
-                <select
-                  id="vip-type"
+                <Select.Root
                   value={formData.type}
-                  onChange={e => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
-                           focus:outline-none focus:border-mission-control-accent"
+                  onValueChange={val => setFormData({ ...formData, type: val })}
                 >
-                  {TYPE_OPTIONS.map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
+                  <Select.Trigger />
+                  <Select.Content>
+                    {TYPE_OPTIONS.map(type => (
+                      <Select.Item key={type.value} value={type.value}>{type.label}</Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
               </div>
 
               <div>
-                <label htmlFor="vip-label" className="block text-sm text-mission-control-text-dim mb-1">
+                <label htmlFor="vip-label-add" className="block text-sm text-mission-control-text-dim mb-1">
                   Label <span className="text-error">*</span>
                 </label>
-                <input
-                  id="vip-label"
-                  type="text"
+                <TextField.Root
+                  id="vip-label-add"
+                  size="2"
                   value={formData.label}
                   onChange={e => setFormData({ ...formData, label: e.target.value })}
                   placeholder="Kevin, CEO, Key Client"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
-                           focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
 
               <div>
-                <label htmlFor="vip-category" className="block text-sm text-mission-control-text-dim mb-1">Category</label>
-                <select
-                  id="vip-category"
+                <label htmlFor="vip-category-add" className="block text-sm text-mission-control-text-dim mb-1">Category</label>
+                <Select.Root
                   value={formData.category}
-                  onChange={e => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
-                           focus:outline-none focus:border-mission-control-accent"
+                  onValueChange={val => setFormData({ ...formData, category: val })}
                 >
-                  {CATEGORY_OPTIONS.map(cat => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
+                  <Select.Trigger />
+                  <Select.Content>
+                    {CATEGORY_OPTIONS.map(cat => (
+                      <Select.Item key={cat.value} value={cat.value}>{cat.label}</Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
               </div>
 
               <div>
-                <label htmlFor="vip-boost" className="block text-sm text-mission-control-text-dim mb-1">
+                <label htmlFor="vip-boost-add" className="block text-sm text-mission-control-text-dim mb-1">
                   Priority Boost: {formData.boost} (0-50)
                 </label>
                 <input
-                  id="vip-boost"
+                  id="vip-boost-add"
                   type="range"
                   min="0"
                   max="50"
@@ -495,33 +492,37 @@ export default function VIPSettingsPanel() {
               </div>
 
               <div>
-                <label htmlFor="vip-notes" className="block text-sm text-mission-control-text-dim mb-1">Notes</label>
-                <textarea
-                  id="vip-notes"
+                <label htmlFor="vip-notes-add" className="block text-sm text-mission-control-text-dim mb-1">Notes</label>
+                <TextArea
+                  id="vip-notes-add"
                   value={formData.notes}
                   onChange={e => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
+                  size="2"
+                  variant="soft"
                   placeholder="Why is this person a VIP?"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
-                           focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button
+                <Button
                   onClick={handleAdd}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent-dim
-                           text-white rounded-lg transition-colors"
+                  variant="solid"
+                  color="violet"
+                  size="2"
+                  className="flex-1"
                 >
                   <CheckCircle size={16} />
                   Add VIP
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={resetForm}
-                  className="px-4 py-2 bg-mission-control-surface hover:bg-mission-control-border text-white rounded-lg transition-colors"
+                  variant="soft"
+                  color="gray"
+                  size="2"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           </div>

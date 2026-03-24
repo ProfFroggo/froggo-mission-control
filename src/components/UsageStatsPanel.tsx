@@ -3,6 +3,7 @@
 // Review: 2026-02-17 - suppression retained, pattern is safe
 
 import { useState, useEffect } from 'react';
+import { IconButton, Heading, Text, Spinner } from '@radix-ui/themes';
 import {
   MessageSquare,
   Users,
@@ -75,7 +76,7 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="flex items-center gap-2 text-mission-control-text-dim">
-          <RefreshCw size={20} className="animate-spin" />
+          <Spinner size="2" />
           Loading usage statistics...
         </div>
       </div>
@@ -99,24 +100,20 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
+          <Heading size="4" weight="medium" className="flex items-center gap-2">
             <Activity className="text-mission-control-accent" size={20} />
             Usage Statistics
-          </h2>
-          <p className="text-sm text-mission-control-text-dim mt-1">
+          </Heading>
+          <Text size="2" color="gray" as="p" mt="1">
             Comprehensive usage metrics and activity tracking
-          </p>
+          </Text>
         </div>
 
         <div className="flex items-center gap-3">
 
-          <button
-            onClick={loadStats}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-            title="Refresh"
-          >
+          <IconButton variant="ghost" size="2" onClick={loadStats} aria-label="Refresh">
             <RefreshCw size={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -181,7 +178,7 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
 
       {/* Messages Over Time Chart */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 mb-6">
-        <h3 className="font-semibold mb-4">Messages Over Time</h3>
+        <Heading size="3" weight="medium" mb="3">Messages Over Time</Heading>
         <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={stats.messagesPerDay}>
@@ -223,7 +220,7 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Channel Breakdown */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-          <h3 className="font-semibold mb-4">Channel Distribution</h3>
+          <Heading size="3" weight="medium" mb="3">Channel Distribution</Heading>
           <div className="h-52">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.channelBreakdown} layout="vertical">
@@ -245,7 +242,7 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
 
         {/* Peak Hours */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-          <h3 className="font-semibold mb-4">Activity by Hour</h3>
+          <Heading size="3" weight="medium" mb="3">Activity by Hour</Heading>
           <div className="h-52">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.peakHours}>
@@ -273,7 +270,7 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
 
       {/* Insights */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-        <h3 className="font-semibold mb-4">Insights</h3>
+        <Heading size="3" weight="medium" mb="3">Insights</Heading>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 bg-mission-control-bg rounded-lg">
             <div className="text-sm text-mission-control-text-dim mb-1">Most active hour</div>
