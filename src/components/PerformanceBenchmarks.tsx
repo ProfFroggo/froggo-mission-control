@@ -242,7 +242,7 @@ export default function PerformanceBenchmarks() {
             onClick={loadBenchmarks}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             title="Refresh"
             aria-label="Refresh"
           >
@@ -314,9 +314,9 @@ export default function PerformanceBenchmarks() {
               <Line
                 type="monotone"
                 dataKey="tasksCompleted"
-                stroke={CHART_COLORS.green}
+                stroke={CHART_COLORS.accent}
                 strokeWidth={2}
-                dot={{ fill: CHART_COLORS.green }}
+                dot={{ fill: CHART_COLORS.accent }}
                 name="Tasks Completed"
               />
             </LineChart>

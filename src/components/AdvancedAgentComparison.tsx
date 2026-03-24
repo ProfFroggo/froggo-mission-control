@@ -160,7 +160,7 @@ export default function AdvancedAgentComparison({
     });
   };
 
-  const COLORS = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.amber, CHART_COLORS.purple, CHART_COLORS.red];
+  const COLORS = [CHART_COLORS.blue, CHART_COLORS.accent, CHART_COLORS.amber, CHART_COLORS.purple, CHART_COLORS.red];
 
   const getTrendIcon = (value: number, threshold: number) => {
     if (value > threshold) return <ArrowUpRight size={16} className="text-success" />;
@@ -233,7 +233,7 @@ export default function AdvancedAgentComparison({
               <h3 className="font-semibold mb-4">Task Completion Comparison</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={getComparisonData()}>
-                  <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
+                  <CartesianGrid {...CHART_GRID} />
                   <XAxis dataKey="name" stroke={CHART_AXIS.stroke} />
                   <YAxis stroke={CHART_AXIS.stroke} />
                   <Tooltip
@@ -244,7 +244,7 @@ export default function AdvancedAgentComparison({
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="completed" fill={CHART_COLORS.green} name="Completed" />
+                  <Bar dataKey="completed" fill={CHART_COLORS.accent} name="Completed" />
                   <Bar dataKey="inProgress" fill={CHART_COLORS.amber} name="In Progress" />
                 </BarChart>
               </ResponsiveContainer>

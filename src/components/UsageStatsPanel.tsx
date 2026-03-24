@@ -261,7 +261,7 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
                 }}
                 labelFormatter={(hour) => `${hour}:00 - ${hour + 1}:00`}
               />
-              <Bar dataKey="count" fill={CHART_COLORS.green} />
+              <Bar dataKey="count" fill={CHART_COLORS.accent} />
             </BarChart>
           </ResponsiveContainer>
           </div>

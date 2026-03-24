@@ -28,7 +28,8 @@ import {
 } from 'recharts';
 import { analyticsApi, taskApi, inboxApi, sessionApi, agentApi } from '../lib/api';
 import { createLogger } from '../utils/logger';
-import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
+import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_MARGIN } from '../lib/chartTheme';
+import ChartTooltip from './charts/ChartTooltip';
 
 const logger = createLogger('Analytics');
 
@@ -96,12 +97,12 @@ interface StatusSlice {
 // ──────────────────────────────────────────────────
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
-  'todo':             { label: 'Todo',           color: '#6B7280' },
-  'internal-review':  { label: 'Pre-review',     color: '#F59E0B' },
-  'in-progress':      { label: 'In Progress',    color: '#3B82F6' },
-  'review':           { label: 'Review',         color: '#8B5CF6' },
-  'done':             { label: 'Done',           color: '#10B981' },
-  'human-review':     { label: 'Human Review',   color: '#F97316' },
+  'todo':             { label: 'Todo',           color: CHART_COLORS.gray   },
+  'internal-review':  { label: 'Pre-review',     color: CHART_COLORS.amber  },
+  'in-progress':      { label: 'In Progress',    color: CHART_COLORS.blue   },
+  'review':           { label: 'Review',         color: CHART_COLORS.violet },
+  'done':             { label: 'Done',           color: CHART_COLORS.accent },
+  'human-review':     { label: 'Human Review',   color: CHART_COLORS.orange },
 };
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -812,12 +813,12 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
           <h2 className="font-semibold">Task Activity</h2>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.green }} />
-              <span className="text-mission-control-text-dim">Completed</span>
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_COLORS.accent }} />
+              <span className="text-xs text-mission-control-text-dim">Completed</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.blue }} />
-              <span className="text-mission-control-text-dim">Created</span>
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_COLORS.blue }} />
+              <span className="text-xs text-mission-control-text-dim">Created</span>
             </div>
           </div>
         </div>
@@ -825,33 +826,20 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
         {dailyData.length > 0 ? (
           <div className="w-full" style={{ minHeight: 256 }}>
             <ResponsiveContainer width="100%" height={256}>
-              <BarChart data={dailyData} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid
-                  strokeDasharray={CHART_GRID.strokeDasharray}
-                  stroke={CHART_GRID.stroke}
-                  vertical={false}
-                />
+              <BarChart data={dailyData} margin={CHART_MARGIN} barGap={3} barCategoryGap="30%">
+                <CartesianGrid {...CHART_GRID} />
                 <XAxis
                   dataKey="label"
-                  stroke={CHART_AXIS.stroke}
-                  fontSize={CHART_AXIS.fontSize}
+                  {...CHART_AXIS}
                   interval={Math.floor(dailyData.length / 10)}
                   angle={dailyData.length > 14 ? -45 : 0}
                   textAnchor={dailyData.length > 14 ? 'end' : 'middle'}
                   height={dailyData.length > 14 ? 50 : 30}
                 />
-                <YAxis stroke={CHART_AXIS.stroke} fontSize={CHART_AXIS.fontSize} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: CHART_TOOLTIP.backgroundColor,
-                    border: CHART_TOOLTIP.border,
-                    borderRadius: CHART_TOOLTIP.borderRadius,
-                  }}
-                  labelStyle={{ color: CHART_AXIS.stroke }}
-                />
-                {/* Legend is rendered manually above the chart */}
-                <Bar dataKey="completed" name="Completed" fill={CHART_COLORS.green} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="created" name="Created" fill={CHART_COLORS.blue} radius={[4, 4, 0, 0]} />
+                <YAxis {...CHART_AXIS} width={28} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="completed" name="Completed" fill={CHART_COLORS.accent} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="created"   name="Created"   fill={CHART_COLORS.blue}   radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

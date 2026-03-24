@@ -39,7 +39,7 @@ export const XContentMixTracker: React.FC = () => {
   const [mixData, setMixData] = useState<ContentMixData[]>([
     { type: 'Educational', count: 0, target: 40, color: CHART_COLORS.blue, totalLikes: 0, totalRetweets: 0, totalReplies: 0 },
     { type: 'Meme', count: 0, target: 30, color: CHART_COLORS.amber, totalLikes: 0, totalRetweets: 0, totalReplies: 0 },
-    { type: 'Thread', count: 0, target: 20, color: CHART_COLORS.green, totalLikes: 0, totalRetweets: 0, totalReplies: 0 },
+    { type: 'Thread', count: 0, target: 20, color: CHART_COLORS.accent, totalLikes: 0, totalRetweets: 0, totalReplies: 0 },
     { type: 'Announcement', count: 0, target: 10, color: CHART_COLORS.purple, totalLikes: 0, totalRetweets: 0, totalReplies: 0 },
   ]);
   const [loading, setLoading] = useState(true);

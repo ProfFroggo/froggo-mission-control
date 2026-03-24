@@ -58,7 +58,7 @@ const SUGGESTION_ICONS: Record<string, React.ReactNode> = {
   repeat: <Repeat size={24} />,
 };
 
-const COLORS = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.amber, CHART_COLORS.red, CHART_COLORS.purple, CHART_COLORS.pink];
+const COLORS = [CHART_COLORS.blue, CHART_COLORS.accent, CHART_COLORS.amber, CHART_COLORS.red, CHART_COLORS.purple, CHART_COLORS.pink];
 
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -536,7 +536,7 @@ export function XEnhancedAnalyticsView() {
                           <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
+                      <CartesianGrid {...CHART_GRID} />
                       <XAxis dataKey="date" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} />
                       <YAxis tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} tickFormatter={formatNumber} />
                       <Tooltip
@@ -558,7 +558,7 @@ export function XEnhancedAnalyticsView() {
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data.followerGrowth}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
+                      <CartesianGrid {...CHART_GRID} />
                       <XAxis dataKey="date" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} />
                       <YAxis tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} domain={['dataMin - 100', 'dataMax + 100']} />
                       <Tooltip
@@ -613,14 +613,14 @@ export function XEnhancedAnalyticsView() {
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data.contentTypes} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
+                      <CartesianGrid {...CHART_GRID} />
                       <XAxis type="number" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} />
                       <YAxis type="category" dataKey="name" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} width={80} />
                       <Tooltip
                         contentStyle={{ backgroundColor: CHART_TOOLTIP.backgroundColor, border: CHART_TOOLTIP.border, borderRadius: CHART_TOOLTIP.borderRadius }}
                         formatter={((value: number) => [`${value}%`, 'Engagement']) as any}
                       />
-                      <Bar dataKey="engagement" fill={CHART_COLORS.green} radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="engagement" fill={CHART_COLORS.accent} radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -720,11 +720,11 @@ export function XEnhancedAnalyticsView() {
                           ` L${pts[pts.length - 1][0].toFixed(1)},${H - pad} L${pts[0][0].toFixed(1)},${H - pad} Z`;
                         return (
                           <>
-                            <path d={fillPath} fill={CHART_COLORS.green} fillOpacity={0.12} />
+                            <path d={fillPath} fill={CHART_COLORS.accent} fillOpacity={0.12} />
                             <polyline
                               points={polyPoints}
                               fill="none"
-                              stroke={CHART_COLORS.green}
+                              stroke={CHART_COLORS.accent}
                               strokeWidth={2.5}
                               strokeLinejoin="round"
                               strokeLinecap="round"
@@ -735,7 +735,7 @@ export function XEnhancedAnalyticsView() {
                                 cx={x.toFixed(1)}
                                 cy={y.toFixed(1)}
                                 r={3}
-                                fill={CHART_COLORS.green}
+                                fill={CHART_COLORS.accent}
                               />
                             ))}
                           </>

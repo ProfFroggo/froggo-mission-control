@@ -8,25 +8,40 @@ import {
   Line,
   BarChart,
   Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Area,
-  AreaChart,
 } from 'recharts';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, BarChart2, Activity } from 'lucide-react';
 import { getTaskCompletionTrends, TaskCompletionTrend } from '../services/analyticsService';
-import { CHART_COLORS, CHART_GRID, CHART_AXIS } from '../lib/chartTheme';
-// eslint-disable-next-line import/order
-import { Button } from '@radix-ui/themes';
+import {
+  CHART_COLORS,
+  CHART_GRID,
+  CHART_AXIS,
+  CHART_MARGIN,
+  premiumAreaProps,
+  premiumLineProps,
+} from '../lib/chartTheme';
+import ChartTooltip from './charts/ChartTooltip';
+import StatCard from './charts/StatCard';
+
+type ChartType = 'area' | 'line' | 'bar';
+
+const VIEWS: Array<{ key: ChartType; icon: typeof Activity }> = [
+  { key: 'area', icon: Activity },
+  { key: 'line', icon: TrendingUp },
+  { key: 'bar',  icon: BarChart2 },
+];
 
 export default function TaskTrendsChart({ days = 30 }: { days?: number }) {
   const [data, setData] = useState<TaskCompletionTrend[]>([]);
   const [loading, setLoading] = useState(true);
-  const [chartType, setChartType] = useState<'line' | 'bar' | 'area'>('area');
+  const [chartType, setChartType] = useState<ChartType>('area');
 
   useEffect(() => {
     loadData();
@@ -37,125 +52,79 @@ export default function TaskTrendsChart({ days = 30 }: { days?: number }) {
     try {
       const trends = await getTaskCompletionTrends(days);
       setData(trends);
-    } catch (error) {
-      // 'Failed to load task trends:', error;
+    } catch {
+      // non-critical
     } finally {
       setLoading(false);
     }
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium mb-2">{label}</p>
-          {payload.map((entry: any) => (
-            <p key={entry.name} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {entry.value}
-              {entry.name === 'Completion Rate' && '%'}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+  const chartData = data.map(d => ({
+    ...d,
+    date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  }));
+
+  const totalCreated   = data.reduce((s, d) => s + d.created, 0);
+  const totalCompleted = data.reduce((s, d) => s + d.completed, 0);
+  const avgRate        = data.length
+    ? Math.round(data.reduce((s, d) => s + d.completionRate, 0) / data.length)
+    : 0;
+
+  // Sparkline data
+  const createdSpark   = data.map(d => ({ v: d.created }));
+  const completedSpark = data.map(d => ({ v: d.completed }));
+  const rateSpark      = data.map(d => ({ v: d.completionRate }));
 
   const renderChart = () => {
-    const chartData = data.map(d => ({
-      ...d,
-      date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    }));
-
-    const commonProps = {
-      data: chartData,
-      margin: { top: 5, right: 30, left: 20, bottom: 5 },
-    };
-
     if (chartType === 'line') {
       return (
-        <LineChart {...commonProps}>
-          <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
-          <XAxis dataKey="date" stroke={CHART_AXIS.stroke} />
-          <YAxis stroke={CHART_AXIS.stroke} />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="created"
-            stroke={CHART_COLORS.blue}
-            name="Created"
-            strokeWidth={2}
-            dot={{ fill: CHART_COLORS.blue }}
-          />
-          <Line
-            type="monotone"
-            dataKey="completed"
-            stroke={CHART_COLORS.green}
-            name="Completed"
-            strokeWidth={2}
-            dot={{ fill: CHART_COLORS.green }}
-          />
-          <Line
-            type="monotone"
-            dataKey="completionRate"
-            stroke={CHART_COLORS.purple}
-            name="Completion Rate"
-            strokeWidth={2}
-            dot={{ fill: CHART_COLORS.purple }}
-          />
+        <LineChart data={chartData} margin={CHART_MARGIN}>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis dataKey="date" {...CHART_AXIS} />
+          <YAxis {...CHART_AXIS} width={28} />
+          <Tooltip content={<ChartTooltip />} />
+          <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+          <Line dataKey="created"        name="Created"         {...premiumLineProps(CHART_COLORS.blue)}   />
+          <Line dataKey="completed"      name="Completed"       {...premiumLineProps(CHART_COLORS.accent)} />
+          <Line dataKey="completionRate" name="Completion Rate" {...premiumLineProps(CHART_COLORS.violet)} />
         </LineChart>
       );
     }
 
     if (chartType === 'bar') {
       return (
-        <BarChart {...commonProps}>
-          <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
-          <XAxis dataKey="date" stroke={CHART_AXIS.stroke} />
-          <YAxis stroke={CHART_AXIS.stroke} />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          <Bar dataKey="created" fill={CHART_COLORS.blue} name="Created" />
-          <Bar dataKey="completed" fill={CHART_COLORS.green} name="Completed" />
+        <BarChart data={chartData} margin={CHART_MARGIN} barGap={4} barCategoryGap="28%">
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis dataKey="date" {...CHART_AXIS} />
+          <YAxis {...CHART_AXIS} width={28} />
+          <Tooltip content={<ChartTooltip />} />
+          <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+          <Bar dataKey="created"   name="Created"   fill={CHART_COLORS.blue}   radius={[4, 4, 0, 0]} />
+          <Bar dataKey="completed" name="Completed" fill={CHART_COLORS.accent} radius={[4, 4, 0, 0]} />
         </BarChart>
       );
     }
 
-    // area chart
+    // area (default)
     return (
-      <AreaChart {...commonProps}>
+      <AreaChart data={chartData} margin={CHART_MARGIN}>
         <defs>
-          <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.8} />
-            <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
+          <linearGradient id="ttGradCreated" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={CHART_COLORS.blue}   stopOpacity={0.25} />
+            <stop offset="100%" stopColor={CHART_COLORS.blue}   stopOpacity={0}    />
           </linearGradient>
-          <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={CHART_COLORS.green} stopOpacity={0.8} />
-            <stop offset="95%" stopColor={CHART_COLORS.green} stopOpacity={0} />
+          <linearGradient id="ttGradCompleted" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={CHART_COLORS.accent} stopOpacity={0.25} />
+            <stop offset="100%" stopColor={CHART_COLORS.accent} stopOpacity={0}    />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
-        <XAxis dataKey="date" stroke={CHART_AXIS.stroke} />
-        <YAxis stroke={CHART_AXIS.stroke} />
-        <Tooltip content={<CustomTooltip />} />
-        <Legend />
-        <Area
-          type="monotone"
-          dataKey="created"
-          stroke={CHART_COLORS.blue}
-          fillOpacity={1}
-          fill="url(#colorCreated)"
-          name="Created"
-        />
-        <Area
-          type="monotone"
-          dataKey="completed"
-          stroke={CHART_COLORS.green}
-          fillOpacity={1}
-          fill="url(#colorCompleted)"
-          name="Completed"
-        />
+        <CartesianGrid {...CHART_GRID} />
+        <XAxis dataKey="date" {...CHART_AXIS} />
+        <YAxis {...CHART_AXIS} width={28} />
+        <Tooltip content={<ChartTooltip />} />
+        <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+        <Area dataKey="created"   name="Created"   {...premiumAreaProps(CHART_COLORS.blue,   'ttGradCreated')}   />
+        <Area dataKey="completed" name="Completed" {...premiumAreaProps(CHART_COLORS.accent, 'ttGradCompleted')} />
       </AreaChart>
     );
   };
@@ -163,68 +132,73 @@ export default function TaskTrendsChart({ days = 30 }: { days?: number }) {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-mission-control-text-dim">Loading trends...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-6 h-6 rounded-full border-2 border-mission-control-accent border-t-transparent animate-spin" />
+          <span className="text-xs text-mission-control-text-dim">Loading trends…</span>
+        </div>
       </div>
     );
   }
 
-  const totalCreated = data.reduce((sum, d) => sum + d.created, 0);
-  const totalCompleted = data.reduce((sum, d) => sum + d.completed, 0);
-  const avgCompletionRate = data.length > 0
-    ? Math.round(data.reduce((sum, d) => sum + d.completionRate, 0) / data.length)
-    : 0;
-
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col gap-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <TrendingUp className="text-mission-control-accent" size={20} />
+          <h2 className="text-base font-semibold flex items-center gap-2">
+            <TrendingUp size={16} className="text-mission-control-accent" />
             Task Completion Trends
           </h2>
-          <p className="text-sm text-mission-control-text-dim mt-1">
-            Track task creation and completion over time
+          <p className="text-xs text-mission-control-text-dim mt-0.5">
+            Creation and completion over the last {days} days
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Chart type selector */}
-          <div className="flex bg-mission-control-border rounded-lg p-1">
-            {(['area', 'line', 'bar'] as const).map((type) => (
-              <Button
-                key={type}
-                onClick={() => setChartType(type)}
-                variant={chartType === type ? 'solid' : 'ghost'}
-                size="1"
-                className="capitalize"
-              >
-                {type}
-              </Button>
-            ))}
-          </div>
-
+        {/* Chart type selector — tab style */}
+        <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
+          {VIEWS.map(({ key, icon: Icon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setChartType(key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs capitalize transition-colors ${
+                chartType === key
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50'
+              }`}
+            >
+              <Icon size={12} />
+              {key}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="text-sm text-mission-control-text-dim mb-1">Total Created</div>
-          <div className="text-2xl font-bold text-info">{totalCreated}</div>
-        </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="text-sm text-mission-control-text-dim mb-1">Total Completed</div>
-          <div className="text-2xl font-bold text-success">{totalCompleted}</div>
-        </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="text-sm text-mission-control-text-dim mb-1">Avg Completion Rate</div>
-          <div className="text-2xl font-bold text-review">{avgCompletionRate}%</div>
-        </div>
+      {/* KPI cards */}
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard
+          label="Total Created"
+          value={totalCreated}
+          color={CHART_COLORS.blue}
+          sparkData={createdSpark}
+        />
+        <StatCard
+          label="Total Completed"
+          value={totalCompleted}
+          color={CHART_COLORS.accent}
+          sparkData={completedSpark}
+        />
+        <StatCard
+          label="Avg Completion Rate"
+          value={avgRate}
+          unit="%"
+          color={CHART_COLORS.violet}
+          sparkData={rateSpark}
+        />
       </div>
 
       {/* Chart */}
-      <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+      <div className="flex-1 min-h-0 bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
         <ResponsiveContainer width="100%" height="100%">
           {renderChart()}
         </ResponsiveContainer>
