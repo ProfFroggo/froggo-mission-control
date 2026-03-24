@@ -90,9 +90,9 @@ function pct(actual: number, planned: number) {
   return Math.round((actual / planned) * 100);
 }
 function progressColor(p: number) {
-  if (p >= 100) return '#ef4444';
-  if (p >= 80) return '#f59e0b';
-  return '#10b981';
+  if (p >= 100) return 'var(--color-error, #ef4444)';
+  if (p >= 80) return 'var(--color-warning, #f59e0b)';
+  return 'var(--color-success, #10b981)';
 }
 function getExplorerUrl(txHash: string, chain: string) {
   const c = CHAINS.find(x => x.id === chain.toLowerCase());
@@ -1337,10 +1337,10 @@ export default function BudgetPanel() {
                     <>
                       {/* Stat cards */}
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                        <StatCard label="Planned Budget" value={fmt(dPlanned, dCur)} sub={`Q${drillQuarter.quarter} ${drillQuarter.year}`} icon={Target} accent="#6366f1" />
-                        <StatCard label="Spent to Date" value={fmt(dActual, dCur)} sub={`${dUsedPct}% of budget`} icon={DollarSign} accent={dUsedPct >= 100 ? '#ef4444' : dUsedPct >= 80 ? '#f59e0b' : '#10b981'} />
-                        <StatCard label="Remaining" value={fmt(Math.max(dRemaining, 0), dCur)} sub={dRemaining < 0 ? 'Over budget!' : `${100 - dUsedPct}% left`} icon={dRemaining >= 0 ? TrendingDown : AlertTriangle} accent={dRemaining < 0 ? '#ef4444' : '#3b82f6'} />
-                        <StatCard label="Pending" value={fmt(dPending, dCur)} sub={`${drillInvoices.filter(i => i.status === 'pending').length} invoices`} icon={Clock} accent="#f59e0b" />
+                        <StatCard label="Planned Budget" value={fmt(dPlanned, dCur)} sub={`Q${drillQuarter.quarter} ${drillQuarter.year}`} icon={Target} accent="var(--mission-control-accent, #6366f1)" />
+                        <StatCard label="Spent to Date" value={fmt(dActual, dCur)} sub={`${dUsedPct}% of budget`} icon={DollarSign} accent={progressColor(dUsedPct)} />
+                        <StatCard label="Remaining" value={fmt(Math.max(dRemaining, 0), dCur)} sub={dRemaining < 0 ? 'Over budget!' : `${100 - dUsedPct}% left`} icon={dRemaining >= 0 ? TrendingDown : AlertTriangle} accent={dRemaining < 0 ? 'var(--color-error, #ef4444)' : 'var(--color-info, #3b82f6)'} />
+                        <StatCard label="Pending" value={fmt(dPending, dCur)} sub={`${drillInvoices.filter(i => i.status === 'pending').length} invoices`} icon={Clock} accent="var(--color-warning, #f59e0b)" />
                       </div>
 
                       {/* Burn rate */}
@@ -1490,21 +1490,21 @@ export default function BudgetPanel() {
                 {/* ── Lifetime stat row ── */}
                 {overallStats && (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <StatCard label="Total Quarters" value={String(overallStats.quarter_count || 0)} sub="all time" icon={Layers} accent="#6366f1" />
-                    <StatCard label="Total Planned" value={fmt(overallStats.total_planned || 0, 'USD')} sub="across all quarters" icon={Target} accent="#3b82f6" />
+                    <StatCard label="Total Quarters" value={String(overallStats.quarter_count || 0)} sub="all time" icon={Layers} accent="var(--mission-control-accent, #6366f1)" />
+                    <StatCard label="Total Planned" value={fmt(overallStats.total_planned || 0, 'USD')} sub="across all quarters" icon={Target} accent="var(--color-info, #3b82f6)" />
                     <StatCard
                       label="Total Spent"
                       value={fmt(overallStats.total_actual || 0, 'USD')}
                       sub={`${pct(overallStats.total_actual || 0, overallStats.total_planned || 0)}% of planned`}
                       icon={DollarSign}
-                      accent={pct(overallStats.total_actual || 0, overallStats.total_planned || 0) >= 100 ? '#ef4444' : '#10b981'}
+                      accent={progressColor(pct(overallStats.total_actual || 0, overallStats.total_planned || 0))}
                     />
                     <StatCard
                       label="Remaining"
                       value={fmt(Math.max((overallStats.total_planned || 0) - (overallStats.total_actual || 0), 0), 'USD')}
                       sub={`${overallStats.invoice_count || 0} total invoices`}
                       icon={TrendingDown}
-                      accent="#3b82f6"
+                      accent="var(--color-info, #3b82f6)"
                     />
                   </div>
                 )}

@@ -314,7 +314,7 @@ function PlatformUpdateTab() {
           </div>
           <div
             ref={logRef}
-            className="bg-black rounded-lg border border-mission-control-border p-3 h-48 overflow-y-auto font-mono text-xs text-success space-y-0.5"
+            className="bg-mission-control-bg rounded-lg border border-mission-control-border p-3 h-48 overflow-y-auto font-mono text-xs text-success space-y-0.5"
           >
             {log.map((line, i) => (
               <div key={i} className="leading-5">{line || '\u00a0'}</div>

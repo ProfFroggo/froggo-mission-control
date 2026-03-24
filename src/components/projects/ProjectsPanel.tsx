@@ -241,7 +241,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
   const lastActivity = Number(project.lastTaskActivity) || project.updatedAt;
   const health = computeHealthScore(project);
   const spark = makeSparkline(project);
-  const sparkColor = health >= 80 ? '#22c55e' : health >= 60 ? '#f59e0b' : '#ef4444';
+  const sparkColor = health >= 80 ? 'var(--color-success, #22c55e)' : health >= 60 ? 'var(--color-warning, #f59e0b)' : 'var(--color-error, #ef4444)';
 
   // Cap members at 3 + overflow
   const displayedMembers = (project.members ?? []).slice(0, 3);
