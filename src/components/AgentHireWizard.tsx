@@ -3,7 +3,7 @@ import {
   X, ChevronRight, CheckCircle, Bot, Cpu, Loader2, User, Briefcase,
   Search, Calendar, Tag, FlaskConical,
 } from 'lucide-react';
-import { Button, IconButton, TextField, TextArea, Switch } from '@radix-ui/themes';
+import { Button, IconButton, TextField, TextArea, Switch, Box, Flex } from '@radix-ui/themes';
 import type { CatalogAgent } from '../types/catalog';
 import { catalogApi } from '../lib/api';
 import { useStore } from '../store/store';
@@ -86,12 +86,12 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
   const currentProgressIndex = PROGRESS_STEPS.indexOf(step);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-xl shadow-2xl overflow-hidden">
+    <Flex align="center" justify="center" p="4" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm">
+      <Box className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-xl shadow-2xl overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border">
+          <Flex align="center" gap="3">
             <div className="w-10 h-10 rounded-lg bg-mission-control-surface border border-mission-control-border overflow-hidden flex items-center justify-center text-xl flex-shrink-0">
               {agent.avatar ? (
                 <img
@@ -113,20 +113,20 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <h2 className="font-semibold text-base leading-tight">{agent.name}</h2>
               <p className="text-xs text-mission-control-text-dim">{agent.role || 'Agent'}</p>
             </div>
-          </div>
+          </Flex>
           {step !== 'installing' && (
             <IconButton
               type="button"
               size="2"
               variant="ghost"
-              radius="medium"
+             
               onClick={onClose}
               aria-label="Close"
             >
               <X size={18} />
             </IconButton>
           )}
-        </div>
+        </Flex>
 
         {/* Step progress indicator */}
         {currentProgressIndex >= 0 && (
@@ -503,7 +503,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             </Button>
           </div>
         )}
-      </div>
-    </div>
+      </Box>
+    </Flex>
   );
 }

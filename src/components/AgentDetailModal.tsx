@@ -1,6 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton, Select, TextArea, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextArea, TextField, Box, Flex } from '@radix-ui/themes';
 import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff, MessageSquare, CalendarDays, Cpu, Edit, Tag, Power, BarChart2, Lightbulb, Check, AlertTriangle, Plus, Star, Wrench, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Link, Upload, Send, Key } from 'lucide-react';
 import { useStore } from '../store/store';
 import AgentChatModal from './AgentChatModal';
@@ -1043,8 +1043,11 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
 
   return (
     <>
-    <div
-      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className={`fixed inset-0 modal-backdrop backdrop-blur-md z-50 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
       }`}
       onClick={handleBackdropClick}
@@ -1053,8 +1056,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
       onKeyDown={handleBackdropClick}
       aria-label="Close modal backdrop"
     >
-      <div
-        className={`glass-modal rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
+      <Flex
+        direction="column"
+        className={`glass-modal rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`}
         onClick={handleInnerClick}
@@ -1062,8 +1066,8 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
             <div className="relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-mission-control-bg">
               <img
                 src={`/api/agents/${agent.id}/avatar`}
@@ -1130,16 +1134,16 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
               )}
 
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <IconButton variant="ghost" size="1" onClick={buildDetailsFromRealData} title="Refresh (⌘R)">
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </IconButton>
             <IconButton variant="ghost" size="1" onClick={handleClose} aria-label="Close modal">
               <X size={16} />
             </IconButton>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Tabs */}
         <div className="flex border-b border-mission-control-border px-6 overflow-x-auto flex-shrink-0 scrollbar-hide">
@@ -1876,9 +1880,17 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             <span className={`text-xs ${allOn ? 'text-success' : someOn ? 'text-warning' : 'text-mission-control-text-dim'}`}>
                               {enabledCount}/{server.tools.length}
                             </span>
-                            <Button variant={allOn ? 'soft' : 'ghost'} color={allOn ? 'green' : 'gray'} size="1" onClick={(e) => { e.stopPropagation(); toggleServer(server.tools, !allOn); }}>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); toggleServer(server.tools, !allOn); }}
+                              className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                                allOn
+                                  ? 'bg-success/10 text-success hover:bg-success/20'
+                                  : 'bg-mission-control-border/50 text-mission-control-text-dim hover:text-mission-control-text'
+                              }`}
+                            >
                               {allOn ? 'Disable all' : 'Enable all'}
-                            </Button>
+                            </button>
                             {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                           </span>
                         </Button>
@@ -2207,8 +2219,8 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             </Button>
           </div>
         )}
-      </div>
-    </div>
+      </Flex>
+    </Flex>
 
     {/* Agent Chat Modal for viewing existing session */}
     {viewingSessionKey && (

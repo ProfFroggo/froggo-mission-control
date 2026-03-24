@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton, Select, TextArea, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextArea, TextField, Box, Flex } from '@radix-ui/themes';
+import TabNav from './TabNav';
 import { X, BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Power, BarChart2, MessageSquare, Send, BarChart } from 'lucide-react';
 import { agentApi, catalogApi, settingsApi, libraryApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -696,46 +697,62 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
   const inputBase = 'w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent';
 
   return (
-    <div
-      className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4"
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className="fixed inset-0 modal-backdrop backdrop-blur-md z-50"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       aria-hidden="true"
     >
-      <div
-        className="glass-modal rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+      <Flex
+        direction="column"
+        className="glass-modal rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden"
         onClick={e => e.stopPropagation()}
         role="presentation"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border">
+        <Flex align="center" justify="between" px="5" py="3" className="border-b border-mission-control-border">
           <h2 className="text-sm font-bold">{agentName}</h2>
           <IconButton variant="ghost" size="1" onClick={onClose}>
             <X size={16} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Section tabs — Metrics | Configure | Chat */}
-        <div className="flex border-b border-mission-control-border px-5 pt-1">
-          {([
-            { id: 'metrics'   as Section, label: 'Metrics',   icon: BarChart },
-            { id: 'configure' as Section, label: 'Configure', icon: Wrench },
-            { id: 'chat'      as Section, label: 'Chat',      icon: MessageSquare },
-          ]).map(s => (
-            <Button key={s.id} variant={section === s.id ? 'solid' : 'ghost'} color={section === s.id ? 'violet' : 'gray'} size="1" onClick={() => setSection(s.id)}>
-              <s.icon size={13} />{s.label}
-            </Button>
-          ))}
-        </div>
+        <Box className="border-b border-mission-control-border">
+          <TabNav
+            tabs={[
+              { id: 'metrics',   label: 'Metrics',   icon: BarChart },
+              { id: 'configure', label: 'Configure', icon: Wrench },
+              { id: 'chat',      label: 'Chat',      icon: MessageSquare },
+            ]}
+            activeTab={section}
+            onTabChange={(id) => setSection(id as Section)}
+            paddingX="px-5"
+          />
+        </Box>
 
         {/* Configure sub-tabs */}
         {section === 'configure' && (
-          <div className="flex gap-1 px-5 pt-2 border-b border-mission-control-border overflow-x-auto min-h-[38px]">
-            {TABS.map(t => (
-              <Button key={t.id} variant={tab === t.id ? 'solid' : 'ghost'} color={tab === t.id ? 'violet' : 'gray'} size="1" onClick={() => setTab(t.id)}>
-                {t.label}
-                {t.dirty && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
-              </Button>
-            ))}
+          <div className="border-b border-mission-control-border overflow-x-auto">
+            <div className="flex px-5">
+              {TABS.map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
+                    tab === t.id
+                      ? 'border-mission-control-accent text-mission-control-accent'
+                      : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}
+                >
+                  {t.label}
+                  {t.dirty && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1496,7 +1513,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
             </Button>
           </div>
         )}
-      </div>
+      </Flex>
 
       {/* Fire confirm */}
       <ConfirmDialog
@@ -1540,6 +1557,6 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
         cancelLabel="Cancel"
         type="warning"
       />
-    </div>
+    </Flex>
   );
 }
