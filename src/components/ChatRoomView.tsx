@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Button, IconButton, TextField, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
 import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File, Search, Settings, Pin, Reply, ChevronDown } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
@@ -678,7 +678,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
   const isTeamMeeting = room.agents.length >= totalAgents - 1 || room.name.toLowerCase().includes('team meeting');
 
   return (
-    <div className="h-full flex">
+    <Flex height="100%">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
@@ -691,7 +691,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           onClick={onBack}
           size="2"
           variant="ghost"
-          radius="medium"
+         
           title="Back to chat"
         >
           <ArrowLeft size={18} />
@@ -764,7 +764,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             onClick={() => { setShowSearch(v => !v); if (showSearch) setSearchQuery(''); }}
             size="2"
             variant={showSearch ? 'soft' : 'ghost'}
-            radius="medium"
+           
             title="Search messages (Cmd+F)"
           >
             <Search size={16} />
@@ -774,7 +774,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             onClick={() => setShowSettings(true)}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             title="Room settings"
           >
             <Settings size={16} />
@@ -786,7 +786,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               size="2"
               variant="outline"
               color="red"
-              radius="medium"
+             
               title="Stop all agents"
             >
               <Square size={14} fill="currentColor" />
@@ -797,7 +797,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               size="2"
               variant="solid"
               color="red"
-              radius="medium"
+             
               title="Resume agents"
             >
               <Square size={12} fill="white" />
@@ -808,7 +808,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             onClick={() => setShowManageMembers(true)}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             title="Manage members"
           >
             <UserPlus size={18} />
@@ -819,7 +819,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             size="2"
             variant={voiceMode ? 'soft' : 'ghost'}
             color={voiceMode ? 'green' : undefined}
-            radius="medium"
+           
             title={voiceMode ? 'Switch to text chat' : 'Start voice meeting'}
           >
             <Phone size={16} />
@@ -840,7 +840,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             size="2"
             variant="ghost"
             color="red"
-            radius="medium"
+           
             title={isTeamMeeting ? 'End meeting' : 'Delete room'}
           >
             <Trash2 size={16} />
@@ -870,7 +870,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 onClick={() => setSearchMatchIdx(i => (i - 1 + searchMatchIds.length) % searchMatchIds.length)}
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
                 title="Previous match"
               >
                 <ChevronDown size={14} className="rotate-180" />
@@ -879,7 +879,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 onClick={() => setSearchMatchIdx(i => (i + 1) % searchMatchIds.length)}
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
                 title="Next match"
               >
                 <ChevronDown size={14} />
@@ -893,7 +893,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             onClick={() => { setShowSearch(false); setSearchQuery(''); }}
             size="1"
             variant="ghost"
-            radius="medium"
+           
             title="Close search"
           >
             <X size={14} />
@@ -1082,7 +1082,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       title="Reply in thread"
                       size="1"
                       variant="ghost"
-                      radius="medium"
+                     
                     >
                       <Reply size={13} />
                     </IconButton>
@@ -1093,7 +1093,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       title={room.pinnedMessageId === msg.id ? 'Unpin' : 'Pin message'}
                       size="1"
                       variant={room.pinnedMessageId === msg.id ? 'soft' : 'ghost'}
-                      radius="medium"
+                     
                     >
                       <Pin size={13} />
                     </IconButton>
@@ -1234,7 +1234,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               onClick={() => setReplyToMsg(null)}
               size="1"
               variant="ghost"
-              radius="medium"
+             
             >
               <X size={12} />
             </IconButton>
@@ -1286,7 +1286,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             onClick={() => fileInputRef.current?.click()}
             size="3"
             variant="ghost"
-            radius="medium"
+           
             title="Attach file"
           >
             <Paperclip size={20} />
@@ -1295,7 +1295,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             onClick={() => setShowMentions(!showMentions)}
             size="3"
             variant={showMentions ? 'soft' : 'ghost'}
-            radius="medium"
+           
             title="Mention an agent"
           >
             <AtSign size={20} />
@@ -1319,7 +1319,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             disabled={!input.trim() && attachments.length === 0}
             size="3"
             variant="soft"
-            radius="medium"
+           
           >
             <Send size={20} />
           </IconButton>
@@ -1345,7 +1345,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           >
             <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
               <h3 className="font-semibold">Manage Members</h3>
-              <IconButton onClick={() => setShowManageMembers(false)} size="2" variant="ghost" radius="medium"><X size={16} /></IconButton>
+              <IconButton onClick={() => setShowManageMembers(false)} size="2" variant="ghost"><X size={16} /></IconButton>
             </div>
             <div className="p-4 overflow-y-auto flex-1 min-h-0 space-y-1">
               {agents.map((agent) => {
@@ -1415,6 +1415,6 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
       {/* Artifact Panel */}
       <ArtifactPanel sessionId={roomId} />
-    </div>
+    </Flex>
   );
 }

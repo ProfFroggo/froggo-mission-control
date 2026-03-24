@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Star, Mail, Paperclip, X, Save, Reply, MessageCircle, Gamepad2, Send as SendPlane, AlertTriangle } from 'lucide-react';
 import { showToast } from './Toast';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Box } from '@radix-ui/themes';
 
 export interface FilterCriteria {
   search?: string;
@@ -216,7 +216,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
   const hasActiveFilters = searchInput || quickFilterInput || platforms.length > 0 || Object.keys(flags).length > 0;
 
   return (
-    <div className="bg-mission-control-surface border-b border-mission-control-border">
+    <Box className="bg-mission-control-surface border-b border-mission-control-border">
       {/* Main Filter Bar */}
       <div className="p-3 space-y-3">
         {/* Search Row */}
@@ -458,6 +458,6 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
           )}
         </div>
       )}
-    </div>
+    </Box>
   );
 }

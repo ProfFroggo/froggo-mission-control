@@ -6,7 +6,7 @@ import {
   Image as ImageIcon, FileText, Video, File as FileIcon,
   Upload, X, Eye, Loader2, Trash2, StickyNote, CheckCircle2, Circle,
 } from 'lucide-react';
-import { IconButton, TextArea } from '@radix-ui/themes';
+import { IconButton, TextArea, Box } from '@radix-ui/themes';
 
 interface ContextFile {
   id: string;
@@ -160,7 +160,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-5 space-y-6">
+    <Box p="5" className="flex-1 overflow-y-auto space-y-6">
       {/* Notes Section */}
       <section>
         <div className="flex items-center gap-2 mb-3">
@@ -276,7 +276,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
                       onClick={() => setViewingFile(file)}
                       size="1"
                       variant="ghost"
-                      radius="medium"
+                     
                       title="View processed content"
                       aria-label="View processed content"
                     >
@@ -288,7 +288,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
                     size="1"
                     variant="ghost"
                     color="red"
-                    radius="medium"
+                   
                     title="Delete file"
                     aria-label="Delete file"
                   >
@@ -320,7 +320,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
                 onClick={() => setViewingFile(null)}
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
                 aria-label="Close"
               >
                 <X size={15} />
@@ -334,6 +334,6 @@ export default function ContextPanel({ entityType, entityId }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </Box>
   );
 }

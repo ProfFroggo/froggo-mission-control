@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { AssistantRuntimeProvider } from '@assistant-ui/react';
 import { useMissionControlRuntime } from './chat/ChatRuntime';
@@ -1154,8 +1154,10 @@ export default function ChatPanel() {
 
   return (
     <AssistantRuntimeProvider runtime={assistantRuntime}>
-    <div
-      className={`h-full flex flex-col relative ${isDragging ? 'ring-2 ring-mission-control-accent ring-inset' : ''}`}
+    <Flex
+      direction="column"
+      height="100%"
+      className={`relative ${isDragging ? 'ring-2 ring-mission-control-accent ring-inset' : ''}`}
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
@@ -1202,7 +1204,7 @@ export default function ChatPanel() {
             onClick={() => setIsVoiceMode(!isVoiceMode)}
             size="2"
             variant={isVoiceMode ? 'soft' : 'ghost'}
-            radius="medium"
+           
             title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
             aria-label={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
             aria-pressed={isVoiceMode}
@@ -1213,7 +1215,7 @@ export default function ChatPanel() {
             onClick={() => setShowSearch(!showSearch)}
             size="2"
             variant={showSearch ? 'soft' : 'ghost'}
-            radius="medium"
+           
             title={showSearch ? 'Hide search' : 'Search messages'}
             aria-label={showSearch ? 'Hide message search' : 'Search messages'}
             aria-expanded={showSearch}
@@ -1224,7 +1226,7 @@ export default function ChatPanel() {
             onClick={() => setSpeakResponses(!speakResponses)}
             size="2"
             variant={speakResponses ? 'soft' : 'ghost'}
-            radius="medium"
+           
             title={speakResponses ? 'Voice on' : 'Voice off'}
             aria-label={speakResponses ? 'Disable voice responses' : 'Enable voice responses'}
             aria-pressed={speakResponses}
@@ -1235,7 +1237,7 @@ export default function ChatPanel() {
             onClick={clearChat}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             title="Clear chat"
             aria-label="Clear chat history"
           >
@@ -1246,7 +1248,7 @@ export default function ChatPanel() {
             onClick={startTeamMeeting}
             variant="solid"
             size="2"
-            radius="medium"
+           
             title="Start Team Meeting — All agents join"
             style={{ gap: 6 }}
           >
@@ -1258,7 +1260,7 @@ export default function ChatPanel() {
               onClick={() => setShowRoomList(!showRoomList)}
               size="2"
               variant={showRoomList ? 'soft' : 'ghost'}
-              radius="medium"
+             
               title="Chat Rooms"
               aria-label={`Chat rooms (${rooms.length})`}
               aria-expanded={showRoomList}
@@ -1275,7 +1277,7 @@ export default function ChatPanel() {
             onClick={() => setShowCreateRoom(true)}
             size="2"
             variant="solid"
-            radius="medium"
+           
             title="Create Chat Room"
             aria-label="Create new chat room"
           >
@@ -1314,7 +1316,7 @@ export default function ChatPanel() {
                     key={room.id}
                     onClick={() => { setActiveRoom(room.id); setShowRoomList(false); }}
                     variant="ghost"
-                    radius="medium"
+                   
                     style={{ width: '100%', justifyContent: 'flex-start', padding: '10px 10px' }}
                   >
                     <div className="flex -space-x-1.5">
@@ -1460,7 +1462,7 @@ export default function ChatPanel() {
                     onClick={() => setPreviewFile(att)}
                     variant="ghost"
                     size="2"
-                    radius="medium"
+                   
                     title="Click to preview"
                     aria-label={`Preview attachment ${att.name}`}
                     style={{ gap: 8 }}
@@ -1534,7 +1536,7 @@ export default function ChatPanel() {
                   onClick={() => applySuggestion(suggestion)}
                   variant="outline"
                   size="2"
-                  radius="medium"
+                 
                   title="Click to use this reply"
                 >
                   {suggestion}
@@ -1560,7 +1562,7 @@ export default function ChatPanel() {
             onClick={() => fileInputRef.current?.click()}
             size="3"
             variant="ghost"
-            radius="medium"
+           
             title="Attach files"
             aria-label="Attach files"
           >
@@ -1571,7 +1573,7 @@ export default function ChatPanel() {
             onClick={toggleVoice}
             size="3"
             variant={listening ? 'soft' : 'ghost'}
-            radius="medium"
+           
             className={listening ? 'animate-pulse' : ''}
             aria-label={listening ? 'Stop voice input' : 'Start voice input'}
             aria-pressed={listening}
@@ -1585,7 +1587,7 @@ export default function ChatPanel() {
             disabled={messages.length === 0 || loadingSuggestions}
             size="3"
             variant={loadingSuggestions ? 'soft' : 'ghost'}
-            radius="medium"
+           
             className={loadingSuggestions ? 'animate-pulse' : ''}
             title="AI suggested replies"
             aria-label="Generate suggested replies"
@@ -1626,7 +1628,7 @@ export default function ChatPanel() {
 
       {/* Image lightbox */}
       {lightboxSrc && <ImageLightbox src={lightboxSrc.src} alt={lightboxSrc.alt} onClose={() => setLightboxSrc(null)} />}
-    </div>
+    </Flex>
     </AssistantRuntimeProvider>
   );
 }
@@ -1702,7 +1704,7 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
             onClick={onClose}
             variant="outline"
             size="2"
-            radius="medium"
+           
           >
             Close
           </Button>
@@ -1831,7 +1833,7 @@ const MessageItem = memo(function MessageItem({
                 onClick={(e) => handleReaction('up', e)}
                 size="1"
                 variant={reaction.mine === 'up' ? 'soft' : 'ghost'}
-                radius="medium"
+               
                 title="Helpful"
                 aria-label="Mark as helpful"
                 style={{ gap: 2 }}
@@ -1846,7 +1848,7 @@ const MessageItem = memo(function MessageItem({
                 onClick={(e) => handleReaction('down', e)}
                 size="1"
                 variant={reaction.mine === 'down' ? 'soft' : 'ghost'}
-                radius="medium"
+               
                 title="Not helpful"
                 aria-label="Mark as not helpful"
                 style={{ gap: 2 }}
@@ -1860,7 +1862,7 @@ const MessageItem = memo(function MessageItem({
                 onClick={(e) => onToggleStar(msg, e)}
                 size="1"
                 variant={isStarred ? 'soft' : 'ghost'}
-                radius="medium"
+               
                 title={isStarred ? 'Unstar message' : 'Star message'}
                 aria-label={isStarred ? 'Unstar message' : 'Star message'}
               >
@@ -1884,7 +1886,7 @@ const MessageItem = memo(function MessageItem({
                 }}
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
                 title="Copy message"
                 aria-label="Copy message"
               >

@@ -12,7 +12,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Button, IconButton, TextField, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
 import {
   Mail,
   Inbox, Star, Archive, AlertTriangle,
@@ -412,7 +412,7 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
             size="1"
             variant={showHtml ? 'soft' : 'ghost'}
             color={showHtml ? undefined : 'gray'}
-            radius="medium"
+           
           >
             <Code size={10} />HTML
           </Button>
@@ -421,7 +421,7 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
             size="1"
             variant={!showHtml ? 'soft' : 'ghost'}
             color={!showHtml ? undefined : 'gray'}
-            radius="medium"
+           
           >
             <FileText size={10} />Plain
           </Button>
@@ -475,6 +475,18 @@ function LeftPane({
 
   return (
     <div className="w-80 flex flex-col">
+      {/* Panel Header */}
+      <div className="flex items-center justify-between px-6 py-4 bg-mission-control-surface border-b border-mission-control-border">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+            <Mail size={16} className="text-mission-control-accent" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-mission-control-text">Communications</h2>
+            <p className="text-sm text-mission-control-text-dim">Messages &amp; inbox</p>
+          </div>
+        </div>
+      </div>
       {/* All Messages */}
       <button
         type="button"
@@ -665,7 +677,7 @@ function CenterPane({
                 size="1"
                 variant="ghost"
                 color="gray"
-                radius="medium"
+               
               >
                 <CheckCheck size={14} />
               </IconButton>
@@ -676,7 +688,7 @@ function CenterPane({
               size="1"
               variant="ghost"
               color="gray"
-              radius="medium"
+             
             >
               <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
             </IconButton>
@@ -802,7 +814,7 @@ function CenterPane({
                         size="1"
                         variant="ghost"
                         color={conv.is_starred ? 'yellow' : 'gray'}
-                        radius="medium"
+                       
                         title={conv.is_starred ? 'Unstar' : 'Star'}
                         className={conv.is_starred ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'}
                       >
@@ -813,7 +825,7 @@ function CenterPane({
                         size="1"
                         variant="ghost"
                         color="gray"
-                        radius="medium"
+                       
                         title="Archive"
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                       >
@@ -824,7 +836,7 @@ function CenterPane({
                         size="1"
                         variant="ghost"
                         color="gray"
-                        radius="medium"
+                       
                         title={conv.is_read ? 'Mark unread' : 'Mark read'}
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                       >
@@ -1022,7 +1034,7 @@ function InboxDashboard({
                     onClick={() => onCreateTask(item.task)}
                     size="1"
                     variant="soft"
-                    radius="medium"
+                   
                   >
                     Create
                   </Button>
@@ -1303,7 +1315,7 @@ function RightPane({
               onClick={onTriageWithAgent}
               size="1"
               variant="soft"
-              radius="medium"
+             
               className="flex-shrink-0"
               title="Send to Inbox Agent for triage"
             >
@@ -1316,7 +1328,7 @@ function RightPane({
             size="2"
             variant="ghost"
             color="gray"
-            radius="medium"
+           
             className="flex-shrink-0"
             title="Close"
           >
@@ -1370,7 +1382,7 @@ function RightPane({
                   onClick={() => onCreateTask?.(task)}
                   size="1"
                   variant="soft"
-                  radius="medium"
+                 
                   title={task.description}
                 >
                   <ListPlus size={10} />
@@ -1390,7 +1402,7 @@ function RightPane({
                   size="1"
                   variant="soft"
                   color="violet"
-                  radius="medium"
+                 
                   title={`${event.date} ${event.time || ''} ${event.location || ''}`}
                 >
                   <CalendarPlus size={10} />
@@ -1474,7 +1486,7 @@ function RightPane({
               size="1"
               variant="ghost"
               color="gray"
-              radius="medium"
+             
             >
               <X size={14} />
             </IconButton>
@@ -1526,7 +1538,7 @@ function RightPane({
                 disabled={!aiIntent.trim() || generatingFromIntent}
                 size="2"
                 variant="solid"
-                radius="medium"
+               
               >
                 {generatingFromIntent ? (
                   <>
@@ -1603,7 +1615,7 @@ function RightPane({
                 onClick={() => setShowAIPanel(!showAIPanel)}
                 size="1"
                 variant={showAIPanel ? 'soft' : 'ghost'}
-                radius="medium"
+               
               >
                 <Sparkles size={14} />
                 AI Assist
@@ -1654,7 +1666,7 @@ function RightPane({
                 disabled={!replyText.trim()}
                 size="2"
                 variant="solid"
-                radius="medium"
+               
               >
                 <Send size={14} /> Send
               </Button>
@@ -2386,14 +2398,14 @@ export default function CommsInbox3Pane() {
   const showGmailSetup = googleAuth.checked && !googleAuth.authenticated && allMessages.length === 0;
 
   return (
-    <div className="h-full flex overflow-hidden relative">
+    <Flex height="100%" className="overflow-hidden relative">
       {/* Mobile sidebar toggle */}
       <IconButton
         onClick={() => setMobileSidebarOpen(true)}
         size="2"
         variant="soft"
         color="gray"
-        radius="medium"
+       
         aria-label="Open sidebar"
         className="md:hidden absolute top-3 left-3 z-30"
       >
@@ -2482,6 +2494,6 @@ export default function CommsInbox3Pane() {
           />
         </>
       )}
-    </div>
+    </Flex>
   );
 }

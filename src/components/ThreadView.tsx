@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MessageCircle, ChevronDown, ChevronUp, Star, Mail, Check, User, Paperclip } from 'lucide-react';
-import { Button, IconButton, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextArea, Flex } from '@radix-ui/themes';
 import { useUserSettings } from '../store/userSettings';
 import { inboxApi } from '../lib/api';
 
@@ -116,7 +116,7 @@ function ThreadMessage({
                 variant={message.is_starred ? 'solid' : 'outline'}
                 color={message.is_starred ? 'amber' : 'gray'}
                 size="2"
-                radius="medium"
+               
               >
                 <Star size={14} fill={message.is_starred ? 'currentColor' : 'none'} />
               </IconButton>
@@ -128,7 +128,7 @@ function ThreadMessage({
                 variant="outline"
                 color="gray"
                 size="2"
-                radius="medium"
+               
               >
                 {message.is_read ? <Mail size={14} /> : <Check size={14} />}
               </IconButton>
@@ -249,7 +249,7 @@ export default function ThreadView({
   const { email: myEmail, phone: myPhone } = useUserSettings();
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Thread header */}
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface flex items-center justify-between">
         <div className="flex-1 min-w-0">
@@ -348,6 +348,6 @@ export default function ThreadView({
           </div>
         </div>
       )}
-    </div>
+    </Flex>
   );
 }

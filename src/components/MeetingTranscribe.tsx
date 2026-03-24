@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import {
   Mic, MicOff, Play, Square, Download, Trash2, Clock,
   Users, Calendar, ChevronDown, ChevronUp, FileText, Upload,
@@ -238,7 +238,7 @@ export default function MeetingTranscribe() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg text-white">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg text-white">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
         <div className="flex items-center justify-between">
@@ -480,6 +480,6 @@ export default function MeetingTranscribe() {
           )}
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

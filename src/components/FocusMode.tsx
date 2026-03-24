@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Moon, Coffee, Home, Briefcase, X, Clock, BellOff } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 type FocusModeType = 'work' | 'personal' | 'family' | 'dnd' | null;
@@ -111,7 +111,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <Flex align="center" justify="center" p="4" className="fixed inset-0 bg-black/60 backdrop-blur-md z-50">
       <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
@@ -200,7 +200,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }
 

@@ -8,7 +8,7 @@
 // Review: 2026-02-17 - suppression retained, all patterns intentional
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Button, IconButton, TextField, Select, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { 
   Mic, MicOff, Phone, PhoneOff, Loader2, 
@@ -1348,7 +1348,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
   // ── RENDER ──
   return (
-    <div className="h-full flex flex-col bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
       <div className="shrink-0 border-b border-mission-control-border bg-mission-control-surface">
         <div className="max-w-5xl mx-auto px-4 py-4">
@@ -1374,7 +1374,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 size="2"
                 variant={isMuted ? 'soft' : 'ghost'}
                 color={isMuted ? 'red' : 'gray'}
-                radius="medium"
+               
                 onClick={toggleMuted}
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
@@ -1433,7 +1433,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             size="2"
                             variant="solid"
                             color="red"
-                            radius="medium"
+                           
                             className="flex-shrink-0"
                           >
                             <PhoneOff size={15} /> End
@@ -1557,7 +1557,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             size="3"
                             variant="solid"
                             color="green"
-                            radius="medium"
+                           
                             className="flex-1"
                           >
                             <Mic size={24} />
@@ -1568,7 +1568,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             size="3"
                             variant="ghost"
                             color="gray"
-                            radius="medium"
+                           
                           >
                             <X size={20} />
                           </IconButton>
@@ -1588,7 +1588,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           size="3"
                           variant="solid"
                           color="green"
-                          radius="medium"
+                         
                           className="mx-auto"
                         >
                           <Phone size={24} />
@@ -1729,7 +1729,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="1"
                                       variant="solid"
                                       color="green"
-                                      radius="medium"
+                                     
                                     >
                                       <Check size={14} />
                                       Save & Approve
@@ -1739,7 +1739,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="1"
                                       variant="ghost"
                                       color="gray"
-                                      radius="medium"
+                                     
                                     >
                                       Cancel
                                     </Button>
@@ -1780,7 +1780,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         size="2"
                                         variant="ghost"
                                         color="green"
-                                        radius="medium"
+                                       
                                         title="Approve"
                                       >
                                         <Check size={16} />
@@ -1790,7 +1790,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         size="2"
                                         variant="ghost"
                                         color="gray"
-                                        radius="medium"
+                                       
                                         title="Edit"
                                       >
                                         <Edit3 size={16} />
@@ -1800,7 +1800,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         size="2"
                                         variant="ghost"
                                         color="red"
-                                        radius="medium"
+                                       
                                         title="Dismiss"
                                       >
                                         <XCircle size={16} />
@@ -1826,7 +1826,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               size="2"
                               variant="solid"
                               color="green"
-                              radius="medium"
+                             
                             >
                               <Plus size={16} />
                               Create Tasks
@@ -1873,7 +1873,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="1"
                                       variant="solid"
                                       color="green"
-                                      radius="medium"
+                                     
                                     >
                                       Save
                                     </Button>
@@ -1882,7 +1882,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="1"
                                       variant="ghost"
                                       color="gray"
-                                      radius="medium"
+                                     
                                     >
                                       Cancel
                                     </Button>
@@ -1911,7 +1911,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         size="2"
                                         variant="ghost"
                                         color="green"
-                                        radius="medium"
+                                       
                                         title="Approve & Create Task"
                                       >
                                         <CheckCircle2 size={16} />
@@ -1924,7 +1924,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         size="2"
                                         variant="ghost"
                                         color="gray"
-                                        radius="medium"
+                                       
                                         title="Edit"
                                       >
                                         <Edit3 size={16} />
@@ -1934,7 +1934,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         size="2"
                                         variant="ghost"
                                         color="red"
-                                        radius="medium"
+                                       
                                         title="Reject"
                                       >
                                         <XCircle size={16} />
@@ -1978,7 +1978,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         size="2"
                         variant="soft"
                         color="gray"
-                        radius="medium"
+                       
                         className="flex-1"
                       >
                         <MessageSquare size={18} />
@@ -1994,7 +1994,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         size="2"
                         variant="ghost"
                         color="red"
-                        radius="medium"
+                       
                       >
                         <Trash2 size={18} />
                         Clear
@@ -2026,7 +2026,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           size="2"
                           variant="soft"
                           color="gray"
-                          radius="medium"
+                         
                         >
                           <Download size={14} />
                           Export
@@ -2044,7 +2044,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           size="2"
                           variant="soft"
                           color="gray"
-                          radius="medium"
+                         
                           title="Archive meeting"
                         >
                           <Archive size={14} />
@@ -2063,7 +2063,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           size="2"
                           variant="soft"
                           color="red"
-                          radius="medium"
+                         
                           title="Delete meeting"
                         >
                           <Trash2 size={14} />
@@ -2243,7 +2243,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="2"
                                       variant="ghost"
                                       color="green"
-                                      radius="medium"
+                                     
                                       title="Approve — creates task assigned to agent"
                                     >
                                       <CheckCircle2 size={16} />
@@ -2258,7 +2258,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="2"
                                       variant="ghost"
                                       color="red"
-                                      radius="medium"
+                                     
                                       title="Reject"
                                     >
                                       <XCircle size={16} />
@@ -2328,7 +2328,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             size="2"
                             variant="solid"
                             color="green"
-                            radius="medium"
+                           
                           >
                             {meetingChatProcessing ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                           </IconButton>
@@ -2492,7 +2492,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       size="1"
                       variant="ghost"
                       color="red"
-                      radius="medium"
+                     
                       className="ml-auto"
                     >
                       <X size={14} />
@@ -2614,7 +2614,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           }}
                           size="2"
                           variant="solid"
-                          radius="medium"
+                         
                         >
                           View Meeting
                         </Button>
@@ -2631,7 +2631,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           size="2"
                           variant="soft"
                           color="gray"
-                          radius="medium"
+                         
                         >
                           Upload Another
                         </Button>
@@ -2703,7 +2703,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             size="2"
                             variant="solid"
                             color="green"
-                            radius="medium"
+                           
                             className="flex-1"
                           >
                             {transcriptionSaving ? (
@@ -2722,7 +2722,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             size="2"
                             variant="soft"
                             color="gray"
-                            radius="medium"
+                           
                           >
                             Copy Text
                           </Button>
@@ -2742,7 +2742,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           size="2"
                           variant="solid"
                           color="green"
-                          radius="medium"
+                         
                         >
                           View Meetings
                         </Button>
@@ -2751,7 +2751,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           size="2"
                           variant="soft"
                           color="gray"
-                          radius="medium"
+                         
                         >
                           Upload Another
                         </Button>
@@ -2800,7 +2800,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     size="1"
                                     variant="solid"
                                     color="green"
-                                    radius="medium"
+                                   
                                   >
                                     Save & Approve
                                   </Button>
@@ -2809,7 +2809,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     size="1"
                                     variant="ghost"
                                     color="gray"
-                                    radius="medium"
+                                   
                                   >
                                     Cancel
                                   </Button>
@@ -2840,7 +2840,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="2"
                                       variant="ghost"
                                       color="green"
-                                      radius="medium"
+                                     
                                       title="Approve — add to Kanban"
                                     >
                                       <CheckCircle2 size={16} />
@@ -2853,7 +2853,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="2"
                                       variant="ghost"
                                       color="gray"
-                                      radius="medium"
+                                     
                                       title="Edit & Approve"
                                     >
                                       <Edit3 size={16} />
@@ -2863,7 +2863,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="2"
                                       variant="ghost"
                                       color="red"
-                                      radius="medium"
+                                     
                                       title="Reject"
                                     >
                                       <XCircle size={16} />
@@ -2897,6 +2897,6 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

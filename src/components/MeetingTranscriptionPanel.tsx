@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Button, IconButton, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, Flex } from '@radix-ui/themes';
 import { FileAudio, Download, Trash2, Upload, Sparkles } from 'lucide-react';
 
 interface TranscriptionResult {
@@ -133,7 +133,7 @@ export default function MeetingTranscriptionPanel() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg text-mission-control-text">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg text-mission-control-text">
       <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center space-x-3">
           <FileAudio className="w-5 h-5 text-[--accent-11]" />
@@ -246,6 +246,6 @@ export default function MeetingTranscriptionPanel() {
           ))
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

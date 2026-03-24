@@ -11,7 +11,7 @@ import {
   Trash2, MessageSquare, Monitor, MonitorOff, Video, VideoOff,
   Send, Settings,
 } from 'lucide-react';
-import { Button, IconButton, Select, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextField, Box, Flex } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, fetchAgentList } from './AgentSelector';
 import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
@@ -569,7 +569,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* API Key Warning */}
       {!apiKey.current && (
         <div className="bg-error-subtle border-b border-error-border px-4 py-3 text-center">
@@ -579,21 +579,29 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       )}
       
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
+      <div className="flex items-center justify-between px-6 py-4 bg-mission-control-surface border-b border-mission-control-border">
         <div className="flex items-center gap-3">
           {embedded ? (
-            <div className="flex items-center gap-2">
-              <div className="relative">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0 relative">
                 <AgentAvatar agentId={selectedAgent.id} size="sm" />
                 {speaking && <div className="absolute inset-0 rounded-full border-2 border-[var(--color-success)] animate-ping opacity-40" />}
               </div>
               <div>
-                <span className="text-sm font-medium text-mission-control-text">{selectedAgent.name}</span>
-                <span className="text-xs text-mission-control-text-dim ml-2">⚡ Gemini Live</span>
+                <h1 className="text-xl font-semibold text-mission-control-text">{selectedAgent.name}</h1>
+                <p className="text-sm text-mission-control-text-dim">Gemini Live voice chat</p>
               </div>
             </div>
           ) : (
-            <AgentSelector selectedAgent={selectedAgent} onSelect={handleAgentSwitch} />
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+                <Mic size={24} className="text-mission-control-accent" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-mission-control-text">Voice Chat</h1>
+                <p className="text-sm text-mission-control-text-dim">Real-time voice with Gemini Live</p>
+              </div>
+            </div>
           )}
           
           {callActive && (
@@ -901,7 +909,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           <p className="text-center text-xs text-mission-control-text-dim mt-3">Press call to connect via Gemini Live</p>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }
 

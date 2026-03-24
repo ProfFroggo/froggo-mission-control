@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, CheckCheck, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles, Play } from 'lucide-react';
-import { Button, Checkbox, IconButton, Badge, TextField, TextArea, Spinner } from '@radix-ui/themes';
+import { Button, Checkbox, IconButton, Badge, TextField, TextArea, Spinner, Flex } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { SkeletonInbox } from './Skeleton';
@@ -1042,7 +1042,7 @@ export default function InboxPanel() {
   };
 
   return (
-    <div className="h-full flex">
+    <Flex height="100%">
       {/* Main Inbox Content */}
       <div className="flex-1 min-w-0 flex flex-col">
       {/* Header */}
@@ -2149,6 +2149,6 @@ export default function InboxPanel() {
           onApplySuggestion={handleApplySuggestion}
         />
       )}
-    </div>
+    </Flex>
   );
 }

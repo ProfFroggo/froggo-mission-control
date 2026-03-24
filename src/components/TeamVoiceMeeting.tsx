@@ -10,7 +10,7 @@ import {
   SlidersHorizontal, X as XIcon, Clock, ChevronDown, ChevronUp,
   Circle, StopCircle,
 } from 'lucide-react';
-import { Button, IconButton, Select } from '@radix-ui/themes';
+import { Button, IconButton, Select, Flex } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import ScreenSourcePicker, { type ScreenSource } from './ScreenSourcePicker';
@@ -896,22 +896,28 @@ Respond as ${agentName(agentId)}:`;
   if (!room) return null;
 
   return (
-    <div className="h-full flex flex-col bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="p-3 border-b border-mission-control-border bg-mission-control-surface flex items-center gap-3">
-        <div className="flex items-center gap-2 flex-1">
-          <Users size={18} className="text-success" />
-          <span className="font-semibold text-sm">{room.name}</span>
-          {isActive && (
-            <div className="flex items-center gap-1.5 ml-2">
-              <div className="w-2 h-2 rounded-full bg-error animate-pulse" />
-              <span className="text-xs text-error font-medium">LIVE</span>
-              <div className="flex items-center gap-1 ml-1 text-xs text-mission-control-text-dim">
-                <Clock size={11} />
-                <span className="font-mono">{formatDuration(callDurationSecs)}</span>
-              </div>
-            </div>
-          )}
+      <div className="flex items-center justify-between px-6 py-4 bg-mission-control-surface border-b border-mission-control-border">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+            <Users size={24} className="text-mission-control-accent" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold text-mission-control-text">{room.name}</h1>
+            <p className="text-sm text-mission-control-text-dim">
+              {isActive ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-2 h-2 rounded-full bg-error animate-pulse" />
+                  <span className="text-error font-medium">LIVE</span>
+                  <Clock size={11} className="ml-1" />
+                  <span className="font-mono">{formatDuration(callDurationSecs)}</span>
+                </span>
+              ) : (
+                'Multi-agent voice meeting'
+              )}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -969,7 +975,7 @@ Respond as ${agentName(agentId)}:`;
               onClick={() => setShowDeviceSettings(v => !v)}
               size="2"
               variant={showDeviceSettings ? 'soft' : 'ghost'}
-              radius="medium"
+             
               title="Audio device settings"
             >
               <SlidersHorizontal size={16} />
@@ -982,7 +988,7 @@ Respond as ${agentName(agentId)}:`;
                     onClick={() => setShowDeviceSettings(false)}
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                   >
                     <XIcon size={14} />
                   </IconButton>
@@ -1044,7 +1050,7 @@ Respond as ${agentName(agentId)}:`;
               onClick={() => { setMuted(!muted); if (!muted) { stopSpeaking(); window.speechSynthesis.cancel(); } }}
               size="2"
               variant="ghost"
-              radius="medium"
+             
               color={muted ? 'red' : undefined}
             >
               {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -1066,7 +1072,7 @@ Respond as ${agentName(agentId)}:`;
               onClick={downloadTranscript}
               size="2"
               variant="ghost"
-              radius="medium"
+             
               title="Download transcript"
             >
               <Download size={16} />
@@ -1080,7 +1086,7 @@ Respond as ${agentName(agentId)}:`;
             }}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             title="Switch to text"
           >
             <MessageSquare size={16} />
@@ -1154,7 +1160,7 @@ Respond as ${agentName(agentId)}:`;
                       onClick={() => toggleAgentMute(id)}
                       size="1"
                       variant="ghost"
-                      radius="medium"
+                     
                       color={isAgentMuted ? 'red' : undefined}
                       title={isAgentMuted ? 'Unmute agent' : 'Mute agent'}
                     >
@@ -1463,6 +1469,6 @@ Respond as ${agentName(agentId)}:`;
           onCancel={() => setShowScreenPicker(false)}
         />
       )}
-    </div>
+    </Flex>
   );
 }

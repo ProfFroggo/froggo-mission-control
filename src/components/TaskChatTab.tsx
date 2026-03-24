@@ -3,7 +3,7 @@ import { Send, Bot, User, MessageSquare } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 import SessionStatsBar from './SessionStatsBar';
 // eslint-disable-next-line import/order
-import { IconButton, Spinner, TextArea } from '@radix-ui/themes';
+import { IconButton, Spinner, TextArea, Flex } from '@radix-ui/themes';
 
 interface Message {
   role: 'user' | 'agent' | 'system';
@@ -115,7 +115,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <Flex direction="column" className="flex-1 min-h-0 overflow-hidden">
       {/* Context banner */}
       <div className="px-4 py-2 border-b border-mission-control-border flex flex-col gap-1.5 flex-shrink-0 bg-mission-control-bg">
         <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
@@ -211,6 +211,6 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
           </IconButton>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }
