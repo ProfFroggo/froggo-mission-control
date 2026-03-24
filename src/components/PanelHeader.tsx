@@ -1,8 +1,18 @@
 /**
  * PanelHeader.tsx
  *
- * Standardized panel header component for consistent layout across all panels.
- * Provides consistent spacing, typography, and action button placement.
+ * Canonical panel header — matches the Library panel reference implementation.
+ *
+ * Default layout: icon in accent-tinted box + bold title + dimmed subtitle.
+ * Actions render on the right side of the header row.
+ *
+ * Usage with tabs below the header:
+ *   Wrap <PanelHeader> + <TabNav> in a single
+ *   `<div className="border-b border-mission-control-border bg-mission-control-surface">`
+ *   and pass `border={false}` to PanelHeader.
+ *
+ * Usage without tabs:
+ *   Use <PanelHeader> standalone — it renders its own border-b by default.
  */
 
 import { ReactNode } from 'react';
@@ -16,27 +26,21 @@ interface PanelHeaderAction {
   variant?: 'primary' | 'secondary' | 'ghost';
   disabled?: boolean;
   loading?: boolean;
-  kbd?: string; // Keyboard shortcut hint
+  kbd?: string;
 }
 
 interface PanelHeaderProps {
-  // Title
   icon?: LucideIcon | ReactNode;
   title: string;
   subtitle?: string | ReactNode;
-
-  // Stats/Badges
   badge?: string | number;
   stats?: { label: string; value: string | number; color?: string }[];
-
-  // Actions
   actions?: PanelHeaderAction[];
-  children?: ReactNode; // For custom content (filters, search, etc.)
-
-  // Styling
-  variant?: 'default' | 'compact' | 'large';
+  children?: ReactNode;
+  /** Pass false when tabs follow below — caller provides the border-b wrapper. */
   border?: boolean;
-  gradient?: boolean;
+  /** compact variant keeps the old tight style (px-4 py-3, small text) for modals/sidebars. */
+  variant?: 'default' | 'compact';
 }
 
 export default function PanelHeader({
@@ -47,46 +51,74 @@ export default function PanelHeader({
   stats,
   actions,
   children,
-  variant = 'default',
   border = true,
-  gradient = false,
+  variant = 'default',
 }: PanelHeaderProps) {
+  if (variant === 'compact') {
+    return (
+      <div
+        className={`flex items-center justify-between px-4 py-3 bg-mission-control-surface${border ? ' border-b border-mission-control-border' : ''}`}
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {Icon && (
+            <div className="flex-shrink-0">
+              {typeof Icon === 'function' ? (
+                <Icon size={16} className="text-mission-control-accent" />
+              ) : (
+                Icon
+              )}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-mission-control-text truncate">{title}</h2>
+              {badge !== undefined && (
+                <Badge color="violet" variant="soft" size="1">{badge}</Badge>
+              )}
+            </div>
+            {subtitle && (
+              <div className="text-xs text-mission-control-text-dim mt-0.5">{subtitle}</div>
+            )}
+          </div>
+        </div>
+        {((actions && actions.length > 0) || children) && (
+          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+            {renderActions(actions)}
+            {children}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Default: Library-style header
   return (
     <div
-      className={`
-        flex items-center justify-between px-4 py-3
-        ${border ? 'border-b border-mission-control-border' : ''}
-        ${gradient ? 'bg-gradient-to-r from-mission-control-surface to-mission-control-bg' : 'bg-mission-control-surface'}
-      `}
+      className={`flex items-start justify-between p-6 pb-4 bg-mission-control-surface${border ? ' border-b border-mission-control-border' : ''}`}
     >
-      {/* Left: Icon + Title + Subtitle + Badge */}
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+      {/* Left: icon-in-box + title + subtitle */}
+      <div className="flex items-center gap-3">
         {Icon && (
-          <div className="flex-shrink-0">
+          <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
             {typeof Icon === 'function' ? (
-              <Icon size={variant === 'compact' ? 16 : variant === 'large' ? 24 : 20} className="text-mission-control-accent" />
+              <Icon size={24} className="text-mission-control-accent" />
             ) : (
               Icon
             )}
           </div>
         )}
-
-        <div className="min-w-0 flex-1">
+        <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-mission-control-text truncate">{title}</h2>
+            <h2 className="text-xl font-semibold text-mission-control-text">{title}</h2>
             {badge !== undefined && (
-              <Badge color="violet" variant="soft" size="1">
-                {badge}
-              </Badge>
+              <Badge color="violet" variant="soft" size="2">{badge}</Badge>
             )}
           </div>
           {subtitle && (
-            <div className="text-xs text-mission-control-text-dim mt-0.5">
-              {subtitle}
-            </div>
+            <p className="text-sm text-mission-control-text-dim mt-0.5">{subtitle}</p>
           )}
           {stats && stats.length > 0 && (
-            <div className="flex items-center gap-3 text-xs text-mission-control-text-dim mt-0.5 tabular-nums font-mono">
+            <div className="flex items-center gap-3 text-xs text-mission-control-text-dim mt-1 tabular-nums font-mono">
               {stats.map((stat) => (
                 <div key={stat.label} className="flex items-center gap-1">
                   <span className={stat.color || 'text-mission-control-text'}>{stat.value}</span>
@@ -98,59 +130,63 @@ export default function PanelHeader({
         </div>
       </div>
 
-      {/* Right: Actions */}
+      {/* Right: actions */}
       {((actions && actions.length > 0) || children) && (
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {actions && actions.map((action, index) => {
-            const ActionIcon = typeof action.icon === 'function' ? action.icon as LucideIcon : null;
-            const radixVariant = action.variant === 'primary' ? 'solid' : action.variant === 'ghost' ? 'ghost' : 'surface';
-            const radixColor = action.variant === 'primary' ? 'violet' : 'gray';
-
-            // Icon-only button
-            if (!action.label && ActionIcon) {
-              return (
-                <IconButton
-                  key={index}
-                  variant="ghost"
-                  color="gray"
-                  size="1"
-                  onClick={action.onClick}
-                  disabled={action.disabled || action.loading}
-                  aria-label={action.kbd || `action-${index}`}
-                >
-                  {action.loading ? <Spinner size="1" /> : <ActionIcon size={14} />}
-                </IconButton>
-              );
-            }
-
-            return (
-              <Button
-                key={action.label || `action-${index}`}
-                onClick={action.onClick}
-                disabled={action.disabled || action.loading}
-                variant={radixVariant as 'solid' | 'ghost' | 'surface'}
-                color={radixColor as 'violet' | 'gray'}
-                size="1"
-              >
-                {action.loading ? (
-                  <Spinner size="1" />
-                ) : ActionIcon ? (
-                  <ActionIcon size={14} />
-                ) : (
-                  action.icon as ReactNode
-                )}
-                {action.label && <span>{action.label}</span>}
-                {action.kbd && (
-                  <kbd className="px-1 py-0.5 bg-mission-control-text/20 rounded text-xs font-mono">
-                    {action.kbd}
-                  </kbd>
-                )}
-              </Button>
-            );
-          })}
+        <div className="flex items-center gap-1 flex-shrink-0 ml-4">
+          {renderActions(actions)}
           {children}
         </div>
       )}
     </div>
   );
+}
+
+function renderActions(actions?: PanelHeaderAction[]) {
+  if (!actions) return null;
+  return actions.map((action, index) => {
+    const ActionIcon = typeof action.icon === 'function' ? action.icon as LucideIcon : null;
+    const radixVariant = action.variant === 'primary' ? 'solid' : action.variant === 'ghost' ? 'ghost' : 'surface';
+    const radixColor = action.variant === 'primary' ? 'violet' : 'gray';
+
+    if (!action.label && ActionIcon) {
+      return (
+        <IconButton
+          key={index}
+          variant="ghost"
+          color="gray"
+          size="1"
+          onClick={action.onClick}
+          disabled={action.disabled || action.loading}
+          aria-label={action.kbd || `action-${index}`}
+        >
+          {action.loading ? <Spinner size="1" /> : <ActionIcon size={14} />}
+        </IconButton>
+      );
+    }
+
+    return (
+      <Button
+        key={action.label || `action-${index}`}
+        onClick={action.onClick}
+        disabled={action.disabled || action.loading}
+        variant={radixVariant as 'solid' | 'ghost' | 'surface'}
+        color={radixColor as 'violet' | 'gray'}
+        size="1"
+      >
+        {action.loading ? (
+          <Spinner size="1" />
+        ) : ActionIcon ? (
+          <ActionIcon size={14} />
+        ) : (
+          action.icon as ReactNode
+        )}
+        {action.label && <span>{action.label}</span>}
+        {action.kbd && (
+          <kbd className="px-1 py-0.5 bg-mission-control-text/20 rounded text-xs font-mono">
+            {action.kbd}
+          </kbd>
+        )}
+      </Button>
+    );
+  });
 }

@@ -4,6 +4,11 @@ import { cn } from '@/lib/cn';
 
 export const Tabs = TabsPrimitive.Root;
 
+/**
+ * TabsList — transparent flex row with bottom border.
+ * Active TabsTrigger uses -mb-px to overlap this border with its own border-b-2.
+ * Canonical pattern: border-b-2 underline on active, transparent on inactive.
+ */
 export const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
@@ -11,8 +16,7 @@ export const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      'inline-flex items-center rounded-xl p-1',
-      'bg-glass border border-glass-border backdrop-blur-sm',
+      'flex items-center gap-1 border-b border-mission-control-border bg-mission-control-surface',
       className
     )}
     {...props}
@@ -20,6 +24,11 @@ export const TabsList = React.forwardRef<
 ));
 TabsList.displayName = TabsPrimitive.List.displayName;
 
+/**
+ * TabsTrigger — border-b-2 underline style.
+ * Active: accent-colored text + accent border underline.
+ * Inactive: dimmed text, transparent border, hover lightens.
+ */
 export const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
@@ -27,12 +36,12 @@ export const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium',
-      'text-mission-control-text-dim transition-all duration-150',
-      'hover:text-mission-control-text',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50',
+      'flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap',
+      'border-b-2 -mb-px transition-colors',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50 focus-visible:ring-inset',
       'disabled:pointer-events-none disabled:opacity-40',
-      'data-[state=active]:bg-mission-control-surface data-[state=active]:text-mission-control-text data-[state=active]:shadow-glass-sm data-[state=active]:border data-[state=active]:border-glass-border-hover',
+      'data-[state=inactive]:border-transparent data-[state=inactive]:text-mission-control-text-dim data-[state=inactive]:hover:text-mission-control-text',
+      'data-[state=active]:border-mission-control-accent data-[state=active]:text-mission-control-accent',
       className
     )}
     {...props}
