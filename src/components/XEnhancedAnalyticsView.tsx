@@ -393,8 +393,8 @@ export function XEnhancedAnalyticsView() {
   return (
     <div className="flex flex-col h-full bg-mission-control-bg overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border shrink-0">
-        <div className="flex items-center justify-between mb-4">
+      <div className="border-b border-mission-control-border shrink-0">
+        <div className="flex items-center justify-between p-4 pb-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-mission-control-accent/10 rounded-lg">
               <BarChart2 size={24} className="text-mission-control-accent" />
@@ -448,26 +448,31 @@ export function XEnhancedAnalyticsView() {
         </div>
 
         {/* View Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto">
+        <div className="flex items-center overflow-x-auto px-4">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart2 },
             { id: 'posts', label: 'Post Metrics', icon: MessageCircle },
             { id: 'heatmap', label: 'Posting Heatmap', icon: Calendar },
             { id: 'insights', label: 'Suggestions', icon: Lightbulb },
             { id: 'predictor', label: 'Before You Post', icon: Sparkles },
-          ].map(({ id, label, icon: Icon }) => (
-            <Button
-              key={id}
-              onClick={() => setView(id as AnalyticsView)}
-              variant={view === id ? 'solid' : 'outline'}
-              color={view === id ? 'blue' : 'gray'}
-              size="2"
-              className="whitespace-nowrap"
-            >
-              <Icon size={16} />
-              {label}
-            </Button>
-          ))}
+          ].map(({ id, label, icon: Icon }) => {
+            const isActive = view === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setView(id as AnalyticsView)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none ${
+                  isActive
+                    ? 'border-mission-control-accent text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
+              >
+                <Icon size={16} aria-hidden="true" />
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

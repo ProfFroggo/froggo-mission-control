@@ -786,19 +786,25 @@ interface ViewModeToggleProps {
 
 function ViewModeToggle({ viewMode, onChange }: ViewModeToggleProps) {
   return (
-    <div className="flex items-center gap-1 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
-      {VIEW_MODES.map(mode => (
-        <Button
-          key={mode.id}
-          onClick={() => onChange(mode.id)}
-          variant={viewMode === mode.id ? 'soft' : 'ghost'}
-          color={viewMode === mode.id ? 'blue' : 'gray'}
-          size="1"
-        >
-          {mode.icon}
-          {mode.label}
-        </Button>
-      ))}
+    <div className="flex items-center gap-1 px-4 border-b border-mission-control-border bg-mission-control-surface">
+      {VIEW_MODES.map(mode => {
+        const isActive = viewMode === mode.id;
+        return (
+          <button
+            key={mode.id}
+            type="button"
+            onClick={() => onChange(mode.id)}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none ${
+              isActive
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+          >
+            {mode.icon}
+            {mode.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -866,24 +872,32 @@ function PipelineListView({ items, onAction }: ListViewProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Filter pills + search + bulk actions */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-mission-control-border flex-wrap">
-        <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0">
+      {/* Filter tabs + bulk actions */}
+      <div className="flex items-center gap-2 border-b border-mission-control-border flex-wrap">
+        <div className="flex items-center overflow-x-auto flex-1 min-w-0 px-4">
           {LIST_FILTERS.map(f => {
             const count = f.id === 'all' ? items.length : items.filter(i => matchesListFilter(i, f.id)).length;
+            const isActive = filter === f.id;
             return (
-              <Button
+              <button
                 key={f.id}
+                type="button"
                 onClick={() => setFilter(f.id)}
-                variant={filter === f.id ? 'solid' : 'outline'}
-                color={filter === f.id ? 'blue' : 'gray'}
-                size="1"
-                radius="full"
-                className="whitespace-nowrap"
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none ${
+                  isActive
+                    ? 'border-mission-control-accent text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 {f.label}
-                {count > 0 && <span>{count}</span>}
-              </Button>
+                {count > 0 && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-mono tabular-nums ${
+                    isActive
+                      ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                      : 'bg-mission-control-border text-mission-control-text-dim'
+                  }`}>{count}</span>
+                )}
+              </button>
             );
           })}
         </div>
@@ -895,7 +909,7 @@ function PipelineListView({ items, onAction }: ListViewProps) {
             variant="solid"
             color="grass"
             size="1"
-            className="whitespace-nowrap"
+            className="whitespace-nowrap mr-4"
           >
             {approvingAll ? <Spinner size="1" /> : <CheckCheck size={12} />}
             Approve all ({pendingItems.length})

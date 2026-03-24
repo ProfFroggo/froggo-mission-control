@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Bot, Zap, KeyRound } from 'lucide-react';
-import { Button, Badge, Spinner } from '@radix-ui/themes';
+import { Badge, Spinner } from '@radix-ui/themes';
+import TabNav, { type TabNavItem } from './TabNav';
 import XAgentContentQueue from './XAgentContentQueue';
 import XAutomationsTab from './XAutomationsTab';
 
 type ConfigSubTab = 'agent-mode' | 'automations' | 'credentials';
 
-const SUB_TABS: Array<{ id: ConfigSubTab; label: string; icon: React.ReactNode }> = [
-  { id: 'agent-mode', label: 'Agent Mode', icon: <Bot size={14} /> },
-  { id: 'automations', label: 'Automations', icon: <Zap size={14} /> },
-  { id: 'credentials', label: 'Credentials', icon: <KeyRound size={14} /> },
+const SUB_TABS: TabNavItem[] = [
+  { id: 'agent-mode', label: 'Agent Mode', icon: Bot },
+  { id: 'automations', label: 'Automations', icon: Zap },
+  { id: 'credentials', label: 'Credentials', icon: KeyRound },
 ];
 
 function CredentialsPanel() {
@@ -86,19 +87,13 @@ export default function XConfigureView() {
   return (
     <div className="flex flex-col h-full bg-mission-control-bg">
       {/* Sub-tab bar */}
-      <div className="flex items-center gap-1 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
-        {SUB_TABS.map((tab) => (
-          <Button
-            key={tab.id}
-            onClick={() => setActiveSubTab(tab.id)}
-            variant={activeSubTab === tab.id ? 'soft' : 'ghost'}
-            color={activeSubTab === tab.id ? 'blue' : 'gray'}
-            size="2"
-          >
-            {tab.icon}
-            {tab.label}
-          </Button>
-        ))}
+      <div className="border-b border-mission-control-border bg-mission-control-surface">
+        <TabNav
+          tabs={SUB_TABS}
+          activeTab={activeSubTab}
+          onTabChange={(id) => setActiveSubTab(id as ConfigSubTab)}
+          paddingX="px-4"
+        />
       </div>
 
       {/* Sub-tab content */}

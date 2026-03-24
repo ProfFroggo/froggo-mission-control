@@ -1175,48 +1175,65 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           </div>
         </div>
 
-        {/* Filter pills — two rows: status + type */}
-        <div className="space-y-2 mb-3">
+        {/* Filter tabs — status + type */}
+        <div className="border-b border-mission-control-border mb-3 -mx-4">
           {/* Status filters */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex items-center overflow-x-auto px-4">
             {(['all', 'hot', 'pending', 'replied', 'ignored', 'spam'] as FilterTab[]).map(tab => {
               const label = tab === 'hot' ? 'Hot' : tab === 'spam' ? 'Spam' : tab.charAt(0).toUpperCase() + tab.slice(1);
               const icon = tab === 'hot' ? <TrendingUp size={12} />
                 : tab === 'spam' ? <Ban size={12} />
                 : null;
+              const isActive = activeFilter === tab;
               return (
-                <Button
+                <button
                   key={tab}
+                  type="button"
                   onClick={() => setActiveFilter(tab)}
-                  variant={activeFilter === tab ? 'solid' : 'outline'}
-                  color={activeFilter === tab ? 'blue' : 'gray'}
-                  size="1"
-                  radius="full"
+                  className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none ${
+                    isActive
+                      ? 'border-mission-control-accent text-mission-control-accent'
+                      : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}
                 >
-                  {icon}{label} ({counts[tab]})
-                </Button>
+                  {icon}
+                  {label}
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-mono tabular-nums ${
+                    isActive
+                      ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                      : 'bg-mission-control-border text-mission-control-text-dim'
+                  }`}>{counts[tab]}</span>
+                </button>
               );
             })}
-          </div>
-          {/* Type filters */}
-          <div className="flex gap-2 flex-wrap">
-            <span className="text-xs text-mission-control-text-dim self-center mr-1">Type:</span>
+            <div className="w-px h-5 bg-mission-control-border mx-2 self-center" />
             {([
               { id: 'replies' as FilterTab, label: 'Replies', icon: <MessageCircle size={12} /> },
               { id: 'quotes' as FilterTab, label: 'Quotes', icon: <Repeat2 size={12} /> },
-              { id: 'direct' as FilterTab, label: 'Direct Mentions', icon: <Heart size={12} /> },
-            ]).map(tab => (
-              <Button
-                key={tab.id}
-                onClick={() => setActiveFilter(tab.id)}
-                variant={activeFilter === tab.id ? 'solid' : 'outline'}
-                color={activeFilter === tab.id ? 'blue' : 'gray'}
-                size="1"
-                radius="full"
-              >
-                {tab.icon}{tab.label} ({counts[tab.id]})
-              </Button>
-            ))}
+              { id: 'direct' as FilterTab, label: 'Direct', icon: <Heart size={12} /> },
+            ]).map(tab => {
+              const isActive = activeFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveFilter(tab.id)}
+                  className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none ${
+                    isActive
+                      ? 'border-mission-control-accent text-mission-control-accent'
+                      : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-mono tabular-nums ${
+                    isActive
+                      ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                      : 'bg-mission-control-border text-mission-control-text-dim'
+                  }`}>{counts[tab.id]}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
