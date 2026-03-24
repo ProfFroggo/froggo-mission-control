@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { Button, IconButton, Select, TextField } from '@radix-ui/themes';
 import {
   Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield,
   Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Search,
@@ -78,7 +79,7 @@ interface WindowSettings {
   startMinimized: boolean;
 }
 
-interface Settings {
+interface AppSettings {
   gatewayUrl: string;
   gatewayToken: string;
   voiceEnabled: boolean;
@@ -123,7 +124,7 @@ const defaultKeyboardShortcuts: KeyboardShortcut[] = [
   { id: 'starred', name: 'Starred Messages', description: 'View starred messages', defaultKey: 's', currentKey: 's', modifiers: ['cmd', 'shift'] },
 ];
 
-const defaultSettings: Settings = {
+const defaultSettings: AppSettings = {
   gatewayUrl: '',
   gatewayToken: '',
   voiceEnabled: true,
@@ -193,15 +194,15 @@ const defaultSettings: Settings = {
 // Apply theme and accent color to document
 function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fontFamily: string, fontSize: number) {
   const root = document.documentElement;
-  
+
   let actualTheme = theme;
   if (theme === 'system') {
     actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
-  
+
   root.classList.remove('dark', 'light');
   root.classList.add(actualTheme);
-  
+
   if (actualTheme === 'dark') {
     root.style.setProperty('--mission-control-bg', '#0a0a0a');
     root.style.setProperty('--mission-control-surface', '#141414');
@@ -215,9 +216,9 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
     root.style.setProperty('--mission-control-text', '#18181b');
     root.style.setProperty('--mission-control-text-dim', '#71717a');
   }
-  
+
   root.style.setProperty('--mission-control-accent', accentColor);
-  
+
   const hex = accentColor.replace('#', '');
   const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - 30);
   const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - 30);
@@ -251,6 +252,7 @@ function CollapsibleSection({ title, icon, children, defaultOpen = true, descrip
   return (
     <section className="mb-6">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between mb-3 group"
       >
@@ -275,16 +277,18 @@ function CollapsibleSection({ title, icon, children, defaultOpen = true, descrip
 // Tooltip component
 function Tooltip({ text }: { text: string }) {
   const [show, setShow] = useState(false);
-  
+
   return (
     <div className="relative inline-block">
-      <button
+      <IconButton
+        variant="ghost"
+        color="gray"
+        size="1"
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
-        className="text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
       >
         <Info size={14} />
-      </button>
+      </IconButton>
       {show && (
         <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg shadow-lg text-xs whitespace-nowrap">
           {text}
@@ -374,9 +378,17 @@ function PlatformUpdateTab() {
             <div className="font-semibold text-mission-control-text">Mission Control</div>
             <div className="text-xs text-mission-control-text-dim">froggo-mission-control</div>
           </div>
-          <button onClick={() => checkVersion(true)} disabled={checking} className="ml-auto p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim" title="Check for updates">
+          <IconButton
+            onClick={() => checkVersion(true)}
+            disabled={checking}
+            variant="ghost"
+            color="gray"
+            size="2"
+            title="Check for updates"
+            className="ml-auto"
+          >
             <RefreshCw size={15} className={checking ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
         </div>
 
         {versionInfo ? (
@@ -419,13 +431,16 @@ function PlatformUpdateTab() {
 
       {/* Update button */}
       {versionInfo?.updateAvailable && !updateResult && (
-        <button
+        <Button
           onClick={runUpdate}
           disabled={updating}
-          className="w-full py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-60"
+          variant="solid"
+          color="grass"
+          size="3"
+          className="w-full"
         >
           {updating ? <><RefreshCw size={16} className="animate-spin" /> Installing...</> : <><Download size={16} /> Install v{versionInfo.latest}</>}
-        </button>
+        </Button>
       )}
 
       {/* Live install log */}
@@ -454,12 +469,14 @@ function PlatformUpdateTab() {
               <span className="text-xs text-mission-control-text-dim">
                 Reloading in {reloadCountdown}s...
               </span>
-              <button
+              <Button
                 onClick={() => window.location.reload()}
-                className="text-xs px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium"
+                variant="solid"
+                color="grass"
+                size="1"
               >
                 Reload now
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -671,22 +688,26 @@ function SessionsManagementSection() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
-                    <button
+                    <IconButton
                       onClick={() => handleExport(s.key)}
                       disabled={exportingKey === s.key}
                       title="Export as markdown"
-                      className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text rounded transition-colors disabled:opacity-50"
+                      variant="ghost"
+                      color="gray"
+                      size="1"
                     >
                       <Download size={14} />
-                    </button>
-                    <button
+                    </IconButton>
+                    <IconButton
                       onClick={() => handleDelete(s.key)}
                       disabled={deletingKey === s.key}
                       title="Delete session"
-                      className="p-1.5 text-mission-control-text-dim hover:text-error rounded transition-colors disabled:opacity-50"
+                      variant="ghost"
+                      color="red"
+                      size="1"
                     >
                       <Trash2 size={14} />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
               ))}
@@ -850,13 +871,15 @@ function AgentPlatformSection() {
           {(['lead', 'worker', 'trivial'] as const).map(tier => (
             <div key={tier} className="flex items-center gap-3">
               <label className="text-sm font-medium text-mission-control-text capitalize w-16 shrink-0">{tier}</label>
-              <select
+              <Select.Root
                 value={modelDefaults[tier]}
-                onChange={e => setModelDefaults(p => ({ ...p, [tier]: e.target.value }))}
-                className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+                onValueChange={val => setModelDefaults(p => ({ ...p, [tier]: val }))}
               >
-                {MODEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+                <Select.Trigger className="flex-1" />
+                <Select.Content>
+                  {MODEL_OPTIONS.map(o => <Select.Item key={o.value} value={o.value}>{o.label}</Select.Item>)}
+                </Select.Content>
+              </Select.Root>
             </div>
           ))}
         </div>
@@ -879,15 +902,17 @@ function AgentPlatformSection() {
             <>
               <div className="flex items-center gap-3 pl-4 border-l-2 border-mission-control-border">
                 <label className="text-sm font-medium text-mission-control-text w-28 shrink-0">Review strictness</label>
-                <select
+                <Select.Root
                   value={claraStrictness}
-                  onChange={e => setClaraStrictness(e.target.value as 'lenient' | 'standard' | 'strict')}
-                  className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+                  onValueChange={val => setClaraStrictness(val as 'lenient' | 'standard' | 'strict')}
                 >
-                  <option value="lenient">Lenient — approve if basic gates pass</option>
-                  <option value="standard">Standard — balanced review (default)</option>
-                  <option value="strict">Strict — require detailed planning notes</option>
-                </select>
+                  <Select.Trigger className="flex-1" />
+                  <Select.Content>
+                    <Select.Item value="lenient">Lenient — approve if basic gates pass</Select.Item>
+                    <Select.Item value="standard">Standard — balanced review (default)</Select.Item>
+                    <Select.Item value="strict">Strict — require detailed planning notes</Select.Item>
+                  </Select.Content>
+                </Select.Root>
               </div>
               <div className="flex items-center justify-between pl-4 border-l-2 border-mission-control-border">
                 <div>
@@ -913,14 +938,16 @@ function AgentPlatformSection() {
             </div>
           </div>
         </div>
-        <button
+        <Button
           onClick={savePlatform}
           disabled={platformSaving}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-60"
+          variant="solid"
+          color="grass"
+          size="2"
         >
           {platformSaving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
           Save platform settings
-        </button>
+        </Button>
       </div>
     </CollapsibleSection>
   );
@@ -1021,7 +1048,7 @@ function TokenBudgetSection() {
           </label>
           <div className="flex items-center gap-2 flex-1">
             <span className="text-mission-control-text-dim text-sm">$</span>
-            <input
+            <TextField.Root
               id="token-budget-input"
               type="number"
               min="0"
@@ -1029,16 +1056,19 @@ function TokenBudgetSection() {
               value={budgetUsd}
               onChange={e => setBudgetUsd(e.target.value)}
               placeholder="e.g. 50"
-              className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-mission-control-border bg-mission-control-bg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+              size="2"
+              className="flex-1"
             />
-            <button
+            <Button
               type="button"
               onClick={saveBudget}
               disabled={saving}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent/80 disabled:opacity-50 transition-colors"
+              variant="solid"
+              color="grass"
+              size="2"
             >
               {saving ? 'Saving...' : 'Save'}
-            </button>
+            </Button>
           </div>
         </div>
         <p className="text-xs text-mission-control-text-dim">
@@ -1123,9 +1153,9 @@ function ApiKeysSection() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <span className="text-xs text-mission-control-text-dim">{Object.keys(values).filter(k => values[k]).length} configured</span>
-          <button onClick={() => setShowKeys(!showKeys)} className="text-xs text-mission-control-text-dim hover:text-mission-control-text flex items-center gap-1">
+          <Button onClick={() => setShowKeys(!showKeys)} variant="ghost" color="gray" size="1">
             {showKeys ? <EyeOff size={12} /> : <Eye size={12} />} {showKeys ? 'Hide all' : 'Show all'}
-          </button>
+          </Button>
         </div>
         {groups.map(group => {
           const providers = API_KEY_PROVIDERS.filter(p => p.group === group);
@@ -1141,30 +1171,35 @@ function ApiKeysSection() {
                         <span className="text-sm text-mission-control-text">{p.label}</span>
                       </div>
                       <div className="flex-1 relative">
-                        <input
+                        <TextField.Root
                           type={showKeys ? 'text' : 'password'}
                           value={values[p.id] || ''}
                           onChange={e => setValues(prev => ({ ...prev, [p.id]: e.target.value }))}
                           placeholder={p.placeholder}
-                          className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent font-mono"
+                          size="2"
+                          className="w-full font-mono"
                         />
                         {hasValue && <CheckCircle size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-success" />}
                       </div>
-                      <button
+                      <Button
                         onClick={() => doSave(p.id)}
                         disabled={saving[p.id] || !values[p.id]?.trim()}
-                        className="px-2.5 py-1.5 rounded-lg bg-mission-control-accent text-white text-xs font-medium hover:bg-mission-control-accent-dim disabled:opacity-40 transition-colors"
+                        variant="solid"
+                        color="grass"
+                        size="1"
                       >
                         {saving[p.id] ? <RefreshCw size={12} className="animate-spin" /> : 'Save'}
-                      </button>
+                      </Button>
                       {hasValue && (
-                        <button
+                        <IconButton
                           onClick={() => doDelete(p.id)}
-                          className="px-2 py-1.5 rounded-lg text-xs text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+                          variant="ghost"
+                          color="red"
+                          size="1"
                           title="Remove key"
                         >
                           <Trash2 size={12} />
-                        </button>
+                        </IconButton>
                       )}
                     </div>
                   );
@@ -1249,46 +1284,48 @@ function DangerZoneSection() {
             <div className="text-sm font-medium">Clear completed tasks</div>
             <div className="text-xs text-mission-control-text-dim">Permanently delete all tasks with status &quot;done&quot;</div>
           </div>
-          <button
+          <Button
             onClick={clearCompleted}
             disabled={clearing}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-60 ${
-              clearConfirm
-                ? 'bg-error text-white'
-                : 'border border-error-border text-error hover:bg-error-subtle'
-            }`}
+            variant={clearConfirm ? 'solid' : 'soft'}
+            color="red"
+            size="1"
           >
             {clearing ? <RefreshCw size={12} className="animate-spin" /> : <Trash2 size={12} />}
             {clearConfirm ? 'Confirm — clear all done tasks' : 'Clear completed'}
-          </button>
+          </Button>
         </div>
         <div className="flex items-center justify-between p-3 rounded-lg border border-mission-control-border bg-mission-control-bg">
           <div>
             <div className="text-sm font-medium">Reset agent circuits</div>
             <div className="text-xs text-mission-control-text-dim">Clears circuit breaker locks — allows locked agents to accept tasks again</div>
           </div>
-          <button
+          <Button
             onClick={resetCircuits}
             disabled={resetting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-warning-border text-warning text-xs font-semibold hover:bg-warning-subtle transition-colors disabled:opacity-60"
+            variant="soft"
+            color="orange"
+            size="1"
           >
             {resetting ? <RefreshCw size={12} className="animate-spin" /> : <CircleOff size={12} />}
             Reset circuits
-          </button>
+          </Button>
         </div>
         <div className="flex items-center justify-between p-3 rounded-lg border border-mission-control-border bg-mission-control-bg">
           <div>
             <div className="text-sm font-medium">Export all data</div>
             <div className="text-xs text-mission-control-text-dim">Download tasks and approvals as a JSON archive</div>
           </div>
-          <button
+          <Button
             onClick={exportData}
             disabled={exporting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-mission-control-border text-mission-control-text-dim text-xs font-semibold hover:bg-mission-control-surface hover:text-mission-control-text transition-colors disabled:opacity-60"
+            variant="soft"
+            color="gray"
+            size="1"
           >
             {exporting ? <RefreshCw size={12} className="animate-spin" /> : <FileJson size={12} />}
             Export JSON
-          </button>
+          </Button>
         </div>
       </div>
     </CollapsibleSection>
@@ -1351,24 +1388,27 @@ function AutomationExecutionSection() {
           <label className="block text-sm font-medium text-mission-control-text mb-2">
             Max concurrent automations: <span className="font-semibold text-mission-control-text">{maxConcurrentAutomations}</span>
           </label>
-          <input
+          <TextField.Root
             type="number"
-            min={1}
-            max={10}
+            min="1"
+            max="10"
             value={maxConcurrentAutomations}
             onChange={e => setMaxConcurrentAutomations(Math.min(10, Math.max(1, parseInt(e.target.value) || 1)))}
-            className="w-32 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+            size="2"
+            className="w-32"
           />
           <div className="text-xs text-mission-control-text-dim mt-1">Allowed range: 1–10</div>
         </div>
-        <button
+        <Button
           onClick={save}
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-60"
+          variant="solid"
+          color="grass"
+          size="2"
         >
           {saving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
           Save automation settings
-        </button>
+        </Button>
       </div>
     </CollapsibleSection>
   );
@@ -1380,7 +1420,7 @@ export default function EnhancedSettingsPanel() {
   const { connected } = useStore();
   const [activeTab, setActiveTab] = useState<Tab>('general');
   const [searchQuery, setSearchQuery] = useState('');
-  const [settings, setSettings] = useState<Settings>(() => {
+  const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = safeStorage.getItem('mission-control-settings');
     if (saved) {
       try {
@@ -1575,55 +1615,46 @@ export default function EnhancedSettingsPanel() {
               <p className="text-secondary">Configure Mission Control dashboard preferences</p>
             </div>
             <div className="flex gap-2">
-              <button
+              <Button
                 onClick={handleSave}
-                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                  saved 
-                    ? 'bg-success-subtle text-success' 
-                    : 'bg-mission-control-accent text-white hover:bg-mission-control-accent-dim'
-                }`}
+                variant="solid"
+                color={saved ? 'green' : 'grass'}
+                size="2"
               >
                 {saved ? <Check size={16} /> : <Save size={16} />}
                 {saved ? 'Saved!' : 'Save'}
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Search Bar */}
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
-              placeholder="Search settings..."
-              aria-label="Search settings input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
-            />
-          </div>
+          <TextField.Root
+            type="text"
+            placeholder="Search settings..."
+            aria-label="Search settings input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            size="2"
+            className="w-full"
+          >
+            <TextField.Slot>
+              <Search size={16} className="text-mission-control-text-dim" />
+            </TextField.Slot>
+          </TextField.Root>
 
           {/* Setting Presets */}
           {!searchQuery && (
             <div className="mt-4 flex gap-2">
               <span className="text-sm text-mission-control-text-dim self-center">Quick presets:</span>
-              <button
-                onClick={() => applyPreset('minimal')}
-                className="px-3 py-1 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
-              >
+              <Button onClick={() => applyPreset('minimal')} variant="soft" color="gray" size="1">
                 Minimal
-              </button>
-              <button
-                onClick={() => applyPreset('default')}
-                className="px-3 py-1 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
-              >
+              </Button>
+              <Button onClick={() => applyPreset('default')} variant="soft" color="gray" size="1">
                 Default
-              </button>
-              <button
-                onClick={() => applyPreset('poweruser')}
-                className="px-3 py-1 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
-              >
+              </Button>
+              <Button onClick={() => applyPreset('poweruser')} variant="soft" color="gray" size="1">
                 Power User
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -1646,18 +1677,17 @@ export default function EnhancedSettingsPanel() {
               { id: 'platform', label: 'Platform', icon: <Package size={14} /> },
               { id: 'sessions', label: 'Sessions', icon: <Terminal size={14} /> },
             ].map((tab) => (
-              <button
+              <Button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as Tab)}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 -mb-px ${
-                  activeTab === tab.id
-                    ? 'border-mission-control-accent text-mission-control-accent'
-                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
+                variant={activeTab === tab.id ? 'soft' : 'ghost'}
+                color={activeTab === tab.id ? 'grass' : 'gray'}
+                size="2"
+                className="whitespace-nowrap"
               >
                 {tab.icon}
                 {tab.label}
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -1667,7 +1697,7 @@ export default function EnhancedSettingsPanel() {
         {activeTab === 'security' && !searchQuery && <SecuritySettings />}
         {activeTab === 'config' && !searchQuery && <ConfigTab />}
         {activeTab === 'logs' && !searchQuery && <LogsTab />}
-        
+
         {/* GENERAL TAB */}
         {(activeTab === 'general' || searchQuery) && (
           <div className="space-y-6">
@@ -1695,8 +1725,8 @@ export default function EnhancedSettingsPanel() {
             )}
 
             {settingsMatch('startup default panel') && (
-              <CollapsibleSection 
-                title="Startup" 
+              <CollapsibleSection
+                title="Startup"
                 icon={<Play size={16} />}
                 description="Configure app behavior on launch"
               >
@@ -1706,31 +1736,31 @@ export default function EnhancedSettingsPanel() {
                       <label htmlFor="default-panel" className="block text-sm font-medium text-mission-control-text">Default Panel on Startup</label>
                       <Tooltip text="This panel will open when you launch the app" />
                     </div>
-                    <select
-                      id="default-panel"
-                      aria-label="Default panel on startup select"
+                    <Select.Root
                       value={settings.defaultPanel}
-                      onChange={(e) => setSettings(s => ({ ...s, defaultPanel: e.target.value }))}
-                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                      onValueChange={(val) => setSettings(s => ({ ...s, defaultPanel: val }))}
                     >
-                      <option value="dashboard">Dashboard</option>
-                      <option value="inbox">Inbox</option>
-                      <option value="comms">Communications</option>
-                      <option value="analytics">Analytics</option>
-                      <option value="kanban">Tasks (Kanban)</option>
-                      <option value="agents">Agents</option>
-                      <option value="twitter">Social Media</option>
-                      <option value="voice">Voice</option>
-                      <option value="chat">Chat</option>
-                    </select>
+                      <Select.Trigger id="default-panel" aria-label="Default panel on startup select" className="w-full" />
+                      <Select.Content>
+                        <Select.Item value="dashboard">Dashboard</Select.Item>
+                        <Select.Item value="inbox">Inbox</Select.Item>
+                        <Select.Item value="comms">Communications</Select.Item>
+                        <Select.Item value="analytics">Analytics</Select.Item>
+                        <Select.Item value="kanban">Tasks (Kanban)</Select.Item>
+                        <Select.Item value="agents">Agents</Select.Item>
+                        <Select.Item value="twitter">Social Media</Select.Item>
+                        <Select.Item value="voice">Voice</Select.Item>
+                        <Select.Item value="chat">Chat</Select.Item>
+                      </Select.Content>
+                    </Select.Root>
                   </div>
                 </div>
               </CollapsibleSection>
             )}
 
             {settingsMatch('voice speech speed audio') && (
-              <CollapsibleSection 
-                title="Voice" 
+              <CollapsibleSection
+                title="Voice"
                 icon={<Volume2 size={16} />}
                 description="Text-to-speech and audio settings"
               >
@@ -1740,7 +1770,7 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Voice Responses</div>
                       <div className="text-sm text-mission-control-text-dim">Read responses aloud</div>
                     </div>
-                    <Toggle 
+                    <Toggle
                       checked={settings.voiceEnabled}
                       onChange={(checked) => setSettings(s => ({ ...s, voiceEnabled: checked }))}
                     />
@@ -1775,8 +1805,8 @@ export default function EnhancedSettingsPanel() {
             )}
 
             {settingsMatch('refresh auto update interval data') && (
-              <CollapsibleSection 
-                title="Data Refresh" 
+              <CollapsibleSection
+                title="Data Refresh"
                 icon={<RefreshCw size={16} />}
                 description="Automatic data refresh settings"
               >
@@ -1818,27 +1848,33 @@ export default function EnhancedSettingsPanel() {
             )}
 
             {settingsMatch('export import backup restore settings') && (
-              <CollapsibleSection 
-                title="Backup & Restore" 
+              <CollapsibleSection
+                title="Backup & Restore"
                 icon={<Download size={16} />}
                 description="Export or import your settings"
               >
                 <div className="space-y-4">
                   <div className="flex gap-3">
-                    <button
+                    <Button
                       onClick={handleExport}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
+                      variant="soft"
+                      color="gray"
+                      size="2"
+                      className="flex-1"
                     >
                       <Download size={16} />
                       Export Settings
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
+                      variant="soft"
+                      color="gray"
+                      size="2"
+                      className="flex-1"
                     >
                       <Upload size={16} />
                       Import Settings
-                    </button>
+                    </Button>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -1875,8 +1911,8 @@ export default function EnhancedSettingsPanel() {
         {(activeTab === 'appearance' || searchQuery) && (
           <div className="space-y-6">
             {settingsMatch('theme dark light color mode') && (
-              <CollapsibleSection 
-                title="Theme" 
+              <CollapsibleSection
+                title="Theme"
                 icon={<Moon size={16} />}
                 description="Customize app appearance and colors"
               >
@@ -1885,7 +1921,7 @@ export default function EnhancedSettingsPanel() {
                     <label htmlFor="color-mode-select" className="block text-sm font-medium text-mission-control-text mb-2">Color Mode</label>
                     <div className="grid grid-cols-3 gap-2">
                       {(['dark', 'light', 'system'] as const).map((t) => (
-                        <button
+                        <Button
                           key={t}
                           onClick={() => {
                             setSettings(s => {
@@ -1897,64 +1933,62 @@ export default function EnhancedSettingsPanel() {
                               return newSettings;
                             });
                           }}
-                          className={`py-3 px-4 rounded-lg border transition-colors ${
-                            settings.theme === t 
-                              ? 'border-mission-control-accent bg-mission-control-accent/20 text-mission-control-accent' 
-                              : 'border-mission-control-border hover:border-mission-control-accent/50'
-                          }`}
+                          variant={settings.theme === t ? 'solid' : 'soft'}
+                          color={settings.theme === t ? 'grass' : 'gray'}
+                          size="2"
                         >
-                          {t === 'dark' && <Moon size={16} className="inline mr-2" />}
-                          {t === 'light' && <Sun size={16} className="inline mr-2" />}
-                          {t === 'system' && <Monitor size={16} className="inline mr-2" />}
+                          {t === 'dark' && <Moon size={16} />}
+                          {t === 'light' && <Sun size={16} />}
+                          {t === 'system' && <Monitor size={16} />}
                           {t.charAt(0).toUpperCase() + t.slice(1)}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
                   <div>
                     <label htmlFor="ui-scale-select" className="block text-sm font-medium text-mission-control-text mb-2">UI Scale</label>
-                    <select
-                      id="ui-scale-select"
-                      aria-label="UI Scale selector"
+                    <Select.Root
                       defaultValue="95%"
-                      onChange={(e) => {
-                        const scaling = e.target.value as '90%' | '95%' | '100%' | '105%' | '110%';
+                      onValueChange={(val) => {
+                        const scaling = val as '90%' | '95%' | '100%' | '105%' | '110%';
                         window.dispatchEvent(new CustomEvent('radixScalingChange', { detail: { scaling } }));
                       }}
-                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                     >
-                      <option value="90%">90%</option>
-                      <option value="95%">95%</option>
-                      <option value="100%">100%</option>
-                      <option value="105%">105%</option>
-                      <option value="110%">110%</option>
-                    </select>
+                      <Select.Trigger id="ui-scale-select" aria-label="UI Scale selector" className="w-full" />
+                      <Select.Content>
+                        <Select.Item value="90%">90%</Select.Item>
+                        <Select.Item value="95%">95%</Select.Item>
+                        <Select.Item value="100%">100%</Select.Item>
+                        <Select.Item value="105%">105%</Select.Item>
+                        <Select.Item value="110%">110%</Select.Item>
+                      </Select.Content>
+                    </Select.Root>
                   </div>
                 </div>
               </CollapsibleSection>
             )}
 
             {settingsMatch('typography font family size text') && (
-              <CollapsibleSection 
-                title="Typography" 
+              <CollapsibleSection
+                title="Typography"
                 icon={<Type size={16} />}
                 description="Font settings and text size"
               >
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="font-family" className="block text-sm font-medium text-mission-control-text mb-2">Font Family</label>
-                    <select
-                      id="font-family"
-                      aria-label="Font family select"
+                    <Select.Root
                       value={settings.fontFamily}
-                      onChange={(e) => setSettings(s => ({ ...s, fontFamily: e.target.value }))}
-                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                      onValueChange={(val) => setSettings(s => ({ ...s, fontFamily: val }))}
                     >
-                      <option value="system">System Default</option>
-                      <option value="inter">Inter</option>
-                      <option value="roboto-mono">Roboto Mono (Monospace)</option>
-                      <option value="sf-pro">SF Pro Display</option>
-                    </select>
+                      <Select.Trigger id="font-family" aria-label="Font family select" className="w-full" />
+                      <Select.Content>
+                        <Select.Item value="system">System Default</Select.Item>
+                        <Select.Item value="inter">Inter</Select.Item>
+                        <Select.Item value="roboto-mono">Roboto Mono (Monospace)</Select.Item>
+                        <Select.Item value="sf-pro">SF Pro Display</Select.Item>
+                      </Select.Content>
+                    </Select.Root>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-mission-control-text mb-2">
@@ -1999,21 +2033,23 @@ export default function EnhancedSettingsPanel() {
         {(activeTab === 'shortcuts' || searchQuery) && (
           <div className="space-y-6">
             {settingsMatch('keyboard shortcuts hotkeys') && (
-              <CollapsibleSection 
-                title="Keyboard Shortcuts" 
+              <CollapsibleSection
+                title="Keyboard Shortcuts"
                 icon={<Keyboard size={16} />}
                 description="Customize keyboard shortcuts for quick navigation"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-sm text-mission-control-text-dim">Click any shortcut to edit</span>
-                    <button
+                    <Button
                       onClick={resetShortcuts}
-                      className="text-sm text-mission-control-text-dim hover:text-mission-control-accent transition-colors flex items-center gap-1"
+                      variant="ghost"
+                      color="gray"
+                      size="1"
                     >
                       <RotateCcw size={14} />
                       Reset to Defaults
-                    </button>
+                    </Button>
                   </div>
                   {settings.keyboardShortcuts.map((shortcut) => (
                     <div key={shortcut.id} className="flex items-center justify-between py-3 border-b border-mission-control-border last:border-0">
@@ -2023,7 +2059,7 @@ export default function EnhancedSettingsPanel() {
                       </div>
                       <div className="flex items-center gap-2">
                         {editingShortcut === shortcut.id ? (
-                          <input
+                          <TextField.Root
                             type="text"
                             aria-label={`Edit keyboard shortcut for ${shortcut.name}`}
                             value={shortcut.currentKey}
@@ -2036,16 +2072,19 @@ export default function EnhancedSettingsPanel() {
                                 setEditingShortcut(null);
                               }
                             }}
-                            className="w-24 px-2 py-1 text-center bg-mission-control-bg border border-mission-control-accent rounded-lg text-sm"
+                            size="2"
+                            className="w-24 text-center"
                           />
                         ) : (
-                          <button
+                          <Button
                             onClick={() => setEditingShortcut(shortcut.id)}
-                            className="px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm font-mono hover:border-mission-control-accent transition-colors"
+                            variant="soft"
+                            color="gray"
+                            size="1"
                           >
                             {shortcut.modifiers.map(m => m === 'cmd' ? 'Cmd+' : m === 'shift' ? 'Shift+' : m === 'alt' ? 'Alt+' : 'Ctrl+').join('')}
                             {shortcut.currentKey.toUpperCase()}
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -2064,8 +2103,8 @@ export default function EnhancedSettingsPanel() {
         {(activeTab === 'performance' || searchQuery) && (
           <div className="space-y-6">
             {settingsMatch('performance cache speed optimization') && (
-              <CollapsibleSection 
-                title="Performance & Optimization" 
+              <CollapsibleSection
+                title="Performance & Optimization"
                 icon={<Cpu size={16} />}
                 description="Adjust performance settings for better speed"
               >
@@ -2152,13 +2191,16 @@ export default function EnhancedSettingsPanel() {
                     />
                   </div>
 
-                  <button
+                  <Button
                     onClick={clearCache}
-                    className="w-full py-2 bg-warning-subtle text-warning rounded-lg hover:bg-warning-subtle transition-colors flex items-center justify-center gap-2"
+                    variant="soft"
+                    color="orange"
+                    size="2"
+                    className="w-full"
                   >
                     <Trash2 size={16} />
                     Clear Cache Now
-                  </button>
+                  </Button>
                 </div>
               </CollapsibleSection>
             )}
@@ -2169,8 +2211,8 @@ export default function EnhancedSettingsPanel() {
         {(activeTab === 'data' || searchQuery) && (
           <div className="space-y-6">
             {settingsMatch('data retention cleanup storage logs') && (
-              <CollapsibleSection 
-                title="Data Management" 
+              <CollapsibleSection
+                title="Data Management"
                 icon={<HardDrive size={16} />}
                 description="Control data retention and storage"
               >
@@ -2237,13 +2279,16 @@ export default function EnhancedSettingsPanel() {
                     />
                   </div>
 
-                  <button
+                  <Button
                     onClick={cleanupOldData}
-                    className="w-full py-2 bg-warning-subtle text-warning rounded-lg hover:bg-warning-subtle transition-colors flex items-center justify-center gap-2"
+                    variant="soft"
+                    color="orange"
+                    size="2"
+                    className="w-full"
                   >
                     <Archive size={16} />
                     Cleanup Old Data Now
-                  </button>
+                  </Button>
                 </div>
               </CollapsibleSection>
             )}
@@ -2254,8 +2299,8 @@ export default function EnhancedSettingsPanel() {
         {(activeTab === 'accessibility' || searchQuery) && (
           <div className="space-y-6">
             {settingsMatch('accessibility motion contrast text screen reader') && (
-              <CollapsibleSection 
-                title="Accessibility" 
+              <CollapsibleSection
+                title="Accessibility"
                 icon={<Eye size={16} />}
                 description="Make the app more accessible"
               >
@@ -2324,8 +2369,8 @@ export default function EnhancedSettingsPanel() {
         {(activeTab === 'developer' || searchQuery) && (
           <div className="space-y-6">
             {settingsMatch('developer debug experimental features logging') && (
-              <CollapsibleSection 
-                title="Developer Options" 
+              <CollapsibleSection
+                title="Developer Options"
                 icon={<Code size={16} />}
                 description="Advanced settings for developers"
               >
@@ -2408,8 +2453,8 @@ export default function EnhancedSettingsPanel() {
               <AutomationExecutionSection />
             )}
             {settingsMatch('automation external actions tweets emails rate limit') && (
-              <CollapsibleSection 
-                title="Automation & External Actions" 
+              <CollapsibleSection
+                title="Automation & External Actions"
                 icon={<Zap size={16} />}
                 description="Control automated external actions"
               >
@@ -2432,12 +2477,12 @@ export default function EnhancedSettingsPanel() {
                         )}
                       </div>
                       <div className="text-sm text-mission-control-text-dim">
-                        {settings.externalActionsEnabled 
-                          ? 'External actions will be executed when approved' 
+                        {settings.externalActionsEnabled
+                          ? 'External actions will be executed when approved'
                           : 'All external actions blocked (safe mode)'}
                       </div>
                     </div>
-                    <Toggle 
+                    <Toggle
                       checked={settings.externalActionsEnabled}
                       onChange={(checked) => setSettings(s => ({ ...s, externalActionsEnabled: checked }))}
                       size="lg"
@@ -2522,20 +2567,25 @@ export default function EnhancedSettingsPanel() {
         {/* Actions */}
         {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform', 'sessions'].includes(activeTab) && (
           <div className="flex gap-3 mt-8 sticky bottom-0 bg-mission-control-bg/95 backdrop-blur-sm pt-4 pb-2 border-t border-mission-control-border">
-            <button
+            <Button
               onClick={handleSave}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+              variant="solid"
+              color="grass"
+              size="3"
+              className="flex-1"
             >
               {saved ? <Check size={16} /> : <Save size={16} />}
               {saved ? 'Saved!' : 'Save Settings'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleReset}
-              className="px-6 py-3 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors flex items-center gap-2"
+              variant="soft"
+              color="gray"
+              size="3"
             >
               <RotateCcw size={16} />
               Reset All
-            </button>
+            </Button>
           </div>
         )}
       </div>

@@ -31,7 +31,6 @@ import {
   FolderKanban,
   AlertTriangle,
   XCircle,
-  Loader2,
   Filter,
   Star,
   Activity,
@@ -41,6 +40,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
+import { Button, IconButton, Spinner as RadixSpinner, TextArea, TextField } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 
 const MODULE_ICONS: Record<string, LucideIcon> = {
@@ -277,9 +277,9 @@ function ReviewModal({
       >
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-semibold text-base">Write a Review</h3>
-          <button type="button" onClick={onClose} className="icon-btn">
+          <IconButton onClick={onClose} variant="ghost" color="gray" size="2" aria-label="Close">
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
 
         <p className="text-sm text-mission-control-text-dim mb-4">
@@ -322,31 +322,30 @@ function ReviewModal({
             <label className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
               Review (optional)
             </label>
-            <textarea
+            <TextArea
+              variant="soft"
               value={reviewText}
               onChange={e => setReviewText(e.target.value)}
               rows={3}
               placeholder="Share your experience with this module…"
-              className="w-full px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
+              className="w-full resize-none"
             />
           </div>
 
           <div className="flex gap-2 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
-            >
+            <Button type="button" onClick={onClose} variant="soft" color="gray" size="2">
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={rating === 0 || submitting}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
+              variant="solid"
+              color="grass"
+              size="2"
             >
-              {submitting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+              {submitting ? <RadixSpinner size="1" /> : <CheckCircle2 size={13} />}
               Submit Review
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -420,11 +419,12 @@ function ConfigurePanel({
       return (
         <div key={key} className="flex items-center justify-between py-2 border-b border-mission-control-border last:border-0">
           <label className="text-sm font-medium">{key}</label>
-          <input
+          <TextField.Root
+            size="1"
+            className="w-24"
             type="number"
             value={String(value)}
-            onChange={e => setValue(key, Number(e.target.value))}
-            className="w-24 px-2 py-1 text-sm text-right bg-mission-control-surface border border-mission-control-border rounded focus:outline-none focus:border-mission-control-accent"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(key, Number(e.target.value))}
           />
         </div>
       );
@@ -433,12 +433,13 @@ function ConfigurePanel({
       return (
         <div key={key} className="py-2 border-b border-mission-control-border last:border-0">
           <label className="text-sm font-medium block mb-1">{key}</label>
-          <input
+          <TextField.Root
+            size="1"
+            className="w-full"
             type="text"
             value={(value as unknown[]).join(', ')}
-            onChange={e => setValue(key, e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(key, e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
             placeholder="comma-separated values"
-            className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded focus:outline-none focus:border-mission-control-accent"
           />
         </div>
       );
@@ -447,11 +448,12 @@ function ConfigurePanel({
     return (
       <div key={key} className="py-2 border-b border-mission-control-border last:border-0">
         <label className="text-sm font-medium block mb-1">{key}</label>
-        <input
+        <TextField.Root
+          size="1"
+          className="w-full"
           type="text"
           value={String(value ?? '')}
-          onChange={e => setValue(key, e.target.value)}
-          className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded focus:outline-none focus:border-mission-control-accent"
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(key, e.target.value)}
         />
       </div>
     );
@@ -469,9 +471,9 @@ function ConfigurePanel({
             <Settings size={16} className="text-mission-control-text-dim" />
             <h3 className="font-semibold text-sm">Configure {module.name}</h3>
           </div>
-          <button type="button" onClick={onClose} className="icon-btn">
+          <IconButton onClick={onClose} variant="ghost" color="gray" size="2" aria-label="Close">
             <X size={15} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Fields */}
@@ -490,29 +492,17 @@ function ConfigurePanel({
 
           {/* Footer */}
           <div className="flex items-center gap-2 px-5 py-4 border-t border-mission-control-border flex-shrink-0">
-            <button
-              type="button"
-              onClick={resetToDefaults}
-              className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-            >
+            <Button type="button" onClick={resetToDefaults} variant="ghost" color="gray" size="1">
               Reset to defaults
-            </button>
+            </Button>
             <div className="flex-1" />
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 text-xs border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
-            >
+            <Button type="button" onClick={onClose} variant="soft" color="gray" size="1">
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
-            >
-              {saving ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
+            </Button>
+            <Button type="submit" disabled={saving} variant="solid" color="grass" size="1">
+              {saving ? <Spinner size="1" /> : <CheckCircle2 size={11} />}
               Save Configuration
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -547,24 +537,28 @@ function FeaturedCarousel({
           Featured Modules
         </h3>
         <div className="flex items-center gap-1">
-          <button
+          <IconButton
             type="button"
             disabled={offset === 0}
             onClick={() => setOffset(o => Math.max(0, o - 1))}
-            className="icon-btn border border-mission-control-border disabled:opacity-30"
+            variant="soft"
+            color="gray"
+            size="1"
             aria-label="Previous featured modules"
           >
             <ChevronLeft size={14} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             type="button"
             disabled={offset >= maxOffset}
             onClick={() => setOffset(o => Math.min(maxOffset, o + 1))}
-            className="icon-btn border border-mission-control-border disabled:opacity-30"
+            variant="soft"
+            color="gray"
+            size="1"
             aria-label="Next featured modules"
           >
             <ChevronRight size={14} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -623,14 +617,17 @@ function FeaturedCarousel({
                     Installed
                   </div>
                 ) : (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => onInstall(mod)}
-                    className="mt-auto w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                    variant="solid"
+                    color="grass"
+                    size="1"
+                    className="mt-auto w-full"
                   >
                     <Download size={11} />
                     Install
-                  </button>
+                  </Button>
                 )}
               </div>
             );
@@ -810,13 +807,9 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
     return (
       <div className="p-6 text-center">
         <p className="text-error mb-3">{error}</p>
-        <button
-          type="button"
-          onClick={() => load()}
-          className="px-4 py-2 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
-        >
+        <Button type="button" onClick={() => load()} variant="soft" color="gray" size="2">
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
@@ -864,16 +857,17 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
 
         <div className="flex-1" />
 
-        <button
+        <IconButton
           type="button"
           onClick={() => load(false)}
           disabled={refreshing}
-          className="icon-btn border border-mission-control-border disabled:opacity-50"
-          title="Refresh catalog"
+          variant="soft"
+          color="gray"
+          size="1"
           aria-label="Refresh catalog"
         >
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-        </button>
+        </IconButton>
       </div>
 
       {/* Dependency graph (collapsible) */}
@@ -886,14 +880,18 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
       {/* Search + installed/available toggle */}
       <div className="flex items-center gap-2 mb-3">
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-          <input
+          <TextField.Root
+            size="2"
+            className="w-full"
             type="text"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
             placeholder="Search modules…"
-            className="w-full pl-8 pr-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
-          />
+          >
+            <TextField.Slot>
+              <Search size={14} className="text-mission-control-text-dim" />
+            </TextField.Slot>
+          </TextField.Root>
         </div>
         <div className="flex border border-mission-control-border rounded-lg overflow-hidden text-xs">
           {(['all', 'installed', 'available'] as const).map(f => (
@@ -1016,27 +1014,29 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                   <div className="flex flex-col gap-1">
                     {/* Configure gear for installed non-core modules */}
                     {module.installed && !module.core && (
-                      <button
+                      <IconButton
                         type="button"
-                        title={`Configure ${module.name}`}
                         aria-label={`Configure ${module.name}`}
                         onClick={() => setConfigTarget(module)}
-                        className="flex-shrink-0 p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                        variant="ghost"
+                        color="gray"
+                        size="1"
                       >
                         <Settings size={14} />
-                      </button>
+                      </IconButton>
                     )}
                     {/* Settings nav for installed non-core modules */}
                     {module.installed && !module.core && (
-                      <button
+                      <IconButton
                         type="button"
-                        title={`Open settings for ${module.name}`}
                         aria-label={`Open settings for ${module.name}`}
                         onClick={() => navigateToModuleSettings(module.id)}
-                        className="flex-shrink-0 p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                        variant="ghost"
+                        color="gray"
+                        size="1"
                       >
                         <Activity size={14} />
-                      </button>
+                      </IconButton>
                     )}
                   </div>
                 </div>
@@ -1120,7 +1120,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                     <div className="flex items-center gap-2">
                       {phase === 'installing' ? (
                         <div className="flex items-center gap-1.5 text-xs text-info flex-1">
-                          <Loader2 size={12} className="animate-spin flex-shrink-0" />
+                          <Spinner size="1" />
                           <span>Installing…</span>
                         </div>
                       ) : (
@@ -1130,16 +1130,17 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                         </div>
                       )}
                       {/* Write a review */}
-                      <button
+                      <Button
                         type="button"
                         onClick={() => setReviewTarget(module)}
-                        className="flex items-center gap-1 px-2 py-1 text-xs text-warning border border-warning rounded hover:bg-warning transition-colors"
-                        title="Write a review"
+                        variant="soft"
+                        color="amber"
+                        size="1"
                       >
                         <Star size={10} />
                         Review
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
                         disabled={uninstalling === module.id}
                         onClick={() => {
@@ -1164,14 +1165,16 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                             }
                           });
                         }}
-                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-error border border-error-border rounded hover:bg-error-subtle transition-colors disabled:opacity-50"
+                        variant="soft"
+                        color="red"
+                        size="1"
                       >
                         <Trash2 size={10} /> Uninstall
-                      </button>
+                      </Button>
                     </div>
                   ) : phase === 'installing' ? (
                     <div className="flex items-center gap-1.5 text-xs text-info">
-                      <Loader2 size={12} className="animate-spin flex-shrink-0" />
+                      <Spinner size="1" />
                       <span>Installing…</span>
                     </div>
                   ) : phase === 'error' ? (
@@ -1180,14 +1183,17 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                       <span className="line-clamp-1">{installErr ?? 'Installation failed'}</span>
                     </div>
                   ) : (
-                    <button
+                    <Button
                       type="button"
                       onClick={() => handleInstallClick(module)}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                      variant="solid"
+                      color="grass"
+                      size="1"
+                      className="w-full"
                     >
                       <Download size={12} />
                       Install Module
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

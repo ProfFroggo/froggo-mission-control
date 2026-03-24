@@ -25,6 +25,7 @@ import CampaignROIDashboard from '../CampaignROIDashboard';
 import CampaignCommentsPanel from '../CampaignCommentsPanel';
 import ReactMarkdown from 'react-markdown';
 import ContextPanel from '../ContextPanel';
+import { Button, IconButton } from '@radix-ui/themes';
 
 type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'performance' | 'roi' | 'comments' | 'checklist' | 'context';
 
@@ -149,9 +150,9 @@ function AssetsTab({ campaign }: { campaign: Campaign }) {
           ))}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <button onClick={load} disabled={loading} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+          <IconButton variant="ghost" size="1" onClick={load} disabled={loading}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
           <label className="flex items-center gap-1 px-2.5 py-1 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors cursor-pointer">
             <Upload size={12} /> Upload
             <input type="file" className="hidden" onChange={() => showToast('File upload coming soon', 'info')} />
@@ -227,9 +228,9 @@ function ChannelsTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
                     {Icon && <Icon size={16} className="text-mission-control-text" />}
                     <span className="font-medium text-sm text-mission-control-text">{CHANNEL_LABELS[ch] ?? ch}</span>
                   </div>
-                  <button onClick={() => handleToggleChannel(ch)} className="text-xs text-mission-control-text-dim hover:text-error transition-colors">
+                  <Button variant="ghost" size="1" color="red" onClick={() => handleToggleChannel(ch)}>
                     Remove
-                  </button>
+                  </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -325,9 +326,9 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
     <div className="flex flex-col h-full overflow-y-auto p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-mission-control-text">KPI Tracker</h3>
-        <button onClick={() => setEditing(v => !v)} className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors">
+        <Button variant="ghost" size="1" onClick={() => setEditing(v => !v)}>
           <Edit3 size={12} /> {editing ? 'Cancel' : 'Update Metrics'}
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -391,10 +392,9 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
       </div>
 
       {editing && (
-        <button onClick={handleSaveKpis} disabled={saving}
-          className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors">
+        <Button variant="solid" size="1" onClick={handleSaveKpis} disabled={saving}>
           {saving ? <Spinner size={12} /> : <Check size={14} />} Save Metrics
-        </button>
+        </Button>
       )}
 
       {budget > 0 && (
@@ -830,9 +830,9 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-mission-control-text">Campaign Details</h3>
-          <button onClick={() => setEditingDetails(v => !v)} className="text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors flex items-center gap-1">
+          <Button variant="ghost" size="1" onClick={() => setEditingDetails(v => !v)}>
             <Edit3 size={11} /> {editingDetails ? 'Cancel' : 'Edit'}
-          </button>
+          </Button>
         </div>
         {editingDetails ? (
           <div className="space-y-3">
@@ -872,14 +872,12 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={handleSaveDetails} disabled={saving}
-                className="flex items-center gap-1 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors">
+              <Button variant="solid" size="1" onClick={handleSaveDetails} disabled={saving}>
                 {saving ? <Spinner size={12} /> : <Check size={12} />} Save
-              </button>
-              <button onClick={() => setEditingDetails(false)}
-                className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors">
+              </Button>
+              <Button variant="ghost" size="1" onClick={() => setEditingDetails(false)}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -928,9 +926,9 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-mission-control-text">Campaign Brief</h3>
-          <button onClick={() => setEditingBrief(v => !v)} className="text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors flex items-center gap-1">
+          <Button variant="ghost" size="1" onClick={() => setEditingBrief(v => !v)}>
             <Edit3 size={11} /> {editingBrief ? 'Cancel' : 'Edit'}
-          </button>
+          </Button>
         </div>
         {editingBrief ? (
           <div className="space-y-2">
@@ -938,14 +936,12 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
               className="w-full px-3 py-2 text-sm bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 resize-none"
               placeholder="Write the campaign brief: strategy, key messages, creative direction..." />
             <div className="flex gap-2">
-              <button onClick={handleSaveBrief} disabled={saving}
-                className="flex items-center gap-1 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors">
+              <Button variant="solid" size="1" onClick={handleSaveBrief} disabled={saving}>
                 {saving ? <Spinner size={12} /> : <Check size={12} />} Save Brief
-              </button>
-              <button onClick={() => { setEditingBrief(false); setBrief(campaign.briefContent ?? ''); }}
-                className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors">
+              </Button>
+              <Button variant="ghost" size="1" onClick={() => { setEditingBrief(false); setBrief(campaign.briefContent ?? ''); }}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -1039,9 +1035,9 @@ function LinkAutomationModal({ campaignId, onClose }: { campaignId: string; onCl
           <h2 className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
             <Zap size={15} className="text-mission-control-accent" /> Link Automation
           </h2>
-          <button onClick={onClose} className="text-mission-control-text-dim hover:text-mission-control-text transition-colors">
+          <IconButton variant="ghost" size="1" onClick={onClose}>
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
 
         {loading ? (
@@ -1059,9 +1055,9 @@ function LinkAutomationModal({ campaignId, onClose }: { campaignId: string; onCl
                         <p className="text-xs font-medium text-mission-control-text">{auto?.name ?? l.automationId}</p>
                         <p className="text-[10px] text-mission-control-text-dim capitalize">{l.campaignTriggerType.replace(/-/g, ' ')}</p>
                       </div>
-                      <button onClick={() => handleUnlink(l.automationId)} className="text-mission-control-text-dim hover:text-error transition-colors p-1">
+                      <IconButton variant="ghost" size="1" color="red" onClick={() => handleUnlink(l.automationId)}>
                         <X size={12} />
-                      </button>
+                      </IconButton>
                     </div>
                   );
                 })}
@@ -1089,10 +1085,9 @@ function LinkAutomationModal({ campaignId, onClose }: { campaignId: string; onCl
                       {TRIGGER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
-                  <button onClick={handleLink} disabled={!selectedId || saving}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors w-full justify-center">
+                  <Button variant="solid" size="1" onClick={handleLink} disabled={!selectedId || saving} className="w-full justify-center">
                     {saving ? <Spinner size={12} /> : <Zap size={13} />} Link Automation
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -1133,16 +1128,16 @@ function CampaignSettings({
   if (!editing) {
     return (
       <div className="absolute right-0 top-full mt-1 w-52 bg-mission-control-bg border border-mission-control-border rounded-xl shadow-xl z-20 py-1 overflow-hidden">
-        <button onClick={() => setEditing(true)} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-mission-control-text hover:bg-mission-control-surface transition-colors">
+        <Button variant="ghost" size="1" onClick={() => setEditing(true)} className="flex items-center gap-2 w-full px-3 py-2">
           <Edit3 size={14} /> Rename
-        </button>
-        <button onClick={onDuplicate} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-mission-control-text hover:bg-mission-control-surface transition-colors">
+        </Button>
+        <Button variant="ghost" size="1" onClick={onDuplicate} className="flex items-center gap-2 w-full px-3 py-2">
           <Copy size={14} /> Duplicate
-        </button>
+        </Button>
         <div className="my-1 border-t border-mission-control-border" />
-        <button onClick={handleArchive} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-error hover:bg-mission-control-surface transition-colors">
+        <Button variant="ghost" size="1" color="red" onClick={handleArchive} className="flex items-center gap-2 w-full px-3 py-2">
           <Trash2 size={14} /> Archive
-        </button>
+        </Button>
       </div>
     );
   }
@@ -1155,14 +1150,12 @@ function CampaignSettings({
           className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
       </div>
       <div className="flex gap-2">
-        <button onClick={handleSave} disabled={saving}
-          className="flex-1 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors">
+        <Button variant="solid" size="1" onClick={handleSave} disabled={saving} className="flex-1">
           {saving ? 'Saving...' : 'Save'}
-        </button>
-        <button onClick={() => setEditing(false)}
-          className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors">
+        </Button>
+        <Button variant="ghost" size="1" onClick={() => setEditing(false)}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -1248,14 +1241,10 @@ function ChecklistTab({ campaign }: { campaign: Campaign }) {
             <p className="text-xs text-mission-control-text-dim">{doneCount} of {items.length} complete</p>
           </div>
         </div>
-        <button
-          onClick={reset}
-          disabled={resetting}
-          className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors px-2 py-1 rounded-lg border border-mission-control-border"
-        >
+        <Button variant="ghost" size="1" onClick={reset} disabled={resetting}>
           {resetting ? <Spinner size={12} /> : <RefreshCw size={12} />}
           Reset
-        </button>
+        </Button>
       </div>
 
       <div>
@@ -1419,9 +1408,9 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
       <div className="bg-mission-control-surface border-b border-mission-control-border">
         <div className="flex items-center justify-between px-4 py-2.5">
           <div className="flex items-center gap-2 min-w-0">
-            <button onClick={onBack} className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors flex-shrink-0">
+            <Button variant="ghost" size="1" onClick={onBack} className="flex items-center gap-1 flex-shrink-0">
               <ArrowLeft size={14} /> Campaigns
-            </button>
+            </Button>
             <span className="text-mission-control-text-dim flex-shrink-0">/</span>
             <span className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: campaign.color }} />
             <span className="text-sm font-medium text-mission-control-text truncate">{campaign.name}</span>
@@ -1437,36 +1426,24 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
                 <AgentAvatar key={m.agentId} agentId={m.agentId} size="xs" className="ring-1 ring-mission-control-surface" />
               ))}
             </div>
-            <button onClick={() => setShowMemberPanel(v => !v)}
-              className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface px-2 py-1 rounded transition-colors">
+            <Button variant="ghost" size="1" onClick={() => setShowMemberPanel(v => !v)}>
               <Users size={12} /> {members.length} <ChevronDown size={10} />
-            </button>
+            </Button>
             <div className="w-px h-4 bg-mission-control-border" />
-            <button
-              onClick={handleGenerateTasks}
-              disabled={generatingTasks}
-              title="Generate standard tasks from campaign type"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg hover:border-mission-control-accent/50 hover:text-mission-control-accent transition-colors text-xs disabled:opacity-40"
-            >
+            <Button variant="ghost" size="1" onClick={handleGenerateTasks} disabled={generatingTasks} title="Generate standard tasks from campaign type">
               {generatingTasks ? <Spinner size={12} /> : <ListTodo size={13} />}
               Tasks
-            </button>
-            <button
-              onClick={() => setShowLinkAutomation(true)}
-              title="Link an automation to this campaign"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg hover:border-mission-control-accent/50 hover:text-mission-control-accent transition-colors text-xs"
-            >
+            </Button>
+            <Button variant="ghost" size="1" onClick={() => setShowLinkAutomation(true)} title="Link an automation to this campaign">
               <Zap size={13} /> Automation
-            </button>
-            <button onClick={() => setShowDispatch(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-xs font-medium">
+            </Button>
+            <Button variant="solid" size="1" onClick={() => setShowDispatch(true)}>
               <Bot size={13} /> Dispatch Agent
-            </button>
+            </Button>
             <div className="relative">
-              <button onClick={() => setShowSettings(v => !v)}
-                className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+              <IconButton variant="ghost" size="1" onClick={() => setShowSettings(v => !v)}>
                 <Settings size={15} />
-              </button>
+              </IconButton>
               {showSettings && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowSettings(false)} />
@@ -1489,9 +1466,9 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
                 <div key={m.agentId} className="flex items-center gap-1.5 bg-mission-control-surface border border-mission-control-border rounded-full px-2 py-1">
                   <AgentAvatar agentId={m.agentId} size="xs" />
                   <span className="text-xs text-mission-control-text">{(m as any).agentName || m.agentId}</span>
-                  <button onClick={() => handleRemoveMember(m.agentId)} className="text-mission-control-text-dim hover:text-error transition-colors">
+                  <IconButton variant="ghost" size="1" color="red" onClick={() => handleRemoveMember(m.agentId)}>
                     <X size={10} />
-                  </button>
+                  </IconButton>
                 </div>
               ))}
               {availableAgents.length > 0 && (

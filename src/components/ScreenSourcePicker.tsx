@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { Monitor, AppWindow, X, RefreshCw, Loader2, AlertTriangle, Lock } from 'lucide-react';
 
 export interface ScreenSource {
@@ -74,26 +75,23 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
         <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border">
           <h2 className="text-lg font-semibold text-mission-control-text">Share Your Screen</h2>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={fetchSources} className="p-2 rounded-lg hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50" title="Refresh">
+            <IconButton variant="ghost" size="1" onClick={fetchSources} title="Refresh">
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            </button>
-            <button type="button" onClick={onCancel} className="p-2 rounded-lg hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+            </IconButton>
+            <IconButton variant="ghost" size="1" onClick={onCancel}>
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
         {/* Filter tabs */}
         <div className="flex gap-1 px-5 pt-3">
           {(['all', 'screen', 'window'] as const).map(f => (
-            <button type="button" key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                filter === f ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-              }`}>
+            <Button key={f} variant={filter === f ? 'solid' : 'ghost'} size="1" onClick={() => setFilter(f)}>
               {f === 'screen' && <Monitor size={12} />}
               {f === 'window' && <AppWindow size={12} />}
               {f === 'all' ? 'All' : f === 'screen' ? `Screens (${screens.length})` : `Windows (${windows.length})`}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -121,26 +119,26 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
                 </ol>
               </div>
               <div className="flex gap-3">
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="1"
                   onClick={() => {
                     // Not available in web mode — user must open System Settings manually
                   }}
-                  className="px-4 py-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50"
                 >
                   Open System Settings
-                </button>
-                <button type="button" onClick={fetchSources} className="px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+                </Button>
+                <Button variant="solid" size="1" onClick={fetchSources}>
                   Check Again
-                </button>
+                </Button>
               </div>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12 text-error">
               <p className="text-sm flex items-center gap-1"><AlertTriangle size={14} className="inline" /> {error}</p>
-              <button type="button" onClick={fetchSources} className="mt-3 px-4 py-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+              <Button variant="ghost" size="1" onClick={fetchSources}>
                 Retry
-              </button>
+              </Button>
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-mission-control-text-dim">
@@ -193,14 +191,12 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-mission-control-border">
-          <button type="button" onClick={onCancel}
-            className="px-4 py-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+          <Button variant="ghost" size="1" onClick={onCancel}>
             Cancel
-          </button>
-          <button type="button" onClick={handleConfirm} disabled={!selected}
-            className="px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+          </Button>
+          <Button variant="solid" size="1" onClick={handleConfirm} disabled={!selected}>
             Share
-          </button>
+          </Button>
         </div>
       </div>
     </div>

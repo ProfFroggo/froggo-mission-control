@@ -12,10 +12,10 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Bot, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Bot, CheckCircle, AlertTriangle, RefreshCw, X } from 'lucide-react';
+import { Button, IconButton, Spinner } from '@radix-ui/themes';
 import BaseModal, { BaseModalBody, BaseModalFooter } from './BaseModal';
 import IntegrationWizard from './IntegrationWizard';
-import { Spinner } from './LoadingStates';
 import { marketplaceApi } from '../lib/api';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -124,23 +124,16 @@ export default function AgentInstallModal({
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-mission-control-border">
-          <div className="w-9 h-9 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
-            <Bot size={18} className="text-mission-control-accent" />
+          <div className="w-9 h-9 rounded-lg bg-[--accent-3] flex items-center justify-center flex-shrink-0">
+            <Bot size={18} className="text-[--accent-11]" />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-semibold text-mission-control-text">Install Agent: {entry.name}</h2>
             <span className="text-xs text-mission-control-text-dim">v{entry.version}</span>
           </div>
-          <button
-            onClick={onCancel}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors text-mission-control-text-dim hover:text-mission-control-text flex-shrink-0"
-            type="button"
-            aria-label="Cancel"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
+          <IconButton onClick={onCancel} variant="ghost" color="gray" size="2" aria-label="Cancel">
+            <X size={16} />
+          </IconButton>
         </div>
 
         {/* Body */}
@@ -149,7 +142,7 @@ export default function AgentInstallModal({
             {/* Workspace path info */}
             <p className="text-sm text-mission-control-text-dim">
               This will create{' '}
-              <code className="text-mission-control-accent bg-mission-control-accent/10 px-1.5 py-0.5 rounded text-xs font-mono">
+              <code className="text-[--accent-11] bg-[--accent-3] px-1.5 py-0.5 rounded text-xs font-mono">
                 ~/mission-control/agents/{entry.agent.agentId}/
               </code>
             </p>
@@ -168,7 +161,7 @@ export default function AgentInstallModal({
             {(entry.agent.credentials?.length ?? 0) > 0 && (
               <p className="text-sm text-warning">
                 Requires {entry.agent.credentials!.length} API key
-                {entry.agent.credentials!.length !== 1 ? 's' : ''} — you'll be prompted after install.
+                {entry.agent.credentials!.length !== 1 ? 's' : ''} — you&apos;ll be prompted after install.
               </p>
             )}
           </div>
@@ -176,21 +169,13 @@ export default function AgentInstallModal({
 
         {/* Footer */}
         <BaseModalFooter align="right">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border rounded-lg transition-colors"
-          >
+          <Button type="button" onClick={onCancel} variant="soft" color="gray" size="2">
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleInstall}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-mission-control-accent hover:bg-mission-control-accent-dim text-white rounded-lg transition-colors"
-          >
+          </Button>
+          <Button type="button" onClick={handleInstall} variant="solid" color="grass" size="2">
             <Bot size={14} />
             Install Agent
-          </button>
+          </Button>
         </BaseModalFooter>
       </BaseModal>
     );
@@ -211,7 +196,7 @@ export default function AgentInstallModal({
       >
         <BaseModalBody>
           <div className="flex flex-col items-center gap-4 py-4">
-            <Spinner size={28} />
+            <Spinner size="3" />
             <div className="text-center">
               <p className="text-base font-semibold text-mission-control-text">Installing {entry.name}...</p>
               <p className="text-sm text-mission-control-text-dim mt-1">Provisioning agent workspace…</p>
@@ -263,13 +248,9 @@ export default function AgentInstallModal({
 
         {/* Footer */}
         <BaseModalFooter align="right">
-          <button
-            type="button"
-            onClick={onInstalled}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-mission-control-accent hover:opacity-90 text-white rounded-lg transition-colors"
-          >
+          <Button type="button" onClick={onInstalled} variant="solid" color="grass" size="2">
             Done
-          </button>
+          </Button>
         </BaseModalFooter>
       </BaseModal>
     );
@@ -300,13 +281,9 @@ export default function AgentInstallModal({
 
       {/* Footer */}
       <BaseModalFooter align="right">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border rounded-lg transition-colors"
-        >
+        <Button type="button" onClick={onCancel} variant="soft" color="gray" size="2">
           Close
-        </button>
+        </Button>
       </BaseModalFooter>
     </BaseModal>
   );

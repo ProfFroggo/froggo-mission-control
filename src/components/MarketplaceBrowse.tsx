@@ -40,9 +40,9 @@ import {
   Layers,
   Search,
   ShieldCheck,
-  Loader2,
   Bot,
 } from 'lucide-react';
+import { Button, IconButton, Spinner, TextField } from '@radix-ui/themes';
 import { Skeleton } from './LoadingStates';
 import AgentInstallModal from './AgentInstallModal';
 import { marketplaceApi } from '../lib/api';
@@ -245,39 +245,45 @@ function ModuleCard({
         <div className="ml-auto flex items-center gap-2">
           {isInstalling ? (
             <span className="flex items-center gap-1.5 text-xs text-mission-control-text-dim px-3 py-1.5">
-              <Loader2 size={13} className="animate-spin" />
+              <Spinner size="1" />
               Installing…
             </span>
           ) : !installed ? (
-            <button
+            <Button
               type="button"
               onClick={() => onInstall(mod)}
-              className="flex items-center gap-1.5 text-xs font-medium bg-success/90 hover:bg-success text-white px-3 py-1.5 rounded-lg transition-colors"
+              variant="solid"
+              color="green"
+              size="1"
             >
               <Download size={13} />
               Install
-            </button>
+            </Button>
           ) : hasUpdate ? (
             <>
-              <button
+              <Button
                 type="button"
                 onClick={() => onUpdate(mod)}
-                className="flex items-center gap-1.5 text-xs font-medium bg-warning/90 hover:bg-warning text-white px-3 py-1.5 rounded-lg transition-colors"
+                variant="solid"
+                color="amber"
+                size="1"
               >
                 <RefreshCw size={13} />
                 Update
-              </button>
-              <button
+              </Button>
+              <IconButton
                 type="button"
                 onClick={() => onUninstall(mod.id)}
-                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 px-2 py-1.5 rounded-lg border border-mission-control-border hover:border-red-500/40 transition-colors"
-                title="Uninstall"
+                variant="soft"
+                color="red"
+                size="1"
+                aria-label="Uninstall"
               >
                 <Trash2 size={13} />
-              </button>
+              </IconButton>
             </>
           ) : builtin ? (
-            <span className="flex items-center gap-1.5 text-xs text-mission-control-accent font-medium">
+            <span className="flex items-center gap-1.5 text-xs text-[--accent-11] font-medium">
               <PackageCheck size={13} />
               Built-in
             </span>
@@ -287,14 +293,16 @@ function ModuleCard({
                 <CheckCircle size={13} />
                 Installed
               </span>
-              <button
+              <IconButton
                 type="button"
                 onClick={() => onUninstall(mod.id)}
-                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 px-2 py-1.5 rounded-lg border border-mission-control-border hover:border-red-500/40 transition-colors"
-                title="Uninstall"
+                variant="soft"
+                color="red"
+                size="1"
+                aria-label="Uninstall"
               >
                 <Trash2 size={13} />
-              </button>
+              </IconButton>
             </>
           )}
         </div>
@@ -473,14 +481,18 @@ export default function MarketplaceBrowse() {
 
       {/* Search */}
       <div className="relative">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none" />
-        <input
+        <TextField.Root
+          size="2"
+          className="w-full"
           type="text"
           placeholder="Search modules…"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg pl-9 pr-4 py-2 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors"
-        />
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+        >
+          <TextField.Slot>
+            <Search size={15} className="text-mission-control-text-dim" />
+          </TextField.Slot>
+        </TextField.Root>
       </div>
 
       {/* Category filter */}

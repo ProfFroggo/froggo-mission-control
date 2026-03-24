@@ -6,6 +6,7 @@ import {
   Bell, LayoutGrid, Clock, FolderOpen, Megaphone, CheckSquare, Star, ChevronRight, ArrowUp,
   ArrowDown, CornerDownLeft, X, Filter,
 } from 'lucide-react';
+import { IconButton, TextField } from '@radix-ui/themes';
 import Fuse from 'fuse.js';
 import { useFocusTrap, useAnnounce } from '../hooks/useAccessibility';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
@@ -730,37 +731,47 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
         {/* Header: search input + filter pills */}
         <div className="border-b border-mission-control-border">
           <div className="flex items-center gap-3 p-4">
-            <Search size={20} className="text-mission-control-text-dim flex-shrink-0" aria-hidden="true" />
-            <input
+            <TextField.Root
               ref={inputRef}
-              type="text"
+              size="3"
+              variant="soft"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={isActionMode ? 'Type a command... (e.g. >create task)' : 'Search or type > for commands...'}
-              className="flex-1 bg-transparent outline-none text-lg"
+              className="flex-1"
               aria-label="Search commands and content"
               aria-autocomplete="list"
               aria-controls="command-list"
-            />
-            {query && (
-              <button
-                onClick={() => setQuery('')}
-                className="text-mission-control-text-dim hover:text-mission-control-text"
-                aria-label="Clear search"
-              >
-                <X size={16} />
-              </button>
-            )}
+            >
+              <TextField.Slot>
+                <Search size={16} aria-hidden="true" />
+              </TextField.Slot>
+              {query && (
+                <TextField.Slot side="right">
+                  <IconButton
+                    size="1"
+                    variant="ghost"
+                    color="gray"
+                    onClick={() => setQuery('')}
+                    aria-label="Clear search"
+                  >
+                    <X size={14} />
+                  </IconButton>
+                </TextField.Slot>
+              )}
+            </TextField.Root>
             {query && !isActionMode && (
-              <button
+              <IconButton
+                size="2"
+                variant="ghost"
+                color={savedSearches.includes(query.trim()) ? 'violet' : 'gray'}
                 onClick={() => saveSearch(query.trim())}
-                className={`text-mission-control-text-dim hover:text-mission-control-accent ${savedSearches.includes(query.trim()) ? 'text-mission-control-accent' : ''}`}
                 aria-label="Save search"
                 title="Save search"
               >
                 <Star size={16} />
-              </button>
+              </IconButton>
             )}
             <kbd className="px-2 py-1 text-xs bg-mission-control-border rounded flex-shrink-0" aria-label="Press Escape to close">ESC</kbd>
           </div>
@@ -775,7 +786,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                   onClick={() => setActiveFilter(pill.key)}
                   className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap transition-colors ${
                     activeFilter === pill.key
-                      ? 'bg-mission-control-accent text-white'
+                      ? 'bg-[--accent-9] text-[--accent-1]'
                       : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-surface'
                   }`}
                   aria-pressed={activeFilter === pill.key}
@@ -827,7 +838,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                           <div key={s} className="flex items-center gap-0.5 bg-mission-control-border rounded-full pl-2 pr-1 py-0.5">
                             <button
                               onClick={() => setQuery(s)}
-                              className="text-xs text-mission-control-text hover:text-mission-control-accent"
+                              className="text-xs text-mission-control-text hover:text-[--accent-11]"
                             >
                               {s}
                             </button>
@@ -885,12 +896,12 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                   onClick={() => { const parsed = parseActionCommand(query); cmd.action(parsed?.arg); }}
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    selectedIndex === idx ? 'bg-mission-control-accent text-white' : 'hover:bg-mission-control-border'
+                    selectedIndex === idx ? 'bg-[--accent-9] text-[--accent-1]' : 'hover:bg-mission-control-border'
                   }`}
                   role="option"
                   aria-selected={selectedIndex === idx}
                 >
-                  <span className={selectedIndex === idx ? 'text-white' : 'text-mission-control-text-dim'} aria-hidden="true">{cmd.icon}</span>
+                  <span className={selectedIndex === idx ? 'text-[--accent-1]' : 'text-mission-control-text-dim'} aria-hidden="true">{cmd.icon}</span>
                   <span className="flex-1 text-left">{cmd.label}</span>
                   <ChevronRight size={14} className="text-mission-control-text-dim" aria-hidden="true" />
                 </button>
@@ -924,27 +935,27 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                           }}
                           onMouseEnter={() => setSelectedIndex(currentIndex)}
                           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
-                            isSelected ? 'bg-mission-control-accent text-white' : 'hover:bg-mission-control-border'
+                            isSelected ? 'bg-[--accent-9] text-[--accent-1]' : 'hover:bg-mission-control-border'
                           }`}
                           role="option"
                           aria-selected={isSelected}
                           tabIndex={0}
                           onKeyDown={(e) => { if (e.key === 'Enter') { trackRecentItem({ id: item.id, title: item.title, type: item.type, nav: item.nav }); onNavigate(item.nav, item.id); onClose(); } }}
                         >
-                          <span className={isSelected ? 'text-white' : 'text-mission-control-text-dim'} aria-hidden="true">
+                          <span className={isSelected ? 'text-[--accent-1]' : 'text-mission-control-text-dim'} aria-hidden="true">
                             {TYPE_ICONS[item.type]}
                           </span>
                           <span className="flex-1 text-left min-w-0">
                             <span className="block text-sm truncate">{item.title}</span>
                             {item.subtitle && (
-                              <span className={`block text-xs truncate ${isSelected ? 'text-white/70' : 'text-mission-control-text-dim'}`}>
+                              <span className={`block text-xs truncate ${isSelected ? 'text-[--accent-1]/70' : 'text-mission-control-text-dim'}`}>
                                 {item.subtitle}
                               </span>
                             )}
                           </span>
                           <button
                             onClick={(e) => { e.stopPropagation(); setExpandedItemId(isExpanded ? null : item.id); }}
-                            className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-mission-control-border text-mission-control-text-dim'} hover:opacity-80`}
+                            className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${isSelected ? 'bg-[--accent-9]/20 text-[--accent-1]' : 'bg-mission-control-border text-mission-control-text-dim'} hover:opacity-80`}
                             aria-expanded={isExpanded}
                             aria-label="Show inline actions"
                             title="Tab for actions"
@@ -1007,13 +1018,13 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                     onClick={cmd.action}
                     onMouseEnter={() => setSelectedIndex(currentIndex)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                      isSelected ? 'bg-mission-control-accent text-white' : 'hover:bg-mission-control-border'
+                      isSelected ? 'bg-[--accent-9] text-[--accent-1]' : 'hover:bg-mission-control-border'
                     }`}
                     role="option"
                     aria-selected={isSelected}
                     aria-label={`${cmd.label}${cmd.shortcut ? ` (${cmd.shortcut})` : ''}`}
                   >
-                    <span className={isSelected ? 'text-white' : 'text-mission-control-text-dim'} aria-hidden="true">{cmd.icon}</span>
+                    <span className={isSelected ? 'text-[--accent-1]' : 'text-mission-control-text-dim'} aria-hidden="true">{cmd.icon}</span>
                     <span className="flex-1 text-left">{cmd.label}</span>
                     {cmd.meta && (
                       <span className={`px-2 py-0.5 text-xs rounded ${isSelected ? 'bg-mission-control-text/20' : 'bg-mission-control-border'}`}>

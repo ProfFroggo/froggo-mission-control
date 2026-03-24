@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { Button, IconButton } from '@radix-ui/themes';
 import {
   Plus, MoreHorizontal, Trash2, Clock, Play, Zap,
   CheckSquare, AlertTriangle, ArrowUp, ArrowDown, Circle,
@@ -93,21 +94,23 @@ function TaskCard({
       {/* Top row */}
       <div className="flex items-start gap-1.5 mb-2">
         {priorityConfig && (
-          <button
+          <IconButton
+            variant="ghost"
+            size="1"
             onClick={e => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); setPriorPos({ top: r.bottom + 4, left: r.left }); setShowPriority(true); }}
-            className={`p-0.5 rounded flex-shrink-0 ${priorityConfig.bg} ${priorityConfig.color}`}
             title={priorityConfig.label}
           >
             {priorityConfig.icon}
-          </button>
+          </IconButton>
         )}
         <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 line-clamp-2">{task.title}</h4>
-        <button
+        <IconButton
+          variant="ghost"
+          size="1"
           onClick={e => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); setMenuPos({ top: r.bottom + 4, left: r.right - 160 }); setShowMenu(true); }}
-          className="flex-shrink-0 p-0.5 text-mission-control-text-dim opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity"
         >
           <MoreHorizontal size={15} />
-        </button>
+        </IconButton>
       </div>
 
       {/* Clara review badge */}
@@ -156,14 +159,15 @@ function TaskCard({
               <Zap size={11} />
             </span>
           ) : canStart ? (
-            <button
+            <IconButton
+              variant="solid"
+              size="1"
               onClick={e => { e.stopPropagation(); onStartAgent(); }}
               disabled={isSpawning}
-              className="flex items-center justify-center w-5 h-5 rounded bg-success text-white hover:bg-success disabled:opacity-50"
               title="Start agent"
             >
               {isSpawning ? <Spinner size={11} /> : <Play size={11} />}
-            </button>
+            </IconButton>
           ) : null}
           {assignedAgent && (
             <AgentAvatar agentId={assignedAgent.id} size="xs" />
@@ -180,10 +184,9 @@ function TaskCard({
             onClick={e => e.stopPropagation()}>
             <div className="text-xs text-mission-control-text-dim mb-2 px-2 font-medium">Set Priority</div>
             {PRIORITIES.map(p => (
-              <button key={p.id} onClick={() => { onSetPriority(p.id); setShowPriority(false); }}
-                className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm hover:bg-mission-control-border transition-colors ${task.priority === p.id ? `${p.bg} ${p.color}` : ''}`}>
+              <Button key={p.id} variant="ghost" size="1" onClick={() => { onSetPriority(p.id); setShowPriority(false); }}>
                 <span className={p.color}>{p.icon}</span> {p.label}
-              </button>
+              </Button>
             ))}
           </div>
         </>,
@@ -197,20 +200,16 @@ function TaskCard({
           <div className="fixed bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl py-1 z-[101] min-w-[140px]"
             style={{ top: menuPos.top, left: menuPos.left }}
             onClick={e => e.stopPropagation()}>
-            <button onClick={() => { setShowMenu(false); onOpen(); }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-mission-control-border">
+            <Button variant="ghost" size="1" onClick={() => { setShowMenu(false); onOpen(); }}>
               <FolderOpen size={14} /> Open
-            </button>
-            <button onClick={() => { setPriorPos(menuPos); setShowPriority(true); setShowMenu(false); }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-mission-control-border">
+            </Button>
+            <Button variant="ghost" size="1" onClick={() => { setPriorPos(menuPos); setShowPriority(true); setShowMenu(false); }}>
               <Flag size={14} /> Set Priority
-            </button>
+            </Button>
             <hr className="my-1 border-mission-control-border" />
-            <button onClick={() => { setShowMenu(false); onDelete(); }}
-              disabled={isDeleting}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-mission-control-border text-error disabled:opacity-50">
+            <Button variant="soft" color="red" size="1" onClick={() => { setShowMenu(false); onDelete(); }} disabled={isDeleting}>
               {isDeleting ? <Spinner size={14} /> : <Trash2 size={14} />} Delete
-            </button>
+            </Button>
           </div>
         </>,
         document.body
@@ -314,14 +313,12 @@ export default function ProjectKanban({ project, onNewTask }: ProjectKanbanProps
           <span className="text-warning">{openCount} open</span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleRefresh} disabled={isRefreshing}
-            className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+          <IconButton variant="ghost" size="1" onClick={handleRefresh} disabled={isRefreshing}>
             <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
-          </button>
-          <button onClick={onNewTask}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors">
+          </IconButton>
+          <Button variant="solid" size="1" onClick={onNewTask}>
             <Plus size={13} /> New Task
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -350,10 +347,9 @@ export default function ProjectKanban({ project, onNewTask }: ProjectKanbanProps
                       {colTasks.length}
                     </span>
                   </div>
-                  <button onClick={onNewTask} title="Add task"
-                    className="p-0.5 text-mission-control-text-dim hover:text-mission-control-accent transition-colors opacity-0 group-hover:opacity-100">
+                  <IconButton variant="ghost" size="1" onClick={onNewTask} title="Add task">
                     <Plus size={14} />
-                  </button>
+                  </IconButton>
                 </div>
 
                 {/* Cards */}

@@ -10,9 +10,10 @@
  */
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  Mic, Square, Loader2, Brain, ListTodo, FileText,
+  Mic, Square, Brain, ListTodo, FileText,
   Download, Send, Trash2, Clock, Sparkles, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { Button, Spinner } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
 import { createLogger } from '../utils/logger';
@@ -548,21 +549,27 @@ ${transcriptText}`;
         {/* Record Button */}
         <div className="p-6 border-b border-mission-control-border">
           {isRecording ? (
-            <button
+            <Button
               onClick={() => stopRecording()}
-              className="w-full py-5 bg-error hover:bg-error/80 text-white rounded-lg text-lg font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-error/20"
+              variant="solid"
+              color="red"
+              size="3"
+              className="w-full py-5 text-lg font-bold"
             >
               <Square size={24} />
               Stop Recording
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               onClick={startRecording}
-              className="w-full py-5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-lg font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-500/20"
+              variant="solid"
+              color="grass"
+              size="3"
+              className="w-full py-5 text-lg font-bold"
             >
               <Mic size={24} />
               Start Meeting Scribe
-            </button>
+            </Button>
           )}
           
           {/* Recording info */}
@@ -576,7 +583,7 @@ ${transcriptText}`;
               {/* Audio level bar */}
               <div className="w-20 h-2 bg-mission-control-surface rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-400 rounded-full transition-all duration-75"
+                  className="h-full bg-[--accent-9] rounded-full transition-all duration-75"
                   style={{ width: `${Math.min(100, audioLevel * 100)}%` }}
                 />
               </div>
@@ -585,7 +592,7 @@ ${transcriptText}`;
           
           {processingChunk && (
             <div className="mt-2 text-xs text-mission-control-text-dim flex items-center gap-1">
-              <Loader2 size={12} className="animate-spin" />
+              <Spinner size="1" />
               Transcribing chunk...
             </div>
           )}
@@ -604,7 +611,7 @@ ${transcriptText}`;
         {/* Live Transcript */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="flex items-center gap-2 mb-3">
-            <Brain size={16} className="text-emerald-400" />
+            <Brain size={16} className="text-[--accent-11]" />
             <span className="font-medium text-sm">Live Transcript</span>
             {entries.length > 0 && (
               <span className="text-xs text-mission-control-text-dim">({entries.filter(e => !e.isProcessing).length} segments)</span>
@@ -629,7 +636,7 @@ ${transcriptText}`;
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="flex-1">{entry.text}</p>
-                    <span className="text-[10px] text-mission-control-text-dim shrink-0 mt-0.5">
+                    <span className="text-xs text-mission-control-text-dim shrink-0 mt-0.5">
                       {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </span>
                   </div>
@@ -655,7 +662,7 @@ ${transcriptText}`;
               <ul className="space-y-1 text-xs max-h-32 overflow-y-auto">
                 {actionItems.map((item, i) => (
                   <li key={i} className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 bg-warning-subtle rounded text-warning text-[10px] shrink-0">
+                    <span className="px-1.5 py-0.5 bg-warning-subtle rounded text-warning text-xs shrink-0">
                       {item.type}
                     </span>
                     <span className="text-mission-control-text-dim truncate">{item.text}</span>
@@ -673,14 +680,14 @@ ${transcriptText}`;
           /* Post-meeting summary */
           <div className="flex-1 overflow-y-auto p-6">
             <div className="flex items-center gap-2 mb-6">
-              <FileText size={20} className="text-emerald-400" />
+              <FileText size={20} className="text-[--accent-11]" />
               <h3 className="text-lg font-medium">Meeting Complete</h3>
               <span className="text-sm text-mission-control-text-dim">({formatDuration(summary.duration)})</span>
             </div>
             
             {summary.savedPath && (
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mb-4">
-                <p className="text-sm text-emerald-400">✓ Notes saved</p>
+              <div className="bg-success-subtle border border-success-border rounded-lg p-3 mb-4">
+                <p className="text-sm text-success">Notes saved</p>
                 <p className="text-xs text-mission-control-text-dim mt-1">{summary.savedPath.split('/').pop()}</p>
               </div>
             )}
@@ -701,7 +708,7 @@ ${transcriptText}`;
                 className="w-full mb-4 py-3 bg-review-subtle hover:bg-review-subtle border border-review-border rounded-lg text-sm text-review flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
               >
                 {isSummarizing ? (
-                  <><Loader2 size={16} className="animate-spin" /> Generating summary...</>
+                  <><Spinner /> Generating summary...</>
                 ) : (
                   <><Sparkles size={16} /> Generate AI Summary</>
                 )}
@@ -710,20 +717,26 @@ ${transcriptText}`;
             
             {/* Action buttons */}
             <div className="flex gap-2 mb-6">
-              <button
+              <Button
                 onClick={sendToMissionControl}
                 disabled={!hasTranscript}
-                className="flex-1 py-2 bg-mission-control-accent hover:bg-mission-control-accent/80 rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                variant="solid"
+                color="violet"
+                size="2"
+                className="flex-1"
               >
                 <Send size={14} /> Send to Mission Control
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={exportMarkdown}
                 disabled={!hasTranscript}
-                className="flex-1 py-2 bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                variant="soft"
+                color="gray"
+                size="2"
+                className="flex-1"
               >
                 <Download size={14} /> Export
-              </button>
+              </Button>
             </div>
             
             {/* Full transcript review */}
@@ -732,7 +745,7 @@ ${transcriptText}`;
               <div className="space-y-1 text-sm max-h-64 overflow-y-auto">
                 {entries.filter(e => !e.isProcessing).map(entry => (
                   <p key={entry.id} className="text-mission-control-text-dim">
-                    <span className="text-[10px] text-mission-control-text-dim/50 mr-1">
+                    <span className="text-xs text-mission-control-text-dim/50 mr-1">
                       {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     {entry.text}
@@ -783,7 +796,7 @@ ${transcriptText}`;
               ))}
               {processingChunk && (
                 <div className="flex items-center gap-2 text-mission-control-text-dim text-sm px-4">
-                  <Loader2 size={14} className="animate-spin" />
+                  <Spinner size="1" />
                   Transcribing...
                 </div>
               )}

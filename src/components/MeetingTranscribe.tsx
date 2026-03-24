@@ -345,15 +345,13 @@ export default function MeetingTranscribe() {
                       </button>
                       {isExpanded && (
                         <div className="px-3 pb-3 flex gap-2 border-t border-mission-control-border pt-2">
-                          <button type="button" onClick={e => { e.stopPropagation(); downloadTranscript(meeting.id); }}
-                            className="flex-1 py-1 bg-mission-control-border hover:bg-mission-control-border/80 rounded text-xs font-medium flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="1" onClick={e => { e.stopPropagation(); downloadTranscript(meeting.id); }} style={{ flex: 1, justifyContent: 'center' }}>
                             <Download className="w-3 h-3" /> Export
-                          </button>
+                          </Button>
                           {meeting.status === 'ended' && (
-                            <button type="button" onClick={e => { e.stopPropagation(); deleteMeeting(meeting.id); }}
-                              className="flex-1 py-1 bg-error-subtle text-error hover:brightness-110 rounded text-xs font-medium flex items-center justify-center gap-1">
+                            <Button variant="soft" color="red" size="1" onClick={e => { e.stopPropagation(); deleteMeeting(meeting.id); }} style={{ flex: 1, justifyContent: 'center' }}>
                               <Trash2 className="w-3 h-3" /> Delete
-                            </button>
+                            </Button>
                           )}
                         </div>
                       )}

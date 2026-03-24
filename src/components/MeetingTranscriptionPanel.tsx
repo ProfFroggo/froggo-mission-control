@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { FileAudio, Loader2, Download, Trash2, Upload, Sparkles } from 'lucide-react';
+import { Button, IconButton, Spinner } from '@radix-ui/themes';
+import { FileAudio, Download, Trash2, Upload, Sparkles } from 'lucide-react';
 
 interface TranscriptionResult {
   id: string;
@@ -132,10 +133,10 @@ export default function MeetingTranscriptionPanel() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg text-white">
+    <div className="flex flex-col h-full bg-mission-control-bg text-mission-control-text">
       <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center space-x-3">
-          <FileAudio className="w-5 h-5 text-emerald-400" />
+          <FileAudio className="w-5 h-5 text-[--accent-11]" />
           <h2 className="text-lg font-semibold">Meeting Transcription</h2>
         </div>
         <span className="text-xs text-mission-control-text-dim">Powered by Gemini AI</span>
@@ -150,17 +151,20 @@ export default function MeetingTranscriptionPanel() {
           onChange={handleFileUpload}
           className="hidden"
         />
-        <button
+        <Button
           onClick={() => fileInputRef.current?.click()}
           disabled={isTranscribing}
-          className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+          variant="solid"
+          color="grass"
+          size="3"
+          className="w-full"
         >
           {isTranscribing ? (
-            <><Loader2 className="w-5 h-5 animate-spin" /><span>Transcribing...</span></>
+            <><Spinner /><span>Transcribing...</span></>
           ) : (
             <><Upload className="w-5 h-5" /><span>Upload Audio for Transcription</span></>
           )}
-        </button>
+        </Button>
         <p className="text-xs text-mission-control-text-dim mt-2 text-center">
           Supports MP3, WAV, WebM, M4A, OGG, and video files
         </p>
@@ -188,21 +192,23 @@ export default function MeetingTranscriptionPanel() {
                 </div>
                 <div className="flex items-center space-x-2">
                   {!result.summary && (
-                    <button
+                    <IconButton
                       onClick={() => summarize(result.id)}
                       disabled={summarizingIds.has(result.id)}
-                      className="p-2 hover:bg-mission-control-border rounded transition-colors text-emerald-400"
+                      variant="ghost"
+                      color="violet"
+                      size="2"
                       title="AI Summarize"
                     >
-                      {summarizingIds.has(result.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    </button>
+                      {summarizingIds.has(result.id) ? <Spinner /> : <Sparkles className="w-4 h-4" />}
+                    </IconButton>
                   )}
-                  <button onClick={() => downloadTranscript(result)} className="p-2 hover:bg-mission-control-border rounded transition-colors" title="Download">
+                  <IconButton onClick={() => downloadTranscript(result)} variant="ghost" color="gray" size="2" title="Download">
                     <Download className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => deleteResult(result.id)} className="p-2 hover:bg-mission-control-border rounded transition-colors text-error" title="Delete">
+                  </IconButton>
+                  <IconButton onClick={() => deleteResult(result.id)} variant="ghost" color="red" size="2" title="Delete">
                     <Trash2 className="w-4 h-4" />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
 
@@ -216,7 +222,7 @@ export default function MeetingTranscriptionPanel() {
 
               {result.summary && (
                 <div className="space-y-2 border-t border-mission-control-border pt-3">
-                  <div className="text-sm font-medium text-emerald-400">AI Summary</div>
+                  <div className="text-sm font-medium text-[--accent-11]">AI Summary</div>
                   <p className="text-sm text-mission-control-text">{result.summary.summary}</p>
                   {result.summary.actionItems.length > 0 && (
                     <div>

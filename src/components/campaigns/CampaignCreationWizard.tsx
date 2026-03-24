@@ -12,6 +12,7 @@ import { campaignsApi, agentApi } from '../../lib/api';
 import type { Campaign } from '../../types/campaigns';
 import AgentAvatar from '../AgentAvatar';
 import { CHANNEL_ICONS, CHANNEL_LABELS, ALL_CHANNELS } from './channelIcons';
+import { Button, IconButton } from '@radix-ui/themes';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -414,16 +415,13 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             })}
           </div>
           {step === 'types' && types.length > 0 && (
-            <button
-              onClick={() => {
-                const labels = types.map(v => TYPE_OPTIONS.find(o => o.value === v)?.label ?? v).join(', ');
-                setMessages(prev => [...prev, userMsg(labels)]);
-                advanceTo('goal');
-              }}
-              className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors"
-            >
+            <Button variant="solid" size="1" onClick={() => {
+              const labels = types.map(v => TYPE_OPTIONS.find(o => o.value === v)?.label ?? v).join(', ');
+              setMessages(prev => [...prev, userMsg(labels)]);
+              advanceTo('goal');
+            }}>
               <Check size={14} /> Confirm selection
-            </button>
+            </Button>
           )}
         </div>
       );
@@ -481,16 +479,13 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             })}
           </div>
           {step === 'channels' && channels.length > 0 && (
-            <button
-              onClick={() => {
-                const labels = channels.map(c => CHANNEL_LABELS[c] ?? c).join(', ');
-                setMessages(prev => [...prev, userMsg(labels)]);
-                advanceTo('audience');
-              }}
-              className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors"
-            >
+            <Button variant="solid" size="1" onClick={() => {
+              const labels = channels.map(c => CHANNEL_LABELS[c] ?? c).join(', ');
+              setMessages(prev => [...prev, userMsg(labels)]);
+              advanceTo('audience');
+            }}>
               <Check size={14} /> Confirm channels
-            </button>
+            </Button>
           )}
         </div>
       );
@@ -498,12 +493,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
       case 'audience': return (
         step === 'audience' ? (
           <div className="mt-3 flex gap-2">
-            <button
-              onClick={() => handleAudienceSubmit('')}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
-            >
+            <Button variant="ghost" size="1" onClick={() => handleAudienceSubmit('')}>
               <SkipForward size={13} /> Skip
-            </button>
+            </Button>
           </div>
         ) : null
       );
@@ -511,12 +503,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
       case 'budget': return (
         step === 'budget' ? (
           <div className="mt-3 flex gap-2">
-            <button
-              onClick={() => handleBudgetSubmit('')}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
-            >
+            <Button variant="ghost" size="1" onClick={() => handleBudgetSubmit('')}>
               <SkipForward size={13} /> Skip
-            </button>
+            </Button>
           </div>
         ) : null
       );
@@ -545,26 +534,20 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           </div>
           <div className="flex gap-2">
             {(startDate || endDate) && (
-              <button
-                onClick={() => {
-                  const parts = [startDate, endDate].filter(Boolean).join(' → ');
-                  setMessages(prev => [...prev, userMsg(parts)]);
-                  advanceTo('brief');
-                }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors"
-              >
-                <Check size={14} /> Confirm dates
-              </button>
-            )}
-            <button
-              onClick={() => {
-                setMessages(prev => [...prev, userMsg('Skipped')]);
+              <Button variant="solid" size="1" onClick={() => {
+                const parts = [startDate, endDate].filter(Boolean).join(' → ');
+                setMessages(prev => [...prev, userMsg(parts)]);
                 advanceTo('brief');
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
-            >
+              }}>
+                <Check size={14} /> Confirm dates
+              </Button>
+            )}
+            <Button variant="ghost" size="1" onClick={() => {
+              setMessages(prev => [...prev, userMsg('Skipped')]);
+              advanceTo('brief');
+            }}>
               <SkipForward size={13} /> Skip
-            </button>
+            </Button>
           </div>
         </div>
       ) : null;
@@ -579,28 +562,18 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             className="w-full px-3 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none text-sm"
           />
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={handleDraftBrief}
-              disabled={draftingBrief}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-accent/40 text-mission-control-accent rounded-lg text-sm hover:bg-mission-control-accent/10 transition-colors disabled:opacity-50"
-            >
+            <Button variant="ghost" size="1" onClick={handleDraftBrief} disabled={draftingBrief}>
               {draftingBrief ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
               Draft with AI
-            </button>
+            </Button>
             {brief.trim().length > 0 && (
-              <button
-                onClick={() => handleBriefTextSubmit(brief)}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors"
-              >
+              <Button variant="solid" size="1" onClick={() => handleBriefTextSubmit(brief)}>
                 <Check size={13} /> Use this brief
-              </button>
+              </Button>
             )}
-            <button
-              onClick={() => handleBriefTextSubmit('')}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
-            >
+            <Button variant="ghost" size="1" onClick={() => handleBriefTextSubmit('')}>
               <SkipForward size={13} /> Skip
-            </button>
+            </Button>
           </div>
         </div>
       ) : null;
@@ -639,17 +612,14 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               )}
             </div>
           )}
-          <button
-            onClick={() => {
-              const agentNames = agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name);
-              const label = agentNames.length > 0 ? agentNames.join(', ') : 'No agents assigned';
-              setMessages(prev => [...prev, userMsg(label)]);
-              setWizardPhase('context-files');
-            }}
-            className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors"
-          >
+          <Button variant="solid" size="1" onClick={() => {
+            const agentNames = agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name);
+            const label = agentNames.length > 0 ? agentNames.join(', ') : 'No agents assigned';
+            setMessages(prev => [...prev, userMsg(label)]);
+            setWizardPhase('context-files');
+          }}>
             <Check size={14} /> {selectedAgents.length > 0 ? `Assign ${selectedAgents.length} agent${selectedAgents.length > 1 ? 's' : ''}` : 'Continue without agents'}
-          </button>
+          </Button>
         </div>
       ) : null;
 
@@ -714,27 +684,20 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           )}
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleCreate}
-              disabled={creating}
-              className="flex items-center gap-2 px-5 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+            <Button variant="solid" size="1" onClick={handleCreate} disabled={creating}>
               {creating ? <><Loader2 size={14} className="animate-spin" /> Creating…</> : <><Rocket size={14} /> Launch Campaign</>}
-            </button>
-            <button
-              onClick={() => {
-                // Go back to name step — restart conversation
-                setMessages([]);
-                setStep('name');
-                setName(''); setTypes([]); setGoal(''); setChannels([]);
-                setTargetAudience(''); setBudget(''); setStartDate(''); setEndDate('');
-                setBrief(''); setSelectedAgents([]); setCreationError(null);
-                sendAgentMessage("Let's set up your campaign. What's it called?", 'name', 200);
-              }}
-              className="text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors underline underline-offset-2"
-            >
+            </Button>
+            <Button variant="ghost" size="1" onClick={() => {
+              // Go back to name step — restart conversation
+              setMessages([]);
+              setStep('name');
+              setName(''); setTypes([]); setGoal(''); setChannels([]);
+              setTargetAudience(''); setBudget(''); setStartDate(''); setEndDate('');
+              setBrief(''); setSelectedAgents([]); setCreationError(null);
+              sendAgentMessage("Let's set up your campaign. What's it called?", 'name', 200);
+            }}>
               Start over
-            </button>
+            </Button>
           </div>
         </div>
       ) : null;
@@ -764,10 +727,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             })}
           </div>
           {types.length > 0 && (
-            <button onClick={() => sendDiscoveryMessage(types.map(v => TYPE_OPTIONS.find(o => o.value === v)?.label ?? v).join(', '))}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors">
+            <Button variant="solid" size="1" onClick={() => sendDiscoveryMessage(types.map(v => TYPE_OPTIONS.find(o => o.value === v)?.label ?? v).join(', '))}>
               <Check size={12} /> Confirm ({types.length} selected)
-            </button>
+            </Button>
           )}
         </div>
       );
@@ -804,10 +766,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             })}
           </div>
           {channels.length > 0 && (
-            <button onClick={() => sendDiscoveryMessage(channels.map(c => CHANNEL_LABELS[c] ?? c).join(', '))}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors">
+            <Button variant="solid" size="1" onClick={() => sendDiscoveryMessage(channels.map(c => CHANNEL_LABELS[c] ?? c).join(', '))}>
               <Check size={12} /> Confirm ({channels.length} selected)
-            </button>
+            </Button>
           )}
         </div>
       );
@@ -826,14 +787,12 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => sendDiscoveryMessage(startDate || endDate ? `${startDate || 'TBD'} → ${endDate || 'TBD'}` : 'No specific dates')}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors">
+            <Button variant="solid" size="1" onClick={() => sendDiscoveryMessage(startDate || endDate ? `${startDate || 'TBD'} → ${endDate || 'TBD'}` : 'No specific dates')}>
               <Check size={12} /> Confirm dates
-            </button>
-            <button onClick={() => sendDiscoveryMessage('No specific dates yet')}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+            </Button>
+            <Button variant="ghost" size="1" onClick={() => sendDiscoveryMessage('No specific dates yet')}>
               <SkipForward size={12} /> Skip
-            </button>
+            </Button>
           </div>
         </div>
       );
@@ -843,14 +802,12 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             className="w-full px-2.5 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
             onKeyDown={e => e.key === 'Enter' && sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')} />
           <div className="flex gap-2">
-            <button onClick={() => sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors">
+            <Button variant="solid" size="1" onClick={() => sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')}>
               <Check size={12} /> Confirm budget
-            </button>
-            <button onClick={() => sendDiscoveryMessage('No budget defined yet')}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+            </Button>
+            <Button variant="ghost" size="1" onClick={() => sendDiscoveryMessage('No budget defined yet')}>
               <SkipForward size={12} /> Skip
-            </button>
+            </Button>
           </div>
         </div>
       );
@@ -876,15 +833,12 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               <span className="text-sm font-semibold text-mission-control-text">New Campaign</span>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setWizardPhase('main')}
-                className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-              >
+              <Button variant="ghost" size="1" onClick={() => setWizardPhase('main')}>
                 Skip
-              </button>
-              <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+              </Button>
+              <IconButton variant="ghost" size="1" onClick={onClose}>
                 <X size={16} />
-              </button>
+              </IconButton>
             </div>
           </div>
 
@@ -934,12 +888,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                 {!!discoveryStructuredData.goal && (
                   <p className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-2">{String(discoveryStructuredData.goal)}</p>
                 )}
-                <button
-                  onClick={handleDiscoveryConfirm}
-                  className="mt-2 w-full py-2 bg-mission-control-accent text-white text-sm rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium"
-                >
+                <Button variant="solid" size="1" onClick={handleDiscoveryConfirm} className="mt-2 w-full justify-center">
                   Looks good →
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -955,13 +906,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                 disabled={discoveryLoading}
                 className="flex-1 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50"
               />
-              <button
-                onClick={handleDiscoverySend}
-                disabled={!discoveryInput.trim() || discoveryLoading}
-                className="px-3 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-40"
-              >
+              <IconButton variant="solid" size="2" onClick={handleDiscoverySend} disabled={!discoveryInput.trim() || discoveryLoading}>
                 <Send size={14} />
-              </button>
+              </IconButton>
             </div>
           </div>
         </div>
@@ -979,9 +926,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               <div className="text-sm font-semibold text-mission-control-text">Add Context Files</div>
               <div className="text-xs text-mission-control-text-dim">Optional — upload files Gemini should use as context</div>
             </div>
-            <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+            <IconButton variant="ghost" size="1" onClick={onClose}>
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
 
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
@@ -1018,9 +965,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                   <div key={i} className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
                     <span className="flex-1 text-sm text-mission-control-text truncate">{f.name}</span>
                     <span className="text-xs text-mission-control-text-dim">{(f.size / 1024).toFixed(0)}KB</span>
-                    <button onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))} className="p-1 text-mission-control-text-dim hover:text-error transition-colors">
+                    <IconButton variant="ghost" size="1" color="red" onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))}>
                       <Trash2 size={12} />
-                    </button>
+                    </IconButton>
                   </div>
                 ))}
               </div>
@@ -1028,15 +975,12 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           </div>
 
           <div className="px-4 py-3 border-t border-mission-control-border">
-            <button
-              onClick={() => {
-                setWizardPhase('main');
-                advanceTo('review');
-              }}
-              className="w-full py-2 bg-mission-control-accent text-white text-sm rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium"
-            >
+            <Button variant="solid" size="1" onClick={() => {
+              setWizardPhase('main');
+              advanceTo('review');
+            }} className="w-full justify-center">
               {stagedFiles.length > 0 ? `Continue with ${stagedFiles.length} file${stagedFiles.length !== 1 ? 's' : ''}` : 'Continue'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -1062,9 +1006,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+          <IconButton variant="ghost" size="1" onClick={onClose}>
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Chat messages */}
@@ -1130,13 +1074,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                 autoFocus
                 className="flex-1 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent text-sm"
               />
-              <button
-                onClick={handleInputSend}
-                disabled={step === 'name' ? freeInput.trim().length < 2 : false}
-                className="flex items-center justify-center w-9 h-9 bg-mission-control-accent rounded-lg text-white hover:bg-mission-control-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
-              >
+              <IconButton variant="solid" size="2" onClick={handleInputSend} disabled={step === 'name' ? freeInput.trim().length < 2 : false} className="flex-shrink-0">
                 <Send size={15} />
-              </button>
+              </IconButton>
             </div>
           </div>
         )}

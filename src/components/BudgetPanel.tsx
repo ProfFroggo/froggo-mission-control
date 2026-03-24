@@ -2,6 +2,7 @@
 // BudgetPanel — full-featured budget module: quarters, categories, invoices, AI chat
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import {
   Wallet, Plus, Pencil, Trash2, X, RefreshCw, Upload, FileText, DollarSign,
   TrendingDown, Bot, AlertTriangle, CheckCircle, Clock, Ban,
@@ -192,7 +193,7 @@ function FileDropZone({ invoiceId, onUpload, onExtracted, existingFile, onRemove
       <div className="flex items-center gap-2 p-2.5 rounded-lg border border-mission-control-border bg-mission-control-bg">
         <FileText size={14} className="text-info shrink-0" />
         <span className="flex-1 text-xs truncate text-mission-control-text">{existingFile}</span>
-        {onRemove && <button type="button" onClick={onRemove} className="text-error hover:text-error/80"><X size={13} /></button>}
+        {onRemove && <IconButton type="button" variant="ghost" size="1" color="red" onClick={onRemove}><X size={13} /></IconButton>}
       </div>
     );
   }
@@ -249,9 +250,9 @@ function PdfPreviewModal({ invoice, onClose }: { invoice: Invoice; onClose: () =
             <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors">
               <ExternalLink size={11} /> Open
             </a>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-mission-control-border/50 text-mission-control-text-dim">
+            <IconButton variant="ghost" size="1" onClick={onClose}>
               <X size={15} />
-            </button>
+            </IconButton>
           </div>
         </div>
         <div className="flex-1 overflow-hidden rounded-b-2xl min-h-[500px]">
@@ -276,9 +277,9 @@ function ModalWrap({ title, onClose, children, wide }: {
       <div className={`relative bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[90vh] w-full ${wide ? 'max-w-2xl' : 'max-w-md'}`}>
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-mission-control-border shrink-0">
           <span className="font-semibold text-sm text-mission-control-text">{title}</span>
-          <button onClick={onClose} className="p-1 rounded hover:bg-mission-control-bg-alt text-mission-control-text-dim">
+          <IconButton variant="ghost" size="1" onClick={onClose}>
             <X size={15} />
-          </button>
+          </IconButton>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
       </div>
@@ -300,15 +301,13 @@ function ModalActions({ onClose, onSave, saving, label, danger }: {
 }) {
   return (
     <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-mission-control-border/50">
-      <button onClick={onClose} className="px-3.5 py-2 text-xs rounded-xl border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
+      <Button variant="ghost" size="1" onClick={onClose}>
         Cancel
-      </button>
-      <button onClick={onSave} disabled={saving} className={`px-3.5 py-2 text-xs rounded-xl font-medium transition-all disabled:opacity-50 flex items-center gap-1.5 ${
-        danger ? 'bg-error/10 text-error hover:bg-error/20 border border-error/30' : 'bg-mission-control-accent text-white hover:brightness-110'
-      }`}>
+      </Button>
+      <Button variant={danger ? 'soft' : 'solid'} color={danger ? 'red' : undefined} size="1" onClick={onSave} disabled={saving}>
         {saving && <Loader2 size={11} className="animate-spin" />}
         {label}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -1226,30 +1225,19 @@ export default function BudgetPanel() {
 
           <div className="flex items-center gap-1.5">
             {activeQuarterId && (
-              <button
-                onClick={() => setQuarterModal({ mode: 'edit', data: activeQuarter || undefined })}
-                className="p-1.5 rounded-lg hover:bg-mission-control-border/50 text-mission-control-text-dim transition-colors"
-                title="Edit quarter"
-              >
+              <IconButton variant="ghost" size="1" onClick={() => setQuarterModal({ mode: 'edit', data: activeQuarter || undefined })} title="Edit quarter">
                 <Pencil size={13} />
-              </button>
+              </IconButton>
             )}
-            <button onClick={() => load()} className="p-1.5 rounded-lg hover:bg-mission-control-border/50 text-mission-control-text-dim transition-colors" title="Refresh">
+            <IconButton variant="ghost" size="1" onClick={() => load()} title="Refresh">
               <RefreshCw size={14} />
-            </button>
-            <button
-              onClick={() => { setImportModal(true); setImportPreview(null); setImportStatus(null); }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-xl border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-all"
-              title="Import budget from Excel"
-            >
+            </IconButton>
+            <Button variant="ghost" size="1" onClick={() => { setImportModal(true); setImportPreview(null); setImportStatus(null); }} title="Import budget from Excel">
               <Upload size={12} /> Import
-            </button>
-            <button
-              onClick={() => setQuarterModal({ mode: 'create' })}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-xl bg-mission-control-accent text-white hover:brightness-110 transition-all"
-            >
+            </Button>
+            <Button variant="solid" size="1" onClick={() => setQuarterModal({ mode: 'create' })}>
               <Plus size={12} /> New Quarter
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -1287,22 +1275,19 @@ export default function BudgetPanel() {
                 <>
                   {/* Breadcrumb */}
                   <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => setDrillQuarterId(null)}
-                      className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-                    >
+                    <Button variant="ghost" size="1" onClick={() => setDrillQuarterId(null)}>
                       <ChevronLeft size={14} /> All Quarters
-                    </button>
+                    </Button>
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                         drillQuarter.status === 'active' ? 'bg-success/10 text-success' : drillQuarter.status === 'closed' ? 'bg-muted-subtle text-muted' : 'bg-info/10 text-info'
                       }`}>{drillQuarter.status}</span>
-                      <button onClick={() => setQuarterModal({ mode: 'edit', data: drillQuarter })} className="p-1.5 rounded-lg hover:bg-mission-control-border/50 text-mission-control-text-dim transition-colors" title="Edit quarter">
+                      <IconButton variant="ghost" size="1" onClick={() => setQuarterModal({ mode: 'edit', data: drillQuarter })} title="Edit quarter">
                         <Pencil size={12} />
-                      </button>
-                      <button onClick={() => setConfirmDelete({ type: 'quarter', id: drillQuarter.id, label: drillQuarter.name })} className="p-1.5 rounded-lg hover:bg-mission-control-border/50 text-error/60 hover:text-error transition-colors" title="Delete quarter">
+                      </IconButton>
+                      <IconButton variant="ghost" size="1" color="red" onClick={() => setConfirmDelete({ type: 'quarter', id: drillQuarter.id, label: drillQuarter.name })} title="Delete quarter">
                         <Trash2 size={12} />
-                      </button>
+                      </IconButton>
                     </div>
                   </div>
 
@@ -1427,12 +1412,9 @@ export default function BudgetPanel() {
                         <div className="rounded-xl border border-mission-control-border bg-mission-control-surface">
                           <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
                             <span className="text-xs font-semibold text-mission-control-text">Invoices ({drillInvoices.length})</span>
-                            <button
-                              onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('invoices'); setDrillQuarterId(null); }}
-                              className="text-[10px] text-mission-control-text-dim hover:text-mission-control-text flex items-center gap-1 transition-colors"
-                            >
+                            <Button variant="ghost" size="1" onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('invoices'); setDrillQuarterId(null); }}>
                               View All <ChevronLeft size={10} className="rotate-180" />
-                            </button>
+                            </Button>
                           </div>
                           <div className="divide-y divide-mission-control-border/50 max-h-64 overflow-y-auto">
                             {drillInvoices.slice(0, 20).map(inv => (
@@ -1459,27 +1441,18 @@ export default function BudgetPanel() {
 
                       {/* Quick actions */}
                       <div className="flex flex-wrap gap-2 pb-2">
-                        <button
-                          onClick={() => { setActiveQuarterId(drillQuarter.id); setInvoiceModal({ mode: 'create' }); }}
-                          className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-xl bg-mission-control-accent text-white hover:brightness-110 transition-all"
-                        >
+                        <Button variant="solid" size="1" onClick={() => { setActiveQuarterId(drillQuarter.id); setInvoiceModal({ mode: 'create' }); }}>
                           <Plus size={12} /> Add Invoice
-                        </button>
-                        <button
-                          onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('categories'); setCategoryModal({ mode: 'create' }); setDrillQuarterId(null); }}
-                          className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-xl border border-mission-control-border text-mission-control-text hover:bg-mission-control-border/30 transition-colors"
-                        >
+                        </Button>
+                        <Button variant="ghost" size="1" onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('categories'); setCategoryModal({ mode: 'create' }); setDrillQuarterId(null); }}>
                           <Plus size={12} /> Add Category
-                        </button>
-                        <button
-                          onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('invoices'); setDrillQuarterId(null); }}
-                          className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-xl border border-mission-control-border text-mission-control-text hover:bg-mission-control-border/30 transition-colors"
-                        >
+                        </Button>
+                        <Button variant="ghost" size="1" onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('invoices'); setDrillQuarterId(null); }}>
                           <FileText size={12} /> Manage Invoices
-                        </button>
-                        <button onClick={() => setTab('chat')} className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-xl border border-mission-control-border text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
+                        </Button>
+                        <Button variant="ghost" size="1" onClick={() => setTab('chat')}>
                           <Bot size={12} /> Finance Agent
-                        </button>
+                        </Button>
                       </div>
                     </>
                   )}
@@ -1565,21 +1538,13 @@ export default function BudgetPanel() {
                               {new Date(q.end_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </p>
                           </div>
-                          <div className="flex gap-0.5 shrink-0 ml-2">
-                            <button
-                              onClick={e => { e.stopPropagation(); setActiveQuarterId(q.id); setQuarterModal({ mode: 'edit', data: q }); }}
-                              className="p-1.5 rounded-lg hover:bg-mission-control-border/50 text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Edit"
-                            >
+                          <div className="flex gap-0.5 shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <IconButton variant="ghost" size="1" onClick={e => { e.stopPropagation(); setActiveQuarterId(q.id); setQuarterModal({ mode: 'edit', data: q }); }} title="Edit">
                               <Pencil size={11} />
-                            </button>
-                            <button
-                              onClick={e => { e.stopPropagation(); setConfirmDelete({ type: 'quarter', id: q.id, label: q.name }); }}
-                              className="p-1.5 rounded-lg hover:bg-error/10 text-error/60 hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Delete"
-                            >
+                            </IconButton>
+                            <IconButton variant="ghost" size="1" color="red" onClick={e => { e.stopPropagation(); setConfirmDelete({ type: 'quarter', id: q.id, label: q.name }); }} title="Delete">
                               <Trash2 size={11} />
-                            </button>
+                            </IconButton>
                           </div>
                         </div>
 
@@ -1700,19 +1665,12 @@ export default function BudgetPanel() {
                 {showAllQuarters ? 'All Time' : activeQuarter?.name || 'Quarter'}
               </button>
 
-              <button
-                onClick={exportInvoicesCSV}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-xl border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-                title="Export to CSV"
-              >
+              <Button variant="ghost" size="1" onClick={exportInvoicesCSV} title="Export to CSV">
                 <Download size={11} /> Export
-              </button>
-              <button
-                onClick={() => setInvoiceModal({ mode: 'create' })}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-xl bg-mission-control-accent text-white hover:brightness-110 transition-all"
-              >
+              </Button>
+              <Button variant="solid" size="1" onClick={() => setInvoiceModal({ mode: 'create' })}>
                 <Plus size={11} /> Invoice
-              </button>
+              </Button>
             </div>
 
             {/* Bulk action bar */}
@@ -1720,15 +1678,15 @@ export default function BudgetPanel() {
               <div className="shrink-0 px-4 py-2.5 bg-mission-control-surface border-b border-mission-control-border flex items-center gap-2 text-xs">
                 <span className="text-mission-control-text-dim">{selectedIds.size} selected</span>
                 <div className="flex gap-1.5 ml-auto">
-                  <button onClick={() => handleBulkStatus('paid')} disabled={bulkLoading} className="px-2.5 py-1 rounded-lg bg-success/10 text-success hover:bg-success/20 transition-colors">Mark Paid</button>
-                  <button onClick={() => handleBulkStatus('pending')} disabled={bulkLoading} className="px-2.5 py-1 rounded-lg bg-warning/10 text-warning hover:bg-warning/20 transition-colors">Mark Pending</button>
-                  <button onClick={() => handleBulkStatus('cancelled')} disabled={bulkLoading} className="px-2.5 py-1 rounded-lg bg-muted-subtle text-muted hover:bg-muted-subtle/80 transition-colors">Cancel</button>
-                  <button onClick={handleBulkDelete} disabled={bulkLoading} className="px-2.5 py-1 rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors">
+                  <Button variant="soft" color="green" size="1" onClick={() => handleBulkStatus('paid')} disabled={bulkLoading}>Mark Paid</Button>
+                  <Button variant="soft" color="yellow" size="1" onClick={() => handleBulkStatus('pending')} disabled={bulkLoading}>Mark Pending</Button>
+                  <Button variant="ghost" size="1" onClick={() => handleBulkStatus('cancelled')} disabled={bulkLoading}>Cancel</Button>
+                  <Button variant="soft" color="red" size="1" onClick={handleBulkDelete} disabled={bulkLoading}>
                     {bulkLoading ? <Loader2 size={10} className="animate-spin" /> : 'Delete'}
-                  </button>
-                  <button onClick={() => setSelectedIds(new Set())} className="px-2.5 py-1 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors">
+                  </Button>
+                  <IconButton variant="ghost" size="1" onClick={() => setSelectedIds(new Set())}>
                     <X size={10} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             )}
@@ -1799,10 +1757,9 @@ export default function BudgetPanel() {
                           <td className="px-2 py-2">
                             <div className="flex items-center gap-1">
                               {inv.file_name && (
-                                <button onClick={() => setPdfPreview(inv)} title="View document"
-                                  className="p-1 rounded hover:bg-mission-control-border/50 text-info transition-colors">
+                                <IconButton variant="ghost" size="1" onClick={() => setPdfPreview(inv)} title="View document">
                                   <Eye size={11} />
-                                </button>
+                                </IconButton>
                               )}
                               {explorerUrl && (
                                 <a href={explorerUrl} target="_blank" rel="noopener noreferrer" title={`View on explorer: ${truncateHash(inv.tx_hash!)}`}
@@ -1810,14 +1767,12 @@ export default function BudgetPanel() {
                                   <Link2 size={11} />
                                 </a>
                               )}
-                              <button onClick={() => setInvoiceModal({ mode: 'edit', data: inv })}
-                                className="p-1 rounded hover:bg-mission-control-border/50 text-mission-control-text-dim transition-colors">
+                              <IconButton variant="ghost" size="1" onClick={() => setInvoiceModal({ mode: 'edit', data: inv })}>
                                 <Pencil size={11} />
-                              </button>
-                              <button onClick={() => setConfirmDelete({ type: 'invoice', id: inv.id, label: inv.title })}
-                                className="p-1 rounded hover:bg-error/10 text-mission-control-text-dim hover:text-error transition-colors">
+                              </IconButton>
+                              <IconButton variant="ghost" size="1" color="red" onClick={() => setConfirmDelete({ type: 'invoice', id: inv.id, label: inv.title })}>
                                 <Trash2 size={11} />
-                              </button>
+                              </IconButton>
                             </div>
                           </td>
                         </tr>
@@ -1846,13 +1801,9 @@ export default function BudgetPanel() {
                 <h2 className="text-sm font-semibold text-mission-control-text">Categories</h2>
                 <p className="text-xs text-mission-control-text-dim">{activeQuarter?.name || 'No quarter selected'}</p>
               </div>
-              <button
-                onClick={() => setCategoryModal({ mode: 'create' })}
-                disabled={!activeQuarterId}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-xl bg-mission-control-accent text-white hover:brightness-110 transition-all disabled:opacity-40"
-              >
+              <Button variant="solid" size="1" onClick={() => setCategoryModal({ mode: 'create' })} disabled={!activeQuarterId}>
                 <Plus size={12} /> New Category
-              </button>
+              </Button>
             </div>
 
             {/* Tag filter pills */}
@@ -1884,9 +1835,9 @@ export default function BudgetPanel() {
                 <Layers size={28} />
                 <p className="text-sm">{activeQuarterId ? 'No categories yet' : 'Select a quarter first'}</p>
                 {activeQuarterId && (
-                  <button onClick={() => setCategoryModal({ mode: 'create' })} className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-xl bg-mission-control-accent text-white">
+                  <Button variant="solid" size="1" onClick={() => setCategoryModal({ mode: 'create' })}>
                     <Plus size={12} /> Add Category
-                  </button>
+                  </Button>
                 )}
               </div>
             ) : (
