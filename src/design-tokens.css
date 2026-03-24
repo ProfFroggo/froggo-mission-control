@@ -77,9 +77,9 @@
   --mission-control-text: #fafafa;             /* Primary text */
   --mission-control-text-dim: #a1a1aa;         /* Secondary text, muted content */
 
-  /* Accent colors */
-  --mission-control-accent: #22c55e;           /* Primary action color (green) */
-  --mission-control-accent-dim: #16a34a;       /* Accent hover/active state */
+  /* Accent colors — Radix violet-9/10, fixed (not user configurable) */
+  --mission-control-accent: #6e56cf;           /* Primary action color (Radix violet-9) */
+  --mission-control-accent-dim: #5b47b0;       /* Accent hover/active state (violet-10) */
 
   /* Alternate / alias surface colors */
   --mission-control-bg-alt: #1a1a1a;           /* Between bg and surface, used for input backgrounds */

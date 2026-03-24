@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+import { Theme } from '@radix-ui/themes';
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import LoadingPanel from './components/LoadingPanel';
@@ -50,6 +51,11 @@ const OnboardingWizard = dynamic(() => _onboardingWizardPreload, { ssr: false })
 type View = string;
 
 function App() {
+  // Radix Theme appearance — syncs with the existing theme toggle system
+  const [radixAppearance, setRadixAppearance] = useState<'dark' | 'light'>('dark');
+  // Radix Theme scaling — user-configurable in settings
+  const [radixScaling, setRadixScaling] = useState<'90%' | '95%' | '100%' | '105%' | '110%'>('95%');
+
   const [currentView, setCurrentViewState] = useState<View>(() => {
     // Restore from URL hash first (survives refresh), then localStorage default
     const hash = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
@@ -173,7 +179,11 @@ function App() {
       try {
         const settings = JSON.parse(saved);
         const theme = settings.theme || 'dark';
-        const accentColor = settings.accentColor || '#22c55e';
+        const accentColor = settings.accentColor || '#6e56cf';
+        // Load UI scaling preference
+        if (settings.uiScaling && ['90%','95%','100%','105%','110%'].includes(settings.uiScaling)) {
+          setRadixScaling(settings.uiScaling as '90%' | '95%' | '100%' | '105%' | '110%');
+        }
         
         // Determine actual theme
         let actualTheme = theme;
@@ -184,8 +194,11 @@ function App() {
         const root = document.documentElement;
         root.classList.remove('dark', 'light');
         root.classList.add(actualTheme);
-        
-        // Apply theme colors
+
+        // Sync Radix Theme appearance
+        setRadixAppearance(actualTheme === 'light' ? 'light' : 'dark');
+
+        // Apply theme colors — fixed values, no user-configurable accent
         if (actualTheme === 'dark') {
           root.style.setProperty('--mission-control-bg', '#0a0a0a');
           root.style.setProperty('--mission-control-surface', '#141414');
@@ -199,18 +212,25 @@ function App() {
           root.style.setProperty('--mission-control-text', '#18181b');
           root.style.setProperty('--mission-control-text-dim', '#71717a');
         }
-
-        // Apply accent color
-        root.style.setProperty('--mission-control-accent', accentColor);
-        const hex = accentColor.replace('#', '');
-        const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - 30);
-        const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - 30);
-        const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - 30);
-        root.style.setProperty('--mission-control-accent-dim', `rgb(${r}, ${g}, ${b})`);
+        // Accent is always violet (Radix violet-9) — not user configurable
+        root.style.setProperty('--mission-control-accent', '#6e56cf');
+        root.style.setProperty('--mission-control-accent-dim', '#5b47b0');
       } catch (e) {
         // '[App] Failed to apply saved theme:', e;
       }
     }
+  }, []);
+
+  // Listen for scaling change events from settings panel
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { scaling } = (e as CustomEvent).detail ?? {};
+      if (scaling && ['90%','95%','100%','105%','110%'].includes(scaling)) {
+        setRadixScaling(scaling);
+      }
+    };
+    window.addEventListener('radixScalingChange', handler);
+    return () => window.removeEventListener('radixScalingChange', handler);
   }, []);
 
   // Listen for navigate-library event from HRSection
@@ -265,6 +285,11 @@ function App() {
         e.preventDefault();
         const newTheme = toggleTheme();
         const themeName = getThemeDisplayName(newTheme);
+        // Sync Radix Theme appearance with toggle
+        const resolvedTheme = newTheme === 'system'
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : newTheme;
+        setRadixAppearance(resolvedTheme === 'light' ? 'light' : 'dark');
         showToast('success', 'Theme Changed', `Switched to ${themeName}`);
         return;
       }
@@ -491,6 +516,14 @@ function App() {
   });
 
   return (
+    <Theme
+      appearance={radixAppearance}
+      accentColor="violet"
+      grayColor="mauve"
+      radius="small"
+      scaling={radixScaling}
+      panelBackground="translucent"
+    >
     <DependencyGate>
     <ErrorBoundary panelName="Application Root">
       {/* Network Status Indicator */}
@@ -676,6 +709,7 @@ function App() {
       </div>
     </ErrorBoundary>
     </DependencyGate>
+    </Theme>
   );
 }
 

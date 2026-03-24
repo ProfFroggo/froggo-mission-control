@@ -1,4 +1,7 @@
-/* Import accessibility styles FIRST */
+/* Radix UI Themes 3 — must load first to inject CSS custom properties */
+@import '@radix-ui/themes/styles.css';
+
+/* Import accessibility styles */
 @import './accessibility.css';
 
 /* Import react-grid-layout styles */
