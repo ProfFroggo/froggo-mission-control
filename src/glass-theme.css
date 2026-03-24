@@ -11,7 +11,7 @@
    ============================================================ */
 
 body {
-  background-color: #0e0e10;
+  background-color: var(--color-background, #0e0e10);
 }
 
 /* ============================================================
@@ -28,12 +28,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.10);
+  background: var(--gray-a5);
   border-radius: 99px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--gray-a7);
 }
 
 /* ============================================================
@@ -41,17 +41,11 @@ body {
    ============================================================ */
 
 .card-glass {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: var(--color-surface) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
-}
-
-:root.light .card-glass {
-  background: rgba(255, 255, 255, 0.85) !important;
-  border: 1px solid rgba(0, 0, 0, 0.07) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid var(--gray-a4) !important;
+  box-shadow: 0 1px 3px var(--black-a4) !important;
 }
 
 /* ============================================================
@@ -61,9 +55,9 @@ body {
 [role="dialog"],
 .modal-content,
 [data-radix-dialog-content] {
-  background: #1a1a1c !important;
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7) !important;
+  background: var(--color-panel-solid) !important;
+  border: 1px solid var(--gray-a5) !important;
+  box-shadow: 0 24px 64px var(--black-a9) !important;
 }
 
 /* ============================================================
@@ -74,9 +68,9 @@ body {
 [data-radix-select-content],
 [data-radix-popover-content],
 [data-radix-tooltip-content] {
-  background: #1a1a1c;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  background: var(--color-panel-solid);
+  border: 1px solid var(--gray-a4);
+  box-shadow: 0 8px 32px var(--black-a7);
 }
 
 /* ============================================================
@@ -84,14 +78,14 @@ body {
    ============================================================ */
 
 .sidebar-glass {
-  background: #111113 !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: var(--color-background) !important;
+  border-right: 1px solid var(--gray-a3) !important;
   box-shadow: none !important;
 }
 
 .panel-header-glass {
-  background: #111113;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--color-background);
+  border-bottom: 1px solid var(--gray-a3);
 }
 
 /* ============================================================
@@ -99,16 +93,16 @@ body {
    ============================================================ */
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--gray-a2);
+  border: 1px solid var(--gray-a4);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 3px var(--black-a4);
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  border-color: var(--gray-a6);
+  box-shadow: 0 4px 16px var(--black-a5);
 }
 
 /* ============================================================
@@ -133,18 +127,18 @@ body {
    ============================================================ */
 
 .glass-surface {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--gray-a2);
+  border: 1px solid var(--gray-a4);
 }
 
 .glass-surface-light {
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--gray-a1);
+  border: 1px solid var(--gray-a3);
 }
 
 .glass-inset {
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--black-a4);
+  border: 1px solid var(--gray-a3);
   border-radius: 8px;
 }
 
@@ -152,24 +146,7 @@ body {
    LIGHT MODE GLASS OVERRIDES
    ============================================================ */
 
-:root.light .glass-surface {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(0, 0, 0, 0.07);
-}
-
-:root.light .glass-surface-light {
-  background: rgba(255, 255, 255, 0.7);
-  border-color: rgba(0, 0, 0, 0.05);
-}
-
-:root.light .sidebar-glass {
-  background: #f9fafb !important;
-  border-right-color: rgba(0, 0, 0, 0.08) !important;
-}
-
-:root.light body {
-  background-color: #f5f5f7;
-}
+/* glass-surface, glass-surface-light, sidebar-glass, body all use Radix vars — no light overrides needed */
 
 /* ============================================================
    ACTIVE / SELECTED STATES — Clean, no bloom
@@ -178,9 +155,9 @@ body {
 .sidebar-glass [aria-current="page"],
 .sidebar-glass [data-active="true"],
 .sidebar-glass .active-nav-item {
-  background: rgba(34, 197, 94, 0.10) !important;
-  border-color: rgba(34, 197, 94, 0.20) !important;
-  color: #22c55e !important;
+  background: var(--accent-a3) !important;
+  border-color: var(--accent-a5) !important;
+  color: var(--accent-11) !important;
 }
 
 /* ============================================================
@@ -218,8 +195,8 @@ a[class*="bg-mission-control-accent"]:hover {
 }
 
 .card-base:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-color: var(--gray-a6);
+  box-shadow: 0 2px 8px var(--black-a4);
 }
 
 /* ============================================================
