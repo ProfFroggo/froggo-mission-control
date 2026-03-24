@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Button } from '@radix-ui/themes';
 import {
   Users,
   TrendingUp,
@@ -184,14 +185,11 @@ export default function AdvancedAgentComparison({
           </div>
           <div className="flex flex-wrap gap-2">
             {metrics.map((metric) => (
-              <button
+              <Button
                 key={metric.agent}
                 onClick={() => toggleAgent(metric.agent)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  selectedAgents.includes(metric.agent)
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent'
-                }`}
+                size="2"
+                variant={selectedAgents.includes(metric.agent) ? 'solid' : 'ghost'}
                 disabled={
                   !selectedAgents.includes(metric.agent) && selectedAgents.length >= 5
                 }
@@ -200,7 +198,7 @@ export default function AdvancedAgentComparison({
                 {selectedAgents.includes(metric.agent) && (
                   <span className="ml-2">✓</span>
                 )}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

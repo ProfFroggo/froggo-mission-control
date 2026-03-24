@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Save, Trash2, ExternalLink, MessageCircle, User, Hash, Check, Send, Lightbulb } from 'lucide-react';
-import { Button, IconButton, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, TextField } from '@radix-ui/themes';
 import { scheduleApi } from '../lib/api';
 import { showToast } from './Toast';
 
@@ -211,16 +211,18 @@ export function XResearchView() {
 
         {/* Search Input */}
         <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none z-10" />
-            <input
-              type="text"
+          <div className="flex-1">
+            <TextField.Root
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && performSearch()}
               placeholder="Search tweets, users, topics..."
-              className="w-full pl-10 pr-4 py-3 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
-            />
+              style={{ width: '100%' }}
+            >
+              <TextField.Slot>
+                <Search size={16} />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
           <Button
             onClick={performSearch}

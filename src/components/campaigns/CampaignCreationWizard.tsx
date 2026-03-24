@@ -12,7 +12,7 @@ import { campaignsApi, agentApi } from '../../lib/api';
 import type { Campaign } from '../../types/campaigns';
 import AgentAvatar from '../AgentAvatar';
 import { CHANNEL_ICONS, CHANNEL_LABELS, ALL_CHANNELS } from './channelIcons';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, TextArea, TextField } from '@radix-ui/themes';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -531,12 +531,12 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
 
       case 'brief': return step === 'brief' ? (
         <div className="mt-3 space-y-3">
-          <textarea
+          <TextArea
             placeholder="Describe the campaign strategy, key messages, creative direction…"
             value={brief}
             onChange={e => setBrief(e.target.value)}
             rows={4}
-            className="w-full px-3 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none text-sm"
+            style={{ width: '100%', resize: 'none' }}
           />
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" size="1" onClick={handleDraftBrief} disabled={draftingBrief}>
@@ -763,9 +763,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
       );
       case 'budget': return (
         <div className="mt-2 space-y-2 max-w-[82%]">
-          <input type="number" placeholder="e.g. 50000" value={budget} onChange={e => setBudget(e.target.value)}
-            className="w-full px-2.5 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
-            onKeyDown={e => e.key === 'Enter' && sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')} />
+          <TextField.Root type="number" placeholder="e.g. 50000" value={budget} onChange={e => setBudget(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')}
+            style={{ width: '100%' }} />
           <div className="flex gap-2">
             <Button variant="solid" size="1" onClick={() => sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')}>
               <Check size={12} /> Confirm budget
@@ -862,14 +862,13 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
 
           <div className="px-4 py-3 border-t border-mission-control-border">
             <div className="flex gap-2">
-              <input
-                type="text"
+              <TextField.Root
                 value={discoveryInput}
                 onChange={e => setDiscoveryInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleDiscoverySend()}
                 placeholder="Tell me about your campaign..."
                 disabled={discoveryLoading}
-                className="flex-1 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50"
+                style={{ flex: 1 }}
               />
               <IconButton variant="solid" size="2" onClick={handleDiscoverySend} disabled={!discoveryInput.trim() || discoveryLoading}>
                 <Send size={14} />
@@ -1028,8 +1027,8 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
         {showTextInput && (
           <div className="flex-shrink-0 border-t border-mission-control-border px-4 py-3">
             <div className="flex items-center gap-2">
-              <input
-                ref={inputRef}
+              <TextField.Root
+                ref={inputRef as React.RefObject<HTMLInputElement>}
                 type={step === 'budget' ? 'number' : 'text'}
                 placeholder={inputPlaceholder}
                 value={freeInput}
@@ -1037,7 +1036,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                 onKeyDown={handleInputKeyDown}
                 min={step === 'budget' ? '0' : undefined}
                 autoFocus
-                className="flex-1 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent text-sm"
+                style={{ flex: 1 }}
               />
               <IconButton variant="solid" size="2" onClick={handleInputSend} disabled={step === 'name' ? freeInput.trim().length < 2 : false} className="flex-shrink-0">
                 <Send size={15} />

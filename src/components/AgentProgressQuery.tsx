@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { MessageSquare, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { gateway } from '@/lib/gateway';
 import { chatApi } from '@/lib/api';
@@ -108,25 +109,25 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
 
   return (
     <div className={`space-y-3 ${className}`}>
-      <button
+      <Button
         onClick={handleQuery}
         disabled={loading}
-        className="flex items-center gap-2 px-4 py-2 bg-review-subtle hover:bg-review-subtle 
-                   text-review border border-review-border rounded-lg transition-all
-                   disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+        size="2"
+        variant="soft"
+        color="purple"
       >
         {loading ? (
           <>
             <Loader2 size={16} className="animate-spin" />
-            <span>Querying agent...</span>
+            Querying agent...
           </>
         ) : (
           <>
             <MessageSquare size={16} />
-            <span>Get Progress Report</span>
+            Get Progress Report
           </>
         )}
-      </button>
+      </Button>
 
       {/* Response display */}
       {response && (

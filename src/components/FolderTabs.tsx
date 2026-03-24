@@ -49,6 +49,7 @@ function SortableFolderTab({ folder, isActive, onClick, isOver }: SortableFolder
 
   return (
     <button
+      type="button"
       ref={setRefs}
       style={style}
       {...attributes}

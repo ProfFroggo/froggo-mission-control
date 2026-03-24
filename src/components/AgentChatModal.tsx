@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Mic, MessageSquare, AlertTriangle, XCircle } from 'lucide-react';
-import { IconButton, TextArea, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, TextArea, Spinner } from '@radix-ui/themes';
 import MarkdownMessage from './MarkdownMessage';
 import SessionStatsBar from './SessionStatsBar';
 import StreamingText from './StreamingText';
@@ -284,14 +284,16 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
             </h3>
             <div className="grid grid-cols-2 gap-2">
               {quickPrompts.map((item) => (
-                <button
+                <Button
                   key={item.text}
                   onClick={() => setInput(item.prompt)}
-                  className="flex items-center gap-2 p-2 text-sm bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-colors text-left"
+                  size="2"
+                  variant="ghost"
+                  style={{ justifyContent: 'flex-start' }}
                 >
-                  <item.icon size={14} className="text-mission-control-text-dim flex-shrink-0" />
-                  <span className="text-mission-control-text-dim">{item.text}</span>
-                </button>
+                  <item.icon size={14} className="flex-shrink-0" />
+                  <span>{item.text}</span>
+                </Button>
               ))}
             </div>
           </div>

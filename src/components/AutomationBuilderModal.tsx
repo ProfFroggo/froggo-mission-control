@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronUp, AlertCircle,
 } from 'lucide-react';
 import type { Automation, AutomationStep, TriggerType } from './AutomationsPanel';
-import { Button, IconButton, Heading, Text, Spinner, Select, TextField, TextArea } from '@radix-ui/themes';
+import { Button, Checkbox, IconButton, Heading, Text, Spinner, Select, TextField, TextArea } from '@radix-ui/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -281,11 +281,11 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
 
           {step.type === 'send-approval' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <input
-                type="checkbox"
+              <Checkbox
                 id={`auto-approve-${step.id}`}
                 checked={!!(step.config.autoApprove)}
-                onChange={e => setConfig('autoApprove', e.target.checked)}
+                onCheckedChange={(val) => setConfig('autoApprove', val === true)}
+                size="1"
               />
               <label htmlFor={`auto-approve-${step.id}`} style={{ fontSize: 12, color: 'var(--mission-control-text)' }}>
                 Auto-approve if criteria pass (escalate on failure)

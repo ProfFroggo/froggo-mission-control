@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { Button, IconButton, TextArea, TextField } from '@radix-ui/themes';
 import BaseModal from './BaseModal';
 import { LoadingButton } from './LoadingStates';
 
@@ -127,14 +128,16 @@ export default function PromptDialog({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <h2 className="text-base font-semibold text-mission-control-text">{title}</h2>
-          <button
+          <IconButton
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-1.5 rounded-lg hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
             aria-label="Close"
           >
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Body */}
@@ -146,25 +149,23 @@ export default function PromptDialog({
 
           {/* Input */}
           {multiline ? (
-            <textarea
+            <TextArea
               ref={inputRef as React.RefObject<HTMLTextAreaElement>}
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               rows={4}
-              className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:border-transparent resize-none"
               disabled={isSubmitting}
             />
           ) : (
-            <input
+            <TextField.Root
               ref={inputRef as React.RefObject<HTMLInputElement>}
               type="text"
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
-              className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:border-transparent"
               disabled={isSubmitting}
             />
           )}
@@ -177,13 +178,14 @@ export default function PromptDialog({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
-          <button
+          <Button
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm rounded-lg text-mission-control-text-dim hover:bg-mission-control-border transition-colors"
+            size="2"
+            variant="ghost"
           >
             {cancelLabel}
-          </button>
+          </Button>
           <LoadingButton
             onClick={handleSubmit}
             loading={isSubmitting || loading}

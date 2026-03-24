@@ -187,6 +187,7 @@ function TemplateCard({ template, selected, onSelect }: TemplateCardProps) {
   const color = CATEGORY_COLORS[template.category];
   return (
     <button
+      type="button"
       onClick={onSelect}
       style={{
         display: 'flex',

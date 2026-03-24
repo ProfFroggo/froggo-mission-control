@@ -51,14 +51,15 @@ function ChoicesWidget({ data, onChoose, disabled }: { data: ChoiceWidgetData; o
   if (customMode) {
     return (
       <div className="flex gap-2 mt-2 pl-9">
-        <input
+        <TextField.Root
           autoFocus
           value={customText}
           onChange={e => setCustomText(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && customText.trim() && !disabled) { onChoose(customText.trim()); setCustomMode(false); setCustomText(''); } }}
           placeholder="Type your answer..."
           disabled={disabled}
-          className="flex-1 px-3 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50"
+          size="1"
+          style={{ flex: 1 }}
         />
         <IconButton variant="solid" size="1" onClick={() => { if (customText.trim() && !disabled) { onChoose(customText.trim()); setCustomMode(false); setCustomText(''); } }} disabled={!customText.trim() || disabled}>
           <Send size={13} />
@@ -487,7 +488,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
           <p className="text-xs text-mission-control-text-dim mb-2">Colour</p>
           <div className="flex flex-wrap gap-2">
             {COLOR_OPTIONS.map(c => (
-              <button key={c} onClick={() => setColor(c)}
+              <button type="button" key={c} onClick={() => setColor(c)}
                 className={`w-6 h-6 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-offset-mission-control-surface ring-white scale-110' : 'hover:scale-105'}`}
                 style={{ backgroundColor: c }} />
             ))}
@@ -802,13 +803,14 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             {/* URL input (expandable) */}
             {showRefUrlInput && (
               <div className="flex gap-2 mb-2">
-                <input
+                <TextField.Root
                   autoFocus
                   value={refUrlInput}
                   onChange={e => setRefUrlInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') addRefUrl(); if (e.key === 'Escape') { setShowRefUrlInput(false); setRefUrlInput(''); } }}
                   placeholder="https://figma.com/... or any reference URL"
-                  className="flex-1 px-3 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-xs text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:ring-1 focus:ring-mission-control-accent"
+                  size="1"
+                  style={{ flex: 1 }}
                 />
                 <Button variant="solid" size="1" onClick={addRefUrl} disabled={!refUrlInput.trim()}>
                   Add
@@ -954,6 +956,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             <p className="text-sm text-mission-control-text-dim mb-4">Start from a template or build from scratch.</p>
             {/* Blank */}
             <button
+              type="button"
               onClick={() => setPhase('name')}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 transition-all text-left"
             >
@@ -970,6 +973,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               const TmplIcon = getProjectIcon(tmpl.iconId);
               return (
                 <button
+                  type="button"
                   key={tmpl.id}
                   onClick={() => {
                     setProjName(tmpl.name);

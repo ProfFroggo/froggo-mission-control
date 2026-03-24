@@ -143,22 +143,20 @@ export default function AccessibilitySettings() {
                 className="flex-1 flex gap-2"
               >
                 {fontSizeOptions.map(option => (
-                  <button
+                  <Button
                     key={option.value}
                     onClick={() => handleFontSizeChange(option.value)}
-                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      settings.fontSize === option.value
-                        ? 'bg-mission-control-accent text-white'
-                        : 'bg-mission-control-border text-mission-control-text hover:bg-mission-control-border/80'
-                    }`}
+                    size="2"
+                    variant={settings.fontSize === option.value ? 'solid' : 'soft'}
                     aria-label={`Set font size to ${option.label} (${option.value}%)`}
                     aria-pressed={settings.fontSize === option.value}
+                    style={{ flex: 1, justifyContent: 'center' }}
                   >
                     {option.label}
                     {settings.fontSize === option.value && (
                       <Check size={14} className="inline ml-1" aria-hidden="true" />
                     )}
-                  </button>
+                  </Button>
                 ))}
               </div>
 

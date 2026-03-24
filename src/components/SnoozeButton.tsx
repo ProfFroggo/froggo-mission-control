@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Clock, X } from 'lucide-react';
-import { Button, IconButton, Badge, Flex, Text, Heading } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Flex, Text, Heading, TextField } from '@radix-ui/themes';
 import { Session } from '../store/store';
 import { showToast } from './Toast';
 
@@ -154,13 +154,13 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
               <label htmlFor="snooze-reason" className="block text-sm font-medium text-mission-control-text mb-2">
                 Reason (optional)
               </label>
-              <input
+              <TextField.Root
                 id="snooze-reason"
                 type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Why are you snoozing this?"
-                className="w-full px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
+                style={{ width: '100%' }}
               />
             </div>
 

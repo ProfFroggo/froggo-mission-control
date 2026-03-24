@@ -15,6 +15,7 @@
 
 import { useEffect, useState } from 'react';
 import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Plug } from 'lucide-react';
+import { TextField } from '@radix-ui/themes';
 import BaseModal, { BaseModalBody, BaseModalFooter } from './BaseModal';
 import { LoadingButton, Spinner } from './LoadingStates';
 
@@ -175,7 +176,7 @@ function CredentialStep({
           <p className="text-xs text-mission-control-accent mt-1">Required</p>
         )}
       </div>
-      <input
+      <TextField.Root
         type={inputType}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -188,7 +189,7 @@ function CredentialStep({
         }
         autoComplete="off"
         autoFocus
-        className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2.5 text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent text-sm"
+        style={{ width: '100%' }}
       />
     </div>
   );

@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import { AlertTriangle, Trash2, X, Info } from 'lucide-react';
+import { TextField } from '@radix-ui/themes';
 import { LoadingButton } from './LoadingStates';
 import BaseModal, { BaseModalBody, BaseModalFooter } from './BaseModal';
 
@@ -130,13 +131,12 @@ export default function ConfirmDialog({
             <label htmlFor="confirm-input" className="block text-sm font-medium text-mission-control-text">
               {requireInput.hint}
             </label>
-            <input
+            <TextField.Root
               id="confirm-input"
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={requireInput.placeholder}
-              className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
               /* eslint-disable-next-line jsx-a11y/no-autofocus */
               autoFocus
               disabled={isProcessing}

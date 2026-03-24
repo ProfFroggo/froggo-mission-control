@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BarChart2, TrendingUp, Eye, Activity, Download, Users, RefreshCw } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 
 interface AnalyticsSummary {
   followers: number;
@@ -171,20 +172,24 @@ export function XAnalyticsView() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <IconButton
               onClick={loadData}
-              className="p-2 rounded-lg border border-mission-control-border hover:bg-mission-control-surface transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+              size="2"
+              variant="ghost"
+              radius="medium"
               title="Refresh data"
+              aria-label="Refresh data"
             >
               <RefreshCw size={16} />
-            </button>
-            <button
+            </IconButton>
+            <Button
               onClick={handleDownloadReport}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors text-sm font-medium"
+              size="2"
+              variant="solid"
             >
               <Download size={16} />
               Download Report
-            </button>
+            </Button>
           </div>
         </div>
 

@@ -958,6 +958,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   const catConf = categoryConfig[file.category] || categoryConfig.other;
                   return (
                     <button
+                      type="button"
                       key={file.id}
                       onClick={() => handleFileClick(file)}
                       className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-left ${
@@ -1484,6 +1485,7 @@ interface SidebarItemProps {
 function SidebarItem({ label, icon: Icon, count, selected, onClick }: SidebarItemProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
         selected

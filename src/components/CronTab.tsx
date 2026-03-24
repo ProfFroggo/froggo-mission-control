@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextArea, TextField } from '@radix-ui/themes';
 import { Clock, RefreshCw, Play, Trash2, Plus, ChevronDown, ChevronRight, AlertCircle, Edit2 } from 'lucide-react';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -263,6 +263,9 @@ export default function CronTab() {
                   aria-label={`${job.name} job - ${isExpanded ? 'collapse' : 'expand'}`}
                 >
                   <button
+                    type="button"
+                    role="switch"
+                    aria-checked={job.enabled}
                     onClick={e => { e.stopPropagation(); toggleJob(job); }}
                     className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
                       job.enabled ? 'bg-mission-control-accent' : 'bg-mission-control-border'
@@ -369,27 +372,28 @@ export default function CronTab() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="cron-name" className="block text-sm text-mission-control-text-dim mb-1">Name</label>
-                <input id="cron-name" type="text" value={newJob.name} onChange={e => setNewJob(p => ({ ...p, name: e.target.value }))}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" placeholder="My cron job" aria-label="Cron job name" />
+                <TextField.Root id="cron-name" type="text" value={newJob.name} onChange={e => setNewJob(p => ({ ...p, name: e.target.value }))}
+                  placeholder="My cron job" aria-label="Cron job name" style={{ width: '100%' }} />
               </div>
               <div>
                 <label htmlFor="cron-description" className="block text-sm text-mission-control-text-dim mb-1">Description</label>
-                <input id="cron-description" type="text" value={newJob.description} onChange={e => setNewJob(p => ({ ...p, description: e.target.value }))}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" placeholder="Optional description" aria-label="Cron job description" />
+                <TextField.Root id="cron-description" type="text" value={newJob.description} onChange={e => setNewJob(p => ({ ...p, description: e.target.value }))}
+                  placeholder="Optional description" aria-label="Cron job description" style={{ width: '100%' }} />
               </div>
               <div>
                 <label htmlFor="cron-schedule-kind" className="block text-sm text-mission-control-text-dim mb-1">Schedule</label>
                 <div className="flex gap-2">
-                  <select id="cron-schedule-kind" value={newJob.scheduleKind} onChange={e => setNewJob(p => ({ ...p, scheduleKind: e.target.value }))}
-                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" aria-label="Schedule type">
-                    <option value="cron">Cron</option>
-                    <option value="every">Interval (min)</option>
-                    <option value="at">One-time</option>
-                  </select>
-                  <input id="cron-schedule-expr" type="text" value={newJob.expr} onChange={e => setNewJob(p => ({ ...p, expr: e.target.value }))}
-                    className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                  <Select.Root value={newJob.scheduleKind} onValueChange={(val) => setNewJob(p => ({ ...p, scheduleKind: val }))}>
+                    <Select.Trigger id="cron-schedule-kind" aria-label="Schedule type" />
+                    <Select.Content>
+                      <Select.Item value="cron">Cron</Select.Item>
+                      <Select.Item value="every">Interval (min)</Select.Item>
+                      <Select.Item value="at">One-time</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
+                  <TextField.Root id="cron-schedule-expr" type="text" value={newJob.expr} onChange={e => setNewJob(p => ({ ...p, expr: e.target.value }))}
                     placeholder={newJob.scheduleKind === 'cron' ? '*/5 * * * *' : newJob.scheduleKind === 'every' ? '5' : '2026-01-30T09:00'}
-                    aria-label="Schedule expression" />
+                    aria-label="Schedule expression" style={{ flex: 1 }} />
                 </div>
               </div>
               {/* Mode toggle */}
@@ -426,67 +430,69 @@ export default function CronTab() {
                 <>
                   <div>
                     <label htmlFor="cron-task-title" className="block text-sm text-mission-control-text-dim mb-1">Task Title <span className="text-xs opacity-60">({'{date}'} = current date)</span></label>
-                    <input id="cron-task-title" type="text" value={newJob.taskTitle} onChange={e => setNewJob(p => ({ ...p, taskTitle: e.target.value }))}
-                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
-                      placeholder="HR Nightly Training — {date}" />
+                    <TextField.Root id="cron-task-title" type="text" value={newJob.taskTitle} onChange={e => setNewJob(p => ({ ...p, taskTitle: e.target.value }))}
+                      placeholder="HR Nightly Training — {date}" style={{ width: '100%' }} />
                   </div>
                   <div>
                     <label htmlFor="cron-task-planning" className="block text-sm text-mission-control-text-dim mb-1">Planning Notes / Instructions</label>
-                    <textarea id="cron-task-planning" value={newJob.taskPlanningNotes} onChange={e => setNewJob(p => ({ ...p, taskPlanningNotes: e.target.value }))}
-                      rows={3} className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent resize-none"
-                      placeholder="Visit aitmpl.com, discover new skills, check team health..." />
+                    <TextArea id="cron-task-planning" value={newJob.taskPlanningNotes} onChange={e => setNewJob(p => ({ ...p, taskPlanningNotes: e.target.value }))}
+                      rows={3} placeholder="Visit aitmpl.com, discover new skills, check team health..." style={{ width: '100%' }} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="cron-task-assign" className="block text-sm text-mission-control-text-dim mb-1">Assign To</label>
-                      <select id="cron-task-assign" value={newJob.taskAssignTo} onChange={e => setNewJob(p => ({ ...p, taskAssignTo: e.target.value }))}
-                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent">
-                        <option value="">Auto (Clara assigns)</option>
-                        <option value="mission-control">Mission Control</option>
-                        <option value="hr">HR</option>
-                        <option value="coder">Coder</option>
-                        <option value="inbox">Inbox</option>
-                        <option value="designer">Designer</option>
-                        <option value="clara">Clara (QC)</option>
-                      </select>
+                      <Select.Root value={newJob.taskAssignTo} onValueChange={(val) => setNewJob(p => ({ ...p, taskAssignTo: val }))}>
+                        <Select.Trigger id="cron-task-assign" style={{ width: '100%' }} />
+                        <Select.Content>
+                          <Select.Item value="">Auto (Clara assigns)</Select.Item>
+                          <Select.Item value="mission-control">Mission Control</Select.Item>
+                          <Select.Item value="hr">HR</Select.Item>
+                          <Select.Item value="coder">Coder</Select.Item>
+                          <Select.Item value="inbox">Inbox</Select.Item>
+                          <Select.Item value="designer">Designer</Select.Item>
+                          <Select.Item value="clara">Clara (QC)</Select.Item>
+                        </Select.Content>
+                      </Select.Root>
                     </div>
                     <div>
                       <label htmlFor="cron-task-priority" className="block text-sm text-mission-control-text-dim mb-1">Priority</label>
-                      <select id="cron-task-priority" value={newJob.taskPriority} onChange={e => setNewJob(p => ({ ...p, taskPriority: e.target.value }))}
-                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent">
-                        <option value="p0">P0 — Critical</option>
-                        <option value="p1">P1 — High</option>
-                        <option value="p2">P2 — Normal</option>
-                        <option value="p3">P3 — Low</option>
-                      </select>
+                      <Select.Root value={newJob.taskPriority} onValueChange={(val) => setNewJob(p => ({ ...p, taskPriority: val }))}>
+                        <Select.Trigger id="cron-task-priority" style={{ width: '100%' }} />
+                        <Select.Content>
+                          <Select.Item value="p0">P0 — Critical</Select.Item>
+                          <Select.Item value="p1">P1 — High</Select.Item>
+                          <Select.Item value="p2">P2 — Normal</Select.Item>
+                          <Select.Item value="p3">P3 — Low</Select.Item>
+                        </Select.Content>
+                      </Select.Root>
                     </div>
                   </div>
                   <div>
                     <label htmlFor="cron-task-subtasks" className="block text-sm text-mission-control-text-dim mb-1">Subtasks <span className="text-xs opacity-60">(one per line)</span></label>
-                    <textarea id="cron-task-subtasks" value={newJob.taskSubtasks} onChange={e => setNewJob(p => ({ ...p, taskSubtasks: e.target.value }))}
-                      rows={3} className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent resize-none font-mono"
-                      placeholder={"Check team health metrics\nUpdate drifted soul files\nDocument new skills found"} />
+                    <TextArea id="cron-task-subtasks" value={newJob.taskSubtasks} onChange={e => setNewJob(p => ({ ...p, taskSubtasks: e.target.value }))}
+                      rows={3} className="font-mono" placeholder={"Check team health metrics\nUpdate drifted soul files\nDocument new skills found"} style={{ width: '100%' }} />
                   </div>
                 </>
               ) : (
                 <>
                   <div>
                     <label htmlFor="cron-message" className="block text-sm text-mission-control-text-dim mb-1">Message (what to tell the agent)</label>
-                    <textarea id="cron-message" value={newJob.message} onChange={e => setNewJob(p => ({ ...p, message: e.target.value }))}
-                      rows={3} className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent resize-none"
-                      placeholder="Check for new emails and summarize..." />
+                    <TextArea id="cron-message" value={newJob.message} onChange={e => setNewJob(p => ({ ...p, message: e.target.value }))}
+                      rows={3} placeholder="Check for new emails and summarize..." style={{ width: '100%' }} />
                   </div>
                   <div>
                     <label htmlFor="cron-session-target" className="block text-sm text-mission-control-text-dim mb-1">Session Target</label>
-                    <select id="cron-session-target" value={newJob.sessionTarget} onChange={e => setNewJob(p => ({ ...p, sessionTarget: e.target.value }))}
-                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent">
-                      <option value="isolated">Isolated (new session)</option>
-                      <option value="main">Main (shared session)</option>
-                      <option value="mission-control">mission-control</option>
-                      <option value="inbox">inbox</option>
-                      <option value="chief">chief</option>
-                      <option value="coder">coder</option>
-                    </select>
+                    <Select.Root value={newJob.sessionTarget} onValueChange={(val) => setNewJob(p => ({ ...p, sessionTarget: val }))}>
+                      <Select.Trigger id="cron-session-target" style={{ width: '100%' }} />
+                      <Select.Content>
+                        <Select.Item value="isolated">Isolated (new session)</Select.Item>
+                        <Select.Item value="main">Main (shared session)</Select.Item>
+                        <Select.Item value="mission-control">mission-control</Select.Item>
+                        <Select.Item value="inbox">inbox</Select.Item>
+                        <Select.Item value="chief">chief</Select.Item>
+                        <Select.Item value="coder">coder</Select.Item>
+                      </Select.Content>
+                    </Select.Root>
                   </div>
                 </>
               )}

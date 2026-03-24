@@ -332,6 +332,7 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
       <div className="flex items-center gap-2 px-4 pt-3">
         {METRICS.map(({ key, label, color, Icon }) => (
           <button
+            type="button"
             key={key}
             onClick={() => toggleMetric(key)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all"

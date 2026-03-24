@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Checkbox, IconButton, Select, TextField } from '@radix-ui/themes';
 import { useEventBus } from '../lib/useEventBus';
 import { createPortal } from 'react-dom';
 import {
@@ -1142,16 +1142,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 <div className="icon-text-tight">
                   <FolderOpen size={16} className="text-mission-control-text-dim flex-shrink-0" aria-hidden="true" />
                   <label className="sr-only" htmlFor="filter-project">Project</label>
-                  <select
-                    id="filter-project"
-                    value={filters.project}
-                    onChange={(e) => setFilters(f => ({ ...f, project: e.target.value }))}
-                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
-                  >
-                    {projects.map(p => (
-                      <option key={p} value={p}>{p === 'all' ? 'All Projects' : p}</option>
-                    ))}
-                  </select>
+                  <Select.Root value={filters.project} onValueChange={(val) => setFilters(f => ({ ...f, project: val }))}>
+                    <Select.Trigger id="filter-project" size="1" />
+                    <Select.Content>
+                      {projects.map(p => (
+                        <Select.Item key={p} value={p}>{p === 'all' ? 'All Projects' : p}</Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
                 </div>
               )}
 
@@ -1159,35 +1157,31 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               <div className="icon-text-tight">
                 <Bot size={16} className="text-mission-control-text-dim flex-shrink-0" aria-hidden="true" />
                 <label className="sr-only" htmlFor="filter-assignee">Assignee</label>
-                <select
-                  id="filter-assignee"
-                  value={filters.assignee}
-                  onChange={(e) => setFilters(f => ({ ...f, assignee: e.target.value }))}
-                  className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
-                >
-                  <option value="all">All Assignees</option>
-                  <option value="unassigned">Unassigned</option>
-                  {agents
-                    .filter(a => !isProtectedAgent(a.id))
-                    .map(a => (
-                      <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
-                    ))}
-                  {/* Also include assignees from tasks that may not be in agents list */}
-                  {uniqueAssignees
-                    .filter(id => !agents.find(a => a.id === id))
-                    .map(id => (
-                      <option key={id} value={id}>{id}</option>
-                    ))}
-                </select>
+                <Select.Root value={filters.assignee} onValueChange={(val) => setFilters(f => ({ ...f, assignee: val }))}>
+                  <Select.Trigger id="filter-assignee" size="1" />
+                  <Select.Content>
+                    <Select.Item value="all">All Assignees</Select.Item>
+                    <Select.Item value="unassigned">Unassigned</Select.Item>
+                    {agents
+                      .filter(a => !isProtectedAgent(a.id))
+                      .map(a => (
+                        <Select.Item key={a.id} value={a.id}>{a.avatar} {a.name}</Select.Item>
+                      ))}
+                    {/* Also include assignees from tasks that may not be in agents list */}
+                    {uniqueAssignees
+                      .filter(id => !agents.find(a => a.id === id))
+                      .map(id => (
+                        <Select.Item key={id} value={id}>{id}</Select.Item>
+                      ))}
+                  </Select.Content>
+                </Select.Root>
               </div>
 
               {/* Show completed */}
               <label className="icon-text-tight text-sm cursor-pointer">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={filters.showCompleted}
-                  onChange={(e) => setFilters(f => ({ ...f, showCompleted: e.target.checked }))}
-                  className="rounded"
+                  onCheckedChange={(val) => setFilters(f => ({ ...f, showCompleted: val === true }))}
                 />
                 Show completed
               </label>
@@ -1431,30 +1425,28 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       <div className="absolute top-full left-0 mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[180px]">
                         <div className="p-2 border-b border-mission-control-border">
                           <div className="text-xs font-semibold text-mission-control-text-dim mb-1">Agent</div>
-                          <select
-                            value={settings.filterAgent}
-                            onChange={(e) => updateColumnSetting(column.id, 'filterAgent', e.target.value)}
-                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-mission-control-accent"
-                          >
-                            <option value="all">All Agents</option>
-                            <option value="unassigned">Unassigned</option>
-                            {agents.map(a => (
-                              <option key={a.id} value={a.id}>{a.name}</option>
-                            ))}
-                          </select>
+                          <Select.Root value={settings.filterAgent} onValueChange={(val) => updateColumnSetting(column.id, 'filterAgent', val)}>
+                            <Select.Trigger size="1" style={{ width: '100%' }} />
+                            <Select.Content>
+                              <Select.Item value="all">All Agents</Select.Item>
+                              <Select.Item value="unassigned">Unassigned</Select.Item>
+                              {agents.map(a => (
+                                <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
                         </div>
                         <div className="p-2">
                           <div className="text-xs font-semibold text-mission-control-text-dim mb-1">Priority</div>
-                          <select
-                            value={settings.filterPriority}
-                            onChange={(e) => updateColumnSetting(column.id, 'filterPriority', e.target.value as TaskPriority | 'all')}
-                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-mission-control-accent"
-                          >
-                            <option value="all">All Priorities</option>
-                            {PRIORITIES.map(p => (
-                              <option key={p.id} value={p.id}>{p.label}</option>
-                            ))}
-                          </select>
+                          <Select.Root value={settings.filterPriority} onValueChange={(val) => updateColumnSetting(column.id, 'filterPriority', val as TaskPriority | 'all')}>
+                            <Select.Trigger size="1" style={{ width: '100%' }} />
+                            <Select.Content>
+                              <Select.Item value="all">All Priorities</Select.Item>
+                              {PRIORITIES.map(p => (
+                                <Select.Item key={p.id} value={p.id}>{p.label}</Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
                         </div>
                         {(settings.filterAgent !== 'all' || settings.filterPriority !== 'all') && (
                           <div className="p-2 border-t border-mission-control-border">
@@ -1969,8 +1961,8 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         {/* Title */}
         <div className="flex flex-col flex-1 min-w-0 group/title">
           {isEditingTitle ? (
-            <input
-              ref={editInputRef}
+            <TextField.Root
+              ref={editInputRef as React.RefObject<HTMLInputElement>}
               type="text"
               value={editTitle}
               onChange={e => setEditTitle(e.target.value)}
@@ -1980,7 +1972,8 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
               }}
               onBlur={commitEditTitle}
               onClick={e => e.stopPropagation()}
-              className="font-medium text-sm leading-tight w-full bg-mission-control-bg border border-mission-control-accent rounded px-1.5 py-0.5 focus:outline-none"
+              size="1"
+              style={{ width: '100%' }}
             />
           ) : (
             <div className="flex items-center gap-1 min-w-0">

@@ -374,6 +374,7 @@ function MilestonesSection({ project }: { project: Project }) {
               <div key={ms.id} className="relative flex items-start gap-2.5 py-2">
                 {/* Node */}
                 <button
+                  type="button"
                   onClick={() => handleToggle(ms)}
                   className="relative z-10 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all"
                   style={{
@@ -958,6 +959,7 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
             const isActive = selectedFile?.name === file.name;
             return (
               <button
+                type="button"
                 key={file.name}
                 onClick={() => loadPreview(file)}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
@@ -1558,6 +1560,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
             const Icon = tab.icon;
             return (
               <button
+                type="button"
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${

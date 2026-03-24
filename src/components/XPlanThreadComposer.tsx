@@ -173,6 +173,7 @@ export default function XPlanThreadComposer() {
               <div className="grid grid-cols-2 gap-2">
                 {CONTENT_TYPES.map((type) => (
                   <button
+                    type="button"
                     key={type.value}
                     onClick={() => setContentType(type.value)}
                     className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-colors ${
@@ -197,6 +198,7 @@ export default function XPlanThreadComposer() {
               <div className="grid grid-cols-3 gap-2">
                 {THREAD_LENGTHS.map((length) => (
                   <button
+                    type="button"
                     key={length.value}
                     onClick={() => setThreadLength(length.value)}
                     className={`px-4 py-2 rounded-lg border-2 transition-colors ${

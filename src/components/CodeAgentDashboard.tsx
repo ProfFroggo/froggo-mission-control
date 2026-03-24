@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle, AlertCircle, Loader2, Info, Monitor, Bug, Clock } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import CronTab from './CronTab';
 import DebugTab from './DebugTab';
 import EmptyState from './EmptyState';
@@ -168,32 +169,30 @@ export default function CodeAgentDashboard() {
               </p>
             </div>
           </div>
-          <button
+          <Button
             onClick={loadData}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
+            size="2"
+            variant="ghost"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
-          </button>
+          </Button>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-2 mt-2">
           {(['dashboard', 'cron', 'debug'] as const).map((tab) => (
-            <button
+            <Button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              size="2"
+              variant={activeTab === tab ? 'solid' : 'ghost'}
             >
               {tab === 'dashboard' && <span className="flex items-center gap-1.5"><Monitor size={14} /> Dashboard</span>}
               {tab === 'cron' && <span className="flex items-center gap-1.5"><Clock size={14} /> Cron Jobs</span>}
               {tab === 'debug' && <span className="flex items-center gap-1.5"><Bug size={14} /> Debug</span>}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

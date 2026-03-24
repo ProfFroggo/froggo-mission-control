@@ -1,4 +1,5 @@
 import { useState, useEffect, ReactNode } from 'react';
+import { Button } from '@radix-ui/themes';
 
 interface PathCheckResult {
   path: string;
@@ -76,18 +77,20 @@ export function DependencyGate({ children }: Props) {
               <p className="font-mono">3. Restart the app</p>
             </div>
             <div className="flex gap-2 justify-center">
-              <button
+              <Button
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors text-sm"
+                size="2"
+                variant="solid"
               >
                 Retry
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setDismissed(true)}
-                className="px-4 py-2 bg-mission-control-surface text-mission-control-text-dim border border-mission-control-border rounded-lg hover:bg-mission-control-border/20 transition-colors text-sm"
+                size="2"
+                variant="ghost"
               >
                 Continue anyway
-              </button>
+              </Button>
             </div>
           </div>
         </div>

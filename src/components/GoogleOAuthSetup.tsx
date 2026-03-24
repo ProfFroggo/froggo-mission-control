@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Mail, AlertCircle, Loader } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 
 interface Props {
   onAuthenticated: (email: string) => void;
@@ -83,13 +84,15 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
         </div>
       )}
 
-      <button
+      <Button
         onClick={handleConnect}
-        className="flex items-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors w-full justify-center"
+        size="2"
+        variant="solid"
+        style={{ width: '100%', justifyContent: 'center' }}
       >
         <Mail size={16} />
         Connect Google Account
-      </button>
+      </Button>
 
       <p className="text-xs text-mission-control-text-dim/60">
         Grants read/send access to Gmail and read/write to Google Calendar. Revoke in Settings at any time.

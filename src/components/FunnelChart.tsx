@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { Filter, Loader2, Download, Copy, Check } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 
 interface StatusCount {
   status: string;
@@ -117,22 +118,24 @@ export default function FunnelChart() {
           <span className="text-xs text-mission-control-text-dim">current pipeline counts</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
+            size="1"
+            variant="ghost"
             title="Export funnel as CSV"
           >
             <Download size={12} />
             CSV
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
+            size="1"
+            variant="ghost"
             title="Copy to clipboard"
           >
             {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
-          </button>
+          </Button>
         </div>
       </div>
 

@@ -8,6 +8,7 @@
  */
 
 import { X, Keyboard } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 
 interface ShortcutsModalProps {
   isOpen: boolean;
@@ -166,13 +167,15 @@ export default function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps)
               <p className="text-xs text-mission-control-text-dim">Navigate faster without leaving the keyboard</p>
             </div>
           </div>
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-mission-control-border rounded-lg transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+            size="2"
+            variant="ghost"
+            radius="medium"
             aria-label="Close shortcuts"
           >
             <X size={18} aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
 
         {/* Shortcut grid */}

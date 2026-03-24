@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextArea, TextField } from '@radix-ui/themes';
 import { BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Power, BarChart2, X } from 'lucide-react';
 import { agentApi, catalogApi, settingsApi, libraryApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -651,8 +651,8 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                   </IconButton>
                 </div>
               )}
-              <textarea
-                className={`${inputBase} h-72 font-mono resize-none`}
+              <TextArea
+                className="h-72 font-mono resize-none"
                 value={soul}
                 onChange={e => { setSoul(e.target.value); setSoulDirty(true); }}
                 placeholder="No SOUL.md found for this agent."
@@ -717,11 +717,12 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     <Button variant="ghost" size="1" onClick={() => setAddSkillMode(null)}>Cancel</Button>
                   </div>
 
-                  <input
-                    className={`${inputBase} text-xs`}
+                  <TextField.Root
                     placeholder="Skill name"
                     value={addSkillName}
                     onChange={e => setAddSkillName(e.target.value)}
+                    size="1"
+                    style={{ width: '100%' }}
                   />
 
                   {/* Source type toggle */}
@@ -739,17 +740,18 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                   </div>
 
                   {addSkillMode === 'url' && (
-                    <input
-                      className={`${inputBase} text-xs`}
+                    <TextField.Root
                       placeholder="https://example.com/skill.md"
                       value={addSkillUrl}
                       onChange={e => setAddSkillUrl(e.target.value)}
+                      size="1"
+                      style={{ width: '100%' }}
                     />
                   )}
 
                   {addSkillMode === 'text' && (
-                    <textarea
-                      className={`${inputBase} h-36 font-mono text-xs resize-none`}
+                    <TextArea
+                      className="h-36 font-mono text-xs resize-none"
                       placeholder={`# Skill Name\n\nDescribe what this skill does and when to use it...`}
                       value={addSkillContent}
                       onChange={e => setAddSkillContent(e.target.value)}
@@ -883,45 +885,48 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                       <span className="text-xs font-medium text-mission-control-text">New MCP Server</span>
                       <Button variant="ghost" size="1" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }}>Cancel</Button>
                     </div>
-                    <input
-                      className={`${inputBase} text-xs`}
+                    <TextField.Root
                       placeholder="Server name (e.g. Filesystem MCP)"
                       value={newMcp.name}
                       onChange={e => setNewMcp(m => ({ ...m, name: e.target.value }))}
+                      size="1"
+                      style={{ width: '100%' }}
                     />
-                    <select
-                      className={`${inputBase} text-xs`}
-                      value={newMcp.transport}
-                      onChange={e => setNewMcp(m => ({ ...m, transport: e.target.value as 'stdio' | 'http' }))}
-                    >
-                      <option value="stdio">stdio — local process</option>
-                      <option value="http">HTTP / SSE — remote endpoint</option>
-                    </select>
+                    <Select.Root value={newMcp.transport} onValueChange={(val) => setNewMcp(m => ({ ...m, transport: val as 'stdio' | 'http' }))}>
+                      <Select.Trigger size="1" style={{ width: '100%' }} />
+                      <Select.Content>
+                        <Select.Item value="stdio">stdio — local process</Select.Item>
+                        <Select.Item value="http">HTTP / SSE — remote endpoint</Select.Item>
+                      </Select.Content>
+                    </Select.Root>
                     {newMcp.transport === 'stdio' ? (
                       <>
-                        <input
-                          className={`${inputBase} text-xs font-mono`}
+                        <TextField.Root
                           placeholder="Command (e.g. npx, node, python)"
                           value={newMcp.command}
                           onChange={e => setNewMcp(m => ({ ...m, command: e.target.value }))}
+                          size="1"
+                          style={{ width: '100%', fontFamily: 'monospace' }}
                         />
-                        <input
-                          className={`${inputBase} text-xs font-mono`}
+                        <TextField.Root
                           placeholder="Arguments (e.g. -y @modelcontextprotocol/server-filesystem /path)"
                           value={newMcp.args}
                           onChange={e => setNewMcp(m => ({ ...m, args: e.target.value }))}
+                          size="1"
+                          style={{ width: '100%', fontFamily: 'monospace' }}
                         />
                       </>
                     ) : (
-                      <input
-                        className={`${inputBase} text-xs font-mono`}
+                      <TextField.Root
                         placeholder="URL (e.g. https://mcp.example.com)"
                         value={newMcp.url}
                         onChange={e => setNewMcp(m => ({ ...m, url: e.target.value }))}
+                        size="1"
+                        style={{ width: '100%', fontFamily: 'monospace' }}
                       />
                     )}
-                    <textarea
-                      className={`${inputBase} text-xs font-mono resize-none`}
+                    <TextArea
+                      className="font-mono resize-none"
                       placeholder={'Environment variables (optional):\nAPI_KEY=your-key\nBASE_URL=https://...'}
                       rows={3}
                       value={newMcp.env}
@@ -961,37 +966,40 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     <span className="text-xs font-medium text-mission-control-text">New Credential</span>
                     <Button variant="ghost" size="1" onClick={() => { setShowAddKey(false); setNewKey({ name: '', service: '', key: '' }); }}>Cancel</Button>
                   </div>
-                  <select
-                    className={`${inputBase} text-xs`}
-                    onChange={e => {
-                      const preset = API_PRESETS.find(p => p.service === e.target.value);
+                  <Select.Root onValueChange={(val) => {
+                      const preset = API_PRESETS.find(p => p.service === val);
                       if (preset) setNewKey(k => ({ ...k, service: preset.service, name: preset.service ? preset.label : k.name }));
-                    }}
-                  >
-                    {API_PRESETS.map(p => (
-                      <option key={p.label} value={p.service}>{p.label}</option>
-                    ))}
-                  </select>
-                  <input
-                    className={`${inputBase} text-xs`}
+                    }}>
+                    <Select.Trigger size="1" style={{ width: '100%' }} />
+                    <Select.Content>
+                      {API_PRESETS.map(p => (
+                        <Select.Item key={p.label} value={p.service || '__custom__'}>{p.label}</Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
+                  <TextField.Root
                     placeholder="Label (e.g. OpenAI Production)"
                     value={newKey.name}
                     onChange={e => setNewKey(k => ({ ...k, name: e.target.value }))}
+                    size="1"
+                    style={{ width: '100%' }}
                   />
-                  <input
-                    className={`${inputBase} text-xs`}
+                  <TextField.Root
                     placeholder="Service"
                     value={newKey.service}
                     onChange={e => setNewKey(k => ({ ...k, service: e.target.value }))}
+                    size="1"
+                    style={{ width: '100%' }}
                   />
-                  <input
+                  <TextField.Root
                     type="password"
                     autoComplete="off"
-                    className={`${inputBase} text-xs font-mono`}
                     placeholder={API_PRESETS.find(p => p.service === newKey.service)?.placeholder ?? 'Paste your key here'}
                     value={newKey.key}
                     onChange={e => setNewKey(k => ({ ...k, key: e.target.value }))}
                     onKeyDown={e => e.key === 'Enter' && handleCreateKey()}
+                    size="1"
+                    style={{ width: '100%', fontFamily: 'monospace' }}
                   />
                   <Button variant="solid" size="1" onClick={handleCreateKey} disabled={addingKey}>
                     {addingKey ? 'Saving...' : 'Add & Assign to Agent'}

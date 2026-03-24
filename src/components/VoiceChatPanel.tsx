@@ -11,7 +11,7 @@ import {
   Trash2, MessageSquare, Monitor, MonitorOff, Video, VideoOff,
   Send, Settings,
 } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextField } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, fetchAgentList } from './AgentSelector';
 import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
@@ -667,33 +667,28 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {/* Microphone */}
             <div>
               <label htmlFor="mic-select" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Microphone</label>
-              <select
-                id="mic-select"
-                value={selectedMic}
-                onChange={(e) => setSelectedMic(e.target.value)}
-                disabled={callActive}
-                className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm disabled:opacity-50"
-              >
-                <option value="">System default</option>
-                {audioInputs.map(d => (
-                  <option key={d.deviceId} value={d.deviceId}>{d.label || `Microphone ${d.deviceId.slice(0, 6)}`}</option>
-                ))}
-              </select>
+              <Select.Root value={selectedMic} onValueChange={setSelectedMic} disabled={callActive} size="1">
+                <Select.Trigger id="mic-select" style={{ width: '100%' }} />
+                <Select.Content>
+                  <Select.Item value="">System default</Select.Item>
+                  {audioInputs.map(d => (
+                    <Select.Item key={d.deviceId} value={d.deviceId}>{d.label || `Microphone ${d.deviceId.slice(0, 6)}`}</Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
             </div>
             {/* Speaker */}
             <div>
               <label htmlFor="speaker-select" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Speaker</label>
-              <select
-                id="speaker-select"
-                value={selectedSpeaker}
-                onChange={(e) => setSelectedSpeaker(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm"
-              >
-                <option value="">System default</option>
-                {audioOutputs.map(d => (
-                  <option key={d.deviceId} value={d.deviceId}>{d.label || `Speaker ${d.deviceId.slice(0, 6)}`}</option>
-                ))}
-              </select>
+              <Select.Root value={selectedSpeaker} onValueChange={setSelectedSpeaker} size="1">
+                <Select.Trigger id="speaker-select" style={{ width: '100%' }} />
+                <Select.Content>
+                  <Select.Item value="">System default</Select.Item>
+                  {audioOutputs.map(d => (
+                    <Select.Item key={d.deviceId} value={d.deviceId}>{d.label || `Speaker ${d.deviceId.slice(0, 6)}`}</Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
             </div>
           </div>
           {callActive && <p className="text-xs text-mission-control-text-dim">Mic selection takes effect on next call.</p>}

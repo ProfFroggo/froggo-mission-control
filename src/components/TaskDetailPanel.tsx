@@ -7,7 +7,7 @@ import { useEventBus } from '../lib/useEventBus';
 import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles, ChevronUp, ChevronDown, User } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 // eslint-disable-next-line import/order
-import { Button, IconButton, Spinner, TextArea, TextField, Select } from '@radix-ui/themes';
+import { Button, Checkbox, IconButton, Spinner, TextArea, TextField, Select } from '@radix-ui/themes';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
 import { showToast } from './Toast';
@@ -845,7 +845,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           {(JSON.parse(task.tags || '[]') as string[]).map((tag: string) => (
             <span key={tag} className="px-1.5 py-0.5 text-xs bg-mission-control-accent/20 text-mission-control-accent rounded-full flex items-center gap-1 flex-shrink-0">
               {tag}
-              <button onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} aria-label={`Remove tag ${tag}`} className="hover:text-error leading-none">×</button>
+              <button type="button" onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} aria-label={`Remove tag ${tag}`} className="hover:text-error leading-none">×</button>
             </span>
           ))}
           <TextField.Root
@@ -1915,19 +1915,19 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   </div>
                   <div className="text-sm text-mission-control-text-dim space-y-1">
                     <div className="flex items-center gap-2">
-                      <input type="checkbox" className="rounded" />
+                      <Checkbox size="1" />
                       <span>Code reviewed for bugs</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <input type="checkbox" className="rounded" />
+                      <Checkbox size="1" />
                       <span>Matches task requirements</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <input type="checkbox" className="rounded" />
+                      <Checkbox size="1" />
                       <span>No security issues</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <input type="checkbox" className="rounded" />
+                      <Checkbox size="1" />
                       <span>Ready for human approval</span>
                     </div>
                   </div>
@@ -2199,11 +2199,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               className="w-full"
             />
             <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={forkAssignSameAgent}
-                onChange={e => setForkAssignSameAgent(e.target.checked)}
-                className="rounded"
+                onCheckedChange={(val) => setForkAssignSameAgent(val === true)}
+                size="1"
               />
               Assign to same agent{task?.assignedTo ? ` (${task.assignedTo})` : ''}
             </label>

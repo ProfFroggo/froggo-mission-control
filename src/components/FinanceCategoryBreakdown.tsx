@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingDown, Loader2 } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import { financeApi } from '../lib/api';
 
 interface Props {
@@ -101,18 +102,15 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
         {/* Period selector */}
         <div className="flex items-center gap-1">
           {PERIOD_OPTIONS.map(({ label, days }) => (
-            <button
+            <Button
               key={days}
               onClick={() => setSelectedDays(days)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                selectedDays === days
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-bg-alt text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              size="1"
+              variant={selectedDays === days ? 'solid' : 'ghost'}
               aria-label={`Show ${label} breakdown`}
             >
               {label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

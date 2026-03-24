@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, BookOpen, RefreshCw, ChevronRight } from 'lucide-react';
+import { Button, TextField } from '@radix-ui/themes';
 import EmptyState from './EmptyState';
 import { libraryApi } from '../lib/api';
 
@@ -42,24 +43,28 @@ export default function LibrarySkillsTab() {
       {/* Search */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex gap-3">
-          <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
+          <div className="flex-1">
+            <TextField.Root
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search skills..."
-              className="w-full pl-9 pr-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
-            />
+              style={{ width: '100%' }}
+            >
+              <TextField.Slot>
+                <Search size={16} />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
-          <button
+          <Button
             onClick={loadSkills}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
+            size="2"
+            variant="ghost"
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 

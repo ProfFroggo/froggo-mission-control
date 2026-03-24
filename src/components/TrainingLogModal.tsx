@@ -80,6 +80,7 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
     >
       <button
+        type="button"
         className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default"
         onClick={handleClose}
         onKeyDown={(e) => e.key === 'Escape' && handleClose()}

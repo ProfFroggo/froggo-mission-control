@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Keyboard, X, Search } from 'lucide-react';
+import { IconButton, TextField } from '@radix-ui/themes';
 
 interface KeyboardShortcutsProps {
   isOpen: boolean;
@@ -188,25 +189,27 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
                 <p className="text-sm text-mission-control-text-dim">Navigate faster with these shortcuts</p>
               </div>
             </div>
-            <button
+            <IconButton
               onClick={onClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
             >
               <X size={20} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Search */}
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search shortcuts..."
-              className="w-full pl-10 pr-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
-            />
-          </div>
+          <TextField.Root
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search shortcuts..."
+            style={{ width: '100%' }}
+          >
+            <TextField.Slot>
+              <Search size={16} />
+            </TextField.Slot>
+          </TextField.Root>
         </div>
 
         {/* Shortcuts */}

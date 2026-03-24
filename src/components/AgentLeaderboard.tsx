@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown, Minus, Trophy, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Button, IconButton, Select } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 import { getAgentTheme } from '../utils/agentThemes';
 
@@ -203,44 +204,39 @@ export default function AgentLeaderboard() {
         {/* Period */}
         <div className="flex items-center gap-1 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
           {(['7d', '30d', '90d'] as Period[]).map(p => (
-            <button
+            <Button
               key={p}
-              type="button"
               onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                period === p
-                  ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              size="2"
+              variant={period === p ? 'solid' : 'ghost'}
             >
               {p}
-            </button>
+            </Button>
           ))}
         </div>
 
         <div className="flex items-center gap-2">
           {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as SortKey)}
-            className="text-xs px-2 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-surface text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-            aria-label="Sort leaderboard by"
-          >
-            {SORT_OPTIONS.map(o => (
-              <option key={o.key} value={o.key}>{o.label}</option>
-            ))}
-          </select>
+          <Select.Root value={sortBy} onValueChange={(val) => setSortBy(val as SortKey)} size="1">
+            <Select.Trigger aria-label="Sort leaderboard by" />
+            <Select.Content>
+              {SORT_OPTIONS.map(o => (
+                <Select.Item key={o.key} value={o.key}>{o.label}</Select.Item>
+              ))}
+            </Select.Content>
+          </Select.Root>
 
-          <button
-            type="button"
+          <IconButton
             onClick={() => fetchLeaderboard(period)}
             disabled={loading}
-            className="icon-btn border border-mission-control-border disabled:opacity-50"
+            size="2"
+            variant="ghost"
+            radius="medium"
             title="Refresh leaderboard"
             aria-label="Refresh leaderboard"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
         </div>
       </div>
 

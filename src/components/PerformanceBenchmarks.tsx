@@ -11,6 +11,7 @@ import {
   Minus,
   RefreshCw,
 } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import {
   LineChart,
   Line,
@@ -222,31 +223,31 @@ export default function PerformanceBenchmarks() {
         <div className="flex items-center gap-3">
           <div className="flex bg-mission-control-border rounded-lg p-1">
             {(['wow', 'mom', 'yoy'] as const).map((mode) => (
-              <button
+              <Button
                 key={mode}
                 onClick={() => setCompareMode(mode)}
-                className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  compareMode === mode
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
+                size="2"
+                variant={compareMode === mode ? 'solid' : 'ghost'}
               >
                 {mode === 'wow'
                   ? 'Week/Week'
                   : mode === 'mom'
                   ? 'Month/Month'
                   : 'Year/Year'}
-              </button>
+              </Button>
             ))}
           </div>
 
-          <button
+          <IconButton
             onClick={loadBenchmarks}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
             title="Refresh"
+            aria-label="Refresh"
           >
             <RefreshCw size={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
 

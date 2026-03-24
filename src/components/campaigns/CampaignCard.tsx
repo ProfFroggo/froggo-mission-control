@@ -93,6 +93,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
   if (viewMode === 'list') {
     return (
       <button
+        type="button"
         onClick={onClick}
         className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 transition-all duration-200 focus:outline-none"
       >
@@ -193,6 +194,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
   // ── Grid view layout ────────────────────────────────────────────────────────
   return (
     <button
+      type="button"
       onClick={onClick}
       className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-5 transition-all duration-200 focus:outline-none"
     >

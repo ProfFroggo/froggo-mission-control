@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { RefreshCw, Circle } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 
 interface Agent {
   id: string;
@@ -105,13 +106,13 @@ export default function AgentCapabilityMatrix() {
     return (
       <div className="p-4 text-center">
         <p className="text-error text-sm mb-3">{error}</p>
-        <button
-          type="button"
+        <Button
+          size="2"
+          variant="ghost"
           onClick={load}
-          className="px-3 py-1.5 text-xs border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
         >
           Retry
-        </button>
+        </Button>
       </div>
     );
   }

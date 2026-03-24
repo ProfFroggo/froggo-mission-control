@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { X, CheckCircle, Loader2, AlertTriangle, Sparkles, Flag, ArrowRight, Check, AlertCircle } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import { useStore } from '../store/store';
@@ -597,13 +597,13 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
         {/* Footer */}
         {phase === 'proposing' && (
           <div className="border-t border-mission-control-border p-4 flex-shrink-0 space-y-3">
-            <input
+            <TextField.Root
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleConfirm()}
               placeholder="Feedback? (e.g., 'skip duplicates') or just proceed..."
-              className="w-full px-3 py-2 bg-mission-control-bg rounded-lg border border-mission-control-border text-sm focus:outline-none focus:border-mission-control-accent"
+              style={{ width: '100%' }}
             />
             <div className="flex gap-2">
               <Button variant="surface" color="gray" size="2" onClick={handleClose} style={{ flex: 1, justifyContent: 'center' }}>

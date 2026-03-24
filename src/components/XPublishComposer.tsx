@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Plus, Trash2, AlertCircle, CheckCircle, Image, Calendar, Clock, X, Lightbulb } from 'lucide-react';
-import { Button, IconButton, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, TextArea } from '@radix-ui/themes';
 import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
 
@@ -124,7 +124,7 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
         )}
         <div className="flex-1 min-w-0">
           <div className="relative">
-            <textarea
+            <TextArea
               ref={textareaRef}
               value={value}
               onChange={(e) => onChange(index, e.target.value)}
@@ -133,12 +133,7 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
               disabled={disabled}
               style={{
                 width: '100%',
-                background: 'var(--color-surface)',
-                color: 'var(--gray-12)',
-                border: `1px solid ${isOverLimit ? 'var(--red-8)' : 'var(--gray-6)'}`,
-                borderRadius: 'var(--radius-3)',
-                padding: '12px 16px',
-                outline: 'none',
+                border: isOverLimit ? '1px solid var(--red-8)' : undefined,
                 resize: 'none',
                 minHeight: '72px',
                 fontSize: 14,
@@ -558,6 +553,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
         {/* Mode toggle */}
         <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden" style={{ background: 'var(--color-surface)' }}>
           <button
+            type="button"
             onClick={() => switchToMode('single')}
             className="px-4 py-1.5 text-sm font-medium transition-colors"
             style={{
@@ -568,6 +564,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
             Single Tweet
           </button>
           <button
+            type="button"
             onClick={() => switchToMode('thread')}
             className="px-4 py-1.5 text-sm font-medium transition-colors"
             style={{

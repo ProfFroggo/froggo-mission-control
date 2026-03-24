@@ -5,6 +5,7 @@
  */
 
 import { useMemo, useEffect, useState } from 'react';
+import { Button } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 import AgentAvatar from './AgentAvatar';
 
@@ -76,6 +77,7 @@ export default function AgentActivityBar({ onNavigate, onTaskClick, expanded = t
           );
           return (
             <button
+              type="button"
               key={task.id}
               onClick={() => {
                 if (onTaskClick) {

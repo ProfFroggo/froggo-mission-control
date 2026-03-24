@@ -8,7 +8,7 @@ import { useRef, useState, useEffect } from 'react';
 import { X, Filter, ChevronDown, Calendar, User, Flag, CheckSquare } from 'lucide-react';
 import type { TaskStatus, TaskPriority } from '../store/store';
 // eslint-disable-next-line import/order
-import { Button, Badge, Select, TextField } from '@radix-ui/themes';
+import { Button, Badge, Checkbox, Select, TextField } from '@radix-ui/themes';
 
 export interface TaskFilters {
   statuses: TaskStatus[];
@@ -142,11 +142,10 @@ export default function TaskFiltersBar({ filters, onChange, agents }: TaskFilter
                 key={s.id}
                 className="flex items-center gap-2.5 px-3 py-1.5 text-sm cursor-pointer hover:bg-mission-control-border/40 transition-colors"
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={filters.statuses.includes(s.id)}
-                  onChange={() => toggleStatus(s.id)}
-                  className="rounded accent-current w-3.5 h-3.5 flex-shrink-0"
+                  onCheckedChange={() => toggleStatus(s.id)}
+                  size="1"
                 />
                 {s.label}
               </label>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, TrendingUp, Award, CheckCircle, Clock, Activity, Crown, Trophy, Dumbbell, Zap } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 import { getAgentTheme } from '../utils/agentThemes';
 import { agentApi } from '../lib/api';
@@ -147,13 +148,15 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
               Comparing {agentIds.length} agents
             </p>
           </div>
-          <button
+          <IconButton
             onClick={handleClose}
-            className="p-1.5 rounded-lg hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
             aria-label="Close modal"
           >
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Content */}
@@ -353,12 +356,13 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
-          <button
+          <Button
             onClick={handleClose}
-            className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+            size="2"
+            variant="solid"
           >
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>

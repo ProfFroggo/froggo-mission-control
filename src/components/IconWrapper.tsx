@@ -133,7 +133,8 @@ export function IconButton({
   }[variant];
   
   return (
-    <button 
+    <button
+      type="button"
       className={`${children ? 'icon-text' : sizeClass} ${variantClass} ${className}`}
       {...props}
     >

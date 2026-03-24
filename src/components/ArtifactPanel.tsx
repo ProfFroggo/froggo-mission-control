@@ -433,6 +433,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                   const label = tab === 'preview' ? 'Preview' : tab === 'code' ? 'Code' : 'Port';
                   return (
                     <button
+                      type="button"
                       key={tab}
                       onClick={() => setViewTab(tab)}
                       className={`flex items-center px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
@@ -570,6 +571,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 const colorClass = ARTIFACT_COLORS[artifact.type];
                 return (
                   <button
+                    type="button"
                     key={artifact.id}
                     onClick={() => selectArtifact(artifact.id)}
                     className="w-full text-left p-3 rounded-lg transition-colors"

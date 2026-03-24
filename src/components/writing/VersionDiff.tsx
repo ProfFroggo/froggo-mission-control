@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 
 interface DiffChange {
   value: string;
@@ -19,13 +20,16 @@ export default function VersionDiff({ changes, versionLabel, onClose }: VersionD
         <div className="text-xs font-medium text-mission-control-text truncate pr-2">
           Comparing: <span className="text-mission-control-accent">{versionLabel}</span> vs Current
         </div>
-        <button
+        <IconButton
           onClick={onClose}
-          className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded transition-colors flex-shrink-0"
+          size="1"
+          variant="ghost"
+          radius="medium"
           title="Close diff"
+          aria-label="Close diff"
         >
           <X size={14} />
-        </button>
+        </IconButton>
       </div>
       <div className="flex items-center gap-3 mb-2 text-[10px] text-mission-control-text-dim flex-shrink-0">
         <span className="flex items-center gap-1">

@@ -864,6 +864,7 @@ export default function SettingsPanel() {
                   <div className="flex gap-2 flex-wrap">
                     {['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#10b981'].map((color) => (
                       <button
+                        type="button"
                         key={color}
                         onClick={() => setSettings(s => ({ ...s, accentColor: color }))}
                         className={`w-10 h-10 rounded-full border-2 transition-transform hover:scale-110 ${

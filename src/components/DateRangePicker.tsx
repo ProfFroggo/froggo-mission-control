@@ -90,6 +90,7 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
         <>
           {/* Backdrop */}
           <button
+            type="button"
             className="fixed inset-0 z-40 w-full h-full bg-black/20 cursor-default"
             onClick={() => setIsOpen(false)}
             aria-label="Close date range picker"

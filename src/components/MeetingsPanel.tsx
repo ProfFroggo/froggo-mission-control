@@ -2394,6 +2394,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       <div className="space-y-3">
                         {pastMeetings.map((meeting) => (
                           <button
+                            type="button"
                             key={meeting.id || meeting.filepath}
                             onClick={() => setSelectedMeeting(meeting)}
                             className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-4 hover:border-mission-control-accent transition-all group cursor-pointer"
@@ -2669,6 +2670,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     <div className="space-y-2">
                       {recentUploads.map(upload => (
                         <button
+                          type="button"
                           key={upload.id}
                           onClick={() => {
                             setActiveView('history');

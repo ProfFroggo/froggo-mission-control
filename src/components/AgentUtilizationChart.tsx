@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Button } from '@radix-ui/themes';
 import {
   BarChart,
   Bar,
@@ -91,17 +92,14 @@ export default function AgentUtilizationChart() {
 
         <div className="flex bg-mission-control-border rounded-lg p-1">
           {(['bar', 'pie'] as const).map((mode) => (
-            <button
+            <Button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors capitalize ${
-                viewMode === mode
-                  ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              size="2"
+              variant={viewMode === mode ? 'solid' : 'ghost'}
             >
               {mode}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

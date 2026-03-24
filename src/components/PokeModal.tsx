@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Loader2, MessageCircle, Activity, AlertTriangle } from 'lucide-react';
+import { IconButton, TextField } from '@radix-ui/themes';
 import BaseModal from './BaseModal';
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
@@ -368,12 +369,15 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             </div>
           </div>
         </div>
-        <button
+        <IconButton
           onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-mission-control-border/50 text-mission-control-text-muted hover:text-mission-control-text transition-colors"
+          size="2"
+          variant="ghost"
+          radius="medium"
+          aria-label="Close"
         >
           <X size={18} />
-        </button>
+        </IconButton>
       </div>
 
       {/* Messages area */}
@@ -432,7 +436,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
       {/* Input area */}
       <div className="p-3 border-t border-mission-control-border bg-mission-control-bg">
         <div className="flex items-center gap-2">
-          <input
+          <TextField.Root
             ref={inputRef}
             type="text"
             value={input}
@@ -440,15 +444,18 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             onKeyDown={handleKeyDown}
             placeholder={sending ? 'Waiting for response...' : 'Ask about this task...'}
             disabled={sending || loading}
-            className="flex-1 px-4 py-2.5 rounded-lg bg-mission-control-bg-alt border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent/50 disabled:opacity-50"
+            style={{ flex: 1 }}
           />
-          <button
+          <IconButton
             onClick={sendMessage}
             disabled={!input.trim() || sending || loading}
-            className="p-2.5 rounded-lg bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            size="2"
+            variant="ghost"
+            radius="medium"
+            aria-label="Send"
           >
             <Send size={16} />
-          </button>
+          </IconButton>
         </div>
         <p className="text-[10px] text-mission-control-text-muted/40 mt-1.5 text-center">
           Task-scoped conversation • Responses have personality 🐸

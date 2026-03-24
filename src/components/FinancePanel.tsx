@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet, Plus, X, Calculator, ChevronDown, UtensilsCrossed, Lightbulb, ShoppingBag, ImageIcon, ShoppingCart, Car, Tv, Cross, Home, Clipboard, Fuel, ArrowLeftRight, Lock, Globe, ArrowRightLeft } from 'lucide-react';
 // eslint-disable-next-line import/order
-import { Button, IconButton, Badge, Heading, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Heading, Select, TextField } from '@radix-ui/themes';
 import EmptyState from './EmptyState';
 import WidgetLoading from './WidgetLoading';
 import { showToast } from './Toast';
@@ -718,28 +718,27 @@ export default function FinancePanel() {
                           </span>
                           {/* Inline category editor */}
                           {editingCategoryTxId === tx.id ? (
-                            <select
+                            <Select.Root
                               value={tx.category}
-                              onChange={async (e) => {
-                                const newCat = e.target.value;
-                                // Update category in local state only (REST stub, no backend persistence)
+                              onValueChange={async (newCat) => {
                                 setTransactions((prev) =>
                                   prev.map((t) => t.id === tx.id ? { ...t, category: newCat } : t)
                                 );
                                 setEditingCategoryTxId(null);
                                 showToast('success', `Recategorized to ${newCat}`);
                               }}
-                              onBlur={() => setEditingCategoryTxId(null)}
-                              className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-0.5 text-xs text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-                              aria-label={`Change category for ${tx.description}`}
+                              size="1"
                             >
-                              {categoryOptions.length > 0
-                                ? categoryOptions.map((c) => (
-                                    <option key={c.name} value={c.name}>{c.name}</option>
-                                  ))
-                                : <option value={tx.category}>{tx.category}</option>
-                              }
-                            </select>
+                              <Select.Trigger aria-label={`Change category for ${tx.description}`} />
+                              <Select.Content>
+                                {categoryOptions.length > 0
+                                  ? categoryOptions.map((c) => (
+                                      <Select.Item key={c.name} value={c.name}>{c.name}</Select.Item>
+                                    ))
+                                  : <Select.Item value={tx.category}>{tx.category}</Select.Item>
+                                }
+                              </Select.Content>
+                            </Select.Root>
                           ) : (
                             <Button
                               variant="ghost"
@@ -820,16 +819,14 @@ export default function FinancePanel() {
               {/* Account selector */}
               <div>
                 <label htmlFor="upload-account-id" className="block text-sm text-mission-control-text-dim mb-1">Import to Account</label>
-                <select
-                  id="upload-account-id"
-                  value={uploadAccountId}
-                  onChange={(e) => setUploadAccountId(e.target.value)}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none text-sm"
-                >
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>{acc.name}</option>
-                  ))}
-                </select>
+                <Select.Root value={uploadAccountId} onValueChange={setUploadAccountId}>
+                  <Select.Trigger id="upload-account-id" style={{ width: '100%' }} />
+                  <Select.Content>
+                    {accounts.map((acc) => (
+                      <Select.Item key={acc.id} value={acc.id}>{acc.name}</Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
               </div>
 
               <div>
@@ -886,23 +883,21 @@ export default function FinancePanel() {
               {/* Account scope selector */}
               <div>
                 <label htmlFor="budget-account-id" className="block text-sm text-mission-control-text-dim mb-1">Scope to Account</label>
-                <select
-                  id="budget-account-id"
-                  value={budgetAccountId}
-                  onChange={(e) => setBudgetAccountId(e.target.value)}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none text-sm"
-                >
-                  <option value="">All Accounts (Global)</option>
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>{acc.name}</option>
-                  ))}
-                </select>
+                <Select.Root value={budgetAccountId} onValueChange={setBudgetAccountId}>
+                  <Select.Trigger id="budget-account-id" style={{ width: '100%' }} />
+                  <Select.Content>
+                    <Select.Item value="">All Accounts (Global)</Select.Item>
+                    {accounts.map((acc) => (
+                      <Select.Item key={acc.id} value={acc.id}>{acc.name}</Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
               </div>
 
               <div>
                 <label htmlFor="budget-amount" className="block text-sm text-mission-control-text-dim mb-1">Total Budget</label>
                 <div className="flex gap-2">
-                  <input
+                  <TextField.Root
                     id="budget-amount"
                     type="number"
                     value={budgetAmount}
@@ -910,17 +905,16 @@ export default function FinancePanel() {
                     placeholder="0.00"
                     min="0"
                     step="0.01"
-                    className="flex-1 px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                    style={{ flex: 1 }}
                   />
-                  <select
-                    value={budgetCurrency}
-                    onChange={(e) => setBudgetCurrency(e.target.value)}
-                    className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-                  >
-                    <option value="EUR">EUR</option>
-                    <option value="USD">USD</option>
-                    <option value="GBP">GBP</option>
-                  </select>
+                  <Select.Root value={budgetCurrency} onValueChange={setBudgetCurrency}>
+                    <Select.Trigger />
+                    <Select.Content>
+                      <Select.Item value="EUR">EUR</Select.Item>
+                      <Select.Item value="USD">USD</Select.Item>
+                      <Select.Item value="GBP">GBP</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
                 </div>
               </div>
 
@@ -976,17 +970,15 @@ export default function FinancePanel() {
 
               <div>
                 <label htmlFor="new-account-type" className="block text-sm text-mission-control-text-dim mb-1">Account Type</label>
-                <select
-                  id="new-account-type"
-                  value={newAccountType}
-                  onChange={(e) => setNewAccountType(e.target.value)}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none text-sm"
-                >
-                  <option value="bank">Bank</option>
-                  <option value="crypto_wallet">Crypto Wallet</option>
-                  <option value="credit_card">Credit Card</option>
-                  <option value="cash">Cash</option>
-                </select>
+                <Select.Root value={newAccountType} onValueChange={setNewAccountType}>
+                  <Select.Trigger id="new-account-type" style={{ width: '100%' }} />
+                  <Select.Content>
+                    <Select.Item value="bank">Bank</Select.Item>
+                    <Select.Item value="crypto_wallet">Crypto Wallet</Select.Item>
+                    <Select.Item value="credit_card">Credit Card</Select.Item>
+                    <Select.Item value="cash">Cash</Select.Item>
+                  </Select.Content>
+                </Select.Root>
               </div>
 
               <div>
@@ -1038,17 +1030,15 @@ export default function FinancePanel() {
               {/* Account filter */}
               <div>
                 <label htmlFor="export-account-id" className="block text-sm text-mission-control-text-dim mb-1">Account</label>
-                <select
-                  id="export-account-id"
-                  value={exportAccountId}
-                  onChange={e => setExportAccountId(e.target.value)}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none"
-                >
-                  <option value="">All Accounts</option>
-                  {accounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>{acc.name}</option>
-                  ))}
-                </select>
+                <Select.Root value={exportAccountId} onValueChange={setExportAccountId}>
+                  <Select.Trigger id="export-account-id" style={{ width: '100%' }} />
+                  <Select.Content>
+                    <Select.Item value="">All Accounts</Select.Item>
+                    {accounts.map(acc => (
+                      <Select.Item key={acc.id} value={acc.id}>{acc.name}</Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
               </div>
 
               {/* Date range */}

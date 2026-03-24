@@ -262,6 +262,9 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
         </div>
         {/* Toggle switch */}
         <button
+          type="button"
+          role="switch"
+          aria-checked={isActive}
           onClick={() => onToggle(automation.id, automation.status)}
           title={isActive ? 'Pause automation' : 'Activate automation'}
           aria-label={isActive ? 'Pause automation' : 'Activate automation'}
@@ -635,6 +638,7 @@ export default function AutomationsPanel() {
       <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--mission-control-border)', paddingBottom: 0 }}>
         {(['my-automations', 'templates'] as ActiveTab[]).map(tab => (
           <button
+            type="button"
             key={tab}
             onClick={() => setActiveTab(tab)}
             style={{

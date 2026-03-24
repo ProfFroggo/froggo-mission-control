@@ -132,6 +132,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
 
             return (
               <button
+                type="button"
                 key={mode.type}
                 onClick={() => handleSelect(mode.type)}
                 className={`w-full p-4 rounded-lg border text-left transition-all ${

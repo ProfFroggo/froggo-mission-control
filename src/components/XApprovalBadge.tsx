@@ -190,6 +190,7 @@ export default function XApprovalBadge() {
 
       {/* Badge button */}
       <button
+        type="button"
         onClick={() => setOpen(!open)}
         className={`relative flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
           open

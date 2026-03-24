@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import { getAgentTheme } from '../utils/agentThemes';
 
 interface PerformanceData {
@@ -136,17 +137,14 @@ export default function PerformanceTable() {
         {/* Period selector */}
         <div className="flex bg-mission-control-border rounded-lg p-1">
           {([7, 30, 90] as const).map((days) => (
-            <button
+            <Button
               key={days}
               onClick={() => setPeriod(days)}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                period === days
-                  ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              size="1"
+              variant={period === days ? 'solid' : 'ghost'}
             >
               {days}d
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -329,12 +327,13 @@ export default function PerformanceTable() {
             </div>
 
             <div className="p-6 border-t border-mission-control-border flex justify-end">
-              <button
+              <Button
                 onClick={() => setSelectedAgent(null)}
-                className="px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-border/70 transition-colors"
+                size="2"
+                variant="ghost"
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>

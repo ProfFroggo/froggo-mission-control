@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { formatDueDate } from '../utils/formatting';
 import { ListTodo, Clock, Plus, Trash2, Edit2, RefreshCw, X, Check, User, Repeat, CalendarDays, AlertTriangle } from 'lucide-react';
-import { Button, Badge } from '@radix-ui/themes';
+import { Button, Badge, Select, TextArea, TextField } from '@radix-ui/themes';
 import { useStore, type Task, type TaskStatus, type TaskPriority, type TaskRecurrence } from '../store/store';
 import { taskApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -303,60 +303,57 @@ export default function TaskScheduler() {
             {mode === 'existing' && !editingId ? (
               <div>
                 <label className="block text-sm text-mission-control-text-dim mb-1">Task</label>
-                <select
-                  value={existingTaskId}
-                  onChange={e => setExistingTaskId(e.target.value)}
-                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent text-sm"
-                >
-                  <option value="">Select unscheduled task…</option>
-                  {unscheduledTasks.map(t => (
-                    <option key={t.id} value={t.id}>{t.title}</option>
-                  ))}
-                </select>
+                <Select.Root value={existingTaskId} onValueChange={setExistingTaskId}>
+                  <Select.Trigger style={{ width: '100%' }} />
+                  <Select.Content>
+                    <Select.Item value="">Select unscheduled task…</Select.Item>
+                    {unscheduledTasks.map(t => (
+                      <Select.Item key={t.id} value={t.id}>{t.title}</Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
               </div>
             ) : (
               <>
-                <input
+                <TextField.Root
                   type="text"
                   value={formTitle}
                   onChange={e => setFormTitle(e.target.value)}
                   placeholder="Task title"
-                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                  style={{ width: '100%' }}
                 />
-                <textarea
+                <TextArea
                   value={formDescription}
                   onChange={e => setFormDescription(e.target.value)}
                   placeholder="Description (optional)"
                   rows={2}
-                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
+                  style={{ width: '100%' }}
                 />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-mission-control-text-dim mb-1">Priority</label>
-                    <select
-                      value={formPriority}
-                      onChange={e => setFormPriority(e.target.value as TaskPriority)}
-                      className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent text-sm"
-                    >
-                      {PRIORITIES.map(p => (
-                        <option key={p} value={p}>{PRIORITY_CONFIG[p].label}</option>
-                      ))}
-                    </select>
+                    <Select.Root value={formPriority} onValueChange={(val) => setFormPriority(val as TaskPriority)}>
+                      <Select.Trigger style={{ width: '100%' }} />
+                      <Select.Content>
+                        {PRIORITIES.map(p => (
+                          <Select.Item key={p} value={p}>{PRIORITY_CONFIG[p].label}</Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Root>
                   </div>
                   <div>
                     <label className="block text-sm text-mission-control-text-dim mb-1">Assign to</label>
-                    <select
-                      value={formAssignee}
-                      onChange={e => setFormAssignee(e.target.value)}
-                      className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent text-sm"
-                    >
-                      <option value="">Unassigned</option>
-                      {agents
-                        .filter(a => a.status !== 'archived' && a.status !== 'disabled')
-                        .map(a => (
-                          <option key={a.id} value={a.id}>{a.name}</option>
-                        ))}
-                    </select>
+                    <Select.Root value={formAssignee} onValueChange={setFormAssignee}>
+                      <Select.Trigger style={{ width: '100%' }} />
+                      <Select.Content>
+                        <Select.Item value="">Unassigned</Select.Item>
+                        {agents
+                          .filter(a => a.status !== 'archived' && a.status !== 'disabled')
+                          .map(a => (
+                            <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>
+                          ))}
+                      </Select.Content>
+                    </Select.Root>
                   </div>
                 </div>
               </>
@@ -411,24 +408,24 @@ export default function TaskScheduler() {
                     {/* Row 1: Every [n] [freq] */}
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-mission-control-text-dim shrink-0">Every</span>
-                      <input
+                      <TextField.Root
                         type="number"
-                        min={1}
-                        max={99}
-                        value={recurInterval}
+                        min="1"
+                        max="99"
+                        value={String(recurInterval)}
                         onChange={e => setRecurInterval(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-12 px-2 py-1 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent text-center"
+                        size="1"
+                        style={{ width: 48, textAlign: 'center' }}
                       />
-                      <select
-                        value={recurFrequency}
-                        onChange={e => setRecurFrequency(e.target.value as TaskRecurrence['frequency'])}
-                        className="px-2 py-1 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
-                      >
-                        <option value="daily">{recurInterval === 1 ? 'Day' : 'Days'}</option>
-                        <option value="weekly">{recurInterval === 1 ? 'Week' : 'Weeks'}</option>
-                        <option value="monthly">{recurInterval === 1 ? 'Month' : 'Months'}</option>
-                        <option value="yearly">{recurInterval === 1 ? 'Year' : 'Years'}</option>
-                      </select>
+                      <Select.Root value={recurFrequency} onValueChange={(val) => setRecurFrequency(val as TaskRecurrence['frequency'])} size="1">
+                        <Select.Trigger />
+                        <Select.Content>
+                          <Select.Item value="daily">{recurInterval === 1 ? 'Day' : 'Days'}</Select.Item>
+                          <Select.Item value="weekly">{recurInterval === 1 ? 'Week' : 'Weeks'}</Select.Item>
+                          <Select.Item value="monthly">{recurInterval === 1 ? 'Month' : 'Months'}</Select.Item>
+                          <Select.Item value="yearly">{recurInterval === 1 ? 'Year' : 'Years'}</Select.Item>
+                        </Select.Content>
+                      </Select.Root>
                     </div>
 
                     {/* Row 2: Ends — all inline */}
@@ -441,14 +438,15 @@ export default function TaskScheduler() {
                       <label className="flex items-center gap-1.5 cursor-pointer">
                         <input type="radio" name="recurEnd" checked={recurEndType === 'after'} onChange={() => setRecurEndType('after')} className="accent-mission-control-accent" />
                         <span>After</span>
-                        <input
+                        <TextField.Root
                           type="number"
-                          min={1}
-                          max={999}
-                          value={recurEndAfter}
+                          min="1"
+                          max="999"
+                          value={String(recurEndAfter)}
                           onChange={e => setRecurEndAfter(Math.max(1, parseInt(e.target.value) || 1))}
                           onClick={() => setRecurEndType('after')}
-                          className="w-12 px-2 py-0.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent text-center"
+                          size="1"
+                          style={{ width: 48, textAlign: 'center' }}
                         />
                         <span className="text-mission-control-text-dim">times</span>
                       </label>

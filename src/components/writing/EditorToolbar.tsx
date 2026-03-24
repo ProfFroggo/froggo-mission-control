@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import BaseModal, { BaseModalBody, BaseModalFooter } from '../BaseModal';
 import { LoadingButton } from '../LoadingStates';
+import { TextField } from '@radix-ui/themes';
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -35,6 +36,7 @@ function ToolbarButton({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       title={title}
@@ -189,13 +191,13 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
           <h3 className="text-lg font-semibold text-mission-control-text">Add Link</h3>
         </div>
         <BaseModalBody>
-          <input
+          <TextField.Root
             type="url"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder="https://example.com"
-            className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
             onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+            style={{ width: '100%' }}
           />
         </BaseModalBody>
         <BaseModalFooter align="right">

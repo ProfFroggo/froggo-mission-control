@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
-import { Button, IconButton, Badge } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Select, TextArea, TextField } from '@radix-ui/themes';
 import EmptyState from './EmptyState';
 import { useStore } from '../store/store';
 import { useChatRoomStore } from '../store/chatRoomStore';
@@ -372,6 +372,7 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
           return (
             <div key={task.id} className="bg-mission-control-surface/40">
               <button
+                type="button"
                 onClick={() => toggle(task.id)}
                 className="w-full flex items-start gap-3 px-5 py-3.5 text-left hover:bg-mission-control-surface/60 transition-colors"
               >
@@ -411,12 +412,12 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
                     <label className="text-xs font-medium text-mission-control-text-dim block mb-1.5">
                       Your feedback or instructions to the agent
                     </label>
-                    <textarea
+                    <TextArea
                       value={feedback[task.id] || ''}
                       onChange={e => setFeedback(prev => ({ ...prev, [task.id]: e.target.value }))}
                       placeholder="Tell the agent what to do next, provide missing info, or clarify requirements..."
                       rows={2}
-                      className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
+                      style={{ width: '100%' }}
                     />
                   </div>
                   <div className="flex gap-2">
@@ -595,13 +596,13 @@ function ApprovalDetailPane({
           {rejectConfirm && (
             <div className="space-y-2">
               <label className="text-xs font-medium text-error block">Rejection reason (required)</label>
-              <textarea
-                ref={rejectReasonRef}
+              <TextArea
+                ref={rejectReasonRef as React.RefObject<HTMLTextAreaElement>}
                 value={rejectReason}
                 onChange={e => setRejectReason(e.target.value)}
                 placeholder="Explain why this is being rejected…"
                 rows={2}
-                className="w-full text-sm bg-mission-control-bg border border-error-border rounded-lg px-3 py-2 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-error resize-none"
+                style={{ width: '100%' }}
               />
             </div>
           )}
@@ -845,6 +846,7 @@ export default function ApprovalQueuePanel() {
           const TabIcon = tab.icon;
           return (
             <button
+              type="button"
               key={tab.id}
               onClick={() => { setStatusTab(tab.id); setSelectedId(null); setSelected(new Set()); }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium transition-colors ${statusTab === tab.id ? 'text-mission-control-text border-b-2 border-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
@@ -878,14 +880,13 @@ export default function ApprovalQueuePanel() {
           {uniqueRequesters.length > 0 && (
             <div className="flex items-center gap-1 ml-1">
               <User className="w-3 h-3 text-mission-control-text-dim" />
-              <select
-                value={requesterFilter}
-                onChange={e => setRequesterFilter(e.target.value)}
-                className="text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-1.5 py-0.5 text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-              >
-                <option value="all">All agents</option>
-                {uniqueRequesters.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
+              <Select.Root value={requesterFilter} onValueChange={setRequesterFilter} size="1">
+                <Select.Trigger />
+                <Select.Content>
+                  <Select.Item value="all">All agents</Select.Item>
+                  {uniqueRequesters.map(r => <Select.Item key={r} value={r}>{r}</Select.Item>)}
+                </Select.Content>
+              </Select.Root>
             </div>
           )}
           {statusTab === 'pending' && filtered.length > 1 && (
@@ -960,13 +961,13 @@ export default function ApprovalQueuePanel() {
             <div className="absolute bottom-0 left-0 right-0 bg-mission-control-surface border-t border-mission-control-border p-3 shadow-lg space-y-2">
               {showBatchRejectInput && (
                 <div className="flex gap-2 items-center">
-                  <input
+                  <TextField.Root
                     type="text"
                     value={batchRejectReason}
                     onChange={e => setBatchRejectReason(e.target.value)}
                     placeholder="Rejection reason (optional)…"
-                    className="flex-1 text-xs bg-mission-control-bg border border-error-border rounded-lg px-3 py-1.5 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-error"
                     autoFocus
+                    style={{ flex: 1 }}
                   />
                   <IconButton onClick={() => { setShowBatchRejectInput(false); setBatchRejectReason(''); }} variant="ghost" color="gray" size="2">
                     <X className="w-4 h-4" />
@@ -1082,12 +1083,12 @@ function AgentActionCard({
       )}
       {showActions && (
         <div className="space-y-2 pt-1">
-          <textarea
+          <TextArea
             value={note}
             onChange={e => onNoteChange(e.target.value)}
             placeholder="Optional feedback for the agent…"
             rows={2}
-            className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
+            style={{ width: '100%' }}
           />
           <div className="flex gap-2">
             <Button onClick={onApprove} disabled={isResponding} color="grass" size="2" className="flex-1">
@@ -1208,7 +1209,7 @@ function ApprovalListRow({
                 <span className="text-xs font-medium text-mission-control-text">Edit tweet text</span>
                 <span className="text-xs text-mission-control-text-dim">{(editedContent || '').length}/280</span>
               </div>
-              <textarea value={editedContent || ''} onChange={e => onEditContentChange(e.target.value)} maxLength={280} rows={4} className="w-full text-sm bg-mission-control-border/20 border border-info-border rounded-lg px-3 py-2 text-mission-control-text focus:outline-none focus:border-info resize-none" />
+              <TextArea value={editedContent || ''} onChange={e => onEditContentChange(e.target.value)} maxLength={280} rows={4} style={{ width: '100%' }} />
             </div>
           )}
           {!isExecutable && (
@@ -1238,7 +1239,7 @@ function ApprovalListRow({
             </Button>
           )}
           <div className="flex items-center gap-2">
-            <input type="text" placeholder="Notes (optional)…" value={note} onChange={e => onNoteChange(e.target.value)} className="flex-1 text-xs bg-mission-control-border/30 border border-mission-control-border rounded-lg px-3 py-1.5 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50" />
+            <TextField.Root type="text" placeholder="Notes (optional)…" value={note} onChange={e => onNoteChange(e.target.value)} style={{ flex: 1 }} size="1" />
             <Button onClick={onApprove} disabled={isResponding} color="grass" size="2">
               {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               {isExecutable ? 'Approve & Run' : 'Approve'}

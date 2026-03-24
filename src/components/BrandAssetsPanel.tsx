@@ -5,7 +5,7 @@ import {
   Plus, Search, X, Trash2, Edit, ExternalLink,
 } from 'lucide-react';
 // eslint-disable-next-line import/order
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextArea, TextField } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -263,72 +263,69 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
             <p className="text-xs text-error bg-error border border-error rounded px-3 py-2">{error}</p>
           )}
 
-          <input
+          <TextField.Root
             value={form.name}
             onChange={e => set('name', e.target.value)}
             placeholder="Asset name..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
+            style={{ width: '100%' }}
           />
 
           <div className="flex gap-2">
-            <select
-              value={form.category}
-              onChange={e => set('category', e.target.value)}
-              className="flex-1 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent"
-            >
-              {ASSET_CATEGORIES.filter(c => c.value !== 'all').map(c => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </select>
+            <Select.Root value={form.category} onValueChange={(val) => set('category', val)}>
+              <Select.Trigger style={{ flex: 1 }} />
+              <Select.Content>
+                {ASSET_CATEGORIES.filter(c => c.value !== 'all').map(c => (
+                  <Select.Item key={c.value} value={c.value}>{c.label}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
 
-            <select
-              value={form.fileType}
-              onChange={e => set('fileType', e.target.value as AssetFileType)}
-              className="flex-1 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent"
-            >
-              {FILE_TYPE_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+            <Select.Root value={form.fileType} onValueChange={(val) => set('fileType', val as AssetFileType)}>
+              <Select.Trigger style={{ flex: 1 }} />
+              <Select.Content>
+                {FILE_TYPE_OPTIONS.map(o => (
+                  <Select.Item key={o.value} value={o.value}>{o.label}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
 
-            <select
-              value={form.scope}
-              onChange={e => set('scope', e.target.value)}
-              className="w-28 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent"
-            >
-              {SCOPE_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+            <Select.Root value={form.scope} onValueChange={(val) => set('scope', val)}>
+              <Select.Trigger style={{ width: 112 }} />
+              <Select.Content>
+                {SCOPE_OPTIONS.map(o => (
+                  <Select.Item key={o.value} value={o.value}>{o.label}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
           </div>
 
-          <input
+          <TextField.Root
             value={form.url}
             onChange={e => set('url', e.target.value)}
             placeholder="URL or image link..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
+            style={{ width: '100%' }}
           />
 
-          <input
+          <TextField.Root
             value={form.fileName}
             onChange={e => set('fileName', e.target.value)}
             placeholder="File name (optional)..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
+            style={{ width: '100%' }}
           />
 
-          <textarea
+          <TextArea
             value={form.description}
             onChange={e => set('description', e.target.value)}
             placeholder="Description (optional)..."
             rows={3}
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info resize-none"
+            style={{ width: '100%' }}
           />
 
-          <input
+          <TextField.Root
             value={form.tags}
             onChange={e => set('tags', e.target.value)}
             placeholder="Tags: brand, primary, dark (comma-separated)..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
+            style={{ width: '100%' }}
           />
         </div>
 
@@ -567,6 +564,7 @@ export default function BrandAssetsPanel() {
             const active = category === value;
             return (
               <button
+                type="button"
                 key={value}
                 onClick={() => setCategory(value)}
                 className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors ${
@@ -588,14 +586,17 @@ export default function BrandAssetsPanel() {
         <div className="flex flex-col flex-1 min-w-0 h-full">
           {/* Toolbar */}
           <div className="flex items-center gap-2 p-4 border-b border-mission-control-border">
-            <div className="relative flex-1">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-              <input
+            <div className="flex-1">
+              <TextField.Root
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search brand assets..."
-                className="w-full pl-8 pr-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-info"
-              />
+                style={{ width: '100%' }}
+              >
+                <TextField.Slot>
+                  <Search size={13} />
+                </TextField.Slot>
+              </TextField.Root>
               {search && (
                 <IconButton
                   onClick={() => setSearch('')}

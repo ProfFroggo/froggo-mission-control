@@ -27,7 +27,7 @@ import {
   SkipForward,
   X,
 } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Checkbox, IconButton, TextField } from '@radix-ui/themes';
 
 interface OnboardingWizardProps {
   onComplete: (startTour: boolean) => void;
@@ -913,11 +913,9 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         {/* Confirmation checkbox */}
         {!obsidianSkipped && (
           <label className="flex items-center gap-3 mt-4 cursor-pointer select-none">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={obsidianConfirmed}
-              onChange={e => setObsidianConfirmed(e.target.checked)}
-              className="w-4 h-4 rounded accent-mission-control-accent"
+              onCheckedChange={(val) => setObsidianConfirmed(val === true)}
             />
             <span className="text-sm text-mission-control-text">I've opened the vault in Obsidian</span>
           </label>

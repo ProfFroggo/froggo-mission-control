@@ -48,6 +48,7 @@ export default function LibraryPanel() {
         <div className="flex gap-1 px-6" role="tablist" aria-label="Library sections">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
+              type="button"
               key={id}
               role="tab"
               aria-selected={activeTab === id}

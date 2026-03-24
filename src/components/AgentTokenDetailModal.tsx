@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { X, TrendingUp, BarChart3, DollarSign, PiggyBank } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { getAgentTheme } from '../utils/agentThemes';
 import { analyticsApi } from '../lib/api';
 
@@ -225,22 +226,24 @@ export default function AgentTokenDetailModal({
           </div>
           <div className="flex items-center gap-2">
             {onOpenBudgets && (
-              <button
-                type="button"
+              <Button
+                size="1"
+                variant="ghost"
                 onClick={() => { onClose(); onOpenBudgets(); }}
-                className="flex items-center gap-1.5 text-xs text-mission-control-accent hover:underline px-2 py-1 rounded"
               >
                 <PiggyBank size={13} />
                 Set Budget
-              </button>
+              </Button>
             )}
-            <button
+            <IconButton
               onClick={onClose}
-              className="text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
               aria-label="Close"
             >
               <X size={20} />
-            </button>
+            </IconButton>
           </div>
         </div>
 

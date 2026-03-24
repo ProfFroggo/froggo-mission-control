@@ -1249,6 +1249,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               if (id === 'all') {
                 return (
                   <button
+                    type="button"
                     key="all"
                     onClick={() => insertMention('all')}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors border-b border-mission-control-border text-left"
@@ -1266,6 +1267,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               const theme = getAgentTheme(id);
               return (
                 <button
+                  type="button"
                   key={id}
                   onClick={() => insertMention(id)}
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors text-left"
@@ -1351,6 +1353,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 const theme = getAgentTheme(agent.id);
                 return (
                   <button
+                    type="button"
                     key={agent.id}
                     onClick={() => {
                       const updated = inRoom

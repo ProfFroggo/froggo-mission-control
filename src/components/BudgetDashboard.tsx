@@ -4,7 +4,7 @@
 // historical spend chart, and total monthly spend.
 
 import { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton, Badge, Heading } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Heading, Select, TextField } from '@radix-ui/themes';
 import {
   DollarSign,
   TrendingUp,
@@ -333,13 +333,13 @@ function AddBudgetForm({
           <label className="block text-xs text-mission-control-text-dim mb-1" htmlFor="budget-name">
             Name
           </label>
-          <input
+          <TextField.Root
             id="budget-name"
             type="text"
-            className="input w-full"
             placeholder="e.g. Monthly ops budget"
             value={form.name}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            style={{ width: '100%' }}
           />
         </div>
 
@@ -347,13 +347,13 @@ function AddBudgetForm({
           <label className="block text-xs text-mission-control-text-dim mb-1" htmlFor="budget-agent">
             Agent (optional)
           </label>
-          <input
+          <TextField.Root
             id="budget-agent"
             type="text"
-            className="input w-full"
             placeholder="e.g. coder (leave blank for all)"
             value={form.agentId}
             onChange={e => setForm(f => ({ ...f, agentId: e.target.value }))}
+            style={{ width: '100%' }}
           />
         </div>
 
@@ -361,31 +361,29 @@ function AddBudgetForm({
           <label className="block text-xs text-mission-control-text-dim mb-1" htmlFor="budget-period">
             Period
           </label>
-          <select
-            id="budget-period"
-            className="input w-full"
-            value={form.period}
-            onChange={e => setForm(f => ({ ...f, period: e.target.value as Period }))}
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
+          <Select.Root value={form.period} onValueChange={(val) => setForm(f => ({ ...f, period: val as Period }))}>
+            <Select.Trigger id="budget-period" style={{ width: '100%' }} />
+            <Select.Content>
+              <Select.Item value="daily">Daily</Select.Item>
+              <Select.Item value="weekly">Weekly</Select.Item>
+              <Select.Item value="monthly">Monthly</Select.Item>
+            </Select.Content>
+          </Select.Root>
         </div>
 
         <div>
           <label className="block text-xs text-mission-control-text-dim mb-1" htmlFor="budget-limit">
             Limit ($)
           </label>
-          <input
+          <TextField.Root
             id="budget-limit"
             type="number"
             min="0.01"
             step="0.01"
-            className="input w-full"
             placeholder="e.g. 50.00"
             value={form.limitUsd}
             onChange={e => setForm(f => ({ ...f, limitUsd: e.target.value }))}
+            style={{ width: '100%' }}
           />
         </div>
 
@@ -393,15 +391,15 @@ function AddBudgetForm({
           <label className="block text-xs text-mission-control-text-dim mb-1" htmlFor="budget-alert">
             Alert at (%)
           </label>
-          <input
+          <TextField.Root
             id="budget-alert"
             type="number"
             min="1"
             max="100"
-            className="input w-full"
             placeholder="80"
             value={form.alertAt}
             onChange={e => setForm(f => ({ ...f, alertAt: e.target.value }))}
+            style={{ width: '100%' }}
           />
         </div>
       </div>

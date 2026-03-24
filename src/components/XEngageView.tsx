@@ -27,7 +27,7 @@ import {
   Edit3,
   Check,
 } from 'lucide-react';
-import { Button, IconButton, Badge, Spinner, TextField, Select } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Spinner, TextField, Select, Checkbox } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { scheduleApi, approvalApi, inboxApi } from '../lib/api';
 
@@ -951,14 +951,14 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                     >
                       <div className="flex-1 min-w-0">
                         {isEditing ? (
-                          <input
-                            type="text"
+                          <TextField.Root
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full px-2.5 py-1.5 text-xs bg-transparent text-mission-control-text focus:outline-none"
                             maxLength={280}
                             autoFocus
+                            size="1"
+                            style={{ width: '100%' }}
                           />
                         ) : (
                           <div className="px-2.5 py-1.5 text-xs">
@@ -1279,20 +1279,19 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                 <label className="text-xs text-mission-control-text-dim mb-1 block">Auto-Ignore Low Engagement</label>
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={settings.autoIgnoreLowEngagement}
-                      onChange={(e) => updateSetting('autoIgnoreLowEngagement', e.target.checked)}
-                      className="rounded"
+                      onCheckedChange={(val) => updateSetting('autoIgnoreLowEngagement', val === true)}
                     />
                     <span className="text-sm text-mission-control-text">Ignore accounts with fewer than</span>
                   </label>
-                  <input
+                  <TextField.Root
                     type="number"
-                    value={settings.lowEngagementThreshold}
+                    value={String(settings.lowEngagementThreshold)}
                     onChange={(e) => updateSetting('lowEngagementThreshold', parseInt(e.target.value) || 0)}
-                    className="w-16 px-2 py-1 text-sm border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
                     min="0"
+                    size="1"
+                    style={{ width: 64 }}
                   />
                   <span className="text-xs text-mission-control-text-dim">followers</span>
                 </div>
@@ -1300,33 +1299,27 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
 
               {/* Show sentiment */}
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={settings.showSentiment}
-                  onChange={(e) => updateSetting('showSentiment', e.target.checked)}
-                  className="rounded"
+                  onCheckedChange={(val) => updateSetting('showSentiment', val === true)}
                 />
                 <span className="text-sm text-mission-control-text">Show sentiment badges</span>
               </label>
 
               {/* Show notes */}
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={settings.showNotes}
-                  onChange={(e) => updateSetting('showNotes', e.target.checked)}
-                  className="rounded"
+                  onCheckedChange={(val) => updateSetting('showNotes', val === true)}
                 />
                 <span className="text-sm text-mission-control-text">Show notes on cards</span>
               </label>
 
               {/* Auto-ignore bots */}
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={settings.autoIgnoreBots}
-                  onChange={(e) => updateSetting('autoIgnoreBots', e.target.checked)}
-                  className="rounded"
+                  onCheckedChange={(val) => updateSetting('autoIgnoreBots', val === true)}
                 />
                 <span className="text-sm text-mission-control-text">Auto-ignore suspected bots</span>
               </label>

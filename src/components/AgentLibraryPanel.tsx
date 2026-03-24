@@ -12,7 +12,7 @@ import AgentCompareModal from './AgentCompareModal';
 import EmptyState from './EmptyState';
 import AgentCapabilityMatrix from './AgentCapabilityMatrix';
 import { getAgentTheme } from '../utils/agentThemes';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 
 const CORE_AGENT_IDS = ['mission-control', 'clara', 'hr', 'coder', 'inbox'];
 
@@ -373,28 +373,12 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
           <div className="flex items-center gap-2 mb-4">
             <div className="relative flex-1">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ pointerEvents: 'none', zIndex: 1, color: 'var(--gray-9)' }} />
-              <input
+              <TextField.Root
                 ref={searchRef}
-                type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search agents…"
-                style={{
-                  width: '100%',
-                  paddingLeft: 32,
-                  paddingRight: 48,
-                  paddingTop: 6,
-                  paddingBottom: 6,
-                  borderRadius: 'var(--radius-3)',
-                  border: '1px solid var(--gray-6)',
-                  background: 'var(--color-surface)',
-                  color: 'var(--gray-12)',
-                  fontSize: 13,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-                onFocus={e => { e.target.style.borderColor = 'var(--accent-8)'; }}
-                onBlur={e => { e.target.style.borderColor = 'var(--gray-6)'; }}
+                style={{ width: '100%' }}
               />
               <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-xs font-mono border rounded select-none" style={{ background: 'var(--gray-2)', borderColor: 'var(--gray-6)', color: 'var(--gray-9)' }}>
                 ⌘F

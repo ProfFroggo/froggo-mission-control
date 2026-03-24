@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { AssistantRuntimeProvider } from '@assistant-ui/react';
 import { useMissionControlRuntime } from './chat/ChatRuntime';
@@ -1348,29 +1348,30 @@ export default function ChatPanel() {
       {/* Search Bar */}
       {!isVoiceMode && showSearch && (
         <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-bg/50">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
-              aria-label="Search messages input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search messages..."
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg pl-10 pr-10 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
-            />
+          <TextField.Root
+            aria-label="Search messages input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search messages..."
+            style={{ width: '100%' }}
+          >
+            <TextField.Slot>
+              <Search size={16} />
+            </TextField.Slot>
             {searchQuery && (
-              <IconButton
-                onClick={() => setSearchQuery('')}
-                size="1"
-                variant="ghost"
-                radius="full"
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-                aria-label="Clear search"
-              >
-                <X size={14} />
-              </IconButton>
+              <TextField.Slot side="right">
+                <IconButton
+                  onClick={() => setSearchQuery('')}
+                  size="1"
+                  variant="ghost"
+                  radius="full"
+                  aria-label="Clear search"
+                >
+                  <X size={14} />
+                </IconButton>
+              </TextField.Slot>
             )}
-          </div>
+          </TextField.Root>
           {searchQuery && (
             <div className="mt-2 text-xs text-mission-control-text-dim">
               {filteredMessages.length} result{filteredMessages.length !== 1 ? 's' : ''} found

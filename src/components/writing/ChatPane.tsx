@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { MessageSquare, Trash2 } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 import { gateway } from '../../lib/gateway';
 import { buildMemoryContext, buildChapterContext, buildOutlineContext } from '../../lib/writingContext';
 import { useChatPaneStore, type ChatMessage as ChatMessageType } from '../../store/chatPaneStore';
@@ -173,13 +174,16 @@ export default function ChatPane() {
           </span>
         </div>
         {messages.length > 0 && (
-          <button
+          <IconButton
             onClick={handleClearChat}
-            className="p-1 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+            size="1"
+            variant="ghost"
+            radius="medium"
             title="Clear conversation"
+            aria-label="Clear conversation"
           >
             <Trash2 size={12} />
-          </button>
+          </IconButton>
         )}
       </div>
 

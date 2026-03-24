@@ -21,6 +21,7 @@ export default function ContextPanel() {
       <div className="flex border-b border-mission-control-border flex-shrink-0">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button
+            type="button"
             key={key}
             onClick={() => setActiveTab(key)}
             className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 text-[10px] font-medium transition-colors ${

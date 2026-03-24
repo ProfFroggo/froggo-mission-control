@@ -194,9 +194,9 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-mission-control-text flex items-center gap-2"><Key size={14} /> API Credentials</h3>
-                <button onClick={() => setShowKeys(!showKeys)} className="text-xs text-mission-control-text-dim hover:text-mission-control-text flex items-center gap-1">
+                <Button onClick={() => setShowKeys(!showKeys)} size="1" variant="ghost">
                   {showKeys ? <EyeOff size={12} /> : <Eye size={12} />} {showKeys ? 'Hide' : 'Show'}
-                </button>
+                </Button>
               </div>
               {TWITTER_KEYS.map(k => (
                 <div key={k.id}>
@@ -244,7 +244,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
           <div className="space-y-4">
             {/* OAuth Connect Button — uses OAuth 2.0 PKCE to get user token */}
             {!verifyResult?.success && !verifying && (
-              <button
+              <Button
                 onClick={() => {
                   // Open X OAuth in popup
                   const w = window.open('/api/x/oauth', 'x-oauth', 'width=600,height=700');
@@ -256,11 +256,13 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                     }
                   }, 500);
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-text text-mission-control-bg rounded-lg text-sm font-medium hover:opacity-90 transition-colors"
+                size="3"
+                variant="solid"
+                style={{ width: '100%', justifyContent: 'center' }}
               >
                 <Twitter size={16} />
                 Connect with X
-              </button>
+              </Button>
             )}
 
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">

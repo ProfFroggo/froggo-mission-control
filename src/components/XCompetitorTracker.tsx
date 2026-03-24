@@ -518,9 +518,9 @@ export function XCompetitorTracker() {
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border border-mission-control-border text-mission-control-text"
                 >
                   @{h}
-                  <button onClick={() => handleRemove(h)} aria-label={`Remove @${h}`}>
-                    <X size={12} className="text-mission-control-text-dim hover:text-error" />
-                  </button>
+                  <IconButton onClick={() => handleRemove(h)} size="1" variant="ghost" radius="medium" aria-label={`Remove @${h}`}>
+                    <X size={12} />
+                  </IconButton>
                 </div>
               ))}
             </div>
@@ -543,9 +543,9 @@ export function XCompetitorTracker() {
           >
             <AlertCircle size={16} />
             {error}
-            <button onClick={handleRefresh} className="ml-auto underline text-xs">
+            <Button onClick={handleRefresh} size="1" variant="ghost" style={{ marginLeft: 'auto' }}>
               Retry
-            </button>
+            </Button>
           </div>
         )}
 

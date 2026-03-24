@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MessageCircle, Star, ChevronRight, User, Mail, Reply } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 import ThreadView from './ThreadView';
 
 interface ThreadMetadata {
@@ -118,24 +119,28 @@ export default function ThreadListItem({
           {/* Right side actions */}
           <div className="flex items-center gap-2 flex-shrink-0 ml-2">
             {/* Star button */}
-            <button
+            <IconButton
               onClick={handleStarClick}
-              className={`p-1 rounded hover:bg-mission-control-border transition-colors ${
-                thread.has_starred ? 'text-warning' : 'text-mission-control-text-dim'
-              }`}
+              size="2"
+              variant="ghost"
+              radius="medium"
               title={thread.has_starred ? 'Unstar' : 'Star'}
+              aria-label={thread.has_starred ? 'Unstar' : 'Star'}
             >
               <Star size={14} fill={thread.has_starred ? 'currentColor' : 'none'} />
-            </button>
+            </IconButton>
 
             {/* Mark read/unread */}
-            <button
+            <IconButton
               onClick={handleMarkReadClick}
-              className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
               title={hasUnread ? 'Mark as read' : 'Mark as unread'}
+              aria-label={hasUnread ? 'Mark as read' : 'Mark as unread'}
             >
               <Mail size={14} />
-            </button>
+            </IconButton>
 
             {/* Timestamp */}
             <span className="text-xs tabular-nums text-mission-control-text-dim whitespace-nowrap">

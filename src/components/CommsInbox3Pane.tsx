@@ -477,6 +477,7 @@ function LeftPane({
     <div className="w-80 flex flex-col">
       {/* All Messages */}
       <button
+        type="button"
         onClick={() => { onSelectAccount(null); onSelectFolder('inbox'); }}
         className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b border-mission-control-border transition-colors w-full text-left ${
           selectedAccount === null ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'hover:bg-mission-control-border'
@@ -521,6 +522,7 @@ function LeftPane({
                     </div>
                     {groupAccounts.map(account => (
                       <button
+                        type="button"
                         key={account.id}
                         onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
                         className={`flex items-center gap-2.5 px-4 py-2 text-sm w-full transition-colors text-left ${
@@ -575,6 +577,7 @@ function LeftPane({
           <div className="pb-2">
             {FOLDERS.map(folder => (
               <button
+                type="button"
                 key={folder.id}
                 onClick={() => onSelectFolder(folder.id)}
                 className={`flex items-center gap-2 px-4 py-2 text-sm w-full transition-colors text-left ${
@@ -967,6 +970,7 @@ function InboxDashboard({
                 const analysis = aiAnalyses.get(msg.id);
                 return (
                   <button
+                    type="button"
                     key={msg.id}
                     onClick={() => onSelect(msg)}
                     className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-3 hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-colors group cursor-pointer"
@@ -1488,6 +1492,7 @@ function RightPane({
               <div className="space-y-2">
                 {suggestedReplies.map((reply) => (
                   <button
+                    type="button"
                     key={reply.slice(0, 50)}
                     onClick={() => applySuggestion(reply)}
                     className="w-full text-left p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent hover:bg-mission-control-accent/5 transition-colors text-sm cursor-pointer"

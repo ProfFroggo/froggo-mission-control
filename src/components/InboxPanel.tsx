@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, CheckCheck, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles, Play } from 'lucide-react';
-import { Button, IconButton, Badge, TextField, TextArea, Spinner } from '@radix-ui/themes';
+import { Button, Checkbox, IconButton, Badge, TextField, TextArea, Spinner } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { SkeletonInbox } from './Skeleton';
@@ -1352,12 +1352,12 @@ export default function InboxPanel() {
                   <div className="p-4 flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       {/* Selection checkbox */}
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={selectedIds.has(item.id)}
-                        onChange={() => toggleSelection(Number(item.id))}
+                        onCheckedChange={() => toggleSelection(Number(item.id))}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 mt-1 rounded border-mission-control-border text-mission-control-accent focus:ring-mission-control-accent focus:ring-offset-0 bg-mission-control-bg cursor-pointer"
+                        size="1"
+                        style={{ marginTop: 4 }}
                       />
                       <IconBadge icon={Icon} size={18} color={config.color} />
                       <div className="flex-1 min-w-0">

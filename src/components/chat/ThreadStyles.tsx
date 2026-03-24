@@ -435,6 +435,7 @@ function ScrollToBottomButton() {
   return (
     <ThreadPrimitive.ScrollToBottom asChild>
       <button
+        type="button"
         style={{
           position: "absolute",
           bottom: 12,

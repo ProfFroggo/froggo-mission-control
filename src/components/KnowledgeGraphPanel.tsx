@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Network } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 
 interface Article {
   id: string;
@@ -209,9 +210,9 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
               </span>
             ))}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim" aria-label="Close">
+          <IconButton onClick={onClose} size="2" variant="ghost" radius="medium" aria-label="Close">
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Graph */}

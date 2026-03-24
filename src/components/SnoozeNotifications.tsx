@@ -105,6 +105,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
     <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm">
       {reminders.map((reminder) => (
         <button
+          type="button"
           key={reminder.session_id}
           className="w-full bg-warning border-2 border-warning rounded-lg p-4 shadow-lg animate-slide-in cursor-pointer text-left"
           onClick={() => handleReminderClick(reminder.session_id)}
@@ -121,6 +122,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
                   Snoozed Conversation
                 </h4>
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     dismissReminder(reminder.session_id);

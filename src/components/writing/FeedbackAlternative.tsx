@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 
 interface FeedbackAlternativeProps {
   index: number;
@@ -19,13 +20,16 @@ export default function FeedbackAlternative({ index, text, commentary, onAccept 
           <p className="text-xs text-mission-control-accent/80 mt-1 italic">{commentary}</p>
         )}
       </div>
-      <button
+      <IconButton
         onClick={() => onAccept(text)}
-        className="flex-shrink-0 p-1 rounded hover:bg-mission-control-accent/20 text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
+        size="1"
+        variant="ghost"
+        radius="medium"
         title="Accept this alternative"
+        aria-label="Accept this alternative"
       >
         <Check className="w-4 h-4" />
-      </button>
+      </IconButton>
     </div>
   );
 }

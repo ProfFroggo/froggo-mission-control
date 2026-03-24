@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Folder, Check, X } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface FolderSelectorProps {
@@ -101,12 +102,14 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
           </div>
         </div>
         {onClose && (
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
           >
             <X size={16} />
-          </button>
+          </IconButton>
         )}
       </div>
 
@@ -130,6 +133,7 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
 
               return (
                 <button
+                  type="button"
                   key={folder.id}
                   onClick={() => handleToggle(folder.id, folder.name)}
                   disabled={isWorking}

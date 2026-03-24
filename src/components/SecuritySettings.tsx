@@ -459,12 +459,13 @@ export default function SecuritySettings() {
             <Ban size={16} />
             Blocked Commands
           </h2>
-          <button
+          <Button
             onClick={handleRestoreDefaults}
-            className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            size="1"
+            variant="ghost"
           >
             Restore defaults
-          </button>
+          </Button>
         </div>
         <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
           <div className="p-3 border-b border-mission-control-border bg-mission-control-bg0/30">

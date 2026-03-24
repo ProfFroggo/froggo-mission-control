@@ -149,6 +149,7 @@ function firePushNotification(message: string): void {
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
+      type="button"
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
@@ -705,6 +706,7 @@ export default function NotificationsPanelV2() {
                 <div key={group}>
                   {/* Collapsible group header */}
                   <button
+                    type="button"
                     onClick={() => toggleGroup(group)}
                     className="w-full flex items-center gap-2 mb-2 group/header bg-transparent border-0 p-0 cursor-pointer"
                   >

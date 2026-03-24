@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { Send } from 'lucide-react';
+import { IconButton, TextArea } from '@radix-ui/themes';
 import { useChatPaneStore } from '../../store/chatPaneStore';
 import AgentPicker from './AgentPicker';
 
@@ -40,7 +41,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
     <div className="bg-mission-control-surface border-t border-mission-control-border p-3 space-y-2 dark">
       <AgentPicker selected={selectedAgent} onSelect={setSelectedAgent} disabled={disabled} />
       <div className="flex items-end gap-2">
-        <textarea
+        <TextArea
           ref={textareaRef}
           value={input}
           onChange={(e) => {
@@ -51,16 +52,19 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           placeholder="Ask the agent..."
           rows={1}
           disabled={disabled}
-          className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors disabled:opacity-50 dark"
+          style={{ flex: 1, resize: 'none' }}
         />
-        <button
+        <IconButton
           onClick={handleSendClick}
           disabled={disabled || !input.trim()}
-          className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
+          size="3"
+          variant="ghost"
+          radius="medium"
           title="Send message"
+          aria-label="Send message"
         >
           <Send size={20} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );

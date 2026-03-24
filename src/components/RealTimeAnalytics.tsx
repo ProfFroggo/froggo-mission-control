@@ -196,6 +196,7 @@ export default function RealTimeAnalytics() {
           </div>
 
           <button
+            type="button"
             onClick={() => setIsLive(!isLive)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               isLive
