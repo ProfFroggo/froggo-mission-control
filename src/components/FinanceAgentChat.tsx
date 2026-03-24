@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Loader2, X, MessageSquare, Trash2, AlertCircle } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { chatApi } from '../lib/api';
 import { createLogger } from '../utils/logger';
@@ -219,7 +219,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
   if (!isOpen) return null;
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-surface border-l border-mission-control-border">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface border-l border-mission-control-border">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-2">
@@ -232,7 +232,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
             <IconButton
               size="2"
               variant="ghost"
-              radius="medium"
+             
               onClick={clearHistory}
               title="Clear chat history"
               aria-label="Clear chat history"
@@ -244,7 +244,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
             <IconButton
               size="2"
               variant="ghost"
-              radius="medium"
+             
               onClick={onClose}
               aria-label="Close chat"
             >
@@ -353,7 +353,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
           <IconButton
             size="2"
             variant="solid"
-            radius="medium"
+           
             onClick={sendMessage}
             disabled={!inputMessage.trim() || loading || initializing}
             aria-label={loading ? "Sending message" : "Send message"}
@@ -369,6 +369,6 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
           Press Enter to send • Shift+Enter for new line
         </p>
       </div>
-    </div>
+    </Flex>
   );
 }

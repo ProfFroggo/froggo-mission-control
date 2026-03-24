@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { Calculator, TrendingUp, TrendingDown, Plus, Trash2, Play, Save, Loader2 } from 'lucide-react';
-import { Button, IconButton, TextField, Select, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Select, TextArea, Box } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { financeApi } from '../lib/api';
 
@@ -208,7 +208,7 @@ function QuickProjectionTab() {
         disabled={calculating}
         size="2"
         variant="soft"
-        radius="medium"
+       
         className="w-full"
         aria-label="Calculate projection"
       >
@@ -426,7 +426,7 @@ function ScenarioBuilderTab() {
               onClick={() => setCompareMode((v) => !v)}
               size="1"
               variant={compareMode ? 'soft' : 'ghost'}
-              radius="medium"
+             
             >
               Compare
             </Button>
@@ -435,7 +435,7 @@ function ScenarioBuilderTab() {
             onClick={() => setShowForm(true)}
             size="2"
             variant="soft"
-            radius="medium"
+           
             aria-label="New scenario"
           >
             <Plus className="w-4 h-4" /> New Scenario
@@ -518,7 +518,7 @@ function ScenarioBuilderTab() {
                       disabled={projecting}
                       size="1"
                       variant="soft"
-                      radius="medium"
+                     
                       aria-label="Run projection"
                     >
                       <Play className="w-3 h-3" /> Run
@@ -528,7 +528,7 @@ function ScenarioBuilderTab() {
                       size="2"
                       variant="ghost"
                       color="red"
-                      radius="medium"
+                     
                       aria-label={`Delete ${scenario.name}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -702,7 +702,7 @@ function ScenarioBuilderTab() {
                 }
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
               >
                 <Plus className="w-3 h-3" /> Add
               </Button>
@@ -746,7 +746,7 @@ function ScenarioBuilderTab() {
                   size="2"
                   variant="ghost"
                   color="red"
-                  radius="medium"
+                 
                   aria-label="Remove income row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -770,7 +770,7 @@ function ScenarioBuilderTab() {
                 }
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
               >
                 <Plus className="w-3 h-3" /> Add
               </Button>
@@ -814,7 +814,7 @@ function ScenarioBuilderTab() {
                   size="2"
                   variant="ghost"
                   color="red"
-                  radius="medium"
+                 
                   aria-label="Remove expense row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -838,7 +838,7 @@ function ScenarioBuilderTab() {
                 }
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
               >
                 <Plus className="w-3 h-3" /> Add
               </Button>
@@ -895,7 +895,7 @@ function ScenarioBuilderTab() {
                   size="2"
                   variant="ghost"
                   color="red"
-                  radius="medium"
+                 
                   aria-label="Remove event row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -911,7 +911,7 @@ function ScenarioBuilderTab() {
               disabled={saving || projecting}
               size="2"
               variant="soft"
-              radius="medium"
+             
             >
               {saving || projecting ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> {saving ? 'Saving...' : 'Projecting...'}</>
@@ -923,7 +923,7 @@ function ScenarioBuilderTab() {
               onClick={resetForm}
               size="2"
               variant="ghost"
-              radius="medium"
+             
             >
               Cancel
             </Button>
@@ -947,25 +947,28 @@ export default function FinanceScenarioPanel() {
   ];
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
+    <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
       {/* Tab strip */}
-      <div className="flex items-center gap-1 mb-4">
+      <div className="flex gap-1 border-b border-mission-control-border mb-4">
         {tabs.map(({ id, label, icon: Icon }) => (
-          <Button
+          <button
             key={id}
+            type="button"
             onClick={() => setActiveTab(id)}
-            size="2"
-            variant={activeTab === id ? 'soft' : 'ghost'}
-            radius="full"
+            className={`flex items-center gap-1.5 px-4 py-3 border-b-2 -mb-px text-sm font-medium transition-colors ${
+              activeTab === id
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Icon className="w-3.5 h-3.5" />
             {label}
-          </Button>
+          </button>
         ))}
       </div>
 
       {/* Tab content */}
       {activeTab === 'quick' ? <QuickProjectionTab /> : <ScenarioBuilderTab />}
-    </div>
+    </Box>
   );
 }

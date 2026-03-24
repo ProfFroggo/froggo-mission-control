@@ -1120,23 +1120,29 @@ function FilesTab({ project }: { project: Project }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-1 px-4 py-3 border-b border-mission-control-border">
-        <Button
+      <div className="flex gap-1 px-4 border-b border-mission-control-border">
+        <button
+          type="button"
           onClick={() => setActiveSection('files')}
-          size="1"
-          variant={activeSection === 'files' ? 'soft' : 'ghost'}
-          radius="full"
+          className={`flex items-center gap-2 px-3 py-2.5 border-b-2 -mb-px text-xs font-medium transition-colors ${
+            activeSection === 'files'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
         >
           Files ({files.length})
-        </Button>
-        <Button
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveSection('memory')}
-          size="1"
-          variant={activeSection === 'memory' ? 'soft' : 'ghost'}
-          radius="full"
+          className={`flex items-center gap-2 px-3 py-2.5 border-b-2 -mb-px text-xs font-medium transition-colors ${
+            activeSection === 'memory'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
         >
           Memory Search
-        </Button>
+        </button>
         {activeSection === 'files' && (
           <div className="ml-auto flex items-center gap-2">
             <IconButton
@@ -1443,7 +1449,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
   const availableAgents = agents.filter(a => !memberAgentIds.has(a.id) && a.status !== 'archived');
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg0">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg0">
       {/* Workspace Header */}
       <div className="bg-mission-control-surface border-b border-mission-control-border">
         {/* Breadcrumb + members + actions */}
@@ -1602,6 +1608,6 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
           onDispatched={() => { setShowDispatch(false); showToast('Task dispatched', 'success'); }}
         />
       )}
-    </div>
+    </Flex>
   );
 }

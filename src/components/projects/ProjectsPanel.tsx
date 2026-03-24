@@ -7,7 +7,7 @@ import {
   CheckCircle2, Clock, AlertCircle, ChevronRight,
   Users, Zap, LayoutGrid, List, BarChart3, TrendingUp, RotateCcw,
 } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import { getProjectIcon } from './projectIcons';
 import { projectsApi } from '../../lib/api';
 import type { Project } from '../../types/projects';
@@ -257,7 +257,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
           <IconButton
             size="1"
             variant="ghost"
-            radius="medium"
+           
             onClick={e => { e.stopPropagation(); onArchive(); }}
             title="Archive project"
           >
@@ -268,7 +268,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
           <IconButton
             size="1"
             variant="ghost"
-            radius="medium"
+           
             onClick={e => { e.stopPropagation(); onRestore(); }}
             title="Restore project"
           >
@@ -278,7 +278,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
         <IconButton
           size="1"
           variant="ghost"
-          radius="medium"
+         
           onClick={e => { e.stopPropagation(); onClick(); }}
           title="Open project"
         >
@@ -492,7 +492,7 @@ export default function ProjectsPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg0">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg0">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center gap-3">
@@ -512,29 +512,35 @@ export default function ProjectsPanel() {
             aria-label="Refresh projects"
             size="2"
             variant="ghost"
-            radius="medium"
+           
           >
             <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
           </IconButton>
           <div className="flex items-center rounded-lg border border-mission-control-border overflow-hidden">
-            <IconButton
+            <button
+              type="button"
               onClick={() => setViewMode('grid')}
               title="Grid view"
-              size="2"
-              variant={viewMode === 'grid' ? 'solid' : 'ghost'}
-              radius="none"
+              className={`p-2 transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+              }`}
             >
               <LayoutGrid size={14} />
-            </IconButton>
-            <IconButton
+            </button>
+            <button
+              type="button"
               onClick={() => setViewMode('list')}
               title="List view"
-              size="2"
-              variant={viewMode === 'list' ? 'solid' : 'ghost'}
-              radius="none"
+              className={`p-2 transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+              }`}
             >
               <List size={14} />
-            </IconButton>
+            </button>
           </div>
           <Button onClick={() => setShowCreateWizard(true)} size="2" variant="solid">
             <Plus size={15} /> New Project
@@ -544,22 +550,30 @@ export default function ProjectsPanel() {
 
 
       {/* Tab strip */}
-      <div className="flex items-center gap-1 px-6 pt-3 border-b border-mission-control-border">
-        <Button
+      <div className="flex gap-1 px-6 border-b border-mission-control-border">
+        <button
+          type="button"
           onClick={() => setTabView('active')}
-          size="2"
-          variant={tabView === 'active' ? 'soft' : 'ghost'}
+          className={`flex items-center gap-2 px-4 py-3 border-b-2 -mb-px text-sm font-medium transition-colors ${
+            tabView === 'active'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
         >
           Active ({nonArchivedProjects.length})
-        </Button>
-        <Button
+        </button>
+        <button
+          type="button"
           onClick={() => setTabView('archived')}
-          size="2"
-          variant={tabView === 'archived' ? 'soft' : 'ghost'}
+          className={`flex items-center gap-2 px-4 py-3 border-b-2 -mb-px text-sm font-medium transition-colors ${
+            tabView === 'archived'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
         >
           <Archive size={13} />
           Archived ({archivedProjects.length})
-        </Button>
+        </button>
       </div>
 
       {/* Filters (only for active tab) */}
@@ -578,16 +592,20 @@ export default function ProjectsPanel() {
               </TextField.Slot>
             </TextField.Root>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
             {(['all', 'active', 'paused', 'completed'] as const).map(s => (
-              <Button
+              <button
                 key={s}
+                type="button"
                 onClick={() => setStatusFilter(s)}
-                size="1"
-                variant={statusFilter === s ? 'solid' : 'ghost'}
+                className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+                  statusFilter === s
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+                }`}
               >
                 {s === 'all' ? `All (${nonArchivedProjects.length})` : s}
-              </Button>
+              </button>
             ))}
           </div>
         </div>
@@ -666,6 +684,6 @@ export default function ProjectsPanel() {
           onCreated={handleProjectCreated}
         />
       )}
-    </div>
+    </Flex>
   );
 }

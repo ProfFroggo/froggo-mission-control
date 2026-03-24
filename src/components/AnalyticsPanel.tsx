@@ -15,7 +15,7 @@ import {
   RefreshCw,
   Download,
 } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import TabNav from './TabNav';
 import TaskTrendsChart from './TaskTrendsChart';
 import AgentUtilizationChart from './AgentUtilizationChart';
@@ -149,7 +149,7 @@ export default function AnalyticsPanel() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* Header + tabs wrapper */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between px-6 py-4">
@@ -165,18 +165,23 @@ export default function AnalyticsPanel() {
 
           <div className="flex items-center gap-2">
             {/* Time range selector */}
-            {(['7d', '30d', '90d'] as const).map((range) => (
-              <Button
-                key={range}
-                size="1"
-                variant={timeRange === range ? 'soft' : 'ghost'}
-                color={timeRange === range ? undefined : 'gray'}
-                onClick={() => setTimeRange(range)}
-              >
-                {range === '7d' ? '7d' : range === '30d' ? '30d' : '90d'}
-              </Button>
-            ))}
-            <IconButton size="2" variant="ghost" color="gray" radius="medium" onClick={loadAnalytics} title="Refresh">
+            <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
+              {(['7d', '30d', '90d'] as const).map((range) => (
+                <button
+                  key={range}
+                  type="button"
+                  onClick={() => setTimeRange(range)}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    timeRange === range
+                      ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+                  }`}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+            <IconButton size="2" variant="ghost" color="gray" onClick={loadAnalytics} title="Refresh">
               <RefreshCw size={16} />
             </IconButton>
             <Button size="2" variant="soft" onClick={exportData}>
@@ -395,6 +400,6 @@ export default function AnalyticsPanel() {
       </div>
 
       </div>
-    </div>
+    </Flex>
   );
 }

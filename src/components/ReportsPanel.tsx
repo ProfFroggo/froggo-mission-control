@@ -14,7 +14,7 @@ import {
   RefreshCw,
   Bell,
 } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import {
   generateWeeklyReport,
   generateMonthlyReport,
@@ -227,7 +227,7 @@ function ExecutiveSummaryCard({
           onClick={load}
           variant="ghost"
           size="2"
-          radius="medium"
+         
           title="Refresh summary"
         >
           <RefreshCw size={14} />
@@ -416,7 +416,7 @@ export default function ReportsPanel() {
   ];
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* ── Header ── */}
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
         <div className="flex items-center gap-3">
@@ -717,6 +717,6 @@ export default function ReportsPanel() {
       </div>
 
       <ScheduleToast visible={showScheduleToast} onHide={() => setShowScheduleToast(false)} />
-    </div>
+    </Flex>
   );
 }

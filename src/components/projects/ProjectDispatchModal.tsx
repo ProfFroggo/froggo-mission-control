@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Bot, Send, Target, AlertTriangle } from 'lucide-react';
-import { Button, IconButton, TextField, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
 import { getProjectIcon } from './projectIcons';
 import { projectsApi } from '../../lib/api';
 import type { Project, ProjectMember } from '../../types/projects';
@@ -52,7 +52,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
   const canDispatch = agentId && title.trim().length >= 3 && !dispatching;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <Flex align="center" justify="center" p="4" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-md bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden">
 
         {/* Header */}
@@ -64,7 +64,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
           <IconButton
             size="1"
             variant="ghost"
-            radius="medium"
+           
             onClick={onClose}
           >
             <X size={15} />
@@ -188,6 +188,6 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
           </Button>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

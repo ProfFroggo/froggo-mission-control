@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, AlertTriangle, Lightbulb, Bell, Target, BarChart3, X, Loader2, RefreshCw, Zap } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Box } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { financeApi } from '../lib/api';
 
@@ -179,7 +179,7 @@ export default function FinanceInsightsPanel() {
   }
 
   return (
-    <div className="space-y-3">
+    <Box className="space-y-3">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
           <Lightbulb className="w-5 h-5 text-warning" />
@@ -242,7 +242,7 @@ export default function FinanceInsightsPanel() {
             <IconButton
               size="1"
               variant="ghost"
-              radius="medium"
+             
               onClick={() => dismissInsight(insight.id)}
               title="Dismiss insight"
             >
@@ -251,6 +251,6 @@ export default function FinanceInsightsPanel() {
           </div>
         </div>
       ))}
-    </div>
+    </Box>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Download, RefreshCw } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -129,7 +129,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <Flex align="center" justify="center" p="4" className="fixed inset-0 bg-black/50 z-50">
       <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border w-full max-w-6xl h-[80vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
@@ -148,7 +148,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
             <IconButton
               size="2"
               variant="ghost"
-              radius="medium"
+             
               disabled={loading}
               title="Refresh"
               onClick={loadFiles}
@@ -161,7 +161,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
                 Download
               </Button>
             )}
-            <IconButton size="2" variant="ghost" radius="medium" onClick={onClose} aria-label="Close">
+            <IconButton size="2" variant="ghost" onClick={onClose} aria-label="Close">
               <X size={20} />
             </IconButton>
           </div>
@@ -206,6 +206,6 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }
