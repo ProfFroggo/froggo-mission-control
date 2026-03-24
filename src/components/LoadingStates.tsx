@@ -6,7 +6,7 @@
  * Migrated to Radix Themes primitives.
  */
 
-import { Spinner as RadixSpinner, Button, Flex, Text } from '@radix-ui/themes';
+import { Spinner as RadixSpinner, Button, Flex, Text, Box } from '@radix-ui/themes';
 import { ReactNode } from 'react';
 import EmptyState from './EmptyState';
 
@@ -113,18 +113,18 @@ export function Skeleton({ className = '', width = 'w-full', height = 'h-4', rou
 // Task Card Skeleton
 export function TaskCardSkeleton() {
   return (
-    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-3 space-y-3">
-      <div className="flex items-start justify-between gap-2">
+    <Box p="3" className="bg-mission-control-surface rounded-lg border border-mission-control-border space-y-3">
+      <Flex align="start" justify="between" gap="2">
         <Skeleton height="h-5" width="w-3/4" />
         <Skeleton height="h-5" width="w-5" rounded="sm" />
-      </div>
+      </Flex>
       <Skeleton height="h-3" width="w-full" />
       <Skeleton height="h-3" width="w-2/3" />
-      <div className="flex items-center gap-2 pt-2">
+      <Flex align="center" gap="2" pt="2">
         <Skeleton height="h-6" width="w-16" rounded="full" />
         <Skeleton height="h-6" width="w-20" rounded="full" />
-      </div>
-    </div>
+      </Flex>
+    </Box>
   );
 }
 
@@ -144,32 +144,32 @@ export function TableRowSkeleton({ columns = 4 }: { columns?: number }) {
 // Agent Card Skeleton
 export function AgentCardSkeleton() {
   return (
-    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-3">
-      <div className="flex items-center gap-3">
+    <Box p="4" className="bg-mission-control-surface rounded-lg border border-mission-control-border space-y-3">
+      <Flex align="center" gap="3">
         <Skeleton height="h-12" width="w-12" rounded="full" />
-        <div className="flex-1 space-y-2">
+        <Box flexGrow="1" className="space-y-2">
           <Skeleton height="h-5" width="w-32" />
           <Skeleton height="h-3" width="w-24" />
-        </div>
-      </div>
+        </Box>
+      </Flex>
       <Skeleton height="h-3" width="w-full" />
       <Skeleton height="h-3" width="w-4/5" />
-    </div>
+    </Box>
   );
 }
 
 // Session Card Skeleton
 export function SessionCardSkeleton() {
   return (
-    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-3 space-y-2">
-      <div className="flex items-center gap-2">
+    <Box p="3" className="bg-mission-control-surface rounded-lg border border-mission-control-border space-y-2">
+      <Flex align="center" gap="2">
         <Skeleton height="h-8" width="w-8" rounded="full" />
-        <div className="flex-1 space-y-1">
+        <Box flexGrow="1" className="space-y-1">
           <Skeleton height="h-4" width="w-32" />
           <Skeleton height="h-3" width="w-24" />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Flex>
+    </Box>
   );
 }
 
@@ -188,12 +188,12 @@ export function LoadingOverlay({ message = 'Loading...', fullScreen = false }: L
     : 'absolute inset-0';
 
   return (
-    <div className={`${containerClass} bg-mission-control-bg/80 backdrop-blur-sm flex items-center justify-center`}>
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 flex flex-col items-center gap-3 shadow-xl">
+    <Flex align="center" justify="center" className={`${containerClass} bg-mission-control-bg/80 backdrop-blur-sm`}>
+      <Flex direction="column" align="center" gap="3" p="5" className="bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl">
         <RadixSpinner size="3" />
         <Text size="2" weight="medium">{message}</Text>
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 }
 

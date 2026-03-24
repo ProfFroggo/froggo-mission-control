@@ -1,6 +1,6 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw, Bug, XCircle } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Box, Flex, Text, Heading } from '@radix-ui/themes';
 import { createLogger } from '../utils/logger';
 import { showToast } from './Toast';
 
@@ -95,41 +95,41 @@ Time: ${new Date().toISOString()}
 
       // Default fallback UI
       return (
-        <div className="h-full flex items-center justify-center p-6 bg-mission-control-bg">
-          <div className="max-w-md w-full bg-mission-control-surface rounded-2xl border border-error-border p-6 shadow-xl">
+        <Flex align="center" justify="center" p="5" height="100%" className="bg-mission-control-bg">
+          <Box className="max-w-md w-full bg-mission-control-surface rounded-2xl border border-error-border shadow-xl" p="5">
             {/* Icon and Title */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-error-subtle rounded-lg">
+            <Flex align="center" gap="3" mb="4">
+              <Box p="3" className="bg-error-subtle rounded-lg">
                 <AlertTriangle size={28} className="text-error" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-mission-control-text">
+              </Box>
+              <Box>
+                <Heading size="4" as="h2" className="text-mission-control-text">
                   Something went wrong
-                </h2>
+                </Heading>
                 {this.getComponentName() !== 'Unknown' && (
-                  <p className="text-sm text-mission-control-text-dim">
+                  <Text size="2" className="text-mission-control-text-dim">
                     in {this.getComponentName()}
-                  </p>
+                  </Text>
                 )}
-              </div>
-            </div>
+              </Box>
+            </Flex>
 
             {/* Error Message */}
-            <div className="mb-6">
-              <p className="text-sm text-mission-control-text-dim mb-2">
+            <Box mb="5">
+              <Text size="2" className="text-mission-control-text-dim" as="p" mb="2">
                 An error occurred while rendering this component. Don&apos;t worry - your data is safe.
-              </p>
+              </Text>
               {this.state.error && (
-                <div className="bg-mission-control-bg rounded-lg p-3 border border-mission-control-border">
+                <Box p="3" className="bg-mission-control-bg rounded-lg border border-mission-control-border">
                   <code className="text-xs text-error font-mono break-all">
                     {this.state.error.message}
                   </code>
-                </div>
+                </Box>
               )}
-            </div>
+            </Box>
 
             {/* Action Buttons */}
-            <div className="space-y-2">
+            <Flex direction="column" gap="2">
               <Button
                 onClick={this.handleRetry}
                 variant="solid"
@@ -141,7 +141,7 @@ Time: ${new Date().toISOString()}
                 Try Again
               </Button>
 
-              <div className="flex gap-2">
+              <Flex gap="2">
                 <Button
                   onClick={this.handleReportError}
                   variant="surface"
@@ -163,8 +163,8 @@ Time: ${new Date().toISOString()}
                   <XCircle size={16} />
                   Reload App
                 </Button>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
 
             {/* Technical Details (collapsible) */}
             {this.state.errorInfo && (
@@ -177,8 +177,8 @@ Time: ${new Date().toISOString()}
                 </pre>
               </details>
             )}
-          </div>
-        </div>
+          </Box>
+        </Flex>
       );
     }
 

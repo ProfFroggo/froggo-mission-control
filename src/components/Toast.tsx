@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
+import { IconButton, Flex, Box, Text } from '@radix-ui/themes';
 import { AlertRegion } from './LiveRegion';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -47,18 +47,21 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
   const announcement = toast.message ? `${toast.title}: ${toast.message}` : toast.title;
 
   return (
-    <div
-      className={`flex items-start gap-3 p-4 rounded-lg border backdrop-blur-sm shadow-lg animate-toast-in ${colors[toast.type]}`}
+    <Flex
+      align="start"
+      gap="3"
+      p="4"
+      className={`rounded-lg border backdrop-blur-sm shadow-lg animate-toast-in ${colors[toast.type]}`}
     >
       {/* Screen reader announcement — assertive so errors/warnings are immediately announced */}
       <AlertRegion message={announcement} />
       <Icon size={20} className="flex-shrink-0 mt-0.5" />
-      <div className="flex-1 min-w-0">
-        <div className="font-medium">{toast.title}</div>
+      <Box flexGrow="1" minWidth="0">
+        <Text weight="medium" as="div">{toast.title}</Text>
         {toast.message && (
-          <div className="text-sm opacity-80 mt-0.5">{toast.message}</div>
+          <Text size="2" as="div" className="opacity-80 mt-0.5">{toast.message}</Text>
         )}
-      </div>
+      </Box>
       <IconButton
         variant="ghost"
         color="gray"
@@ -69,7 +72,7 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
       >
         <X size={14} />
       </IconButton>
-    </div>
+    </Flex>
   );
 }
 
@@ -131,8 +134,10 @@ export default function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div
-      className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 w-[calc(100vw-2rem)] max-w-sm"
+    <Flex
+      direction="column"
+      gap="2"
+      className="fixed bottom-4 right-4 z-[9999] w-[calc(100vw-2rem)] max-w-sm"
       role="region"
       aria-label="Notifications"
       aria-live="polite"
@@ -140,6 +145,6 @@ export default function ToastContainer() {
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={handleDismiss} />
       ))}
-    </div>
+    </Flex>
   );
 }

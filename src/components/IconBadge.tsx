@@ -5,6 +5,7 @@
 
 import type React from 'react';
 import { LucideIcon } from 'lucide-react';
+import { Box } from '@radix-ui/themes';
 
 interface IconBadgeProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,12 +35,12 @@ export default function IconBadge({
   const minDimension = size + 16; // size + (2 * 8px padding)
 
   return (
-    <div 
-      className={`p-2 ${roundedClass} ${color} flex-shrink-0 inline-flex items-center justify-center ${className}`}
-      style={{ 
-        minWidth: `${minDimension}px`, 
+    <Box
+      flexShrink="0"
+      className={`p-2 ${roundedClass} ${color} inline-flex items-center justify-center ${className}`}
+      style={{
+        minWidth: `${minDimension}px`,
         minHeight: `${minDimension}px`,
-        // Remove fit-content to prevent layout shifts
         width: `${minDimension}px`,
         height: `${minDimension}px`
       }}
@@ -47,7 +48,7 @@ export default function IconBadge({
       role={ariaLabel ? 'img' : undefined}
     >
       <Icon size={size} className="flex-shrink-0" aria-hidden="true" />
-    </div>
+    </Box>
   );
 }
 

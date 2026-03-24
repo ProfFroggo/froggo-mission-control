@@ -1,5 +1,5 @@
 import { useState, useEffect, ReactNode } from 'react';
-import { Button } from '@radix-ui/themes';
+import { Button, Box, Flex, Text, Heading } from '@radix-ui/themes';
 
 interface PathCheckResult {
   path: string;
@@ -55,28 +55,32 @@ export function DependencyGate({ children }: Props) {
     <>
       {children}
       {criticalMissing.length > 0 && !dismissed && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-mission-control-bg p-8">
-          <div className="max-w-md w-full text-center space-y-4">
+        <Flex align="center" justify="center" p="6" className="fixed inset-0 z-50 bg-mission-control-bg">
+          <Flex direction="column" align="center" gap="4" style={{ maxWidth: '28rem', width: '100%' }}>
             <div className="text-4xl">🐸</div>
-            <h1 className="text-xl font-bold text-mission-control-text">Setup Required</h1>
-            <p className="text-mission-control-text-dim text-sm">
+            <Heading size="5" as="h1" className="text-mission-control-text">Setup Required</Heading>
+            <Text size="2" className="text-mission-control-text-dim" align="center">
               Mission Control cannot start because required files are missing:
-            </p>
-            <div className="text-left space-y-2 bg-mission-control-surface border border-mission-control-border p-4 rounded-lg">
-              {criticalMissing.map(r => (
-                <div key={r.path} className="space-y-1">
-                  <p className="text-sm text-error font-medium">{r.label}</p>
-                  <p className="text-xs text-mission-control-text-dim font-mono break-all">{r.path}</p>
-                </div>
-              ))}
-            </div>
-            <div className="text-left text-xs text-mission-control-text-dim space-y-1 bg-mission-control-bg border border-mission-control-border p-4 rounded-lg">
-              <p className="font-medium text-mission-control-text mb-2">To fix this:</p>
-              <p className="font-mono">1. Ensure ~/mission-control/data/mission-control.db exists</p>
-              <p className="font-mono">2. Run the Mission Control setup script or restore from backup</p>
-              <p className="font-mono">3. Restart the app</p>
-            </div>
-            <div className="flex gap-2 justify-center">
+            </Text>
+            <Box p="4" className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg">
+              <Flex direction="column" gap="2">
+                {criticalMissing.map(r => (
+                  <Flex key={r.path} direction="column" gap="1">
+                    <Text size="2" weight="medium" className="text-error">{r.label}</Text>
+                    <Text size="1" className="text-mission-control-text-dim font-mono break-all">{r.path}</Text>
+                  </Flex>
+                ))}
+              </Flex>
+            </Box>
+            <Box p="4" className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg">
+              <Flex direction="column" gap="1">
+                <Text size="1" weight="medium" className="text-mission-control-text" mb="2">To fix this:</Text>
+                <Text size="1" className="text-mission-control-text-dim font-mono">1. Ensure ~/mission-control/data/mission-control.db exists</Text>
+                <Text size="1" className="text-mission-control-text-dim font-mono">2. Run the Mission Control setup script or restore from backup</Text>
+                <Text size="1" className="text-mission-control-text-dim font-mono">3. Restart the app</Text>
+              </Flex>
+            </Box>
+            <Flex gap="2" justify="center">
               <Button
                 onClick={() => window.location.reload()}
                 size="2"
@@ -91,9 +95,9 @@ export function DependencyGate({ children }: Props) {
               >
                 Continue anyway
               </Button>
-            </div>
-          </div>
-        </div>
+            </Flex>
+          </Flex>
+        </Flex>
       )}
     </>
   );

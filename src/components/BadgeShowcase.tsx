@@ -4,11 +4,12 @@
  * Not for production - used for testing/documentation only
  */
 
-import { 
-  AlertTriangle, Play, Phone, CheckCircle, Clock, Mail, 
-  MessageSquare, Bot, Calendar, Star, XCircle, AlertCircle 
+import {
+  AlertTriangle, Play, Phone, CheckCircle, Clock, Mail,
+  MessageSquare, Bot, Calendar, Star, XCircle, AlertCircle
 } from 'lucide-react';
 import IconBadge, { BadgePresets } from './IconBadge';
+import { Box, Flex, Grid, Text, Heading } from '@radix-ui/themes';
 
 export default function BadgeShowcase() {
   const showcases = [
@@ -47,89 +48,89 @@ export default function BadgeShowcase() {
   ];
 
   return (
-    <div className="p-8 bg-mission-control-bg min-h-screen">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-2">Badge Icon Showcase</h1>
-        <p className="text-mission-control-text-dim mb-8">
+    <Box p="6" className="bg-mission-control-bg min-h-screen">
+      <Box style={{ maxWidth: '56rem', margin: '0 auto' }}>
+        <Heading size="6" as="h1" mb="2">Badge Icon Showcase</Heading>
+        <Text size="2" className="text-mission-control-text-dim" mb="6" as="p">
           Visual verification that all badge icons render centered and aligned properly
-        </p>
+        </Text>
 
         {showcases.map((section, i) => (
-          <div key={i} className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">{section.title}</h2>
-            <div className="grid grid-cols-3 gap-6">
+          <Box key={i} mb="6">
+            <Heading size="4" as="h2" mb="4">{section.title}</Heading>
+            <Grid columns="3" gap="5">
               {section.items.map((item, j) => (
-                <div key={j} className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-                  <div className="flex items-center gap-3">
+                <Box key={j} p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+                  <Flex align="center" gap="3">
                     <IconBadge icon={item.icon} color={item.preset.color} size={20} />
-                    <div>
-                      <div className="font-medium text-sm">{item.label}</div>
-                      <div className="text-xs text-mission-control-text-dim">Icon centered</div>
-                    </div>
-                  </div>
-                </div>
+                    <Box>
+                      <Text weight="medium" size="2" as="div">{item.label}</Text>
+                      <Text size="1" className="text-mission-control-text-dim">Icon centered</Text>
+                    </Box>
+                  </Flex>
+                </Box>
               ))}
-            </div>
-          </div>
+            </Grid>
+          </Box>
         ))}
 
         {/* Size variations */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">Size Variations</h2>
-          <div className="flex items-center gap-4">
-            <div className="text-center">
+        <Box mb="6">
+          <Heading size="4" as="h2" mb="4">Size Variations</Heading>
+          <Flex align="center" gap="4">
+            <Box className="text-center">
               <IconBadge icon={AlertTriangle} color={BadgePresets.systemAlert.color} size={14} />
-              <div className="text-xs text-mission-control-text-dim mt-2">14px</div>
-            </div>
-            <div className="text-center">
+              <Text size="1" className="text-mission-control-text-dim mt-2" as="div">14px</Text>
+            </Box>
+            <Box className="text-center">
               <IconBadge icon={AlertTriangle} color={BadgePresets.systemAlert.color} size={16} />
-              <div className="text-xs text-mission-control-text-dim mt-2">16px</div>
-            </div>
-            <div className="text-center">
+              <Text size="1" className="text-mission-control-text-dim mt-2" as="div">16px</Text>
+            </Box>
+            <Box className="text-center">
               <IconBadge icon={AlertTriangle} color={BadgePresets.systemAlert.color} size={24} />
-              <div className="text-xs text-mission-control-text-dim mt-2">24px</div>
-            </div>
-            <div className="text-center">
+              <Text size="1" className="text-mission-control-text-dim mt-2" as="div">24px</Text>
+            </Box>
+            <Box className="text-center">
               <IconBadge icon={AlertTriangle} color={BadgePresets.systemAlert.color} size={32} />
-              <div className="text-xs text-mission-control-text-dim mt-2">32px</div>
-            </div>
-          </div>
-        </div>
+              <Text size="1" className="text-mission-control-text-dim mt-2" as="div">32px</Text>
+            </Box>
+          </Flex>
+        </Box>
 
         {/* Rounded variations */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">Border Radius Variations</h2>
-          <div className="flex items-center gap-4">
-            <div className="text-center">
+        <Box mb="6">
+          <Heading size="4" as="h2" mb="4">Border Radius Variations</Heading>
+          <Flex align="center" gap="4">
+            <Box className="text-center">
               <IconBadge icon={Play} color={BadgePresets.action.color} rounded="sm" />
-              <div className="text-xs text-mission-control-text-dim mt-2">Small</div>
-            </div>
-            <div className="text-center">
+              <Text size="1" className="text-mission-control-text-dim mt-2" as="div">Small</Text>
+            </Box>
+            <Box className="text-center">
               <IconBadge icon={Play} color={BadgePresets.action.color} rounded="md" />
-              <div className="text-xs text-mission-control-text-dim mt-2">Medium</div>
-            </div>
-            <div className="text-center">
+              <Text size="1" className="text-mission-control-text-dim mt-2" as="div">Medium</Text>
+            </Box>
+            <Box className="text-center">
               <IconBadge icon={Play} color={BadgePresets.action.color} rounded="lg" />
-              <div className="text-xs text-mission-control-text-dim mt-2">Large</div>
-            </div>
-            <div className="text-center">
+              <Text size="1" className="text-mission-control-text-dim mt-2" as="div">Large</Text>
+            </Box>
+            <Box className="text-center">
               <IconBadge icon={Play} color={BadgePresets.action.color} rounded="full" />
-              <div className="text-xs text-mission-control-text-dim mt-2">Full</div>
-            </div>
-          </div>
-        </div>
+              <Text size="1" className="text-mission-control-text-dim mt-2" as="div">Full</Text>
+            </Box>
+          </Flex>
+        </Box>
 
         {/* Status indicator */}
-        <div className="p-4 bg-success-subtle border border-success-border rounded-lg">
-          <div className="flex items-center gap-2">
+        <Box p="4" className="bg-success-subtle border border-success-border rounded-lg">
+          <Flex align="center" gap="2">
             <CheckCircle size={16} className="text-success" />
-            <div>
-              <div className="font-medium text-success">All badges rendering correctly</div>
-              <div className="text-sm text-mission-control-text-dim">Icons are properly centered using flexbox alignment</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            <Box>
+              <Text weight="medium" className="text-success" as="div">All badges rendering correctly</Text>
+              <Text size="2" className="text-mission-control-text-dim">Icons are properly centered using flexbox alignment</Text>
+            </Box>
+          </Flex>
+        </Box>
+      </Box>
+    </Box>
   );
 }

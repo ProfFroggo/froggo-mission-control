@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { WifiOff, Wifi, X } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
+import { IconButton, Flex } from '@radix-ui/themes';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useEventBus } from '../lib/useEventBus';
 
@@ -42,10 +42,15 @@ export default function NetworkStatus() {
 
   if (!online && !dismissed) {
     return (
-      <div
+      <Flex
+        align="center"
+        justify="center"
+        gap="2"
+        px="4"
+        py="2"
         role="alert"
         aria-live="assertive"
-        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-2 px-4 py-2 text-white text-sm font-medium shadow-md"
+        className="fixed top-0 left-0 right-0 z-[100] text-white text-sm font-medium shadow-md"
         style={{ background: 'var(--color-warning)' }}
       >
         <WifiOff size={16} aria-hidden />
@@ -59,21 +64,26 @@ export default function NetworkStatus() {
         >
           <X size={16} />
         </IconButton>
-      </div>
+      </Flex>
     );
   }
 
   if (showOnlineBriefly) {
     return (
-      <div
+      <Flex
+        align="center"
+        justify="center"
+        gap="2"
+        px="4"
+        py="2"
         role="status"
         aria-live="polite"
-        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-2 px-4 py-2 text-white text-sm font-medium shadow-md"
+        className="fixed top-0 left-0 right-0 z-[100] text-white text-sm font-medium shadow-md"
         style={{ background: 'var(--color-success)' }}
       >
         <Wifi size={16} aria-hidden />
         <span>Back online</span>
-      </div>
+      </Flex>
     );
   }
 
