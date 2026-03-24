@@ -20,6 +20,7 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('TaskDetailPanel');
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import TaskChatTab from './TaskChatTab';
+import TabNav from './TabNav';
 import { isProtectedAgent } from '../lib/agentConfig';
 import { useFocusTrap } from '../hooks/useKeyboardNav';
 import BaseModal, { BaseModalHeader, BaseModalBody, BaseModalFooter } from './BaseModal';
@@ -1021,55 +1022,20 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       {/* Tabs */}
       {/* IMPORTANT: Planning tab must ALWAYS be visible, regardless of task status.
           It serves as a historical record and should never be hidden when task is complete. */}
-      <div className="flex border-b border-mission-control-border flex-shrink-0">
-        {(['subtasks', 'planning', 'activity', 'files', 'review', 'chat'] as const).map((tab) => (
-          <Button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            variant={activeTab === tab ? 'soft' : 'ghost'}
-            color={activeTab === tab ? 'blue' : 'gray'}
-            size="2"
-            className="flex-1 rounded-none"
-          >
-            {tab === 'subtasks' && (
-              <span className="flex items-center justify-center gap-2">
-                Subtasks
-                {subtasks.length > 0 && (
-                  <span className="bg-mission-control-border px-1.5 py-0.5 rounded text-xs">
-                    {completedSubtasks}/{subtasks.length}
-                  </span>
-                )}
-              </span>
-            )}
-            {tab === 'planning' && 'Planning'}
-            {tab === 'activity' && (
-              <span className="flex items-center justify-center gap-2">
-                Activity
-                {activities.length > 0 && (
-                  <span className="bg-mission-control-border px-1.5 py-0.5 rounded text-xs">
-                    {activities.length}
-                  </span>
-                )}
-              </span>
-            )}
-            {tab === 'files' && (
-              <span className="flex items-center justify-center gap-2">
-                Files
-                {attachments.length > 0 && (
-                  <span className="bg-mission-control-border px-1.5 py-0.5 rounded text-xs">
-                    {attachments.length}
-                  </span>
-                )}
-              </span>
-            )}
-            {tab === 'review' && 'Review'}
-            {tab === 'chat' && (
-              <span className="flex items-center justify-center gap-2">
-                Chat
-              </span>
-            )}
-          </Button>
-        ))}
+      <div className="border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
+        <TabNav
+          tabs={[
+            { id: 'subtasks',  label: 'Subtasks',  icon: CheckCircle, badge: subtasks.length > 0 ? `${completedSubtasks}/${subtasks.length}` : undefined },
+            { id: 'planning',  label: 'Planning',  icon: FileText },
+            { id: 'activity',  label: 'Activity',  icon: Activity,    badge: activities.length > 0 ? activities.length : undefined },
+            { id: 'files',     label: 'Files',     icon: Paperclip,   badge: attachments.length > 0 ? attachments.length : undefined },
+            { id: 'review',    label: 'Review',    icon: Eye },
+            { id: 'chat',      label: 'Chat',      icon: MessageSquare },
+          ]}
+          activeTab={activeTab}
+          onTabChange={(id) => setActiveTab(id as typeof activeTab)}
+          paddingX="px-4"
+        />
       </div>
 
       {/* Tab Content */}

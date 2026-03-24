@@ -1358,7 +1358,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 isCollapsed ? 'w-12 min-w-[48px]' : 'w-96 min-w-[320px]'
               } ${
                 isDragOver
-                  ? 'border-mission-control-accent border-dashed bg-mission-control-accent/10 scale-[1.01] shadow-lg shadow-mission-control-accent/20'
+                  ? 'border-mission-control-border bg-mission-control-accent/10 scale-[1.01] shadow-lg shadow-mission-control-accent/20'
                   : draggedTask
                   ? 'border-mission-control-border bg-mission-control-surface/50'
                   : 'border-mission-control-border bg-mission-control-surface'
