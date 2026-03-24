@@ -1,0 +1,125 @@
+# UI Review Progress
+## How to use
+- `[ ]` = not done, `[x]` = complete
+- Each session: find first `[ ]`, view the image, critique, fix, commit, mark `[x]`
+- Fix summaries go after the checkbox on the same line
+- See CRITERIA.md for the full session protocol
+- Screenshot dir: `/Users/kevin.macarthur/Froggo UI/`
+- Repo: `~/git/froggo-mission-control`
+
+## Progress: 0 / 113 complete
+
+## Sessions
+- [ ] **001** `Screenshot 2026-03-24 at 23.05.11.png`
+- [ ] **002** `Screenshot 2026-03-24 at 23.05.23.png`
+- [ ] **003** `Screenshot 2026-03-24 at 23.05.27.png`
+- [ ] **004** `Screenshot 2026-03-24 at 23.05.34.png`
+- [ ] **005** `Screenshot 2026-03-24 at 23.05.43.png`
+- [ ] **006** `Screenshot 2026-03-24 at 23.05.49.png`
+- [ ] **007** `Screenshot 2026-03-24 at 23.05.56.png`
+- [ ] **008** `Screenshot 2026-03-24 at 23.06.01.png`
+- [ ] **009** `Screenshot 2026-03-24 at 23.06.06.png`
+- [ ] **010** `Screenshot 2026-03-24 at 23.06.11.png`
+- [ ] **011** `Screenshot 2026-03-24 at 23.06.19.png`
+- [ ] **012** `Screenshot 2026-03-24 at 23.08.15.png`
+- [ ] **013** `Screenshot 2026-03-24 at 23.08.25.png`
+- [ ] **014** `Screenshot 2026-03-24 at 23.08.38.png`
+- [ ] **015** `Screenshot 2026-03-24 at 23.08.43.png`
+- [ ] **016** `Screenshot 2026-03-24 at 23.08.46.png`
+- [ ] **017** `Screenshot 2026-03-24 at 23.08.50.png`
+- [ ] **018** `Screenshot 2026-03-24 at 23.08.53.png`
+- [ ] **019** `Screenshot 2026-03-24 at 23.08.57.png`
+- [ ] **020** `Screenshot 2026-03-24 at 23.09.03.png`
+- [ ] **021** `Screenshot 2026-03-24 at 23.09.11.png`
+- [ ] **022** `Screenshot 2026-03-24 at 23.09.17.png`
+- [ ] **023** `Screenshot 2026-03-24 at 23.09.21.png`
+- [ ] **024** `Screenshot 2026-03-24 at 23.09.27.png`
+- [ ] **025** `Screenshot 2026-03-24 at 23.09.34.png`
+- [ ] **026** `Screenshot 2026-03-24 at 23.09.37.png`
+- [ ] **027** `Screenshot 2026-03-24 at 23.09.42.png`
+- [ ] **028** `Screenshot 2026-03-24 at 23.09.49.png`
+- [ ] **029** `Screenshot 2026-03-24 at 23.09.54.png`
+- [ ] **030** `Screenshot 2026-03-24 at 23.10.05.png`
+- [ ] **031** `Screenshot 2026-03-24 at 23.10.14.png`
+- [ ] **032** `Screenshot 2026-03-24 at 23.10.26.png`
+- [ ] **033** `Screenshot 2026-03-24 at 23.10.36.png`
+- [ ] **034** `Screenshot 2026-03-24 at 23.10.42.png`
+- [ ] **035** `Screenshot 2026-03-24 at 23.10.47.png`
+- [ ] **036** `Screenshot 2026-03-24 at 23.10.50.png`
+- [ ] **037** `Screenshot 2026-03-24 at 23.10.55.png`
+- [ ] **038** `Screenshot 2026-03-24 at 23.11.01.png`
+- [ ] **039** `Screenshot 2026-03-24 at 23.11.06.png`
+- [ ] **040** `Screenshot 2026-03-24 at 23.11.10.png`
+- [ ] **041** `Screenshot 2026-03-24 at 23.11.16.png`
+- [ ] **042** `Screenshot 2026-03-24 at 23.11.26.png`
+- [ ] **043** `Screenshot 2026-03-24 at 23.11.31.png`
+- [ ] **044** `Screenshot 2026-03-24 at 23.11.36.png`
+- [ ] **045** `Screenshot 2026-03-24 at 23.11.40.png`
+- [ ] **046** `Screenshot 2026-03-24 at 23.11.51.png`
+- [ ] **047** `Screenshot 2026-03-24 at 23.11.56.png`
+- [ ] **048** `Screenshot 2026-03-24 at 23.12.00.png`
+- [ ] **049** `Screenshot 2026-03-24 at 23.12.05.png`
+- [ ] **050** `Screenshot 2026-03-24 at 23.12.08.png`
+- [ ] **051** `Screenshot 2026-03-24 at 23.12.12.png`
+- [ ] **052** `Screenshot 2026-03-24 at 23.12.20.png`
+- [ ] **053** `Screenshot 2026-03-24 at 23.12.23.png`
+- [ ] **054** `Screenshot 2026-03-24 at 23.12.28.png`
+- [ ] **055** `Screenshot 2026-03-24 at 23.12.33.png`
+- [ ] **056** `Screenshot 2026-03-24 at 23.12.38.png`
+- [ ] **057** `Screenshot 2026-03-24 at 23.12.43.png`
+- [ ] **058** `Screenshot 2026-03-24 at 23.12.51.png`
+- [ ] **059** `Screenshot 2026-03-24 at 23.12.54.png`
+- [ ] **060** `Screenshot 2026-03-24 at 23.13.07.png`
+- [ ] **061** `Screenshot 2026-03-24 at 23.13.13.png`
+- [ ] **062** `Screenshot 2026-03-24 at 23.13.30.png`
+- [ ] **063** `Screenshot 2026-03-24 at 23.13.44.png`
+- [ ] **064** `Screenshot 2026-03-24 at 23.14.09.png`
+- [ ] **065** `Screenshot 2026-03-24 at 23.14.17.png`
+- [ ] **066** `Screenshot 2026-03-24 at 23.14.24.png`
+- [ ] **067** `Screenshot 2026-03-24 at 23.14.28.png`
+- [ ] **068** `Screenshot 2026-03-24 at 23.14.32.png`
+- [ ] **069** `Screenshot 2026-03-24 at 23.14.36.png`
+- [ ] **070** `Screenshot 2026-03-24 at 23.14.41.png`
+- [ ] **071** `Screenshot 2026-03-24 at 23.14.45.png`
+- [ ] **072** `Screenshot 2026-03-24 at 23.14.48.png`
+- [ ] **073** `Screenshot 2026-03-24 at 23.14.52.png`
+- [ ] **074** `Screenshot 2026-03-24 at 23.14.56.png`
+- [ ] **075** `Screenshot 2026-03-24 at 23.15.01.png`
+- [ ] **076** `Screenshot 2026-03-24 at 23.15.05.png`
+- [ ] **077** `Screenshot 2026-03-24 at 23.15.11.png`
+- [ ] **078** `Screenshot 2026-03-24 at 23.15.22.png`
+- [ ] **079** `Screenshot 2026-03-24 at 23.15.29.png`
+- [ ] **080** `Screenshot 2026-03-24 at 23.15.33.png`
+- [ ] **081** `Screenshot 2026-03-24 at 23.15.38.png`
+- [ ] **082** `Screenshot 2026-03-24 at 23.15.41.png`
+- [ ] **083** `Screenshot 2026-03-24 at 23.15.47.png`
+- [ ] **084** `Screenshot 2026-03-24 at 23.15.51.png`
+- [ ] **085** `Screenshot 2026-03-24 at 23.15.57.png`
+- [ ] **086** `Screenshot 2026-03-24 at 23.16.05.png`
+- [ ] **087** `Screenshot 2026-03-24 at 23.16.09.png`
+- [ ] **088** `Screenshot 2026-03-24 at 23.16.16.png`
+- [ ] **089** `Screenshot 2026-03-24 at 23.16.19.png`
+- [ ] **090** `Screenshot 2026-03-24 at 23.16.22.png`
+- [ ] **091** `Screenshot 2026-03-24 at 23.16.25.png`
+- [ ] **092** `Screenshot 2026-03-24 at 23.16.34.png`
+- [ ] **093** `Screenshot 2026-03-24 at 23.16.38.png`
+- [ ] **094** `Screenshot 2026-03-24 at 23.16.42.png`
+- [ ] **095** `Screenshot 2026-03-24 at 23.16.45.png`
+- [ ] **096** `Screenshot 2026-03-24 at 23.17.01.png`
+- [ ] **097** `Screenshot 2026-03-24 at 23.17.05.png`
+- [ ] **098** `Screenshot 2026-03-24 at 23.17.09.png`
+- [ ] **099** `Screenshot 2026-03-24 at 23.17.15.png`
+- [ ] **100** `Screenshot 2026-03-24 at 23.17.19.png`
+- [ ] **101** `Screenshot 2026-03-24 at 23.17.26.png`
+- [ ] **102** `Screenshot 2026-03-24 at 23.17.31.png`
+- [ ] **103** `Screenshot 2026-03-24 at 23.17.35.png`
+- [ ] **104** `Screenshot 2026-03-24 at 23.17.40.png`
+- [ ] **105** `Screenshot 2026-03-24 at 23.17.50.png`
+- [ ] **106** `Screenshot 2026-03-24 at 23.17.52.png`
+- [ ] **107** `Screenshot 2026-03-24 at 23.17.55.png`
+- [ ] **108** `Screenshot 2026-03-24 at 23.17.58.png`
+- [ ] **109** `Screenshot 2026-03-24 at 23.18.04.png`
+- [ ] **110** `Screenshot 2026-03-24 at 23.18.40.png`
+- [ ] **111** `Screenshot 2026-03-24 at 23.18.45.png`
+- [ ] **112** `Screenshot 2026-03-24 at 23.18.50.png`
+- [ ] **113** `screencapture-localhost-3001-2026-03-24-23_16_52.png`
