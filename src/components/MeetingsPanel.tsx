@@ -18,6 +18,7 @@ import {
   Upload, Zap, Archive
 } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
+import TabNav from './TabNav';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { authHeaders } from '../lib/api';
 // GeminiLiveService not used for passive recording — using Web Speech API for live + Gemini audio API for post-meeting diarization
@@ -1353,8 +1354,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-success-subtle flex items-center justify-center">
-                <Phone size={20} className="text-success" />
+              <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+                <Phone size={20} className="text-mission-control-accent" />
               </div>
               <div>
                 <h1 className="text-heading-2">Meetings</h1>
@@ -1386,41 +1387,20 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
       {/* Tab Navigation */}
       <div className="shrink-0 border-b border-mission-control-border bg-mission-control-surface/50">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="flex gap-1">
-            <Button
-              onClick={() => { setActiveView('current'); setSelectedMeeting(null); }}
-              variant={activeView === 'current' ? 'soft' : 'ghost'}
-              size="2"
-              className="px-4 py-3 text-sm font-medium border-b-2 transition-all"
-            >
-              Current Meeting
-            </Button>
-            <Button
-              onClick={() => setActiveView('history')}
-              variant={activeView === 'history' ? 'soft' : 'ghost'}
-              size="2"
-              className="px-4 py-3 text-sm font-medium border-b-2 transition-all"
-            >
-              Meetings
-            </Button>
-            <Button
-              onClick={() => setActiveView('transcribe')}
-              variant={activeView === 'transcribe' ? 'soft' : 'ghost'}
-              size="2"
-              className="px-4 py-3 text-sm font-medium border-b-2 transition-all"
-            >
-              Upload Audio
-            </Button>
-            <Button
-              onClick={() => setActiveView('upload-transcript')}
-              variant={activeView === 'upload-transcript' ? 'soft' : 'ghost'}
-              size="2"
-              className="px-4 py-3 text-sm font-medium border-b-2 transition-all"
-            >
-              Upload Transcript
-            </Button>
-          </div>
+        <div className="max-w-5xl mx-auto">
+          <TabNav
+            tabs={[
+              { id: 'current', label: 'Current Meeting', icon: Phone },
+              { id: 'history', label: 'Meetings', icon: Clock },
+              { id: 'transcribe', label: 'Upload Audio', icon: Upload },
+              { id: 'upload-transcript', label: 'Upload Transcript', icon: FileText },
+            ]}
+            activeTab={activeView}
+            onTabChange={(id) => {
+              if (id === 'current') { setActiveView('current'); setSelectedMeeting(null); }
+              else setActiveView(id as typeof activeView);
+            }}
+          />
         </div>
       </div>
 
