@@ -251,9 +251,10 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                 key={id}
                 onClick={() => handleNavigate(id)}
                 variant={isActive ? 'soft' : 'ghost'}
+                color={isActive ? undefined : 'gray'}
                 size="2"
                 radius="medium"
-                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 relative group ${isActive ? 'shadow-lg' : ''} ${expanded ? '' : 'justify-center'}`}
+                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 relative group ${expanded ? '' : 'justify-center'}`}
                 title={expanded ? undefined : `${label} (${shortcut})`}
                 aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
                 aria-current={isActive ? 'page' : undefined}
