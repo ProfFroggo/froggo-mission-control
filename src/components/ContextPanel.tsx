@@ -6,7 +6,7 @@ import {
   Image as ImageIcon, FileText, Video, File as FileIcon,
   Upload, X, Eye, Loader2, Trash2, StickyNote, CheckCircle2, Circle,
 } from 'lucide-react';
-import { IconButton, TextArea, Box } from '@radix-ui/themes';
+import { IconButton, TextArea, Box, Flex } from '@radix-ui/themes';
 
 interface ContextFile {
   id: string;
@@ -163,13 +163,13 @@ export default function ContextPanel({ entityType, entityId }: Props) {
     <Box p="5" className="flex-1 overflow-y-auto space-y-6">
       {/* Notes Section */}
       <section>
-        <div className="flex items-center gap-2 mb-3">
+        <Flex align="center" gap="2" mb="3">
           <StickyNote size={14} className="text-mission-control-text-dim" />
           <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Context Notes</h3>
           {savingNotes && (
             <span className="text-xs text-mission-control-text-dim ml-auto">Saving...</span>
           )}
-        </div>
+        </Flex>
         <TextArea
           value={contextNotes}
           onChange={e => handleNotesChange(e.target.value)}
@@ -182,11 +182,11 @@ export default function ContextPanel({ entityType, entityId }: Props) {
 
       {/* Files Section */}
       <section>
-        <div className="flex items-center gap-2 mb-3">
+        <Flex align="center" gap="2" mb="3">
           <FileText size={14} className="text-mission-control-text-dim" />
           <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Context Files</h3>
           <span className="text-xs text-mission-control-text-dim ml-1">({files.length})</span>
-        </div>
+        </Flex>
 
         {/* Upload Drop Zone */}
         <div
@@ -208,9 +208,9 @@ export default function ContextPanel({ entityType, entityId }: Props) {
             onChange={e => handleFiles(e.target.files)}
           />
           {uploading ? (
-            <div className="flex flex-col items-start gap-2 w-full max-w-[220px] mx-auto">
+            <Flex direction="column" align="start" gap="2" className="w-full max-w-[220px] mx-auto">
               {uploadSteps.map((step, i) => (
-                <div key={i} className="flex items-center gap-2">
+                <Flex key={i} align="center" gap="2">
                   {step.status === 'done' ? (
                     <CheckCircle2 size={14} className="text-success flex-shrink-0" />
                   ) : step.status === 'active' ? (
@@ -221,15 +221,15 @@ export default function ContextPanel({ entityType, entityId }: Props) {
                   <span className={`text-xs ${step.status === 'pending' ? 'text-mission-control-text-dim' : step.status === 'active' ? 'text-mission-control-text' : 'text-mission-control-text-dim line-through'}`}>
                     {step.label}
                   </span>
-                </div>
+                </Flex>
               ))}
-            </div>
+            </Flex>
           ) : (
-            <div className="flex flex-col items-center gap-2">
+            <Flex direction="column" align="center" gap="2">
               <Upload size={20} className="text-mission-control-text-dim" />
               <span className="text-sm text-mission-control-text-dim">Drop files here or click to upload</span>
               <span className="text-xs text-mission-control-text-dim">Documents, images, PDFs — any file type</span>
-            </div>
+            </Flex>
           )}
         </div>
 
@@ -239,9 +239,9 @@ export default function ContextPanel({ entityType, entityId }: Props) {
 
         {/* File Grid */}
         {loading ? (
-          <div className="flex justify-center py-6">
+          <Flex justify="center" py="6">
             <Loader2 size={18} className="animate-spin text-mission-control-text-dim" />
-          </div>
+          </Flex>
         ) : files.length === 0 ? (
           <p className="text-sm text-mission-control-text-dim text-center py-4">
             No context files yet. Upload docs, images, or briefs for AI agents to reference.
@@ -249,28 +249,31 @@ export default function ContextPanel({ entityType, entityId }: Props) {
         ) : (
           <div className="grid grid-cols-1 gap-2">
             {files.map(file => (
-              <div
+              <Flex
                 key={file.id}
-                className="flex items-start gap-3 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg"
+                align="start"
+                gap="3"
+                p="3"
+                className="bg-mission-control-surface border border-mission-control-border rounded-lg"
               >
-                <div className="mt-0.5">
+                <Box className="mt-0.5">
                   <FileTypeIcon fileType={file.fileType} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                </Box>
+                <Box className="flex-1 min-w-0">
+                  <Flex align="center" gap="2">
                     <span className="text-sm font-medium text-mission-control-text truncate">{file.originalName}</span>
                     {file.fileSize && (
                       <span className="text-xs text-mission-control-text-dim flex-shrink-0">{formatBytes(file.fileSize)}</span>
                     )}
-                  </div>
+                  </Flex>
                   {file.summary && (
                     <p className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-2">{file.summary}</p>
                   )}
                   {!file.processedAt && file.fileType !== 'video' && (
                     <p className="text-xs text-mission-control-text-dim mt-0.5 italic">Not yet processed</p>
                   )}
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
+                </Box>
+                <Flex align="center" gap="1" className="flex-shrink-0">
                   {file.processedContent && (
                     <IconButton
                       onClick={() => setViewingFile(file)}
@@ -294,8 +297,8 @@ export default function ContextPanel({ entityType, entityId }: Props) {
                   >
                     <Trash2 size={13} />
                   </IconButton>
-                </div>
-              </div>
+                </Flex>
+              </Flex>
             ))}
           </div>
         )}
@@ -303,19 +306,23 @@ export default function ContextPanel({ entityType, entityId }: Props) {
 
       {/* View Content Modal */}
       {viewingFile && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        <Flex
+          align="center"
+          justify="center"
+          p="4"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
           onClick={() => setViewingFile(null)}
         >
-          <div
-            className="w-full max-w-2xl max-h-[80vh] bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col"
+          <Flex
+            direction="column"
+            className="w-full max-w-2xl max-h-[80vh] bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
-              <div className="flex items-center gap-2">
+            <Flex align="center" justify="between" px="4" py="3" className="border-b border-mission-control-border">
+              <Flex align="center" gap="2">
                 <FileTypeIcon fileType={viewingFile.fileType} />
                 <span className="text-sm font-semibold text-mission-control-text truncate">{viewingFile.originalName}</span>
-              </div>
+              </Flex>
               <IconButton
                 onClick={() => setViewingFile(null)}
                 size="1"
@@ -325,14 +332,14 @@ export default function ContextPanel({ entityType, entityId }: Props) {
               >
                 <X size={15} />
               </IconButton>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
+            </Flex>
+            <Box p="4" className="flex-1 overflow-y-auto">
               <pre className="text-xs text-mission-control-text whitespace-pre-wrap font-mono leading-relaxed">
                 {viewingFile.processedContent}
               </pre>
-            </div>
-          </div>
-        </div>
+            </Box>
+          </Flex>
+        </Flex>
       )}
     </Box>
   );
