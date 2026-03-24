@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Clock, Filter } from 'lucide-react';
+import { Heading, Badge, Select } from '@radix-ui/themes';
 import { getTimeTrackingData, getProjectStats, TimeTrackingData, ProjectStats } from '../services/analyticsService';
 
 export default function TimeTrackingPanel() {
@@ -79,10 +80,10 @@ export default function TimeTrackingPanel() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
+          <Heading size="4" weight="medium" className="flex items-center gap-2">
             <Clock className="text-mission-control-accent" size={20} />
             Time Tracking
-          </h2>
+          </Heading>
           <p className="text-sm text-mission-control-text-dim mt-1">
             Detailed time spent per task and project
           </p>
@@ -92,29 +93,25 @@ export default function TimeTrackingPanel() {
           {/* Project filter */}
           <div className="flex items-center gap-2">
             <Filter size={16} className="text-mission-control-text-dim" />
-            <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="all">All Projects</option>
-              {projects.map((p) => (
-                <option key={p.project} value={p.project}>
-                  {p.project}
-                </option>
-              ))}
-            </select>
+            <Select.Root value={selectedProject} onValueChange={setSelectedProject}>
+              <Select.Trigger />
+              <Select.Content>
+                <Select.Item value="all">All Projects</Select.Item>
+                {projects.map((p) => (
+                  <Select.Item key={p.project} value={p.project}>{p.project}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
           </div>
 
           {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
-          >
-            <option value="recent">Most Recent</option>
-            <option value="duration">Longest Duration</option>
-          </select>
+          <Select.Root value={sortBy} onValueChange={val => setSortBy(val as 'duration' | 'recent')}>
+            <Select.Trigger />
+            <Select.Content>
+              <Select.Item value="recent">Most Recent</Select.Item>
+              <Select.Item value="duration">Longest Duration</Select.Item>
+            </Select.Content>
+          </Select.Root>
         </div>
       </div>
 
@@ -144,7 +141,7 @@ export default function TimeTrackingPanel() {
 
       {/* Project Breakdown */}
       <div className="mb-6 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-        <h3 className="font-medium mb-4">Project Time Breakdown</h3>
+        <Heading size="3" weight="medium" className="mb-4">Project Time Breakdown</Heading>
         <div className="space-y-3">
           {projects.slice(0, 5).map((project) => {
             const percentage = totalTime > 0 
@@ -209,17 +206,12 @@ export default function TimeTrackingPanel() {
                     {formatDuration(task.duration)}
                   </td>
                   <td className="p-3">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        task.status === 'done'
-                          ? 'bg-success-subtle text-success'
-                          : task.status === 'in-progress'
-                          ? 'bg-warning-subtle text-warning'
-                          : 'bg-info-subtle text-info'
-                      }`}
+                    <Badge
+                      color={task.status === 'done' ? 'grass' : task.status === 'in-progress' ? 'amber' : 'blue'}
+                      variant="soft"
                     >
                       {task.status}
-                    </span>
+                    </Badge>
                   </td>
                 </tr>
               ))}

@@ -6,10 +6,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Save, X, Loader2 } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import type { Task, TaskPriority } from '../store/store';
 import { taskApi } from '../lib/api';
 import { showToast } from './Toast';
+// eslint-disable-next-line import/order
+import { Button, Spinner, Select, TextField } from '@radix-ui/themes';
 
 interface QuickEditAgent {
   id: string;
@@ -114,64 +116,63 @@ export default function TaskQuickEdit({ task, agents, anchorRect, onClose, onSav
         {/* Title */}
         <div>
           <label className="block text-xs text-mission-control-text-dim mb-1 font-medium">Title</label>
-          <input
+          <TextField.Root
             ref={titleRef}
-            type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
             maxLength={500}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-surface text-sm focus:outline-none focus:border-mission-control-accent transition-colors"
             placeholder="Task title"
+            size="2"
           />
         </div>
 
         {/* Priority */}
         <div>
           <label className="block text-xs text-mission-control-text-dim mb-1 font-medium">Priority</label>
-          <select
-            value={priority}
-            onChange={e => setPriority(e.target.value as TaskPriority)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-surface text-sm focus:outline-none focus:border-mission-control-accent transition-colors"
-          >
-            {PRIORITIES.map(p => (
-              <option key={p.id} value={p.id}>{p.label}</option>
-            ))}
-          </select>
+          <Select.Root value={priority} onValueChange={val => setPriority(val as TaskPriority)}>
+            <Select.Trigger className="w-full" />
+            <Select.Content>
+              {PRIORITIES.map(p => (
+                <Select.Item key={p.id} value={p.id}>{p.label}</Select.Item>
+              ))}
+            </Select.Content>
+          </Select.Root>
         </div>
 
         {/* Assignee */}
         <div>
           <label className="block text-xs text-mission-control-text-dim mb-1 font-medium">Assignee</label>
-          <select
-            value={assignee}
-            onChange={e => setAssignee(e.target.value)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-surface text-sm focus:outline-none focus:border-mission-control-accent transition-colors"
-          >
-            <option value="">Unassigned</option>
-            {agents.map(a => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
+          <Select.Root value={assignee || '__unassigned'} onValueChange={val => setAssignee(val === '__unassigned' ? '' : val)}>
+            <Select.Trigger className="w-full" />
+            <Select.Content>
+              <Select.Item value="__unassigned">Unassigned</Select.Item>
+              {agents.map(a => (
+                <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>
+              ))}
+            </Select.Content>
+          </Select.Root>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2 pt-0.5">
-          <button
+          <Button
             onClick={handleSave}
             disabled={saving || !title.trim()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim disabled:opacity-50 transition-colors"
+            size="2"
           >
-            {saving ? <Loader2 size={13} className="animate-spin flex-shrink-0" /> : <Save size={13} className="flex-shrink-0" />}
+            {saving ? <Spinner size="1" /> : <Save size={13} className="flex-shrink-0" />}
             Save
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-mission-control-border text-sm hover:bg-mission-control-border/50 transition-colors"
+            variant="outline"
+            color="gray"
+            size="2"
           >
             <X size={13} className="flex-shrink-0" />
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

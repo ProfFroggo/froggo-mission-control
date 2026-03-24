@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Button, IconButton, Heading } from '@radix-ui/themes';
 import { ChevronLeft, ChevronRight, Plus, Mail, MessageSquare, Calendar, Eye } from 'lucide-react';
 
 // X logo component
@@ -116,7 +117,7 @@ export default function ContentCalendar() {
               <Calendar size={24} className="text-review" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Content Calendar</h1>
+              <Heading size="5" weight="medium">Content Calendar</Heading>
               <p className="text-sm text-mission-control-text-dim">
                 Schedule and manage your content
               </p>
@@ -124,40 +125,36 @@ export default function ContentCalendar() {
           </div>
           
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="surface"
+              size="2"
               onClick={() => setViewMode(viewMode === 'month' ? 'week' : 'month')}
-              className="px-3 py-1.5 bg-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text"
             >
               {viewMode === 'month' ? 'Week View' : 'Month View'}
-            </button>
-            <button 
+            </Button>
+            <Button
+              variant="solid"
+              size="2"
               onClick={() => {
                 showToast('info', 'Select a date on the calendar to schedule content');
                 setSelectedDate(new Date());
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90"
             >
               <Plus size={16} />
               Schedule
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Month navigation */}
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigateMonth(-1)}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-          >
+          <IconButton variant="ghost" size="2" onClick={() => navigateMonth(-1)}>
             <ChevronLeft size={20} />
-          </button>
-          <h2 className="text-lg font-medium">{monthName}</h2>
-          <button
-            onClick={() => navigateMonth(1)}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-          >
+          </IconButton>
+          <Heading size="4" weight="medium">{monthName}</Heading>
+          <IconButton variant="ghost" size="2" onClick={() => navigateMonth(1)}>
             <ChevronRight size={20} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -238,15 +235,12 @@ export default function ContentCalendar() {
       {selectedDate && (
         <div className="border-t border-mission-control-border bg-mission-control-surface p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-medium">
+            <Heading size="3" weight="medium">
               {selectedDate.toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </h3>
-            <button
-              onClick={() => setSelectedDate(null)}
-              className="text-mission-control-text-dim hover:text-mission-control-text"
-            >
+            </Heading>
+            <IconButton variant="ghost" size="1" onClick={() => setSelectedDate(null)}>
               ×
-            </button>
+            </IconButton>
           </div>
 
           {getItemsForDate(selectedDate).length === 0 ? (
@@ -273,13 +267,9 @@ export default function ContentCalendar() {
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <button
-                        onClick={() => showToast('info', `Preview: ${item.content}`)}
-                        className="p-1 hover:bg-mission-control-border rounded"
-                        title="Preview"
-                      >
+                      <IconButton variant="ghost" size="1" onClick={() => showToast('info', `Preview: ${item.content}`)} title="Preview">
                         <Eye size={14} className="text-mission-control-text-dim" />
-                      </button>
+                      </IconButton>
                     </div>
                   </div>
                 );

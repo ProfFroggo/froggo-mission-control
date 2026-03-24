@@ -10,6 +10,7 @@ const XIcon = ({ size = 16 }: any) => (
   </svg>
 );
 
+import { Button, IconButton, TextArea, TextField, Heading } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { scheduleApi } from '../lib/api';
 
@@ -395,27 +396,30 @@ export default function ContentScheduler() {
         onClick={(e) => e.stopPropagation()}
       >
         <p className="text-xs font-medium text-mission-control-text-dim mb-2">Reschedule to</p>
-        <input
+        <TextField.Root
           type="datetime-local"
           value={rescheduleValue}
           onChange={(e) => setRescheduleValue(e.target.value)}
-          className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent mb-2"
           aria-label="New scheduled time"
+          size="2"
+          className="mb-2"
         />
         <div className="flex gap-2 justify-end">
-          <button
+          <Button
             onClick={() => setRescheduleId(null)}
-            className="px-3 py-1.5 text-xs bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
+            variant="outline"
+            color="gray"
+            size="1"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleReschedule}
             disabled={!rescheduleValue}
-            className="px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-50"
+            size="1"
           >
             Save
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -481,37 +485,49 @@ export default function ContentScheduler() {
           {/* Actions */}
           {isPending && (
             <div className="flex gap-1 relative shrink-0">
-              <button
+              <IconButton
                 onClick={() => handleSendNow(item.id)}
-                className="p-1.5 hover:bg-success-subtle rounded-lg transition-colors"
+                variant="ghost"
+                color="green"
+                size="2"
                 title="Send now"
+                aria-label="Send now"
               >
-                <Play size={14} className="text-success" />
-              </button>
-              <button
+                <Play size={14} />
+              </IconButton>
+              <IconButton
                 onClick={() => handleEdit(item)}
-                className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
+                variant="ghost"
+                color="gray"
+                size="2"
                 title="Edit"
+                aria-label="Edit"
               >
-                <Edit2 size={14} className="text-mission-control-text-dim" />
-              </button>
+                <Edit2 size={14} />
+              </IconButton>
               <div className="relative">
-                <button
+                <IconButton
                   onClick={() => openReschedule(item)}
-                  className="p-1.5 hover:bg-info-subtle rounded-lg transition-colors"
+                  variant="ghost"
+                  color="blue"
+                  size="2"
                   title="Reschedule"
+                  aria-label="Reschedule"
                 >
-                  <CalendarClock size={14} className="text-info" />
-                </button>
+                  <CalendarClock size={14} />
+                </IconButton>
                 {renderReschedulePopover(item)}
               </div>
-              <button
+              <IconButton
                 onClick={() => handleCancelItem(item.id)}
-                className="p-1.5 hover:bg-error-subtle rounded-lg transition-colors"
+                variant="ghost"
+                color="red"
+                size="2"
                 title="Cancel"
+                aria-label="Cancel"
               >
-                <Trash2 size={14} className="text-error" />
-              </button>
+                <Trash2 size={14} />
+              </IconButton>
             </div>
           )}
         </div>
@@ -538,35 +554,41 @@ export default function ContentScheduler() {
     <div className="flex flex-col h-full">
       {/* Week nav */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface shrink-0">
-        <button
+        <IconButton
           onClick={goToPrevWeek}
-          className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
+          variant="ghost"
+          color="gray"
+          size="2"
           aria-label="Previous week"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
-        </button>
+        </IconButton>
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium">{weekRangeLabel}</span>
+          <span className="text-sm font-medium tabular-nums">{weekRangeLabel}</span>
           {!isCurrentWeek && (
-            <button
+            <Button
               onClick={goToThisWeek}
-              className="text-xs px-2 py-1 bg-mission-control-border rounded hover:bg-mission-control-border/80 transition-colors"
+              variant="outline"
+              color="gray"
+              size="1"
             >
               This week
-            </button>
+            </Button>
           )}
         </div>
-        <button
+        <IconButton
           onClick={goToNextWeek}
-          className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
+          variant="ghost"
+          color="gray"
+          size="2"
           aria-label="Next week"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 18 15 12 9 6" />
           </svg>
-        </button>
+        </IconButton>
       </div>
 
       {/* Grid */}
@@ -648,13 +670,13 @@ export default function ContentScheduler() {
           ? `No ${filter} items. Switch to "All" or add something new.`
           : 'Schedule posts, emails, and tasks to keep things moving.'}
       </p>
-      <button
+      <Button
         onClick={() => setShowForm(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors"
+        size="2"
       >
         <Plus size={15} />
         Schedule something
-      </button>
+      </Button>
     </div>
   );
 
@@ -688,47 +710,47 @@ export default function ContentScheduler() {
           <div className="flex gap-2 items-center">
             {/* List / Week toggle */}
             <div className="flex rounded-lg border border-mission-control-border overflow-hidden">
-              <button
+              <IconButton
                 onClick={() => setViewMode('list')}
-                className={`p-2 transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
+                variant={viewMode === 'list' ? 'solid' : 'ghost'}
+                color={viewMode === 'list' ? 'violet' : 'gray'}
+                size="2"
+                radius="none"
                 title="List view"
                 aria-label="List view"
               >
                 <List size={14} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 onClick={() => setViewMode('week')}
-                className={`p-2 transition-colors ${
-                  viewMode === 'week'
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
+                variant={viewMode === 'week' ? 'solid' : 'ghost'}
+                color={viewMode === 'week' ? 'violet' : 'gray'}
+                size="2"
+                radius="none"
                 title="Week view"
                 aria-label="Week view"
               >
                 <LayoutGrid size={14} />
-              </button>
+              </IconButton>
             </div>
 
-            <button
+            <Button
               onClick={loadSchedule}
               disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors text-sm"
+              variant="outline"
+              color="gray"
+              size="2"
             >
               <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
               Refresh
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-sm"
+              size="2"
             >
               <Plus size={14} />
               Schedule New
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -736,21 +758,19 @@ export default function ContentScheduler() {
         {viewMode === 'list' && (
           <div className="flex gap-2">
             {(['pending', 'sent', 'all'] as const).map((f) => (
-              <button
+              <Button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  filter === f
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
+                variant={filter === f ? 'solid' : 'outline'}
+                color={filter === f ? 'violet' : 'gray'}
+                size="2"
               >
                 <span className="tabular-nums">
                   {f === 'pending' && `Pending (${pendingCount})`}
                   {f === 'sent'    && `Sent (${sentCount})`}
                   {f === 'all'     && `All (${items.length})`}
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -760,10 +780,10 @@ export default function ContentScheduler() {
       {showForm && (
         <div className="p-4 border-b border-mission-control-border bg-mission-control-bg shrink-0">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-medium text-sm">{editingId ? 'Edit Scheduled Item' : 'Schedule New Item'}</h3>
-            <button onClick={resetForm} className="p-1 hover:bg-mission-control-border rounded transition-colors">
+            <Heading size="2" weight="medium">{editingId ? 'Edit Scheduled Item' : 'Schedule New Item'}</Heading>
+            <IconButton onClick={resetForm} variant="ghost" color="gray" size="1" aria-label="Close form">
               <X size={14} />
-            </button>
+            </IconButton>
           </div>
 
           <div className="space-y-3">
@@ -773,49 +793,48 @@ export default function ContentScheduler() {
                 const Icon  = getTypeIcon(t);
                 const label = t === 'tweet' ? 'Post' : 'Email';
                 return (
-                  <button
+                  <Button
                     key={t}
                     onClick={() => setFormType(t)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
-                      formType === t
-                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                        : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-                    }`}
+                    variant={formType === t ? 'solid' : 'outline'}
+                    color={formType === t ? 'violet' : 'gray'}
+                    size="2"
                   >
                     <Icon size={14} />
                     {label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
 
             {formType === 'email' && (
               <div className="grid grid-cols-2 gap-3">
-                <input
+                <TextField.Root
                   type="text"
                   value={formRecipient}
                   onChange={(e) => setFormRecipient(e.target.value)}
                   placeholder="Recipient email"
-                  className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent text-sm"
+                  size="2"
                   aria-label="Recipient email"
                 />
-                <input
+                <TextField.Root
                   type="text"
                   value={formSubject}
                   onChange={(e) => setFormSubject(e.target.value)}
                   placeholder="Subject"
-                  className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent text-sm"
+                  size="2"
                   aria-label="Email subject"
                 />
               </div>
             )}
 
-            <textarea
+            <TextArea
               value={formContent}
               onChange={(e) => setFormContent(e.target.value)}
               placeholder={formType === 'tweet' ? 'What do you want to post?' : 'Email body...'}
               rows={3}
-              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none text-sm"
+              resize="none"
+              size="2"
               aria-label="Content"
             />
             {formType === 'tweet' && (
@@ -826,14 +845,16 @@ export default function ContentScheduler() {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-mission-control-text-dim">Media (optional)</span>
-                <button
+                <Button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-1 px-2 py-1 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
+                  variant="outline"
+                  color="gray"
+                  size="1"
                 >
                   <Paperclip size={10} />
                   {mediaFile ? 'Change' : 'Attach'}
-                </button>
+                </Button>
               </div>
               <input
                 ref={fileInputRef}
@@ -874,9 +895,9 @@ export default function ContentScheduler() {
                     )}
                   </div>
                   <span className="text-xs flex-1 truncate">{mediaFile.fileName}</span>
-                  <button type="button" onClick={handleRemoveMedia} className="p-1 hover:bg-error-subtle rounded transition-colors" title="Remove">
-                    <X size={12} className="text-error" />
-                  </button>
+                  <IconButton type="button" onClick={handleRemoveMedia} variant="ghost" color="red" size="1" title="Remove" aria-label="Remove media">
+                    <X size={12} />
+                  </IconButton>
                 </div>
               )}
               {uploadError && <div className="text-xs text-error bg-error-subtle px-2 py-1 rounded">{uploadError}</div>}
@@ -885,42 +906,46 @@ export default function ContentScheduler() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-mission-control-text-dim mb-1">Date</label>
-                <input
+                <TextField.Root
                   type="date"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent text-sm"
+                  size="2"
+                  className="w-full"
                   aria-label="Schedule date"
                 />
               </div>
               <div>
                 <label className="block text-xs text-mission-control-text-dim mb-1">Time</label>
-                <input
+                <TextField.Root
                   type="time"
                   value={formTime}
                   onChange={(e) => setFormTime(e.target.value)}
-                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent text-sm"
+                  size="2"
+                  className="w-full"
                   aria-label="Schedule time"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-2">
-              <button
+              <Button
                 onClick={resetForm}
-                className="px-4 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors text-sm"
+                variant="outline"
+                color="gray"
+                size="2"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSubmit}
                 disabled={!formContent.trim() || !formDate || !formTime}
-                className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-50 text-sm"
+                size="2"
               >
                 <Check size={14} />
                 {editingId ? 'Update' : 'Schedule'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

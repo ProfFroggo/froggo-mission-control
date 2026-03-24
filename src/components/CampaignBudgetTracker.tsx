@@ -2,6 +2,7 @@
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { DollarSign, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Heading } from '@radix-ui/themes';
 
 interface BudgetCategory {
   name: string;
@@ -101,7 +102,7 @@ export default function CampaignBudgetTracker({
     <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-4">
       <div className="flex items-center gap-1.5">
         <DollarSign size={14} className="text-mission-control-text-dim" />
-        <h3 className="text-sm font-medium text-mission-control-text">Budget Tracker</h3>
+        <Heading size="2" weight="medium">Budget Tracker</Heading>
       </div>
 
       {/* Ring + stats */}
@@ -110,7 +111,7 @@ export default function CampaignBudgetTracker({
         <div className="relative flex-shrink-0" style={{ width: 88, height: 88 }}>
           <ProgressRing radius={44} strokeWidth={8} percentage={consumedPct} color={ringColor} />
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-base font-bold leading-none" style={{ color: ringColor }}>
+            <span className="text-base font-bold leading-none tabular-nums" style={{ color: ringColor }}>
               {consumedPct}%
             </span>
             <span className="text-xs text-mission-control-text-dim mt-0.5">used</span>
@@ -121,15 +122,15 @@ export default function CampaignBudgetTracker({
         <div className="grid grid-cols-1 gap-2 flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <span className="text-xs text-mission-control-text-dim">Total budget</span>
-            <span className="text-sm font-semibold text-mission-control-text">
+            <span className="text-sm font-semibold tabular-nums text-mission-control-text">
               {currency} {fmt(budget)}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-xs text-mission-control-text-dim">Spent</span>
             <span
-              className="text-sm font-semibold"
-              style={{ color: isOverBudget ? 'var(--color-error, #ef4444)' : 'var(--mission-control-text-primary)' }}
+              className="text-sm font-semibold tabular-nums"
+              style={{ color: isOverBudget ? 'var(--color-error, #ef4444)' : 'var(--mission-control-text)' }}
             >
               {currency} {fmt(spent)}
               {isOverBudget && (
@@ -139,7 +140,7 @@ export default function CampaignBudgetTracker({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-xs text-mission-control-text-dim">Remaining</span>
-            <span className="text-sm font-semibold text-success">
+            <span className="text-sm font-semibold tabular-nums text-success">
               {currency} {fmt(remaining)}
             </span>
           </div>
@@ -159,9 +160,9 @@ export default function CampaignBudgetTracker({
       {/* Category breakdown */}
       {categories.length > 0 && (
         <div className="space-y-2 pt-2 border-t border-mission-control-border">
-          <h4 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
+          <Heading size="1" weight="medium" className="text-mission-control-text-dim uppercase tracking-wider">
             By Category
-          </h4>
+          </Heading>
           <div className="space-y-2">
             {categories.map(cat => {
               const catPct = cat.planned > 0 ? Math.min(100, Math.round((cat.actual / cat.planned) * 100)) : 0;

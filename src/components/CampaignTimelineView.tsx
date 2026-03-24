@@ -3,6 +3,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useMemo } from 'react';
 import { Calendar, CheckCircle2, Circle, Flag, Play } from 'lucide-react';
+import { Heading } from '@radix-ui/themes';
 import type { Campaign } from '../types/campaigns';
 
 interface TaskItem {
@@ -124,9 +125,9 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
 
   if (milestones.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-        <Calendar size={28} className="text-mission-control-text-dim" />
-        <p className="text-sm text-mission-control-text-dim">No timeline data.</p>
+      <div className="flex flex-col items-center justify-center h-full py-16 gap-3 text-center">
+        <Calendar size={32} className="text-mission-control-text-dim opacity-40" />
+        <p className="text-sm font-medium text-mission-control-text">No timeline data</p>
         <p className="text-xs text-mission-control-text-dim">Set start/end dates and add due dates to tasks.</p>
       </div>
     );
@@ -143,7 +144,7 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
               {phaseLabel}
             </span>
           </div>
-          <span className="text-xs text-mission-control-text-dim">{campaignProgress}% elapsed</span>
+          <span className="text-xs tabular-nums text-mission-control-text-dim">{campaignProgress}% elapsed</span>
         </div>
       )}
 
@@ -175,7 +176,7 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
           {PHASES.map(p => (
             <div
               key={p.label}
-              className="absolute text-[9px] text-mission-control-text-dim"
+              className="absolute text-xs text-mission-control-text-dim"
               style={{ left: `${p.from}%`, transform: 'none', paddingTop: 6 }}
             >
               {p.label}
@@ -190,7 +191,7 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
             style={{ left: `${nowPct}%`, top: 0, transform: 'translateX(-50%)', zIndex: 3 }}
           >
             <div className="w-0.5 rounded-full" style={{ height: 22, backgroundColor: 'var(--mission-control-accent, #6366f1)' }} />
-            <span className="text-[10px] font-semibold whitespace-nowrap mt-0.5" style={{ color: 'var(--mission-control-accent, #6366f1)' }}>
+            <span className="text-xs font-semibold whitespace-nowrap mt-0.5" style={{ color: 'var(--mission-control-accent, #6366f1)' }}>
               Today
             </span>
           </div>
@@ -211,18 +212,18 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
             >
               <MilestoneDot type={m.type} taskStatus={m.taskStatus} isPast={isPast} />
               <span
-                className="text-[10px] mt-3 text-center leading-tight"
+                className="text-xs mt-3 text-center leading-tight"
                 style={{
                   maxWidth: 72,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  color: isPast ? 'var(--mission-control-text-dim)' : 'var(--mission-control-text-primary)',
+                  color: isPast ? 'var(--mission-control-text-dim)' : 'var(--mission-control-text)',
                 }}
               >
                 {m.label}
               </span>
-              <span className="text-[9px] mt-0.5" style={{ color: 'var(--mission-control-text-dim)' }}>
+              <span className="text-xs mt-0.5 tabular-nums" style={{ color: 'var(--mission-control-text-dim)' }}>
                 {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
               </span>
             </div>
@@ -232,7 +233,7 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
 
       {/* Milestone list */}
       <div className="space-y-2 mt-8">
-        <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-3">Milestones</h3>
+        <Heading size="1" weight="medium" className="text-mission-control-text-dim uppercase tracking-wider mb-3">Milestones</Heading>
         {milestones.map(m => {
           const isPast = m.date < now;
           const isSoon = !isPast && m.date <= now + 7 * 24 * 60 * 60 * 1000;
@@ -255,7 +256,7 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
               <span className={`text-sm flex-1 truncate ${isPast && m.taskStatus !== 'done' ? 'text-mission-control-text-dim' : 'text-mission-control-text'}`}>
                 {m.label}
               </span>
-              <span className="text-xs text-mission-control-text-dim flex-shrink-0">
+              <span className="text-xs tabular-nums text-mission-control-text-dim flex-shrink-0">
                 {new Date(m.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
               </span>
               {m.type === 'task' && m.taskStatus === 'done' && (

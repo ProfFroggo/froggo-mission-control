@@ -20,6 +20,8 @@ import {
 import { TrendingUp } from 'lucide-react';
 import { getTaskCompletionTrends, TaskCompletionTrend } from '../services/analyticsService';
 import { CHART_COLORS, CHART_GRID, CHART_AXIS } from '../lib/chartTheme';
+// eslint-disable-next-line import/order
+import { Button } from '@radix-ui/themes';
 
 export default function TaskTrendsChart({ days = 30 }: { days?: number }) {
   const [data, setData] = useState<TaskCompletionTrend[]>([]);
@@ -190,17 +192,15 @@ export default function TaskTrendsChart({ days = 30 }: { days?: number }) {
           {/* Chart type selector */}
           <div className="flex bg-mission-control-border rounded-lg p-1">
             {(['area', 'line', 'bar'] as const).map((type) => (
-              <button
+              <Button
                 key={type}
                 onClick={() => setChartType(type)}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors capitalize ${
-                  chartType === type
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
+                variant={chartType === type ? 'solid' : 'ghost'}
+                size="1"
+                className="capitalize"
               >
                 {type}
-              </button>
+              </Button>
             ))}
           </div>
 

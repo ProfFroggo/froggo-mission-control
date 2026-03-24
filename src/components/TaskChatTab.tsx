@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Bot, User, Loader2, MessageSquare } from 'lucide-react';
+import { Send, Bot, User, MessageSquare } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 import SessionStatsBar from './SessionStatsBar';
+// eslint-disable-next-line import/order
+import { IconButton, Spinner, TextArea } from '@radix-ui/themes';
 
 interface Message {
   role: 'user' | 'agent' | 'system';
@@ -104,11 +106,10 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
 
   if (!agentId) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8 text-mission-control-text-dim">
-        <div className="text-center">
-          <MessageSquare size={32} className="mx-auto mb-3 opacity-40" />
-          <p className="text-sm">Assign an agent to this task to enable chat.</p>
-        </div>
+      <div className="flex flex-col items-center justify-center h-full py-16 gap-3 text-center">
+        <MessageSquare size={32} className="text-mission-control-text-dim opacity-40" />
+        <p className="text-sm font-medium text-mission-control-text">No agent assigned</p>
+        <p className="text-xs text-mission-control-text-dim">Assign an agent to this task to enable chat.</p>
       </div>
     );
   }
@@ -128,7 +129,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <Loader2 size={18} className="animate-spin text-mission-control-text-dim" />
+            <Spinner size="3" />
           </div>
         )}
 
@@ -144,7 +145,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
             className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
           >
             <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white ${
-              msg.role === 'user' ? 'bg-mission-control-accent' : 'bg-emerald-600'
+              msg.role === 'user' ? 'bg-mission-control-accent' : 'bg-success'
             }`}>
               {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
             </div>
@@ -160,7 +161,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
               ) : (
                 <MarkdownMessage content={msg.content} />
               )}
-              <p className="text-[10px] text-mission-control-text-dim mt-1">
+              <p className="text-xs tabular-nums text-mission-control-text-dim mt-1">
                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
@@ -170,7 +171,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
         {/* Thinking indicator */}
         {sending && (
           <div className="flex gap-2">
-            <div className="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white">
+            <div className="flex-shrink-0 w-7 h-7 rounded-full bg-success flex items-center justify-center text-white">
               <Bot size={12} />
             </div>
             <div className="px-3 py-2 rounded-lg rounded-tl-sm bg-mission-control-surface border border-mission-control-border">
@@ -189,23 +190,25 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
       {/* Input */}
       <div className="p-3 border-t border-mission-control-border flex-shrink-0">
         <div className="flex gap-2">
-          <textarea
+          <TextArea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={`Message ${agentName}… (Enter to send, Shift+Enter for new line)`}
-            className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
             rows={2}
             disabled={sending}
+            resize="none"
+            className="flex-1"
           />
-          <button
+          <IconButton
             onClick={() => sendMessage()}
             disabled={!input.trim() || sending}
-            className="p-2 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40 self-end"
+            size="3"
             aria-label="Send message"
+            className="self-end"
           >
             <Send size={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
     </div>

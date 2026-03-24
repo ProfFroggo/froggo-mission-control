@@ -7,6 +7,8 @@
 import { useRef, useState, useEffect } from 'react';
 import { X, Filter, ChevronDown, Calendar, User, Flag, CheckSquare } from 'lucide-react';
 import type { TaskStatus, TaskPriority } from '../store/store';
+// eslint-disable-next-line import/order
+import { Button, Badge, Select, TextField } from '@radix-ui/themes';
 
 export interface TaskFilters {
   statuses: TaskStatus[];
@@ -118,23 +120,20 @@ export default function TaskFiltersBar({ filters, onChange, agents }: TaskFilter
 
       {/* Status multi-select */}
       <div ref={statusRef} className="relative flex-shrink-0">
-        <button
+        <Button
           onClick={() => setShowStatusDropdown(v => !v)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm transition-all ${
-            filters.statuses.length > 0
-              ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-              : 'border-mission-control-border hover:border-mission-control-accent/50'
-          }`}
+          variant={filters.statuses.length > 0 ? 'soft' : 'outline'}
+          size="2"
         >
           <CheckSquare size={13} className="flex-shrink-0" />
           Status
           {filters.statuses.length > 0 && (
-            <span className="text-[11px] font-bold bg-mission-control-accent text-white rounded-full px-1.5 leading-tight">
+            <Badge color="blue" variant="solid" size="1">
               {filters.statuses.length}
-            </span>
+            </Badge>
           )}
           <ChevronDown size={12} className="flex-shrink-0 opacity-60" />
-        </button>
+        </Button>
 
         {showStatusDropdown && (
           <div className="absolute left-0 top-full mt-1 z-30 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl py-1.5 w-44">
@@ -159,80 +158,63 @@ export default function TaskFiltersBar({ filters, onChange, agents }: TaskFilter
       {/* Priority filter */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <Flag size={13} className="text-mission-control-text-dim flex-shrink-0" />
-        <select
-          value={filters.priority}
-          onChange={e => onChange({ ...filters, priority: e.target.value as TaskPriority | 'all' })}
-          className={`px-2.5 py-1.5 rounded-lg border text-sm bg-mission-control-surface transition-all focus:outline-none focus:border-mission-control-accent ${
-            filters.priority !== 'all'
-              ? 'border-mission-control-accent text-mission-control-accent'
-              : 'border-mission-control-border hover:border-mission-control-accent/50'
-          } ${PRIORITY_COLORS[filters.priority] ?? ''}`}
-        >
-          {PRIORITIES.map(p => (
-            <option key={p.id} value={p.id}>{p.label}</option>
-          ))}
-        </select>
+        <Select.Root value={filters.priority} onValueChange={val => onChange({ ...filters, priority: val as TaskPriority | 'all' })}>
+          <Select.Trigger />
+          <Select.Content>
+            {PRIORITIES.map(p => (
+              <Select.Item key={p.id} value={p.id}>{p.label}</Select.Item>
+            ))}
+          </Select.Content>
+        </Select.Root>
       </div>
 
       {/* Assignee filter */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <User size={13} className="text-mission-control-text-dim flex-shrink-0" />
-        <select
-          value={filters.assignee}
-          onChange={e => onChange({ ...filters, assignee: e.target.value })}
-          className={`px-2.5 py-1.5 rounded-lg border text-sm bg-mission-control-surface transition-all focus:outline-none focus:border-mission-control-accent ${
-            filters.assignee !== 'all'
-              ? 'border-mission-control-accent text-mission-control-accent'
-              : 'border-mission-control-border hover:border-mission-control-accent/50'
-          }`}
-        >
-          <option value="all">All Assignees</option>
-          <option value="unassigned">Unassigned</option>
-          {agents.map(a => (
-            <option key={a.id} value={a.id}>{a.name}</option>
-          ))}
-        </select>
+        <Select.Root value={filters.assignee} onValueChange={val => onChange({ ...filters, assignee: val })}>
+          <Select.Trigger />
+          <Select.Content>
+            <Select.Item value="all">All Assignees</Select.Item>
+            <Select.Item value="unassigned">Unassigned</Select.Item>
+            {agents.map(a => (
+              <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>
+            ))}
+          </Select.Content>
+        </Select.Root>
       </div>
 
       {/* Date range filter */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <Calendar size={13} className="text-mission-control-text-dim flex-shrink-0" />
-        <input
+        <TextField.Root
           type="date"
           value={filters.dueDateFrom}
           onChange={e => onChange({ ...filters, dueDateFrom: e.target.value })}
-          className={`px-2.5 py-1.5 rounded-lg border text-sm bg-mission-control-surface transition-all focus:outline-none focus:border-mission-control-accent ${
-            filters.dueDateFrom
-              ? 'border-mission-control-accent'
-              : 'border-mission-control-border hover:border-mission-control-accent/50'
-          }`}
           aria-label="Due date from"
-          title="Due date from"
+          size="2"
         />
         <span className="text-mission-control-text-dim text-xs">to</span>
-        <input
+        <TextField.Root
           type="date"
           value={filters.dueDateTo}
           onChange={e => onChange({ ...filters, dueDateTo: e.target.value })}
-          className={`px-2.5 py-1.5 rounded-lg border text-sm bg-mission-control-surface transition-all focus:outline-none focus:border-mission-control-accent ${
-            filters.dueDateTo
-              ? 'border-mission-control-accent'
-              : 'border-mission-control-border hover:border-mission-control-accent/50'
-          }`}
           aria-label="Due date to"
-          title="Due date to"
+          size="2"
         />
       </div>
 
       {/* Clear all */}
       {activeCount > 0 && (
-        <button
+        <Button
           onClick={clearAll}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-mission-control-border text-sm text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50 transition-all ml-auto flex-shrink-0"
+          variant="outline"
+          color="gray"
+          size="2"
+          className="ml-auto flex-shrink-0"
         >
           <X size={13} className="flex-shrink-0" />
           Clear all
-        </button>
+        </Button>
       )}
     </div>
   );

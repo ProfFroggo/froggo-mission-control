@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, RefreshCw, ListTodo } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import EpicCalendar from './EpicCalendar';
 import TaskScheduler from './TaskScheduler';
 import ContentScheduler from './ContentScheduler';
@@ -68,7 +69,9 @@ export default function SchedulePanel() {
       {/* Tab Header */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center px-4">
-          <button
+          <Button
+            variant="ghost"
+            size="2"
             onClick={() => setActiveTab('calendar')}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
               activeTab === 'calendar'
@@ -78,8 +81,10 @@ export default function SchedulePanel() {
           >
             <Calendar size={16} />
             Calendar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="2"
             onClick={() => setActiveTab('tasks')}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
               activeTab === 'tasks'
@@ -89,8 +94,10 @@ export default function SchedulePanel() {
           >
             <ListTodo size={16} />
             Task Scheduler
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="2"
             onClick={() => setActiveTab('scheduler')}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
               activeTab === 'scheduler'
@@ -100,8 +107,10 @@ export default function SchedulePanel() {
           >
             <Clock size={16} />
             Content Scheduler
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="2"
             onClick={() => setActiveTab('crons')}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
               activeTab === 'crons'
@@ -111,7 +120,7 @@ export default function SchedulePanel() {
           >
             <RefreshCw size={16} />
             Cron Jobs
-          </button>
+          </Button>
         </div>
       </div>
 
