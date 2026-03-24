@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex, Box } from '@radix-ui/themes';
 import { RefreshCw, Download, Pause, Play, ArrowDown } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 
@@ -65,9 +65,9 @@ export default function LogsTab() {
   };
 
   return (
-    <div className="space-y-4">
+    <Box className="space-y-4">
       {/* Controls */}
-      <div className="flex items-center gap-3">
+      <Flex align="center" gap="3">
         <Button
           type="button"
           variant={polling ? 'soft' : 'surface'}
@@ -93,25 +93,25 @@ export default function LogsTab() {
         <Button type="button" variant="surface" color="gray" size="2" onClick={() => setLines([])}>
           Clear
         </Button>
-        <div className="flex-1" />
+        <Box className="flex-1" />
         {fileInfo && (
           <span className="text-xs text-mission-control-text-dim">
             {fileInfo.file.split('/').pop()} • {formatSize(fileInfo.size)} • {lines.length} lines
           </span>
         )}
-      </div>
+      </Flex>
 
       {/* Log Viewer */}
-      <div
+      <Box
         ref={logRef}
         className="h-[500px] overflow-y-auto bg-mission-control-bg border border-mission-control-border rounded-lg p-3 font-mono text-xs"
       >
         {loading ? (
-          <div className="flex items-center justify-center h-full text-mission-control-text-dim">
+          <Flex align="center" justify="center" height="100%" className="text-mission-control-text-dim">
             <RefreshCw size={20} className="animate-spin mr-2" /> Loading logs...
-          </div>
+          </Flex>
         ) : lines.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-mission-control-text-dim">No log output</div>
+          <Flex align="center" justify="center" height="100%" className="text-mission-control-text-dim">No log output</Flex>
         ) : lines.map((line, i) => {
           const isError = /\berror\b/i.test(line);
           const isWarn = /\bwarn/i.test(line);
@@ -124,7 +124,7 @@ export default function LogsTab() {
             </div>
           );
         })}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

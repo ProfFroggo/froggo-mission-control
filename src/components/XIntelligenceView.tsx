@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Target, Zap } from 'lucide-react';
-import { Button, Flex } from '@radix-ui/themes';
+import { Button, Flex, Box } from '@radix-ui/themes';
 import XResearchView from './XResearchView';
 import XCompetitorTracker from './XCompetitorTracker';
 
@@ -33,8 +33,8 @@ export default function XIntelligenceView() {
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Sub-tab bar + AI actions */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-1">
+      <Flex align="center" justify="between" px="4" py="2" className="border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" gap="1">
           {SUB_TABS.map((tab) => (
             <Button
               key={tab.id}
@@ -47,8 +47,8 @@ export default function XIntelligenceView() {
               {tab.label}
             </Button>
           ))}
-        </div>
-        <div className="flex items-center gap-1">
+        </Flex>
+        <Flex align="center" gap="1">
           {AI_ACTIONS[activeSubTab]?.map((action, i) => (
             <Button
               key={i}
@@ -61,14 +61,14 @@ export default function XIntelligenceView() {
               {action.label}
             </Button>
           ))}
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Sub-tab content */}
-      <div className="flex-1 overflow-hidden">
+      <Box className="flex-1 overflow-hidden">
         {activeSubTab === 'search' && <XResearchView />}
         {activeSubTab === 'competitors' && <XCompetitorTracker />}
-      </div>
+      </Box>
     </Flex>
   );
 }

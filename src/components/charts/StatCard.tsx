@@ -15,6 +15,7 @@
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import type { ReactNode } from 'react';
+import { Box, Flex } from '@radix-ui/themes';
 
 interface StatCardProps {
   label: string;
@@ -71,18 +72,21 @@ export default function StatCard({
   const gradId = `spark-${label.replace(/\s+/g, '-').toLowerCase()}`;
 
   return (
-    <div
-      className={`relative overflow-hidden bg-mission-control-surface border border-mission-control-border rounded-xl p-4 flex flex-col gap-3 ${className}`}
+    <Flex
+      direction="column"
+      gap="3"
+      p="4"
+      className={`relative overflow-hidden bg-mission-control-surface border border-mission-control-border rounded-xl ${className}`}
     >
       {/* Label row */}
-      <div className="flex items-center gap-1.5">
+      <Flex align="center" gap="1">
         {icon && <span className="text-mission-control-text-dim">{icon}</span>}
         <span className="text-xs font-medium text-mission-control-text-dim">{label}</span>
-      </div>
+      </Flex>
 
       {/* Value + sparkline */}
-      <div className="flex items-end justify-between gap-3">
-        <div className="flex flex-col">
+      <Flex align="end" justify="between" gap="3">
+        <Flex direction="column">
           <span
             className="text-3xl font-bold tabular-nums leading-none tracking-tight"
             style={{ color }}
@@ -93,14 +97,14 @@ export default function StatCard({
             )}
           </span>
           {change !== undefined && (
-            <div className="mt-1.5">
+            <Box mt="1">
               <TrendBadge change={change} />
-            </div>
+            </Box>
           )}
-        </div>
+        </Flex>
 
         {sparkData && sparkData.length > 1 && (
-          <div className="h-12 w-20 flex-shrink-0 opacity-70">
+          <Box className="h-12 w-20 flex-shrink-0 opacity-70">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={sparkData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
                 <defs>
@@ -120,15 +124,15 @@ export default function StatCard({
                 />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
+          </Box>
         )}
-      </div>
+      </Flex>
 
       {/* Subtle accent glow strip at the top */}
-      <div
+      <Box
         className="absolute top-0 left-0 right-0 h-px opacity-50"
         style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }}
       />
-    </div>
+    </Flex>
   );
 }

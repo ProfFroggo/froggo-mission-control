@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
-import { Flex } from '@radix-ui/themes';
+import { Flex, Box } from '@radix-ui/themes';
 
 interface DayActivity {
   date: string; // YYYY-MM-DD
@@ -69,14 +69,14 @@ export default function AgentActivityTimeline({ agentId }: AgentActivityTimeline
   };
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-2">
+    <Box className="space-y-1">
+      <Flex align="center" gap="1" mb="2" className="text-xs text-mission-control-text-dim">
         <Calendar size={11} />
         <span>7-day activity</span>
-      </div>
-      <div className="flex items-end gap-1.5 relative">
+      </Flex>
+      <Flex align="end" gap="1" className="relative">
         {days.map((day) => (
-          <div key={day.date} className="relative flex flex-col items-center gap-1 flex-1">
+          <Flex key={day.date} direction="column" align="center" gap="1" className="relative flex-1">
             <div
               className={`w-full rounded transition-colors cursor-default ${getIntensityClass(day.count)} ${isToday(day.date) ? 'ring-1 ring-mission-control-accent/60' : ''}`}
               style={{ height: 24 }}
@@ -86,26 +86,26 @@ export default function AgentActivityTimeline({ agentId }: AgentActivityTimeline
             <span className="text-[9px] text-mission-control-text-dim/60 leading-none">
               {new Date(day.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'narrow' })}
             </span>
-          </div>
+          </Flex>
         ))}
 
         {/* Tooltip */}
         {hoveredDay && (
-          <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 px-2 py-1 bg-mission-control-bg0 border border-mission-control-border rounded text-xs whitespace-nowrap shadow-lg pointer-events-none">
+          <Box className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 px-2 py-1 bg-mission-control-bg0 border border-mission-control-border rounded text-xs whitespace-nowrap shadow-lg pointer-events-none">
             {formatDate(hoveredDay.date)}: {hoveredDay.count} {hoveredDay.count === 1 ? 'action' : 'actions'}
-          </div>
+          </Box>
         )}
-      </div>
-      <div className="flex items-center justify-between text-[9px] text-mission-control-text-dim/50 mt-0.5">
+      </Flex>
+      <Flex align="center" justify="between" mt="1" className="text-[9px] text-mission-control-text-dim/50">
         <span>Less</span>
-        <div className="flex items-center gap-0.5">
+        <Flex align="center" gap="1">
           {['bg-mission-control-border/40', 'bg-mission-control-accent/25', 'bg-mission-control-accent/50', 'bg-mission-control-accent/75', 'bg-mission-control-accent'].map((cls, i) => (
-            <div key={i} className={`w-2.5 h-2.5 rounded-sm ${cls}`} />
+            <Box key={i} className={`w-2.5 h-2.5 rounded-sm ${cls}`} />
           ))}
-        </div>
+        </Flex>
         <span>More</span>
-      </div>
-    </div>
+      </Flex>
+    </Box>
   );
 }
 

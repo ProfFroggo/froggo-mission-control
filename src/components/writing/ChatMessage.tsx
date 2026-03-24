@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ArrowDownToLine, Copy, Check, RotateCcw } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex, Box } from '@radix-ui/themes';
 import { useWritingStore } from '../../store/writingStore';
 import { useChatPaneStore, type ChatMessage as ChatMessageType } from '../../store/chatPaneStore';
 import { copyToClipboard } from '../../utils/clipboard';
@@ -38,18 +38,18 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
 
   if (isUser) {
     return (
-      <div className="flex justify-end mb-3 dark">
-        <div className="max-w-[85%] bg-mission-control-accent text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm">
+      <Flex justify="end" mb="3" className="dark">
+        <Box className="max-w-[85%] bg-mission-control-accent text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm">
           <p className="whitespace-pre-wrap">{message.content}</p>
-        </div>
-      </div>
+        </Box>
+      </Flex>
     );
   }
 
   // Assistant message
   return (
-    <div className="flex justify-start mb-3 group dark">
-      <div className="max-w-[90%]">
+    <Flex justify="start" mb="3" className="group dark">
+      <Box className="max-w-[90%]">
         <div className="text-xs text-mission-control-text-dim mb-1 capitalize">{message.agent}</div>
         <div className="bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm text-sm text-mission-control-text">
           {isStreaming ? (
@@ -65,7 +65,7 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
         </div>
         {/* Action buttons — visible on hover, hidden while streaming */}
         {!isStreaming && message.content && (
-          <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Flex align="center" gap="1" mt="1" className="opacity-0 group-hover:opacity-100 transition-opacity">
             {message.insertedToEditor ? (
               <span className="flex items-center gap-1 text-xs text-mission-control-accent/70 px-1.5 py-0.5">
                 <Check className="w-3 h-3" />
@@ -102,9 +102,9 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
                 Retry
               </Button>
             )}
-          </div>
+          </Flex>
         )}
-      </div>
-    </div>
+      </Box>
+    </Flex>
   );
 }

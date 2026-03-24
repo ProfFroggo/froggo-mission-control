@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { Share2, Plus, MessageSquare, Settings, Columns3, AtSign, Search, BarChart2, SlidersHorizontal } from 'lucide-react';
-import { Button, IconButton, Flex } from '@radix-ui/themes';
+import { Button, IconButton, Flex, Box } from '@radix-ui/themes';
 import type { XTab } from './XTwitterPage';
 import XAgentChatPane from './XAgentChatPane';
 import TabNav, { type TabNavItem } from './TabNav';
@@ -59,22 +59,22 @@ export default function XSocialLayout({
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg text-mission-control-text">
       {/* Header */}
-      <div className="border-b border-mission-control-border bg-mission-control-surface">
+      <Box className="border-b border-mission-control-border bg-mission-control-surface">
         {/* Title row */}
-        <div className="flex items-center justify-between px-4 py-2.5">
+        <Flex align="center" justify="between" px="4" py="2">
           {/* Left: branding */}
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-mission-control-accent/20 rounded-lg">
+          <Flex align="center" gap="3">
+            <Box p="2" className="bg-mission-control-accent/20 rounded-lg">
               <Share2 size={18} className="text-mission-control-accent" />
-            </div>
-            <div>
+            </Box>
+            <Box>
               <h1 className="text-xl font-semibold text-mission-control-text leading-tight">Social</h1>
               <p className="text-sm text-mission-control-text-dim leading-tight">X / Twitter management</p>
-            </div>
-          </div>
+            </Box>
+          </Flex>
 
           {/* Right: approval badge + chat toggle + settings + compose */}
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             {approvalBadge}
 
             <Button
@@ -108,8 +108,8 @@ export default function XSocialLayout({
               <Plus size={15} />
               Compose
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Tab bar */}
         <TabNav
@@ -118,28 +118,28 @@ export default function XSocialLayout({
           onTabChange={(id) => onTabChange(id as XTab)}
           paddingX="px-4"
         />
-      </div>
+      </Box>
 
       {/* Content area */}
-      <div className="flex-1 flex overflow-hidden">
+      <Flex height="100%" className="flex-1 overflow-hidden">
         {/* Main content */}
-        <div className="flex-1 overflow-hidden">
+        <Box className="flex-1 overflow-hidden">
           {children}
-        </div>
+        </Box>
 
         {/* Agent chat slide-in panel */}
-        <div
+        <Box
           className={`flex-shrink-0 border-l border-mission-control-border bg-mission-control-surface transition-all duration-200 ease-in-out overflow-hidden ${
             chatOpen ? 'w-[380px]' : 'w-0 border-l-0'
           }`}
         >
           {chatOpen && (
-            <div className="w-[380px] h-full">
+            <Box className="w-[380px] h-full">
               <XAgentChatPane tab={activeTab} />
-            </div>
+            </Box>
           )}
-        </div>
-      </div>
+        </Box>
+      </Flex>
     </Flex>
   );
 }

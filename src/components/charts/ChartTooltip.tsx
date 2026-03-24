@@ -4,6 +4,8 @@
  * Usage: <Tooltip content={<ChartTooltip />} />
  */
 
+import { Box, Flex } from '@radix-ui/themes';
+
 interface TooltipEntry {
   name: string;
   value: number | string;
@@ -31,20 +33,20 @@ export default function ChartTooltip({
   const displayLabel = labelFormatter ? labelFormatter(label ?? '') : label;
 
   return (
-    <div
+    <Box
       className="min-w-[130px] rounded-xl border border-mission-control-border bg-mission-control-surface px-3 py-2.5 shadow-2xl shadow-black/40 text-xs"
       style={{ backdropFilter: 'blur(8px)' }}
     >
       {displayLabel && (
         <p className="mb-2 font-medium text-mission-control-text-dim">{displayLabel}</p>
       )}
-      <div className="flex flex-col gap-1.5">
+      <Flex direction="column" gap="1">
         {payload.map((entry) => {
           const displayValue = valueFormatter
             ? valueFormatter(entry.value, entry.name)
             : String(entry.value);
           return (
-            <div key={entry.name} className="flex items-center justify-between gap-5">
+            <Flex key={entry.name} align="center" justify="between" gap="5">
               <span className="flex items-center gap-1.5 text-mission-control-text-dim">
                 <span
                   className="w-2 h-2 rounded-full flex-shrink-0"
@@ -59,10 +61,10 @@ export default function ChartTooltip({
                 {displayValue}
                 {entry.unit && <span className="font-normal opacity-70 ml-0.5">{entry.unit}</span>}
               </span>
-            </div>
+            </Flex>
           );
         })}
-      </div>
-    </div>
+      </Flex>
+    </Box>
   );
 }
