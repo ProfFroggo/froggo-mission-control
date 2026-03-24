@@ -1152,7 +1152,7 @@ export default function KnowledgeBase() {
                       {isDone ? (
                         <Check size={11} className="text-white" />
                       ) : isActive ? (
-                        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                        <div className="w-2 h-2 bg-mission-control-surface rounded-full animate-pulse" />
                       ) : (
                         <div className="w-2 h-2 bg-mission-control-text-dim/30 rounded-full" />
                       )}

@@ -311,7 +311,7 @@ export function BaseModalHeader({
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <h2 id={titleId} className="text-base font-semibold text-mission-control-text">
+          <h2 id={titleId} className="text-lg font-semibold text-mission-control-text">
             {title}
           </h2>
           {subtitle && (

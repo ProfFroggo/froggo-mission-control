@@ -486,7 +486,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 key={`preview-${selectedArtifact.id}-${reloadKey}`}
                 srcDoc={selectedArtifact.content}
                 sandbox="allow-scripts allow-forms allow-popups"
-                className="w-full h-full border-0 rounded-b-lg bg-white"
+                className="w-full h-full border-0 rounded-b-lg bg-mission-control-surface"
                 title={selectedArtifact.title}
                 style={{ minHeight: '400px' }}
               />
