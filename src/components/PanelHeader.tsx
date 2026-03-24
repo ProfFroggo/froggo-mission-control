@@ -17,7 +17,7 @@
 
 import React, { ReactNode, isValidElement } from 'react';
 import { LucideIcon } from 'lucide-react';
-import { Button, IconButton, Spinner, Badge } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, Badge, Flex, Box } from '@radix-ui/themes';
 
 /** Renders an icon prop that may be a Lucide component (function or forwardRef object) or a pre-rendered ReactNode. */
 function renderIcon(Icon: LucideIcon | ReactNode, size: number, className: string) {
@@ -64,80 +64,88 @@ export default function PanelHeader({
 }: PanelHeaderProps) {
   if (variant === 'compact') {
     return (
-      <div
-        className={`flex items-center justify-between px-4 py-3 bg-mission-control-surface${border ? ' border-b border-mission-control-border' : ''}`}
+      <Flex
+        align="center"
+        justify="between"
+        px="4"
+        py="3"
+        className={`bg-mission-control-surface${border ? ' border-b border-mission-control-border' : ''}`}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <Flex align="center" gap="2" className="min-w-0 flex-1">
           {Icon && (
-            <div className="flex-shrink-0">
+            <Box className="flex-shrink-0">
               {renderIcon(Icon, 16, 'text-mission-control-accent')}
-            </div>
+            </Box>
           )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+          <Box className="min-w-0 flex-1">
+            <Flex align="center" gap="2">
               <h2 className="text-sm font-semibold text-mission-control-text truncate">{title}</h2>
               {badge !== undefined && (
                 <Badge color="violet" variant="soft" size="1">{badge}</Badge>
               )}
-            </div>
+            </Flex>
             {subtitle && (
-              <div className="text-xs text-mission-control-text-dim mt-0.5">{subtitle}</div>
+              <Box mt="1" className="text-xs text-mission-control-text-dim">{subtitle}</Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Flex>
         {((actions && actions.length > 0) || children) && (
-          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+          <Flex align="center" gap="1" ml="2" className="flex-shrink-0">
             {renderActions(actions)}
             {children}
-          </div>
+          </Flex>
         )}
-      </div>
+      </Flex>
     );
   }
 
   // Default: Library-style header
   return (
-    <div
-      className={`flex items-start justify-between p-6 pb-4 bg-mission-control-surface${border ? ' border-b border-mission-control-border' : ''}`}
+    <Flex
+      align="start"
+      justify="between"
+      p="6"
+      pb="4"
+      className={`bg-mission-control-surface${border ? ' border-b border-mission-control-border' : ''}`}
     >
       {/* Left: icon-in-box + title + subtitle */}
-      <div className="flex items-center gap-3">
+      <Flex align="center" gap="3">
         {Icon && (
-          <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+          <Box p="2" className="bg-mission-control-accent/20 rounded-lg flex-shrink-0">
             {renderIcon(Icon, 24, 'text-mission-control-accent')}
-          </div>
+          </Box>
         )}
-        <div>
-          <div className="flex items-center gap-2">
+        <Box>
+          <Flex align="center" gap="2">
             <h2 className="text-xl font-semibold text-mission-control-text">{title}</h2>
             {badge !== undefined && (
               <Badge color="violet" variant="soft" size="2">{badge}</Badge>
             )}
-          </div>
+          </Flex>
           {subtitle && (
             <p className="text-sm text-mission-control-text-dim mt-0.5">{subtitle}</p>
           )}
           {stats && stats.length > 0 && (
-            <div className="flex items-center gap-3 text-xs text-mission-control-text-dim mt-1 tabular-nums font-mono">
+            <Flex align="center" gap="3" mt="1" className="text-xs text-mission-control-text-dim tabular-nums font-mono">
               {stats.map((stat) => (
-                <div key={stat.label} className="flex items-center gap-1">
+                <Flex key={stat.label} align="center" gap="1">
                   <span className={stat.color || 'text-mission-control-text'}>{stat.value}</span>
                   <span>{stat.label}</span>
-                </div>
+                </Flex>
               ))}
-            </div>
+            </Flex>
           )}
-        </div>
-      </div>
+        </Box>
+      </Flex>
 
       {/* Right: actions */}
       {((actions && actions.length > 0) || children) && (
-        <div className="flex items-center gap-1 flex-shrink-0 ml-4">
+        <Flex align="center" gap="1" ml="4" className="flex-shrink-0">
           {renderActions(actions)}
           {children}
-        </div>
+        </Flex>
       )}
-    </div>
+    </Flex>
   );
 }
 
