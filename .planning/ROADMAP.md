@@ -740,3 +740,15 @@ Plans:
 | 84. Settings, Config & Modals | v8.0 | 0/? | Not started | - |
 | 85. Remaining Components Sweep | v8.0 | 0/? | Not started | - |
 | 86. Tailwind Removal & Build Clean | v8.0 | 0/? | Not started | - |
+| 87. Tasteful Glass Design System | v8.0 | 0/? | Not started | - |
+
+#### Phase 87: Tasteful Glass Design System
+
+**Goal**: Introduce a cohesive frosted-glass aesthetic throughout the app. Panels, sidebars, modals, and cards use semi-transparent backgrounds with `backdrop-filter` blur, letting the SVG gradient breathe through. Depth hierarchy: primary surfaces lighter glass, nested panels darker. No hollow panels — every surface has clear visual weight.
+**Depends on**: Phase 86 (Tailwind removed, Radix layout in place — clean foundation)
+**Research**: Unlikely (CSS `backdrop-filter`, `color-mix`, design tokens already established)
+**Plans**: TBD
+
+Plans:
+- [ ] 87-01: TBD
+

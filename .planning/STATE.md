@@ -15,7 +15,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-03-24 — Milestone v8.0 created
 
-Progress (v8.0 Tailwind → Radix UI): ░░░░░░░░░░ 0% (0/10 phases)
+Progress (v8.0 Tailwind → Radix UI): ░░░░░░░░░░ 0% (0/11 phases)
 Progress (v7.0 Design Consistency): ██████████ 100% (26/26 phases)
 Progress (Agent Autonomy): ███░░░░░░░ 30% (Phases 1-10, paused at Phase 4)
 Progress (Social Module):  ██████████ 100% (12/12 phases complete)
