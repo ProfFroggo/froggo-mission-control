@@ -4,6 +4,7 @@ import {
   Target, Plus, CheckCircle2, Trash2, Clock,
   ChevronRight, RefreshCw, AlertTriangle,
 } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface Goal {
@@ -220,25 +221,29 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
           )}
         </div>
         <div className="flex items-center gap-1">
-          <button
+          <IconButton
             type="button"
+            size="1"
+            variant="ghost"
+            radius="medium"
             onClick={fetchGoals}
             disabled={loading}
-            className="icon-btn border border-mission-control-border disabled:opacity-50"
             title="Refresh goals"
             aria-label="Refresh goals"
           >
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             type="button"
+            size="1"
+            variant="ghost"
+            radius="medium"
             onClick={() => setShowForm(v => !v)}
-            className="icon-btn border border-mission-control-border"
             title="Add goal"
             aria-label="Add new goal"
           >
             <Plus size={12} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -258,12 +263,11 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
             <label className="block text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
               Goal title
             </label>
-            <input
-              type="text"
+            <TextField.Root
               value={formTitle}
               onChange={e => setFormTitle(e.target.value)}
               placeholder="e.g. Reach 90% success rate"
-              className="w-full"
+              size="2"
               required
               maxLength={200}
             />
@@ -273,12 +277,11 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
               <label className="block text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
                 Target
               </label>
-              <input
-                type="text"
+              <TextField.Root
                 value={formTarget}
                 onChange={e => setFormTarget(e.target.value)}
                 placeholder="e.g. 90 or complete"
-                className="w-full"
+                size="2"
                 maxLength={200}
               />
             </div>
@@ -286,29 +289,32 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
               <label className="block text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
                 Deadline
               </label>
-              <input
+              <TextField.Root
                 type="date"
                 value={formDeadline}
                 onChange={e => setFormDeadline(e.target.value)}
-                className="w-full"
+                size="2"
               />
             </div>
           </div>
           <div className="flex items-center gap-2 pt-1">
-            <button
+            <Button
               type="submit"
+              size="2"
+              variant="solid"
               disabled={formSubmitting || !formTitle.trim()}
-              className="flex-1 py-2 text-xs font-medium rounded-lg bg-mission-control-accent text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              style={{ flex: 1 }}
             >
               {formSubmitting ? 'Adding...' : 'Add goal'}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              size="2"
+              variant="ghost"
               onClick={() => setShowForm(false)}
-              className="px-3 py-2 text-xs font-medium rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -317,13 +323,14 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
         <div className="rounded-lg border border-mission-control-border p-6 text-center space-y-2">
           <Target size={24} className="mx-auto text-mission-control-text-dim opacity-40" />
           <p className="text-sm text-mission-control-text-dim">No goals set yet</p>
-          <button
+          <Button
             type="button"
+            size="1"
+            variant="ghost"
             onClick={() => setShowForm(true)}
-            className="text-xs text-mission-control-accent hover:underline"
           >
             Add the first goal
-          </button>
+          </Button>
         </div>
       )}
 
@@ -338,25 +345,31 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
                 <span className="text-sm font-medium text-mission-control-text leading-snug flex-1">{goal.title}</span>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {goal.status !== 'completed' && (
-                    <button
+                    <IconButton
                       type="button"
+                      size="1"
+                      variant="ghost"
+                      radius="medium"
+                      color="green"
                       onClick={() => handleMarkComplete(goal.id, goal.title)}
-                      className="icon-btn text-success hover:bg-success-subtle"
                       title="Mark complete"
                       aria-label="Mark goal complete"
                     >
                       <CheckCircle2 size={13} />
-                    </button>
+                    </IconButton>
                   )}
-                  <button
+                  <IconButton
                     type="button"
+                    size="1"
+                    variant="ghost"
+                    radius="medium"
+                    color="red"
                     onClick={() => handleDeleteGoal(goal.id)}
-                    className="icon-btn text-error hover:bg-error-subtle"
                     title="Delete goal"
                     aria-label="Delete goal"
                   >
                     <Trash2 size={13} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
 
@@ -364,47 +377,51 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
 
               <div className="flex items-center justify-between">
                 {goal.deadline && <DeadlineBadge deadline={goal.deadline} />}
-                <button
+                <Button
                   type="button"
+                  size="1"
+                  variant="ghost"
                   onClick={() => {
                     setEditingGoalId(goal.id === editingGoalId ? null : goal.id);
                     setEditCurrent(goal.current);
                   }}
-                  className="ml-auto inline-flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                  style={{ marginLeft: 'auto' }}
                 >
                   Update progress
                   <ChevronRight size={10} />
-                </button>
+                </Button>
               </div>
 
               {editingGoalId === goal.id && (
                 <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="text"
+                  <TextField.Root
                     value={editCurrent}
                     onChange={e => setEditCurrent(e.target.value)}
                     placeholder="Current value"
-                    className="flex-1 text-xs"
+                    size="1"
                     autoFocus
                     onKeyDown={e => {
                       if (e.key === 'Enter') void handleUpdateProgress(goal.id);
                       if (e.key === 'Escape') setEditingGoalId(null);
                     }}
+                    style={{ flex: 1 }}
                   />
-                  <button
+                  <Button
                     type="button"
+                    size="1"
+                    variant="solid"
                     onClick={() => void handleUpdateProgress(goal.id)}
-                    className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-mission-control-accent text-white hover:opacity-90 transition-opacity"
                   >
                     Save
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    size="1"
+                    variant="ghost"
                     onClick={() => setEditingGoalId(null)}
-                    className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

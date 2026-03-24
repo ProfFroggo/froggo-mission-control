@@ -1,5 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useRef, useEffect, lazy } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { AsyncBoundary } from './AsyncBoundary';
 import {
   BarChart2,
@@ -317,51 +318,56 @@ export default function AnalyticsDashboard() {
             {/* Date range presets */}
             <div className="flex bg-mission-control-border rounded-lg p-1 gap-0.5 flex-wrap">
               {DATE_PRESETS.map((preset) => (
-                <button
+                <Button
                   key={preset.label}
                   onClick={() => applyPreset(preset)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-                    activePreset === preset.label
-                      ? 'bg-mission-control-accent text-white'
-                      : 'text-mission-control-text-dim hover:text-mission-control-text'
-                  }`}
+                  size="1"
+                  variant={activePreset === preset.label ? 'solid' : 'ghost'}
+                  radius="medium"
+                  className="whitespace-nowrap"
                 >
                   {preset.label}
-                </button>
+                </Button>
               ))}
             </div>
 
-            <button
+            <Button
               onClick={() => setShowAgentComparison(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
+              size="2"
+              variant="outline"
+              radius="medium"
               title="Compare Agents"
             >
               <GitCompare size={16} />
-              <span className="text-sm">Compare</span>
-            </button>
+              Compare
+            </Button>
 
-            <button
+            <IconButton
               onClick={handleRefresh}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
               title="Refresh Data"
             >
               <RefreshCw size={16} />
-            </button>
+            </IconButton>
 
             {/* Export dropdown */}
             <div className="relative" ref={exportMenuRef}>
-              <button
+              <Button
                 onClick={() => setShowExportMenu((v) => !v)}
                 disabled={exportBusy}
-                className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-60"
+                size="2"
+                variant="solid"
+                radius="medium"
               >
                 <Download size={16} />
-                <span className="text-sm">{exportBusy ? 'Exporting…' : 'Export'}</span>
+                {exportBusy ? 'Exporting…' : 'Export'}
                 <ChevronDown
                   size={14}
                   className={`transition-transform ${showExportMenu ? 'rotate-180' : ''}`}
                 />
-              </button>
+              </Button>
 
               {showExportMenu && (
                 <div className="absolute right-0 top-full mt-1 z-50 w-64 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg overflow-hidden">
@@ -374,15 +380,20 @@ export default function AnalyticsDashboard() {
                         key={`csv-${t}`}
                         className="flex items-center justify-between hover:bg-mission-control-border/40 transition-colors"
                       >
-                        <button
+                        <Button
                           onClick={() => handleExport(t, 'csv')}
-                          className="flex-1 text-left px-3 py-2 text-sm capitalize"
+                          variant="ghost"
+                          size="1"
+                          radius="none"
+                          className="flex-1 justify-start px-3 py-2 capitalize"
                         >
                           {t.replace('-', ' ')} CSV
-                        </button>
-                        <button
+                        </Button>
+                        <IconButton
                           onClick={() => handleExportAndCopy(t, 'csv')}
-                          className="px-3 py-2 text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                          size="1"
+                          variant="ghost"
+                          radius="medium"
                           title="Export and copy to clipboard"
                         >
                           {copiedExport === `${t}-csv` ? (
@@ -390,7 +401,7 @@ export default function AnalyticsDashboard() {
                           ) : (
                             <Copy size={12} />
                           )}
-                        </button>
+                        </IconButton>
                       </div>
                     )
                   )}
@@ -403,15 +414,20 @@ export default function AnalyticsDashboard() {
                         key={`json-${t}`}
                         className="flex items-center justify-between hover:bg-mission-control-border/40 transition-colors"
                       >
-                        <button
+                        <Button
                           onClick={() => handleExport(t, 'json')}
-                          className="flex-1 text-left px-3 py-2 text-sm capitalize"
+                          variant="ghost"
+                          size="1"
+                          radius="none"
+                          className="flex-1 justify-start px-3 py-2 capitalize"
                         >
                           {t.replace('-', ' ')} JSON
-                        </button>
-                        <button
+                        </Button>
+                        <IconButton
                           onClick={() => handleExportAndCopy(t, 'json')}
-                          className="px-3 py-2 text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                          size="1"
+                          variant="ghost"
+                          radius="medium"
                           title="Export and copy to clipboard"
                         >
                           {copiedExport === `${t}-json` ? (
@@ -419,7 +435,7 @@ export default function AnalyticsDashboard() {
                           ) : (
                             <Copy size={12} />
                           )}
-                        </button>
+                        </IconButton>
                       </div>
                     )
                   )}
@@ -434,19 +450,18 @@ export default function AnalyticsDashboard() {
           {TABS.map((tab) => {
             const Icon = tab.icon;
             return (
-              <button
+              <Button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap group ${
-                  activeTab === tab.id
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border'
-                }`}
+                size="2"
+                variant={activeTab === tab.id ? 'solid' : 'ghost'}
+                radius="medium"
+                className="whitespace-nowrap"
                 title={tab.description}
               >
                 <Icon size={16} />
                 {tab.label}
-              </button>
+              </Button>
             );
           })}
         </div>

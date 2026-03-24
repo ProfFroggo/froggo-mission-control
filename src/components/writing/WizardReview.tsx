@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
+import { Button, IconButton, TextField, Select, TextArea } from '@radix-ui/themes';
 
 export default function WizardReview() {
   const { plan, updatePlan, setStep, cancelWizard, sessionId } = useWizardStore();
@@ -37,13 +38,12 @@ export default function WizardReview() {
         <div className="text-center p-8">
           <AlertCircle size={32} className="mx-auto text-error mb-3" />
           <p className="text-mission-control-text text-sm font-medium">No plan to review</p>
-          <button
-            onClick={() => setStep('conversation')}
-            className="mt-4 flex items-center gap-1.5 mx-auto px-4 py-2 rounded-lg border border-mission-control-border text-sm text-mission-control-text-dim hover:border-mission-control-accent transition-colors"
-          >
-            <ArrowLeft size={14} />
-            Back to Chat
-          </button>
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => setStep('conversation')} variant="ghost" size="2">
+              <ArrowLeft size={14} />
+              Back to Chat
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -138,9 +138,6 @@ export default function WizardReview() {
 
   // ── Shared styles ──
 
-  const inputClass =
-    'w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent';
-  const textareaClass = `${inputClass} resize-y min-h-[60px]`;
   const labelClass = 'block text-xs font-medium text-mission-control-text-dim mb-1.5';
   const sectionClass = 'space-y-3 pb-5 border-b border-mission-control-border';
 
@@ -171,36 +168,33 @@ export default function WizardReview() {
         <div className={sectionClass}>
           <div>
             <label htmlFor="plan-title" className={labelClass}>Title</label>
-            <input
+            <TextField.Root
               id="plan-title"
-              type="text"
               value={plan.title}
               onChange={(e) => updateField('title', e.target.value)}
-              className={inputClass}
               placeholder="Book title"
+              size="2"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="plan-type" className={labelClass}>Type</label>
-              <input
+              <TextField.Root
                 id="plan-type"
-                type="text"
                 value={plan.type}
                 onChange={(e) => updateField('type', e.target.value)}
-                className={inputClass}
                 placeholder="e.g. novel, memoir"
+                size="2"
               />
             </div>
             <div>
               <label htmlFor="plan-genre" className={labelClass}>Genre</label>
-              <input
+              <TextField.Root
                 id="plan-genre"
-                type="text"
                 value={plan.genre}
                 onChange={(e) => updateField('genre', e.target.value)}
-                className={inputClass}
                 placeholder="e.g. literary fiction"
+                size="2"
               />
             </div>
           </div>
@@ -209,13 +203,13 @@ export default function WizardReview() {
         {/* Premise */}
         <div className={sectionClass}>
           <label htmlFor="plan-premise" className={labelClass}>Premise</label>
-          <textarea
+          <TextArea
             id="plan-premise"
             value={plan.premise}
             onChange={(e) => updateField('premise', e.target.value)}
-            className={textareaClass}
             rows={3}
             placeholder="One-paragraph premise"
+            size="2"
           />
         </div>
 
@@ -229,44 +223,48 @@ export default function WizardReview() {
                 className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20"
               >
                 {theme}
-                <button
+                <IconButton
+                  size="1"
+                  variant="ghost"
+                  radius="medium"
                   onClick={() => removeTheme(i)}
-                  className="hover:text-error transition-colors"
                 >
                   <X size={10} />
-                </button>
+                </IconButton>
               </span>
             ))}
           </div>
           <div className="flex gap-2">
-            <input
-              type="text"
+            <TextField.Root
               value={newTheme}
               onChange={(e) => setNewTheme(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTheme())}
-              className={inputClass}
               placeholder="Add a theme"
+              size="2"
+              style={{ flex: 1 }}
             />
-            <button
+            <IconButton
+              size="2"
+              variant="soft"
+              radius="medium"
               onClick={addTheme}
               disabled={!newTheme.trim()}
-              className="px-3 py-2 rounded-lg bg-mission-control-accent/10 text-mission-control-accent text-xs font-medium hover:bg-mission-control-accent/20 transition-colors disabled:opacity-40"
             >
               <Plus size={14} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
         {/* Story Arc */}
         <div className={sectionClass}>
           <label htmlFor="plan-story-arc" className={labelClass}>Story Arc</label>
-          <textarea
+          <TextArea
             id="plan-story-arc"
             value={plan.storyArc}
             onChange={(e) => updateField('storyArc', e.target.value)}
-            className={textareaClass}
             rows={4}
             placeholder="Overview of the story arc"
+            size="2"
           />
         </div>
 
@@ -282,37 +280,38 @@ export default function WizardReview() {
                   <span className="text-xs text-mission-control-text-dim font-mono w-6 text-right flex-shrink-0">
                     {i + 1}.
                   </span>
-                  <input
-                    type="text"
+                  <TextField.Root
                     value={ch.title}
                     onChange={(e) => updateChapter(i, 'title', e.target.value)}
-                    className={`${inputClass} flex-1`}
                     placeholder="Chapter title"
+                    size="2"
+                    style={{ flex: 1 }}
                   />
-                  <button
+                  <IconButton
+                    size="2"
+                    variant="ghost"
+                    radius="medium"
                     onClick={() => removeChapter(i)}
-                    className="p-1.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                   >
                     <Trash2 size={14} />
-                  </button>
+                  </IconButton>
                 </div>
-                <textarea
-                  value={ch.synopsis}
-                  onChange={(e) => updateChapter(i, 'synopsis', e.target.value)}
-                  className={`${textareaClass} ml-8`}
-                  rows={2}
-                  placeholder="Chapter synopsis"
-                />
+                <div className="ml-8">
+                  <TextArea
+                    value={ch.synopsis}
+                    onChange={(e) => updateChapter(i, 'synopsis', e.target.value)}
+                    rows={2}
+                    placeholder="Chapter synopsis"
+                    size="2"
+                  />
+                </div>
               </div>
             ))}
           </div>
-          <button
-            onClick={addChapter}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-mission-control-accent hover:bg-mission-control-accent/10 transition-colors"
-          >
+          <Button onClick={addChapter} size="2" variant="ghost">
             <Plus size={14} />
             Add Chapter
-          </button>
+          </Button>
         </div>
 
         {/* Characters */}
@@ -324,60 +323,62 @@ export default function WizardReview() {
             {plan.characters.map((c, i) => (
               <div key={i} className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-2">
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
+                  <TextField.Root
                     value={c.name}
                     onChange={(e) => updateCharacter(i, 'name', e.target.value)}
-                    className={`${inputClass} flex-1`}
                     placeholder="Character name"
+                    size="2"
+                    style={{ flex: 1 }}
                   />
-                  <select
+                  <Select.Root
                     value={
                       ['protagonist', 'antagonist', 'supporting', 'narrator'].includes(c.role)
                         ? c.role
                         : '_custom'
                     }
-                    onChange={(e) => {
-                      const val = e.target.value;
+                    onValueChange={(val) => {
                       if (val !== '_custom') updateCharacter(i, 'role', val);
                     }}
-                    className="px-2 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
+                    size="2"
                   >
-                    <option value="protagonist">Protagonist</option>
-                    <option value="antagonist">Antagonist</option>
-                    <option value="supporting">Supporting</option>
-                    <option value="narrator">Narrator</option>
-                    <option value="_custom">Custom...</option>
-                  </select>
-                  <button
+                    <Select.Trigger />
+                    <Select.Content>
+                      <Select.Item value="protagonist">Protagonist</Select.Item>
+                      <Select.Item value="antagonist">Antagonist</Select.Item>
+                      <Select.Item value="supporting">Supporting</Select.Item>
+                      <Select.Item value="narrator">Narrator</Select.Item>
+                      <Select.Item value="_custom">Custom...</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
+                  <IconButton
+                    size="2"
+                    variant="ghost"
+                    radius="medium"
                     onClick={() => removeCharacter(i)}
-                    className="p-1.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                   >
                     <Trash2 size={14} />
-                  </button>
+                  </IconButton>
                 </div>
                 {/* Custom role input */}
                 {!['protagonist', 'antagonist', 'supporting', 'narrator'].includes(c.role) && (
-                  <input
-                    type="text"
+                  <TextField.Root
                     value={c.role}
                     onChange={(e) => updateCharacter(i, 'role', e.target.value)}
-                    className={inputClass}
                     placeholder="Custom role"
+                    size="2"
                   />
                 )}
-                <textarea
+                <TextArea
                   value={c.description}
                   onChange={(e) => updateCharacter(i, 'description', e.target.value)}
-                  className={textareaClass}
                   rows={2}
                   placeholder="Character description"
+                  size="2"
                 />
                 <div>
                   <label htmlFor={`character-traits-${i}`} className="text-[10px] text-mission-control-text-dim">Traits (comma-separated)</label>
-                  <input
+                  <TextField.Root
                     id={`character-traits-${i}`}
-                    type="text"
                     value={c.traits.join(', ')}
                     onChange={(e) =>
                       updateCharacter(
@@ -386,20 +387,17 @@ export default function WizardReview() {
                         e.target.value.split(',').map((t) => t.trim()).filter(Boolean)
                       )
                     }
-                    className={inputClass}
                     placeholder="brave, cunning, compassionate"
+                    size="2"
                   />
                 </div>
               </div>
             ))}
           </div>
-          <button
-            onClick={addCharacter}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-mission-control-accent hover:bg-mission-control-accent/10 transition-colors"
-          >
+          <Button onClick={addCharacter} size="2" variant="ghost">
             <Plus size={14} />
             Add Character
-          </button>
+          </Button>
         </div>
 
         {/* Timeline */}
@@ -411,62 +409,58 @@ export default function WizardReview() {
             {plan.timeline.map((evt, i) => (
               <div key={i} className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-2">
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
+                  <TextField.Root
                     value={evt.date}
                     onChange={(e) => updateTimelineEvent(i, 'date', e.target.value)}
-                    className={`${inputClass} w-40`}
                     placeholder="Date / period"
+                    size="2"
+                    style={{ width: 160 }}
                   />
-                  <textarea
-                    value={evt.description}
-                    onChange={(e) => updateTimelineEvent(i, 'description', e.target.value)}
-                    className={`${textareaClass} flex-1`}
-                    rows={1}
-                    placeholder="Event description"
-                  />
-                  <button
+                  <div style={{ flex: 1 }}>
+                    <TextArea
+                      value={evt.description}
+                      onChange={(e) => updateTimelineEvent(i, 'description', e.target.value)}
+                      rows={1}
+                      placeholder="Event description"
+                      size="2"
+                    />
+                  </div>
+                  <IconButton
+                    size="2"
+                    variant="ghost"
+                    radius="medium"
                     onClick={() => removeTimelineEvent(i)}
-                    className="p-1.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                   >
                     <Trash2 size={14} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             ))}
           </div>
-          <button
-            onClick={addTimelineEvent}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-mission-control-accent hover:bg-mission-control-accent/10 transition-colors"
-          >
+          <Button onClick={addTimelineEvent} size="2" variant="ghost">
             <Plus size={14} />
             Add Event
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Bottom action bar */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-mission-control-border bg-mission-control-surface flex-shrink-0">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setStep('conversation')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
-          >
+          <Button onClick={() => setStep('conversation')} size="2" variant="ghost">
             <ArrowLeft size={14} />
             Back to Chat
-          </button>
-          <button
-            onClick={() => cancelWizard()}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
-          >
+          </Button>
+          <Button onClick={() => cancelWizard()} size="2" variant="ghost">
             <X size={14} />
             Cancel
-          </button>
+          </Button>
         </div>
-        <button
+        <Button
           onClick={handleCreate}
           disabled={creating || !plan.title.trim() || plan.chapters.length === 0}
-          className="flex items-center gap-2 px-5 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          size="2"
+          variant="solid"
         >
           {creating ? (
             <>
@@ -479,7 +473,7 @@ export default function WizardReview() {
               Create Project
             </>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

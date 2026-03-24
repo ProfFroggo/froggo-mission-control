@@ -2,6 +2,7 @@
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import {
   Megaphone, Plus, Search, RefreshCw, AlertCircle, LayoutGrid, List
 } from 'lucide-react';
@@ -44,12 +45,13 @@ function EmptyCampaigns({ onNew }: { onNew: () => void }) {
       <p className="text-sm text-mission-control-text-dim max-w-xs mb-6">
         Create a campaign to plan, track and measure your marketing efforts across all channels.
       </p>
-      <button
+      <Button
         onClick={onNew}
-        className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-sm font-medium"
+        size="2"
+        variant="solid"
       >
         <Plus size={16} /> Create your first campaign
-      </button>
+      </Button>
     </div>
   );
 }
@@ -135,36 +137,43 @@ export default function CampaignsPanel() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <IconButton
             onClick={() => load(false)}
             disabled={refreshing}
-            className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
             title="Refresh"
           >
             <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
           <div className="flex items-center rounded-lg border border-mission-control-border overflow-hidden">
-            <button
+            <IconButton
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
+              size="2"
+              variant={viewMode === 'grid' ? 'solid' : 'ghost'}
+              radius="none"
               title="Grid view"
             >
               <LayoutGrid size={14} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               onClick={() => setViewMode('list')}
-              className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
+              size="2"
+              variant={viewMode === 'list' ? 'solid' : 'ghost'}
+              radius="none"
               title="List view"
             >
               <List size={14} />
-            </button>
+            </IconButton>
           </div>
-          <button
+          <Button
             onClick={() => setShowCreateWizard(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-sm font-medium"
+            size="2"
+            variant="solid"
           >
             <Plus size={15} /> New Campaign
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -172,29 +181,29 @@ export default function CampaignsPanel() {
       <div className="flex flex-col gap-2 px-6 py-3 border-b border-mission-control-border">
         {/* Search + status tabs */}
         <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-xs">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
+          <div className="flex-1 max-w-xs">
+            <TextField.Root
               placeholder="Search campaigns..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
-            />
+              size="2"
+            >
+              <TextField.Slot>
+                <Search size={14} />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
           <div className="flex items-center gap-1">
             {STATUS_FILTERS.map(f => (
-              <button
+              <Button
                 key={f.value}
                 onClick={() => setStatusFilter(f.value)}
-                className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                  statusFilter === f.value
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
-                }`}
+                size="1"
+                variant={statusFilter === f.value ? 'solid' : 'ghost'}
+                radius="full"
               >
                 {f.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -202,17 +211,15 @@ export default function CampaignsPanel() {
         {/* Type filters */}
         <div className="flex items-center gap-1 flex-wrap">
           {TYPE_FILTERS.map(f => (
-            <button
+            <Button
               key={f.value}
               onClick={() => setTypeFilter(f.value)}
-              className={`px-2.5 py-0.5 text-xs rounded-full transition-colors border ${
-                typeFilter === f.value
-                  ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent/40'
-                  : 'text-mission-control-text-dim border-mission-control-border hover:text-mission-control-text hover:bg-mission-control-surface'
-              }`}
+              size="1"
+              variant={typeFilter === f.value ? 'soft' : 'outline'}
+              radius="full"
             >
               {f.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

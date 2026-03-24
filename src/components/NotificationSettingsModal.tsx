@@ -9,6 +9,7 @@ import {
   Hash, AlertCircle, X, Settings, Save, Trash2,
   ZapOff, MessageSquare
 } from 'lucide-react';
+import { Button, IconButton, TextField, Select, TextArea, Checkbox, Switch } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { settingsApi } from '../lib/api';
 
@@ -18,10 +19,10 @@ interface NotificationSettingsModalProps {
   onClose: () => void;
 }
 
-export default function NotificationSettingsModal({ 
-  sessionKey, 
-  sessionName, 
-  onClose 
+export default function NotificationSettingsModal({
+  sessionKey,
+  sessionName,
+  onClose
 }: NotificationSettingsModalProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -69,13 +70,13 @@ export default function NotificationSettingsModal({
 
       // Load global defaults
       const defaultsResult = await settingsApi.get('notifications.defaults').catch(() => ({ success: false }));
-      
+
       if (result?.value || (result?.success && result?.settings)) {
         // Has custom settings
         setHasCustomSettings(true);
         const s = result.value || result.settings;
         setSettings(s);
-        
+
         setNotificationLevel(s.notification_level || 'all');
         setSoundEnabled(s.sound_enabled === 1);
         setSoundType(s.sound_type || 'default');
@@ -95,7 +96,7 @@ export default function NotificationSettingsModal({
         setHasCustomSettings(false);
         const d = defaultsResult.value || defaultsResult?.defaults;
         setGlobalDefaults(d);
-        
+
         setNotificationLevel(d.default_notification_level || 'all');
         setSoundEnabled(d.default_sound_enabled === 1);
         setSoundType(d.default_sound_type || 'default');
@@ -151,7 +152,7 @@ export default function NotificationSettingsModal({
 
   const handleResetToDefaults = async () => {
     if (!confirm('Reset this conversation to global notification defaults?')) return;
-    
+
     setSaving(true);
     try {
       const result = await settingsApi.set(`notifications.${sessionKey}`, null);
@@ -169,14 +170,14 @@ export default function NotificationSettingsModal({
   const handleQuickMute = async (hours: number) => {
     const until = new Date();
     until.setHours(until.getHours() + hours);
-    
+
     setSaving(true);
     try {
       const result = await settingsApi.set(`notifications.${sessionKey}`, {
         notification_level: 'none',
         mute_until: until.toISOString(),
       });
-      
+
       if (result?.success) {
         setMuteUntil(until.toISOString());
         setNotificationLevel('none');
@@ -196,7 +197,7 @@ export default function NotificationSettingsModal({
         notification_level: 'all',
         mute_until: null,
       });
-      
+
       if (result?.success) {
         setMuteUntil(null);
         setNotificationLevel('all');
@@ -233,8 +234,8 @@ export default function NotificationSettingsModal({
   }
 
   return (
-    <div 
-      className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 modal-backdrop-enter" 
+    <div
+      className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 modal-backdrop-enter"
       onClick={onClose}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
       role="button"
@@ -259,14 +260,16 @@ export default function NotificationSettingsModal({
               </span>
             )}
           </div>
-          <button
+          <IconButton
+            size="2"
+            variant="ghost"
+            radius="medium"
             onClick={onClose}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             title="Close (ESC)"
             aria-label="Close modal"
           >
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Content */}
@@ -281,13 +284,14 @@ export default function NotificationSettingsModal({
                   Until {new Date(muteUntil).toLocaleString()}
                 </p>
               </div>
-              <button
+              <Button
+                size="2"
+                variant="solid"
                 onClick={handleUnmute}
                 disabled={saving}
-                className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent/80 transition-colors disabled:opacity-50"
               >
                 Unmute
-              </button>
+              </Button>
             </div>
           )}
 
@@ -298,34 +302,18 @@ export default function NotificationSettingsModal({
               Quick Mute
             </h3>
             <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => handleQuickMute(1)}
-                disabled={saving}
-                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
-              >
+              <Button size="2" variant="ghost" onClick={() => handleQuickMute(1)} disabled={saving}>
                 1 hour
-              </button>
-              <button
-                onClick={() => handleQuickMute(4)}
-                disabled={saving}
-                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
-              >
+              </Button>
+              <Button size="2" variant="ghost" onClick={() => handleQuickMute(4)} disabled={saving}>
                 4 hours
-              </button>
-              <button
-                onClick={() => handleQuickMute(24)}
-                disabled={saving}
-                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
-              >
+              </Button>
+              <Button size="2" variant="ghost" onClick={() => handleQuickMute(24)} disabled={saving}>
                 24 hours
-              </button>
-              <button
-                onClick={() => handleQuickMute(168)}
-                disabled={saving}
-                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
-              >
+              </Button>
+              <Button size="2" variant="ghost" onClick={() => handleQuickMute(168)} disabled={saving}>
                 1 week
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -335,17 +323,15 @@ export default function NotificationSettingsModal({
               <MessageSquare size={16} />
               Notification Level
             </label>
-            <select
-              id="notification-level"
-              value={notificationLevel}
-              onChange={(e) => setNotificationLevel(e.target.value)}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="all">All messages</option>
-              <option value="mentions">Mentions only</option>
-              <option value="none">None (muted)</option>
-              <option value="custom">Custom (use keyword alerts)</option>
-            </select>
+            <Select.Root value={notificationLevel} onValueChange={setNotificationLevel} size="2">
+              <Select.Trigger id="notification-level" style={{ width: '100%' }} />
+              <Select.Content>
+                <Select.Item value="all">All messages</Select.Item>
+                <Select.Item value="mentions">Mentions only</Select.Item>
+                <Select.Item value="none">None (muted)</Select.Item>
+                <Select.Item value="custom">Custom (use keyword alerts)</Select.Item>
+              </Select.Content>
+            </Select.Root>
           </div>
 
           {/* Sound Settings */}
@@ -356,24 +342,22 @@ export default function NotificationSettingsModal({
             </label>
             <div className="space-y-3">
               <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
+                <Checkbox
+                  size="2"
                   checked={soundEnabled}
-                  onChange={(e) => setSoundEnabled(e.target.checked)}
-                  className="w-4 h-4 accent-mission-control-accent"
+                  onCheckedChange={(checked) => setSoundEnabled(checked === true)}
                 />
                 <span>Enable notification sounds</span>
               </label>
               {soundEnabled && (
-                <select
-                  value={soundType}
-                  onChange={(e) => setSoundType(e.target.value)}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
-                >
-                  <option value="default">Default</option>
-                  <option value="subtle">Subtle</option>
-                  <option value="urgent">Urgent</option>
-                </select>
+                <Select.Root value={soundType} onValueChange={setSoundType} size="2">
+                  <Select.Trigger style={{ width: '100%' }} />
+                  <Select.Content>
+                    <Select.Item value="default">Default</Select.Item>
+                    <Select.Item value="subtle">Subtle</Select.Item>
+                    <Select.Item value="urgent">Urgent</Select.Item>
+                  </Select.Content>
+                </Select.Root>
               )}
             </div>
           </div>
@@ -381,11 +365,10 @@ export default function NotificationSettingsModal({
           {/* Desktop Notifications */}
           <div>
             <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
+              <Checkbox
+                size="2"
                 checked={desktopNotifications}
-                onChange={(e) => setDesktopNotifications(e.target.checked)}
-                className="w-4 h-4 accent-mission-control-accent"
+                onCheckedChange={(checked) => setDesktopNotifications(checked === true)}
               />
               <span className="flex items-center gap-2">
                 <Bell size={16} />
@@ -402,28 +385,27 @@ export default function NotificationSettingsModal({
             </span>
             <div className="space-y-3">
               <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
+                <Checkbox
+                  size="2"
                   checked={quietHoursEnabled}
-                  onChange={(e) => setQuietHoursEnabled(e.target.checked)}
-                  className="w-4 h-4 accent-mission-control-accent"
+                  onCheckedChange={(checked) => setQuietHoursEnabled(checked === true)}
                 />
                 <span>Enable quiet hours</span>
               </label>
               {quietHoursEnabled && (
                 <div className="flex gap-3 items-center ml-7">
-                  <input
+                  <TextField.Root
                     type="time"
                     value={quietStart}
                     onChange={(e) => setQuietStart(e.target.value)}
-                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                    size="2"
                   />
                   <span className="text-mission-control-text-dim">to</span>
-                  <input
+                  <TextField.Root
                     type="time"
                     value={quietEnd}
                     onChange={(e) => setQuietEnd(e.target.value)}
-                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                    size="2"
                   />
                 </div>
               )}
@@ -438,20 +420,17 @@ export default function NotificationSettingsModal({
             </span>
             <div className="space-y-2">
               <div className="flex gap-2">
-                <input
-                  type="text"
+                <TextField.Root
                   value={keywordInput}
                   onChange={(e) => setKeywordInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
                   placeholder="Add keyword..."
-                  className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  style={{ flex: 1 }}
                 />
-                <button
-                  onClick={addKeyword}
-                  className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
-                >
+                <Button size="2" variant="solid" onClick={addKeyword}>
                   Add
-                </button>
+                </Button>
               </div>
               {keywordAlerts.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -461,12 +440,15 @@ export default function NotificationSettingsModal({
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-border rounded-full text-sm"
                     >
                       #{keyword}
-                      <button
+                      <IconButton
+                        size="1"
+                        variant="ghost"
+                        radius="medium"
                         onClick={() => removeKeyword(keyword)}
-                        className="hover:text-error transition-colors"
+                        aria-label={`Remove keyword ${keyword}`}
                       >
                         <X size={14} />
-                      </button>
+                      </IconButton>
                     </span>
                   ))}
                 </div>
@@ -480,17 +462,15 @@ export default function NotificationSettingsModal({
               <AlertCircle size={16} />
               Priority Level
             </label>
-            <select
-              id="priority-level"
-              value={priorityLevel}
-              onChange={(e) => setPriorityLevel(e.target.value)}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="low">Low</option>
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
+            <Select.Root value={priorityLevel} onValueChange={setPriorityLevel} size="2">
+              <Select.Trigger id="priority-level" style={{ width: '100%' }} />
+              <Select.Content>
+                <Select.Item value="low">Low</Select.Item>
+                <Select.Item value="normal">Normal</Select.Item>
+                <Select.Item value="high">High</Select.Item>
+                <Select.Item value="urgent">Urgent</Select.Item>
+              </Select.Content>
+            </Select.Root>
           </div>
 
           {/* Notification Frequency */}
@@ -499,36 +479,32 @@ export default function NotificationSettingsModal({
               <Clock size={16} />
               Notification Frequency
             </label>
-            <select
-              id="notification-frequency"
-              value={notificationFrequency}
-              onChange={(e) => setNotificationFrequency(e.target.value)}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="instant">Instant</option>
-              <option value="batched_15m">Batched (15 minutes)</option>
-              <option value="batched_1h">Batched (1 hour)</option>
-              <option value="daily_digest">Daily digest</option>
-            </select>
+            <Select.Root value={notificationFrequency} onValueChange={setNotificationFrequency} size="2">
+              <Select.Trigger id="notification-frequency" style={{ width: '100%' }} />
+              <Select.Content>
+                <Select.Item value="instant">Instant</Select.Item>
+                <Select.Item value="batched_15m">Batched (15 minutes)</Select.Item>
+                <Select.Item value="batched_1h">Batched (1 hour)</Select.Item>
+                <Select.Item value="daily_digest">Daily digest</Select.Item>
+              </Select.Content>
+            </Select.Root>
           </div>
 
           {/* Display Preferences */}
           <div className="space-y-2">
             <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
+              <Checkbox
+                size="2"
                 checked={showMessagePreview}
-                onChange={(e) => setShowMessagePreview(e.target.checked)}
-                className="w-4 h-4 accent-mission-control-accent"
+                onCheckedChange={(checked) => setShowMessagePreview(checked === true)}
               />
               <span>Show message preview in notifications</span>
             </label>
             <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
+              <Checkbox
+                size="2"
                 checked={badgeCountEnabled}
-                onChange={(e) => setBadgeCountEnabled(e.target.checked)}
-                className="w-4 h-4 accent-mission-control-accent"
+                onCheckedChange={(checked) => setBadgeCountEnabled(checked === true)}
               />
               <span>Increment unread badge count</span>
             </label>
@@ -537,13 +513,14 @@ export default function NotificationSettingsModal({
           {/* Notes */}
           <div>
             <label htmlFor="notification-notes" className="block font-medium mb-2">Notes</label>
-            <textarea
+            <TextArea
               id="notification-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional notes about these settings..."
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
+              size="2"
               rows={3}
+              style={{ resize: 'none' }}
             />
           </div>
         </div>
@@ -552,28 +529,32 @@ export default function NotificationSettingsModal({
         <div className="p-6 border-t border-mission-control-border flex items-center justify-between">
           <div>
             {hasCustomSettings && (
-              <button
+              <Button
+                size="2"
+                variant="ghost"
+                color="red"
                 onClick={handleResetToDefaults}
                 disabled={saving}
-                className="px-4 py-2 bg-error-subtle text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 <Trash2 size={16} />
                 Reset to Defaults
-              </button>
+              </Button>
             )}
           </div>
           <div className="flex gap-3">
-            <button
+            <Button
+              size="2"
+              variant="ghost"
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-bg transition-colors disabled:opacity-50"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              size="2"
+              variant="solid"
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               {saving ? (
                 <>Saving...</>
@@ -583,7 +564,7 @@ export default function NotificationSettingsModal({
                   Save Settings
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

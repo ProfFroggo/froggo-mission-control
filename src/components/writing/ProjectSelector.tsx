@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { useWritingStore, WritingProject } from '../../store/writingStore';
 import { useWizardStore } from '../../store/wizardStore';
 import { Plus, BookOpen, BookText, Trash2, X, Wand2 } from 'lucide-react';
@@ -76,20 +77,23 @@ export default function ProjectSelector() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               onClick={startWizard}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors"
+              size="2"
+              variant="solid"
             >
               <Wand2 size={16} />
               Plan with AI
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-mission-control-border text-mission-control-text-dim text-sm font-medium hover:border-mission-control-accent transition-colors"
+              size="2"
+              variant="outline"
+              color="gray"
             >
               {showForm ? <X size={16} /> : <Plus size={16} />}
               {showForm ? 'Cancel' : 'New Project'}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -101,14 +105,13 @@ export default function ProjectSelector() {
                 <label htmlFor="project-title" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
                   Title
                 </label>
-                <input
+                <TextField.Root
                   id="project-title"
-                  type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                   placeholder="My Writing Project"
-                  className="w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
+                  size="2"
                 />
               </div>
               <div>
@@ -116,37 +119,36 @@ export default function ProjectSelector() {
                   Type
                 </span>
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     onClick={() => setType('memoir')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                      type === 'memoir'
-                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                        : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
-                    }`}
+                    size="2"
+                    variant={type === 'memoir' ? 'soft' : 'outline'}
+                    color="gray"
+                    radius="medium"
                   >
                     <BookOpen size={16} />
                     Memoir
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setType('novel')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                      type === 'novel'
-                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                        : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
-                    }`}
+                    size="2"
+                    variant={type === 'novel' ? 'soft' : 'outline'}
+                    color="gray"
+                    radius="medium"
                   >
                     <BookText size={16} />
                     Novel
-                  </button>
+                  </Button>
                 </div>
               </div>
-              <button
+              <Button
                 onClick={handleCreate}
                 disabled={!title.trim() || creating}
-                className="px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                size="2"
+                variant="solid"
               >
                 {creating ? 'Creating...' : 'Create Project'}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -180,12 +182,15 @@ export default function ProjectSelector() {
         {projects.length > 0 && (
           <div className="space-y-3">
             {projects.map((project) => (
-              <button
+              <Button
                 key={project.id}
                 onClick={() => openProject(project.id)}
-                className="w-full text-left p-4 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 hover:shadow-card transition-all group"
+                variant="ghost"
+                size="2"
+                radius="medium"
+                className="w-full text-left p-4 h-auto flex items-start group"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between w-full">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-sm font-semibold text-mission-control-text truncate">
@@ -206,15 +211,19 @@ export default function ProjectSelector() {
                       <span>Created {relativeTime(project.createdAt)}</span>
                     </div>
                   </div>
-                  <button
+                  <IconButton
                     onClick={(e) => handleDelete(e, project)}
-                    className="p-1.5 rounded-lg text-mission-control-text-dim/0 group-hover:text-mission-control-text-dim hover:!text-error hover:bg-error-subtle transition-all"
+                    size="1"
+                    variant="ghost"
+                    color="red"
+                    radius="medium"
                     title="Delete project"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Trash2 size={14} />
-                  </button>
+                  </IconButton>
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
         )}

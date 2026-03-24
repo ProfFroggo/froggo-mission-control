@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, type ComponentType } from 'react';
+import { IconButton, Button } from '@radix-ui/themes';
 import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
@@ -156,15 +157,16 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     </a>
 
     {/* Mobile hamburger button — only visible on small screens when sidebar is closed */}
-    <button
+    <IconButton
       onClick={() => setMobileOpen(true)}
-      className={`fixed top-3 left-3 z-40 p-2.5 size-11 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-all duration-200 md:hidden ${
-        mobileOpen ? 'hidden' : 'flex items-center justify-center'
-      }`}
+      size="3"
+      variant="outline"
+      radius="medium"
+      className={`fixed top-3 left-3 z-40 md:hidden ${mobileOpen ? 'hidden' : 'flex'}`}
       aria-label="Open navigation"
     >
       <Menu size={20} aria-hidden="true" />
-    </button>
+    </IconButton>
 
     {/* Mobile backdrop — closes sidebar when tapped outside */}
     {mobileOpen && (
@@ -185,21 +187,25 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       aria-label="Main navigation"
     >
       {/* Mobile close button inside the sidebar */}
-      <button
+      <IconButton
         onClick={() => setMobileOpen(false)}
-        className="absolute top-3 right-3 p-1.5 size-11 flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all md:hidden"
+        size="2"
+        variant="ghost"
+        radius="medium"
+        className="absolute top-3 right-3 md:hidden"
         aria-label="Close navigation"
       >
         <X size={16} aria-hidden="true" />
-      </button>
+      </IconButton>
 
       {/* Search button */}
       <div className="px-2 pt-3 pb-1">
-        <button
+        <Button
           onClick={onOpenSearch}
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all duration-200 border border-mission-control-border/50 ${
-            expanded ? 'justify-start' : 'justify-center'
-          }`}
+          variant="ghost"
+          size="2"
+          radius="medium"
+          className={`w-full ${expanded ? 'justify-start' : 'justify-center'}`}
           title={expanded ? undefined : 'Search (⌘K)'}
           aria-label="Search (⌘K)"
         >
@@ -212,7 +218,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               ⌘K
             </kbd>
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Navigation */}
@@ -241,14 +247,13 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             if (id === 'kanban') badge = activeTasks;
 
             return (
-              <button
+              <Button
                 key={id}
                 onClick={() => handleNavigate(id)}
-                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative focus-visible:ring-2 focus-visible:ring-mission-control-accent focus-visible:ring-offset-1 focus-visible:ring-offset-mission-control-bg ${
-                  isActive
-                    ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
-                    : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-                } ${expanded ? '' : 'justify-center'}`}
+                variant={isActive ? 'soft' : 'ghost'}
+                size="2"
+                radius="medium"
+                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 relative group ${isActive ? 'shadow-lg' : ''} ${expanded ? '' : 'justify-center'}`}
                 title={expanded ? undefined : `${label} (${shortcut})`}
                 aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
                 aria-current={isActive ? 'page' : undefined}
@@ -281,7 +286,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                     size="sm"
                   />
                 )}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -296,61 +301,72 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
         <div className={`flex items-center ${expanded ? 'justify-between' : 'justify-center'} gap-0.5 px-1`}>
           {/* Edit Panels - only visible when expanded */}
           {expanded && (
-            <button
+            <IconButton
               onClick={openEditModal}
-              className="no-drag p-1.5 size-11 flex items-center justify-center rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
+              size="2"
+              variant="ghost"
+              radius="medium"
+              className="no-drag"
               title="Edit Panels (⌘⇧E)"
               aria-label="Edit Panels"
             >
               <SlidersHorizontal size={16} aria-hidden="true" />
-            </button>
+            </IconButton>
           )}
           {/* Help - only visible when expanded */}
           {expanded && onOpenHelp && (
-            <button
+            <IconButton
               onClick={onOpenHelp}
-              className="no-drag p-1.5 size-11 flex items-center justify-center rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
+              size="2"
+              variant="ghost"
+              radius="medium"
+              className="no-drag"
               title="Help (⌘H)"
               aria-label="Help"
             >
               <HelpCircle size={16} aria-hidden="true" />
-            </button>
+            </IconButton>
           )}
           {/* Keyboard shortcuts — always visible */}
           {onOpenShortcuts && (
-            <button
+            <IconButton
               onClick={onOpenShortcuts}
-              className="no-drag p-1.5 size-11 flex items-center justify-center rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
+              size="2"
+              variant="ghost"
+              radius="medium"
+              className="no-drag"
               title="Keyboard shortcuts (?)"
               aria-label="Keyboard shortcuts"
             >
               <Keyboard size={16} aria-hidden="true" />
-            </button>
+            </IconButton>
           )}
           {/* Settings - always visible */}
-          <button
+          <IconButton
             onClick={() => handleNavigate('settings')}
-            className={`no-drag p-1.5 size-11 flex items-center justify-center rounded-lg transition-all duration-200 ${
-              currentView === 'settings'
-                ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
-                : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-            }`}
+            size="2"
+            variant={currentView === 'settings' ? 'soft' : 'ghost'}
+            radius="medium"
+            className="no-drag"
             title="Settings (⌘,)"
             aria-label="Settings"
             aria-current={currentView === 'settings' ? 'page' : undefined}
           >
             <Settings size={16} aria-hidden="true" />
-          </button>
+          </IconButton>
           {/* Expand/Collapse - always visible */}
-          <button
+          <IconButton
             onClick={() => setExpanded(!expanded)}
-            className="no-drag p-1.5 size-11 flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all duration-200"
+            size="2"
+            variant="ghost"
+            radius="medium"
+            className="no-drag"
             title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
             aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
             aria-expanded={expanded}
           >
             {expanded ? <ChevronLeft size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
-          </button>
+          </IconButton>
         </div>
       </div>
     </aside>

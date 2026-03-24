@@ -7,6 +7,7 @@ import {
   CheckCircle2, Clock, AlertCircle, ChevronRight,
   Users, Zap, LayoutGrid, List, BarChart3, TrendingUp, RotateCcw,
 } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { getProjectIcon } from './projectIcons';
 import { projectsApi } from '../../lib/api';
 import type { Project } from '../../types/projects';
@@ -253,35 +254,42 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
       {/* Quick-action overlay (visible on hover) */}
       <div className="absolute top-2 right-2 hidden group-hover:flex items-center gap-1 z-10">
         {!isArchived && onArchive && (
-          <button
+          <IconButton
+            size="1"
+            variant="ghost"
+            radius="medium"
             onClick={e => { e.stopPropagation(); onArchive(); }}
             title="Archive project"
-            className="p-1.5 rounded-md bg-mission-control-bg0 border border-mission-control-border text-mission-control-text-dim hover:text-warning hover:border-warning/50 transition-colors"
           >
             <Archive size={12} />
-          </button>
+          </IconButton>
         )}
         {isArchived && onRestore && (
-          <button
+          <IconButton
+            size="1"
+            variant="ghost"
+            radius="medium"
             onClick={e => { e.stopPropagation(); onRestore(); }}
             title="Restore project"
-            className="p-1.5 rounded-md bg-mission-control-bg0 border border-mission-control-border text-mission-control-text-dim hover:text-success hover:border-success/50 transition-colors"
           >
             <RotateCcw size={12} />
-          </button>
+          </IconButton>
         )}
-        <button
+        <IconButton
+          size="1"
+          variant="ghost"
+          radius="medium"
           onClick={e => { e.stopPropagation(); onClick(); }}
           title="Open project"
-          className="p-1.5 rounded-md bg-mission-control-bg0 border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-accent hover:border-mission-control-accent/50 transition-colors"
         >
           <ChevronRight size={12} />
-        </button>
+        </IconButton>
       </div>
 
-      <button
+      <Button
         onClick={onClick}
-        className="w-full text-left p-5 focus:outline-none focus:ring-2 focus:ring-mission-control-accent/30 rounded-lg"
+        variant="ghost"
+        style={{ width: '100%', textAlign: 'left', padding: '1.25rem', borderRadius: '0.5rem', display: 'block', height: 'auto' }}
       >
         {/* Header */}
         <div className="flex items-start gap-3 mb-3 pr-14">
@@ -364,7 +372,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
             </span>
           </div>
         </div>
-      </button>
+      </Button>
     </div>
   );
 }
@@ -381,12 +389,9 @@ function EmptyProjects({ onNew }: { onNew: () => void }) {
       <p className="text-sm text-mission-control-text-dim max-w-xs mb-6">
         Create a project to organise tasks, chats, automations, and files around a shared goal.
       </p>
-      <button
-        onClick={onNew}
-        className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-sm font-medium"
-      >
+      <Button onClick={onNew} size="2" variant="solid">
         <Plus size={16} /> New Project
-      </button>
+      </Button>
     </div>
   );
 }
@@ -500,93 +505,89 @@ export default function ProjectsPanel() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <IconButton
             onClick={() => load(false)}
             disabled={refreshing}
-            className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             title="Refresh"
             aria-label="Refresh projects"
+            size="2"
+            variant="ghost"
+            radius="medium"
           >
             <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
           <div className="flex items-center rounded-lg border border-mission-control-border overflow-hidden">
-            <button
+            <IconButton
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
               title="Grid view"
+              size="2"
+              variant={viewMode === 'grid' ? 'solid' : 'ghost'}
+              radius="none"
             >
               <LayoutGrid size={14} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               onClick={() => setViewMode('list')}
-              className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
               title="List view"
+              size="2"
+              variant={viewMode === 'list' ? 'solid' : 'ghost'}
+              radius="none"
             >
               <List size={14} />
-            </button>
+            </IconButton>
           </div>
-          <button
-            onClick={() => setShowCreateWizard(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-sm font-medium"
-          >
+          <Button onClick={() => setShowCreateWizard(true)} size="2" variant="solid">
             <Plus size={15} /> New Project
-          </button>
+          </Button>
         </div>
       </div>
 
 
       {/* Tab strip */}
       <div className="flex items-center gap-1 px-6 pt-3 border-b border-mission-control-border">
-        <button
+        <Button
           onClick={() => setTabView('active')}
-          className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors ${
-            tabView === 'active'
-              ? 'text-mission-control-accent border-b-2 border-mission-control-accent'
-              : 'text-mission-control-text-dim hover:text-mission-control-text'
-          }`}
+          size="2"
+          variant={tabView === 'active' ? 'soft' : 'ghost'}
         >
           Active ({nonArchivedProjects.length})
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => setTabView('archived')}
-          className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors flex items-center gap-1.5 ${
-            tabView === 'archived'
-              ? 'text-mission-control-accent border-b-2 border-mission-control-accent'
-              : 'text-mission-control-text-dim hover:text-mission-control-text'
-          }`}
+          size="2"
+          variant={tabView === 'archived' ? 'soft' : 'ghost'}
         >
           <Archive size={13} />
           Archived ({archivedProjects.length})
-        </button>
+        </Button>
       </div>
 
       {/* Filters (only for active tab) */}
       {tabView === 'active' && (
         <div className="flex items-center gap-3 px-6 py-3 border-b border-mission-control-border">
-          <div className="relative flex-1 max-w-xs">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
+          <div className="flex-1 max-w-xs">
+            <TextField.Root
               aria-label="Search projects"
               placeholder="Search projects..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
-            />
+              size="2"
+            >
+              <TextField.Slot>
+                <Search size={14} />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
           <div className="flex items-center gap-1">
             {(['all', 'active', 'paused', 'completed'] as const).map(s => (
-              <button
+              <Button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1 text-xs rounded-full transition-colors capitalize ${
-                  statusFilter === s
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
-                }`}
+                size="1"
+                variant={statusFilter === s ? 'solid' : 'ghost'}
               >
                 {s === 'all' ? `All (${nonArchivedProjects.length})` : s}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -595,16 +596,18 @@ export default function ProjectsPanel() {
       {/* Archived search */}
       {tabView === 'archived' && (
         <div className="flex items-center gap-3 px-6 py-3 border-b border-mission-control-border">
-          <div className="relative flex-1 max-w-xs">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
+          <div className="flex-1 max-w-xs">
+            <TextField.Root
               aria-label="Search archived projects"
               placeholder="Search archived..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
-            />
+              size="2"
+            >
+              <TextField.Slot>
+                <Search size={14} />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
         </div>
       )}

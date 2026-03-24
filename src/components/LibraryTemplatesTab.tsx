@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, IconButton, TextField, Select, TextArea } from '@radix-ui/themes';
 import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star, StarOff, LayoutTemplate } from 'lucide-react';
 import EmptyState from './EmptyState';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -176,38 +177,40 @@ export default function LibraryTemplatesTab() {
           <p className="text-sm text-mission-control-text-dim">
             Reusable content templates
           </p>
-          <button
+          <Button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90"
+            size="2"
+            variant="solid"
           >
             <Plus size={16} />
             New Template
-          </button>
+          </Button>
         </div>
 
         {/* Search and filters */}
         <div className="flex gap-3">
-          <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
+          <div className="flex-1">
+            <TextField.Root
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search templates..."
-              className="w-full pl-9 pr-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
-            />
+              size="2"
+            >
+              <TextField.Slot>
+                <Search size={16} />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
-          >
-            <option value="all">All Types</option>
-            <option value="tweet">Tweets</option>
-            <option value="email">Emails</option>
-            <option value="message">Messages</option>
-            <option value="generic">Generic</option>
-          </select>
+          <Select.Root value={typeFilter} onValueChange={setTypeFilter}>
+            <Select.Trigger />
+            <Select.Content>
+              <Select.Item value="all">All Types</Select.Item>
+              <Select.Item value="tweet">Tweets</Select.Item>
+              <Select.Item value="email">Emails</Select.Item>
+              <Select.Item value="message">Messages</Select.Item>
+              <Select.Item value="generic">Generic</Select.Item>
+            </Select.Content>
+          </Select.Root>
         </div>
       </div>
 
@@ -236,33 +239,39 @@ export default function LibraryTemplatesTab() {
                     <div className="flex items-center gap-2">
                       <Icon size={16} className={config.color} />
                       {isEditing ? (
-                        <input
+                        <TextField.Root
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="font-medium bg-transparent border-b border-mission-control-accent focus:outline-none"
+                          size="1"
+                          variant="soft"
                         />
                       ) : (
                         <span className="font-medium">{template.name}</span>
                       )}
                     </div>
-                    <button
+                    <IconButton
                       onClick={() => handleStar(template.id)}
-                      className="p-1 hover:bg-mission-control-border rounded"
+                      size="1"
+                      variant="ghost"
+                      radius="medium"
                     >
                       {template.starred ? (
                         <Star size={14} className="text-warning fill-yellow-400" />
                       ) : (
                         <StarOff size={14} className="text-mission-control-text-dim" />
                       )}
-                    </button>
+                    </IconButton>
                   </div>
 
                   {/* Content */}
                   {isEditing ? (
-                    <textarea
+                    <TextArea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full h-24 bg-mission-control-bg border border-mission-control-border rounded-lg p-2 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
+                      className="w-full"
+                      style={{ height: '6rem' }}
+                      resize="none"
+                      size="1"
                     />
                   ) : (
                     <p className="text-sm text-mission-control-text-dim line-clamp-3 mb-3">
@@ -292,42 +301,52 @@ export default function LibraryTemplatesTab() {
                     <div className="flex gap-1">
                       {isEditing ? (
                         <>
-                          <button
+                          <Button
                             onClick={() => setEditingId(null)}
-                            className="px-2 py-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                            size="1"
+                            variant="ghost"
+                            color="gray"
                           >
                             Cancel
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={handleSave}
-                            className="px-2 py-1 text-xs bg-mission-control-accent text-white rounded"
+                            size="1"
+                            variant="solid"
                           >
                             Save
-                          </button>
+                          </Button>
                         </>
                       ) : (
                         <>
-                          <button
+                          <IconButton
                             onClick={() => handleCopy(template)}
-                            className="p-1.5 hover:bg-mission-control-border rounded"
+                            size="1"
+                            variant="ghost"
+                            radius="medium"
                             title="Copy"
                           >
-                            <Copy size={14} className="text-mission-control-text-dim" />
-                          </button>
-                          <button
+                            <Copy size={14} />
+                          </IconButton>
+                          <IconButton
                             onClick={() => handleEdit(template)}
-                            className="p-1.5 hover:bg-mission-control-border rounded"
+                            size="1"
+                            variant="ghost"
+                            radius="medium"
                             title="Edit"
                           >
-                            <Edit3 size={14} className="text-mission-control-text-dim" />
-                          </button>
-                          <button
+                            <Edit3 size={14} />
+                          </IconButton>
+                          <IconButton
                             onClick={() => handleDelete(template.id)}
-                            className="p-1.5 hover:bg-error-subtle rounded"
+                            size="1"
+                            variant="ghost"
+                            color="red"
+                            radius="medium"
                             title="Delete"
                           >
-                            <Trash2 size={14} className="text-error" />
-                          </button>
+                            <Trash2 size={14} />
+                          </IconButton>
                         </>
                       )}
                     </div>
@@ -347,54 +366,57 @@ export default function LibraryTemplatesTab() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="template-name" className="block text-sm text-mission-control-text-dim mb-1">Name</label>
-                <input
+                <TextField.Root
                   id="template-name"
-                  type="text"
                   value={newTemplate.name}
                   onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
                   placeholder="Template name"
+                  size="2"
                 />
               </div>
               <div>
                 <label htmlFor="template-type" className="block text-sm text-mission-control-text-dim mb-1">Type</label>
-                <select
-                  id="template-type"
-                  value={newTemplate.type}
-                  onChange={(e) => setNewTemplate({ ...newTemplate, type: e.target.value as Template['type'] })}
-                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
-                >
-                  <option value="tweet">Tweet</option>
-                  <option value="email">Email</option>
-                  <option value="message">Message</option>
-                  <option value="generic">Generic</option>
-                </select>
+                <Select.Root value={newTemplate.type} onValueChange={(v) => setNewTemplate({ ...newTemplate, type: v as Template['type'] })}>
+                  <Select.Trigger id="template-type" className="w-full" />
+                  <Select.Content>
+                    <Select.Item value="tweet">Tweet</Select.Item>
+                    <Select.Item value="email">Email</Select.Item>
+                    <Select.Item value="message">Message</Select.Item>
+                    <Select.Item value="generic">Generic</Select.Item>
+                  </Select.Content>
+                </Select.Root>
               </div>
               <div>
                 <label htmlFor="template-content" className="block text-sm text-mission-control-text-dim mb-1">Content</label>
-                <textarea
+                <TextArea
                   id="template-content"
                   value={newTemplate.content}
                   onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
-                  className="w-full h-32 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
+                  className="w-full"
+                  style={{ height: '8rem' }}
+                  resize="none"
                   placeholder="Use {variable} for placeholders"
+                  size="2"
                 />
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <button
+              <Button
                 onClick={() => setShowCreate(false)}
-                className="px-4 py-2 text-mission-control-text-dim hover:text-mission-control-text"
+                size="2"
+                variant="ghost"
+                color="gray"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreate}
                 disabled={!newTemplate.name || !newTemplate.content}
-                className="px-4 py-2 bg-mission-control-accent text-white rounded-lg disabled:opacity-50"
+                size="2"
+                variant="solid"
               >
                 Create
-              </button>
+              </Button>
             </div>
           </div>
         </div>

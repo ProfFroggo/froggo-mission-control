@@ -10,6 +10,7 @@ import {
   SlidersHorizontal, X as XIcon, Clock, ChevronDown, ChevronUp,
   Circle, StopCircle,
 } from 'lucide-react';
+import { Button, IconButton, Select } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import ScreenSourcePicker, { type ScreenSource } from './ScreenSourcePicker';
@@ -915,74 +916,76 @@ Respond as ${agentName(agentId)}:`;
 
         <div className="flex items-center gap-2">
           {/* Push-to-talk toggle */}
-          <button
+          <Button
             onClick={() => setPushToTalkMode(v => !v)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              pushToTalkMode
-                ? 'bg-mission-control-accent/20 text-mission-control-accent border border-mission-control-accent/40'
-                : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
+            size="1"
+            variant={pushToTalkMode ? 'soft' : 'ghost'}
             title={pushToTalkMode ? 'Push-to-talk ON — hold Space to speak' : 'Enable push-to-talk mode'}
           >
             <Mic size={11} />
             PTT
-          </button>
+          </Button>
 
           {/* Participants panel toggle */}
-          <button
+          <Button
             onClick={() => setShowParticipants(v => !v)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              showParticipants
-                ? 'bg-mission-control-accent/20 text-mission-control-accent border border-mission-control-accent/40'
-                : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
+            size="1"
+            variant={showParticipants ? 'soft' : 'ghost'}
             title="Toggle participant list"
           >
             <Users size={11} />
             {room.agents.length + 1}
             {showParticipants ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-          </button>
+          </Button>
 
           {/* Recording toggle */}
-          <button
+          <Button
             onClick={() => setIsRecording(v => !v)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              isRecording
-                ? 'bg-error text-error border border-error'
-                : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
+            size="1"
+            variant={isRecording ? 'solid' : 'ghost'}
+            color={isRecording ? 'red' : undefined}
             title={isRecording ? 'Stop recording' : 'Start recording'}
           >
             {isRecording ? <StopCircle size={11} /> : <Circle size={11} />}
             {isRecording ? 'Recording' : 'Record'}
-          </button>
+          </Button>
 
           {/* Turn mode */}
-          <select
+          <Select.Root
             value={turnMode}
-            onChange={e => setTurnMode(e.target.value as TurnMode)}
-            className="text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1.5 text-mission-control-text outline-none focus:border-mission-control-accent"
+            onValueChange={val => setTurnMode(val as TurnMode)}
+            size="1"
           >
-            <option value="sequential">All respond</option>
-            <option value="addressed">@Mentioned only</option>
-          </select>
+            <Select.Trigger />
+            <Select.Content>
+              <Select.Item value="sequential">All respond</Select.Item>
+              <Select.Item value="addressed">@Mentioned only</Select.Item>
+            </Select.Content>
+          </Select.Root>
 
           {/* Device settings */}
           <div className="relative" ref={deviceSettingsRef}>
-            <button
+            <IconButton
               onClick={() => setShowDeviceSettings(v => !v)}
-              className={`p-1.5 rounded-lg transition-colors ${showDeviceSettings ? 'text-mission-control-accent bg-mission-control-accent/10' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+              size="2"
+              variant={showDeviceSettings ? 'soft' : 'ghost'}
+              radius="medium"
               title="Audio device settings"
             >
               <SlidersHorizontal size={16} />
-            </button>
+            </IconButton>
             {showDeviceSettings && (
               <div className="absolute right-0 top-full mt-1 z-50 w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-mission-control-text">Audio Devices</span>
-                  <button onClick={() => setShowDeviceSettings(false)} className="text-mission-control-text-dim hover:text-mission-control-text">
+                  <IconButton
+                    onClick={() => setShowDeviceSettings(false)}
+                    size="1"
+                    variant="ghost"
+                    radius="medium"
+                  >
                     <XIcon size={14} />
-                  </button>
+                  </IconButton>
                 </div>
 
                 {/* Microphone */}
@@ -990,18 +993,21 @@ Respond as ${agentName(agentId)}:`;
                   <label className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-1.5">
                     <Mic size={11} /> Microphone
                   </label>
-                  <select
-                    value={micDeviceId}
-                    onChange={e => setMicDeviceId(e.target.value)}
-                    className="w-full text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1.5 text-mission-control-text outline-none focus:border-mission-control-accent"
+                  <Select.Root
+                    value={micDeviceId || '__default__'}
+                    onValueChange={val => setMicDeviceId(val === '__default__' ? '' : val)}
+                    size="1"
                   >
-                    <option value="">System default</option>
-                    {micDevices.map(d => (
-                      <option key={d.deviceId} value={d.deviceId}>
-                        {d.label || `Microphone (${d.deviceId.slice(0, 8)}…)`}
-                      </option>
-                    ))}
-                  </select>
+                    <Select.Trigger style={{ width: '100%' }} />
+                    <Select.Content>
+                      <Select.Item value="__default__">System default</Select.Item>
+                      {micDevices.map(d => (
+                        <Select.Item key={d.deviceId} value={d.deviceId}>
+                          {d.label || `Microphone (${d.deviceId.slice(0, 8)}…)`}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
                 </div>
 
                 {/* Speaker */}
@@ -1009,18 +1015,21 @@ Respond as ${agentName(agentId)}:`;
                   <label className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-1.5">
                     <Volume2 size={11} /> Speaker
                   </label>
-                  <select
-                    value={speakerDeviceId}
-                    onChange={e => setSpeakerDeviceId(e.target.value)}
-                    className="w-full text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1.5 text-mission-control-text outline-none focus:border-mission-control-accent"
+                  <Select.Root
+                    value={speakerDeviceId || '__default__'}
+                    onValueChange={val => setSpeakerDeviceId(val === '__default__' ? '' : val)}
+                    size="1"
                   >
-                    <option value="">System default</option>
-                    {speakerDevices.map(d => (
-                      <option key={d.deviceId} value={d.deviceId}>
-                        {d.label || `Speaker (${d.deviceId.slice(0, 8)}…)`}
-                      </option>
-                    ))}
-                  </select>
+                    <Select.Trigger style={{ width: '100%' }} />
+                    <Select.Content>
+                      <Select.Item value="__default__">System default</Select.Item>
+                      {speakerDevices.map(d => (
+                        <Select.Item key={d.deviceId} value={d.deviceId}>
+                          {d.label || `Speaker (${d.deviceId.slice(0, 8)}…)`}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
                   {speakerDevices.length === 0 && (
                     <p className="text-[10px] text-mission-control-text-dim mt-1">Allow microphone access to list output devices.</p>
                   )}
@@ -1031,12 +1040,15 @@ Respond as ${agentName(agentId)}:`;
 
           {/* Volume */}
           <div className="flex items-center gap-1">
-            <button
+            <IconButton
               onClick={() => { setMuted(!muted); if (!muted) { stopSpeaking(); window.speechSynthesis.cancel(); } }}
-              className={`p-1.5 rounded-lg transition-colors ${muted ? 'text-error' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+              size="2"
+              variant="ghost"
+              radius="medium"
+              color={muted ? 'red' : undefined}
             >
               {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-            </button>
+            </IconButton>
             <input
               type="range"
               min="0"
@@ -1050,25 +1062,29 @@ Respond as ${agentName(agentId)}:`;
 
           {/* Download transcript */}
           {transcript.length > 0 && (
-            <button
+            <IconButton
               onClick={downloadTranscript}
-              className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
               title="Download transcript"
             >
               <Download size={16} />
-            </button>
+            </IconButton>
           )}
 
           {/* Back to text */}
-          <button
+          <IconButton
             onClick={() => {
               if (isActive) { setShowEndConfirm(true); } else { onEndVoice(); }
             }}
-            className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
             title="Switch to text"
           >
             <MessageSquare size={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -1086,14 +1102,16 @@ Respond as ${agentName(agentId)}:`;
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Participants</span>
             {isActive && (
-              <button
+              <Button
                 onClick={muteAllAgents}
-                className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-error-subtle text-error border border-error-border hover:bg-error/20 transition-colors"
+                size="1"
+                variant="soft"
+                color="red"
                 title="Stop all agents from speaking"
               >
                 <MicOff size={11} />
                 Mute all agents
-              </button>
+              </Button>
             )}
           </div>
           <div className="space-y-1.5">
@@ -1132,17 +1150,16 @@ Respond as ${agentName(agentId)}:`;
                     {!isSpeaking && !isProcessing && !isQueued && (
                       <span className="text-xs text-mission-control-text-dim">Listening</span>
                     )}
-                    <button
+                    <IconButton
                       onClick={() => toggleAgentMute(id)}
-                      className={`p-1 rounded transition-colors ${
-                        isAgentMuted
-                          ? 'text-error hover:text-error/80'
-                          : 'text-mission-control-text-dim hover:text-mission-control-text'
-                      }`}
+                      size="1"
+                      variant="ghost"
+                      radius="medium"
+                      color={isAgentMuted ? 'red' : undefined}
                       title={isAgentMuted ? 'Unmute agent' : 'Mute agent'}
                     >
                       {isAgentMuted ? <MicOff size={12} /> : <Mic size={12} />}
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
               );
@@ -1354,7 +1371,7 @@ Respond as ${agentName(agentId)}:`;
           {isActive && (
             <>
               {/* Mic toggle / interrupt */}
-              <button
+              <IconButton
                 onClick={() => {
                   if (canInterrupt && speakingAgent) {
                     // Interrupt: cancel TTS, clear queue, start listening immediately
@@ -1373,45 +1390,43 @@ Respond as ${agentName(agentId)}:`;
                   }
                 }}
                 disabled={!canInterrupt && (!!processingAgent && !speakingAgent)}
-                className={`p-4 rounded-full transition-all ${
-                  canInterrupt && speakingAgent
-                    ? 'bg-error text-white shadow-lg shadow-error/40 ring-2 ring-error animate-pulse'
-                    : listening
-                    ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/30 scale-110'
-                    : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'
-                } disabled:opacity-40`}
+                size="4"
+                variant={listening ? 'solid' : 'soft'}
+                color={canInterrupt && speakingAgent ? 'red' : undefined}
+                radius="full"
                 title={canInterrupt && speakingAgent ? 'Interrupt agent' : listening ? 'Stop listening' : 'Start listening'}
               >
                 {listening ? <Mic size={20} /> : <MicOff size={20} />}
-              </button>
+              </IconButton>
 
               {/* Interrupt / stop all */}
-              <button
+              <IconButton
                 onClick={interruptAll}
                 disabled={!speakingAgent && !processingAgent && speakQueue.length === 0}
-                className="p-3 rounded-full bg-mission-control-border text-mission-control-text-dim hover:bg-warning-subtle hover:text-warning transition-all disabled:opacity-30"
+                size="3"
+                variant="ghost"
+                radius="full"
                 title="Stop all speaking"
               >
                 <Square size={18} />
-              </button>
+              </IconButton>
 
               {/* Screen share */}
-              <button
+              <IconButton
                 onClick={toggleScreenShare}
-                className={`p-3 rounded-full transition-all ${
-                  screenSharing
-                    ? 'bg-info text-white shadow-lg shadow-info/30'
-                    : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'
-                }`}
+                size="3"
+                variant={screenSharing ? 'solid' : 'ghost'}
+                color={screenSharing ? 'blue' : undefined}
+                radius="full"
                 title={screenSharing ? 'Stop screen share' : 'Share screen'}
               >
                 {screenSharing ? <MonitorOff size={18} /> : <Monitor size={18} />}
-              </button>
+              </IconButton>
             </>
           )}
 
           {/* Start/End meeting */}
-          <button
+          <IconButton
             onClick={() => {
               if (isActive) {
                 setShowEndConfirm(true);
@@ -1419,14 +1434,13 @@ Respond as ${agentName(agentId)}:`;
                 startMeeting();
               }
             }}
-            className={`p-5 rounded-full transition-all ${
-              isActive
-                ? 'bg-error hover:bg-error text-white shadow-lg'
-                : 'bg-success hover:bg-success text-white shadow-lg'
-            }`}
+            size="4"
+            variant="solid"
+            color={isActive ? 'red' : 'green'}
+            radius="full"
           >
             {isActive ? <PhoneOff size={24} /> : <Mic size={24} />}
-          </button>
+          </IconButton>
         </div>
 
         {!isActive && (

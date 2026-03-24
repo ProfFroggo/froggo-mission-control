@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw, X, Trash2, Edit2, AlertCircle, ExternalLink, Check, Mail, Copy, Repeat } from 'lucide-react';
+import { Button, IconButton, TextField, Select, TextArea, Checkbox } from '@radix-ui/themes';
 import { useUserSettings } from '../store/userSettings';
 
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
@@ -446,62 +447,70 @@ export default function EpicCalendar({
 
           <div className="flex items-center gap-3">
             {/* Refresh Button */}
-            <button
+            <IconButton
               onClick={fetchEvents}
               disabled={loading}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors disabled:opacity-50"
+              size="2"
+              variant="ghost"
+              radius="medium"
               title="Refresh events"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            </button>
+            </IconButton>
 
             {/* Navigation */}
             <div className="flex items-center gap-1">
-              <button
+              <IconButton
                 onClick={() => navigateDate('prev')}
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+                size="2"
+                variant="ghost"
+                radius="medium"
               >
                 <ChevronLeft size={16} />
-              </button>
-              <button
+              </IconButton>
+              <Button
                 onClick={() => navigateDate('today')}
-                className="px-3 py-1.5 text-sm bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors"
+                size="2"
+                variant="ghost"
+                radius="medium"
               >
                 Today
-              </button>
-              <button
+              </Button>
+              <IconButton
                 onClick={() => navigateDate('next')}
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+                size="2"
+                variant="ghost"
+                radius="medium"
               >
                 <ChevronRight size={16} />
-              </button>
+              </IconButton>
             </div>
 
             {/* View Switcher */}
             <div className="flex items-center gap-1 bg-mission-control-bg rounded-lg p-1">
               {(['month', 'week', 'day', 'agenda'] as CalendarView[]).map((v) => (
-                <button
+                <Button
                   key={v}
                   onClick={() => setView(v)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    view === v
-                      ? 'bg-mission-control-accent text-white'
-                      : 'hover:bg-mission-control-border'
-                  }`}
+                  size="2"
+                  variant={view === v ? 'soft' : 'ghost'}
+                  radius="medium"
                 >
                   {v.charAt(0).toUpperCase() + v.slice(1)}
-                </button>
+                </Button>
               ))}
             </div>
 
             {/* Create Event Button */}
-            <button
+            <Button
               onClick={onCreateClick || handleCreateEvent}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+              size="2"
+              variant="soft"
+              radius="medium"
             >
               <Plus size={16} />
               {createButtonLabel || 'New Event'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -567,12 +576,14 @@ export default function EpicCalendar({
               <AlertCircle size={14} className="text-warning" />
               <span className="text-sm text-warning">{partialError}</span>
             </div>
-            <button
+            <IconButton
               onClick={() => setPartialError(null)}
-              className="text-warning hover:text-warning-dim transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
             >
               <X size={14} />
-            </button>
+            </IconButton>
           </div>
         )}
 
@@ -588,12 +599,15 @@ export default function EpicCalendar({
             <div className="text-center">
               <Calendar size={32} className="mx-auto mb-4 text-error" />
               <p className="text-error">{error}</p>
-              <button
+              <Button
                 onClick={fetchEvents}
-                className="mt-4 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                size="2"
+                variant="soft"
+                radius="medium"
+                className="mt-4"
               >
                 Retry
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -1337,20 +1351,24 @@ function EventDetailPopover({
       <div className="relative bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-[360px] max-h-[90vh] overflow-y-auto">
         {/* Toolbar */}
         <div className="flex items-center justify-end gap-1 px-3 pt-3 pb-0">
-          <button
+          <IconButton
             onClick={onEdit}
-            className="p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+            size="2"
+            variant="ghost"
+            radius="medium"
             title="Edit event"
           >
             <Edit2 size={15} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={onDelete}
-            className="p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+            size="2"
+            variant="ghost"
+            radius="medium"
             title="Delete event"
           >
             <Trash2 size={15} />
-          </button>
+          </IconButton>
           {event.htmlLink && (
             <a
               href={event.htmlLink}
@@ -1362,13 +1380,15 @@ function EventDetailPopover({
               <ExternalLink size={15} />
             </a>
           )}
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+            size="2"
+            variant="ghost"
+            radius="medium"
             title="Close"
           >
             <X size={15} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Title + Date */}
@@ -1403,9 +1423,9 @@ function EventDetailPopover({
               </a>
               <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
                 <span className="truncate flex-1">{meetLink.replace('https://', '')}</span>
-                <button onClick={copyMeetLink} className="flex-shrink-0 hover:text-mission-control-text p-1 rounded" title="Copy link">
+                <IconButton onClick={copyMeetLink} size="1" variant="ghost" radius="medium" title="Copy link" className="flex-shrink-0">
                   <Copy size={11} />
-                </button>
+                </IconButton>
               </div>
             </div>
           )}
@@ -1485,16 +1505,16 @@ function EventDetailPopover({
         {totalAttendees > 0 && (
           <div className="px-5 py-3 border-t border-mission-control-border bg-mission-control-bg/50 rounded-b-2xl flex items-center gap-3">
             <span className="text-xs text-mission-control-text-dim mr-auto">Going?</span>
-            <button className="px-3 py-1.5 bg-info text-white text-xs font-medium rounded-lg hover:bg-info/90 transition-colors flex items-center gap-1.5">
+            <Button size="1" variant="soft" radius="medium">
               <Check size={12} />
               Yes
-            </button>
-            <button className="px-3 py-1.5 bg-mission-control-surface border border-mission-control-border text-xs font-medium rounded-lg hover:bg-mission-control-border transition-colors">
+            </Button>
+            <Button size="1" variant="ghost" radius="medium">
               No
-            </button>
-            <button className="px-3 py-1.5 bg-mission-control-surface border border-mission-control-border text-xs font-medium rounded-lg hover:bg-mission-control-border transition-colors">
+            </Button>
+            <Button size="1" variant="ghost" radius="medium">
               Maybe
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -1624,12 +1644,14 @@ function EventModal({
               </>
             )}
           </h2>
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
           >
             <X size={20} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Form */}
@@ -1639,15 +1661,12 @@ function EventModal({
             <label htmlFor="event-title" className="block text-sm font-medium mb-2">
               Title <span className="text-error">*</span>
             </label>
-            <input
+            <TextField.Root
               id="event-title"
-              type="text"
               value={formData.summary}
               onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-              className={`w-full px-4 py-2 bg-mission-control-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent ${
-                errors.summary ? 'border-error' : 'border-mission-control-border'
-              }`}
               placeholder="Event title"
+              size="2"
             />
             {errors.summary && (
               <p className="text-sm text-error mt-1 flex items-center gap-1">
@@ -1662,28 +1681,29 @@ function EventModal({
             <label htmlFor="calendar-account" className="block text-sm font-medium mb-2">
               Calendar Account <span className="text-error">*</span>
             </label>
-            <select
-              id="calendar-account"
+            <Select.Root
               value={formData.account}
-              onChange={(e) => setFormData({ ...formData, account: e.target.value })}
-              className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+              onValueChange={(val) => setFormData({ ...formData, account: val })}
+              size="2"
             >
-              {accounts.map(acc => (
-                <option key={acc} value={acc}>
-                  {acc}
-                </option>
-              ))}
-            </select>
+              <Select.Trigger id="calendar-account" className="w-full" />
+              <Select.Content>
+                {accounts.map(acc => (
+                  <Select.Item key={acc} value={acc}>
+                    {acc}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
           </div>
 
           {/* All-day toggle */}
           <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
+            <Checkbox
               id="allDay"
               checked={formData.isAllDay}
-              onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
-              className="w-4 h-4 text-mission-control-accent"
+              onCheckedChange={(checked) => setFormData({ ...formData, isAllDay: !!checked })}
+              size="2"
             />
             <label htmlFor="allDay" className="text-sm font-medium cursor-pointer">
               All-day event
@@ -1696,24 +1716,22 @@ function EventModal({
               <label className="block text-sm font-medium mb-2">
                 Start {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-error">*</span>
               </label>
-              <input
+              <TextField.Root
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
                 value={formData.start}
                 onChange={(e) => setFormData({ ...formData, start: e.target.value })}
-                className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                size="2"
               />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">
                 End {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-error">*</span>
               </label>
-              <input
+              <TextField.Root
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
                 value={formData.end}
                 onChange={(e) => setFormData({ ...formData, end: e.target.value })}
-                className={`w-full px-4 py-2 bg-mission-control-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent ${
-                  errors.end ? 'border-error' : 'border-mission-control-border'
-                }`}
+                size="2"
               />
               {errors.end && (
                 <p className="text-sm text-error mt-1 flex items-center gap-1">
@@ -1730,13 +1748,12 @@ function EventModal({
               <MapPin size={16} />
               Location
             </label>
-            <input
+            <TextField.Root
               id="event-location"
-              type="text"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
               placeholder="Add location"
+              size="2"
             />
           </div>
 
@@ -1745,13 +1762,14 @@ function EventModal({
             <label htmlFor="event-description" className="block text-sm font-medium mb-2">
               Description
             </label>
-            <textarea
+            <TextArea
               id="event-description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
               rows={4}
               placeholder="Add description"
+              variant="soft"
+              resize="vertical"
             />
           </div>
 
@@ -1759,29 +1777,36 @@ function EventModal({
           <div className="flex items-center justify-between pt-4 border-t border-mission-control-border">
             <div>
               {mode === 'edit' && (
-                <button
+                <Button
                   type="button"
                   onClick={handleDelete}
-                  className="flex items-center gap-2 px-4 py-2 text-error hover:bg-error-subtle rounded-lg transition-colors"
+                  size="2"
+                  variant="ghost"
+                  color="red"
+                  radius="medium"
                 >
                   <Trash2 size={16} />
                   Delete Event
-                </button>
+                </Button>
               )}
             </div>
             <div className="flex items-center gap-3">
-              <button
+              <Button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 hover:bg-mission-control-border rounded-lg transition-colors"
+                size="2"
+                variant="ghost"
+                radius="medium"
                 disabled={saving}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
+                size="2"
+                variant="soft"
+                radius="medium"
               >
                 {saving ? (
                   <>
@@ -1791,7 +1816,7 @@ function EventModal({
                 ) : (
                   mode === 'create' ? 'Create Event' : 'Save Changes'
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </form>
@@ -1826,18 +1851,23 @@ function DeleteConfirmDialog({
         </div>
 
         <div className="flex items-center justify-end gap-3">
-          <button
+          <Button
             onClick={onCancel}
-            className="px-4 py-2 hover:bg-mission-control-border rounded-lg transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onConfirm}
-            className="px-4 py-2 bg-error text-white rounded-lg hover:bg-error-dim transition-colors"
+            size="2"
+            variant="soft"
+            color="red"
+            radius="medium"
           >
             Delete Event
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -1908,18 +1938,22 @@ function RescheduleConfirmDialog({
         </div>
 
         <div className="flex items-center justify-end gap-3">
-          <button
+          <Button
             onClick={onCancel}
-            className="px-4 py-2 hover:bg-mission-control-border rounded-lg transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onConfirm}
-            className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+            size="2"
+            variant="soft"
+            radius="medium"
           >
             Reschedule
-          </button>
+          </Button>
         </div>
       </div>
     </div>

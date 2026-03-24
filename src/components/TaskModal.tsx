@@ -682,26 +682,31 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-mission-control-text-dim">{planningNotes.length} chars</span>
                     <div className="relative">
-                      <button
+                      <Button
                         type="button"
                         onClick={() => setShowTemplates(v => !v)}
-                        className="flex items-center gap-1 text-xs px-2 py-0.5 bg-mission-control-surface border border-mission-control-border rounded hover:border-mission-control-accent/50 transition-colors"
+                        size="1"
+                        variant="ghost"
+                        radius="medium"
                       >
                         <Lightbulb size={12} />
                         Use template
                         <ChevronDown size={12} className={`transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
-                      </button>
+                      </Button>
                       {showTemplates && (
                         <div className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[140px]">
                           {TASK_TEMPLATES.map(t => (
-                            <button
+                            <Button
                               key={t.id}
                               type="button"
                               onClick={() => { setPlanningNotes(t.planningNotes); setShowTemplates(false); }}
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-mission-control-border transition-colors first:rounded-t-lg last:rounded-b-lg"
+                              variant="ghost"
+                              size="1"
+                              radius="none"
+                              className="w-full justify-start px-3 py-2 first:rounded-t-lg last:rounded-b-lg"
                             >
                               {t.label}
-                            </button>
+                            </Button>
                           ))}
                         </div>
                       )}
@@ -728,32 +733,30 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   <Flag size={14} /> Priority
                 </span>
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setPriority('')}
                     aria-label="No priority"
-                    className={`flex-1 p-2 rounded-lg border text-sm transition-colors ${
-                      !priority
-                        ? 'border-mission-control-accent bg-mission-control-accent/10'
-                        : 'border-mission-control-border hover:border-mission-control-accent/50'
-                    }`}
+                    size="2"
+                    variant={!priority ? 'soft' : 'outline'}
+                    radius="medium"
+                    className="flex-1"
                   >
                     None
-                  </button>
+                  </Button>
                   {PRIORITIES.map(p => (
-                    <button
+                    <Button
                       key={p.id}
                       type="button"
                       onClick={() => setPriority(p.id)}
                       aria-label={`Priority: ${p.label}`}
-                      className={`flex-1 p-2 rounded-lg border text-sm flex items-center justify-center gap-1 transition-colors ${
-                        priority === p.id
-                          ? `border-mission-control-accent ${p.bg} ${p.color}`
-                          : 'border-mission-control-border hover:border-mission-control-accent/50'
-                      }`}
+                      size="2"
+                      variant={priority === p.id ? 'soft' : 'outline'}
+                      radius="medium"
+                      className="flex-1"
                     >
                       {p.icon}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -835,20 +838,19 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   <Bot size={14} /> Assign to Agent (Worker)
                 </span>
                 <div className="grid grid-cols-3 gap-2">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setAssignedTo('')}
                     aria-label="No agent assigned"
                     aria-pressed={!assignedTo}
-                    className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
-                      !assignedTo
-                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                        : 'border-mission-control-border hover:border-mission-control-accent/50'
-                    }`}
+                    size="2"
+                    variant={!assignedTo ? 'soft' : 'outline'}
+                    radius="medium"
+                    className="p-2 text-left flex items-center gap-2"
                   >
                     <span className="text-base">👤</span>
                     <span className="truncate">None</span>
-                  </button>
+                  </Button>
                   {agents
                     .filter(agent => !['main', 'mission-control'].includes(agent.id))
                     .map(agent => {
@@ -860,17 +862,17 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                       const isDisabled = agent.status === 'disabled';
                       const isBusy = activeTaskCount > 5;
                       return (
-                        <button
+                        <Button
                           key={agent.id}
                           type="button"
                           onClick={() => setAssignedTo(agent.id)}
                           aria-label={`Assign to ${agent.name}${isDisabled ? ' (offline)' : ''}${isBusy ? ' (busy)' : ''}`}
                           aria-pressed={assignedTo === agent.id}
-                          className={`p-2 rounded-lg border text-left text-sm flex flex-col gap-1 transition-colors ${
-                            assignedTo === agent.id
-                              ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                              : 'border-mission-control-border hover:border-mission-control-accent/50'
-                          } ${isDisabled ? 'opacity-50' : ''}`}
+                          size="2"
+                          variant={assignedTo === agent.id ? 'soft' : 'outline'}
+                          radius="medium"
+                          disabled={isDisabled}
+                          className="p-2 text-left flex flex-col gap-1 h-auto"
                         >
                           <div className="flex items-center gap-2">
                             <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
@@ -889,7 +891,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                               />
                             </div>
                           )}
-                        </button>
+                        </Button>
                       );
                     })}
                 </div>
@@ -910,22 +912,21 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   {agents
                     .filter(agent => agent.id !== assignedTo)
                     .map(agent => (
-                      <button
+                      <Button
                         key={agent.id}
                         type="button"
                         onClick={() => setReviewerId(agent.id)}
                         aria-label={`Assign ${agent.name} as reviewer`}
                         aria-pressed={reviewerId === agent.id}
-                        className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
-                          reviewerId === agent.id
-                            ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                            : 'border-mission-control-border hover:border-mission-control-accent/50'
-                        }`}
+                        size="2"
+                        variant={reviewerId === agent.id ? 'soft' : 'outline'}
+                        radius="medium"
+                        className="p-2 text-left flex items-center gap-2"
                       >
                         <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
                         <span className="truncate">{agent.name}</span>
                         {agent.id === 'mission-control' && <span className="text-xs opacity-60">(default)</span>}
-                      </button>
+                      </Button>
                     ))}
                 </div>
                 <p className="text-xs text-mission-control-text-dim mt-2">
@@ -999,10 +1000,13 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Multi-Stage Project Setup */}
               <div className="border border-mission-control-border rounded-lg overflow-hidden">
-                <button
+                <Button
                   type="button"
                   onClick={() => setShowMultiStage(!showMultiStage)}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-mission-control-surface hover:bg-mission-control-bg transition-colors text-sm"
+                  variant="ghost"
+                  size="2"
+                  radius="none"
+                  className="w-full flex items-center justify-between px-3 py-2"
                 >
                   <span className="flex items-center gap-2">
                     <ChevronDown size={14} className="text-mission-control-text-dim" />
@@ -1012,7 +1016,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     )}
                   </span>
                   <ChevronDown size={14} className={`text-mission-control-text-dim transition-transform ${showMultiStage ? 'rotate-180' : ''}`} />
-                </button>
+                </Button>
                 {showMultiStage && (
                   <div className="p-3 space-y-3 border-t border-mission-control-border">
                     <div>

@@ -388,17 +388,17 @@ export default function XAutomationsTab() {
                 const isSelected = builderTriggerType === option.type;
 
                 return (
-                  <button
+                  <Button
                     key={option.type}
                     onClick={() => {
                       setBuilderTriggerType(option.type);
                       setBuilderTriggerConfig({});
                     }}
-                    className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left ${
-                      isSelected
-                        ? 'border-mission-control-accent bg-mission-control-accent/10'
-                        : 'border-mission-control-border hover:border-mission-control-accent/50'
-                    }`}
+                    size="2"
+                    variant={isSelected ? 'soft' : 'ghost'}
+                    radius="medium"
+                    className="flex items-start gap-3 p-4 w-full text-left h-auto"
+                    style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}
                   >
                     <Icon
                       size={20}
@@ -412,7 +412,7 @@ export default function XAutomationsTab() {
                         {option.description}
                       </div>
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -423,9 +423,8 @@ export default function XAutomationsTab() {
                 <label htmlFor="trigger-keywords" className="block text-sm font-medium mb-2">
                   Keywords (comma-separated)
                 </label>
-                <input
+                <TextField.Root
                   id="trigger-keywords"
-                  type="text"
                   value={builderTriggerConfig.keywords?.join(', ') || ''}
                   onChange={e =>
                     setBuilderTriggerConfig({
@@ -437,7 +436,7 @@ export default function XAutomationsTab() {
                     })
                   }
                   placeholder="e.g., crypto, blockchain, web3"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                  size="2"
                 />
               </div>
             )}
@@ -447,24 +446,26 @@ export default function XAutomationsTab() {
                 <label htmlFor="trigger-interval" className="block text-sm font-medium mb-2">
                   Interval
                 </label>
-                <select
-                  id="trigger-interval"
+                <Select.Root
                   value={builderTriggerConfig.interval || '1h'}
-                  onChange={e =>
+                  onValueChange={val =>
                     setBuilderTriggerConfig({
                       ...builderTriggerConfig,
-                      interval: e.target.value,
+                      interval: val,
                     })
                   }
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                  size="2"
                 >
-                  <option value="15m">Every 15 minutes</option>
-                  <option value="30m">Every 30 minutes</option>
-                  <option value="1h">Every hour</option>
-                  <option value="6h">Every 6 hours</option>
-                  <option value="12h">Every 12 hours</option>
-                  <option value="1d">Every day</option>
-                </select>
+                  <Select.Trigger id="trigger-interval" className="w-full" />
+                  <Select.Content>
+                    <Select.Item value="15m">Every 15 minutes</Select.Item>
+                    <Select.Item value="30m">Every 30 minutes</Select.Item>
+                    <Select.Item value="1h">Every hour</Select.Item>
+                    <Select.Item value="6h">Every 6 hours</Select.Item>
+                    <Select.Item value="12h">Every 12 hours</Select.Item>
+                    <Select.Item value="1d">Every day</Select.Item>
+                  </Select.Content>
+                </Select.Root>
               </div>
             )}
 
@@ -474,7 +475,7 @@ export default function XAutomationsTab() {
                   <label htmlFor="trigger-min-likes" className="block text-sm font-medium mb-2">
                     Min likes
                   </label>
-                  <input
+                  <TextField.Root
                     id="trigger-min-likes"
                     type="number"
                     value={builderTriggerConfig.min_likes ?? 50}
@@ -485,14 +486,14 @@ export default function XAutomationsTab() {
                       })
                     }
                     min="0"
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                    size="2"
                   />
                 </div>
                 <div>
                   <label htmlFor="trigger-min-retweets" className="block text-sm font-medium mb-2">
                     Min retweets
                   </label>
-                  <input
+                  <TextField.Root
                     id="trigger-min-retweets"
                     type="number"
                     value={builderTriggerConfig.min_retweets ?? 10}
@@ -503,7 +504,7 @@ export default function XAutomationsTab() {
                       })
                     }
                     min="0"
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                    size="2"
                   />
                 </div>
               </div>
@@ -522,13 +523,13 @@ export default function XAutomationsTab() {
               Select the AI model used for reply generation and content actions.
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
+              <Button
                 onClick={() => setBuilderAiEngine('gemini')}
-                className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left ${
-                  builderAiEngine === 'gemini'
-                    ? 'border-mission-control-accent bg-mission-control-accent/10'
-                    : 'border-mission-control-border hover:border-mission-control-accent/50'
-                }`}
+                size="2"
+                variant={builderAiEngine === 'gemini' ? 'soft' : 'ghost'}
+                radius="medium"
+                className="flex items-start gap-3 p-4 w-full h-auto"
+                style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}
               >
                 <Bot
                   size={20}
@@ -538,14 +539,14 @@ export default function XAutomationsTab() {
                   <div className="font-medium text-sm">Gemini Flash Lite</div>
                   <div className="text-xs text-mission-control-text-dim">Fast, cheap — ideal for background automation</div>
                 </div>
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setBuilderAiEngine('claude')}
-                className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left ${
-                  builderAiEngine === 'claude'
-                    ? 'border-mission-control-accent bg-mission-control-accent/10'
-                    : 'border-mission-control-border hover:border-mission-control-accent/50'
-                }`}
+                size="2"
+                variant={builderAiEngine === 'claude' ? 'soft' : 'ghost'}
+                radius="medium"
+                className="flex items-start gap-3 p-4 w-full h-auto"
+                style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}
               >
                 <Sparkles
                   size={20}
@@ -555,7 +556,7 @@ export default function XAutomationsTab() {
                   <div className="font-medium text-sm">Claude Haiku</div>
                   <div className="text-xs text-mission-control-text-dim">Interactive, nuanced — ideal for replies requiring context</div>
                 </div>
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -588,16 +589,19 @@ export default function XAutomationsTab() {
                           <Icon size={16} />
                           {ACTION_OPTIONS.find(o => o.type === action.type)?.label}
                         </div>
-                        <button
+                        <IconButton
                           onClick={() => removeAction(index)}
-                          className="text-error hover:text-error"
+                          size="2"
+                          variant="ghost"
+                          color="red"
+                          radius="medium"
                         >
                           <Trash2 size={16} />
-                        </button>
+                        </IconButton>
                       </div>
 
                       {(action.type === 'reply' || action.type === 'dm') && (
-                        <textarea
+                        <TextArea
                           id={`action-template-${index}`}
                           value={action.config.template || ''}
                           onChange={e =>
@@ -605,20 +609,20 @@ export default function XAutomationsTab() {
                           }
                           placeholder="Message template..."
                           rows={2}
-                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none text-sm"
+                          variant="soft"
+                          resize="vertical"
                         />
                       )}
 
                       {action.type === 'add_to_list' && (
-                        <input
+                        <TextField.Root
                           id={`action-list-id-${index}`}
-                          type="text"
                           value={action.config.list_id || ''}
                           onChange={e =>
                             updateAction(index, { ...action.config, list_id: e.target.value })
                           }
                           placeholder="List ID"
-                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent text-sm"
+                          size="2"
                         />
                       )}
 
@@ -627,17 +631,19 @@ export default function XAutomationsTab() {
                           <label htmlFor={`action-report-type-${index}`} className="block text-xs font-medium mb-1 text-mission-control-text-dim">
                             Report type
                           </label>
-                          <select
-                            id={`action-report-type-${index}`}
+                          <Select.Root
                             value={action.config.report_type || 'competitor-analysis'}
-                            onChange={e =>
-                              updateAction(index, { ...action.config, report_type: e.target.value })
+                            onValueChange={val =>
+                              updateAction(index, { ...action.config, report_type: val })
                             }
-                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent text-sm"
+                            size="2"
                           >
-                            <option value="competitor-analysis">Competitor analysis</option>
-                            <option value="weekly-summary">Weekly summary</option>
-                          </select>
+                            <Select.Trigger id={`action-report-type-${index}`} className="w-full" />
+                            <Select.Content>
+                              <Select.Item value="competitor-analysis">Competitor analysis</Select.Item>
+                              <Select.Item value="weekly-summary">Weekly summary</Select.Item>
+                            </Select.Content>
+                          </Select.Root>
                         </div>
                       )}
 
@@ -646,7 +652,7 @@ export default function XAutomationsTab() {
                           <label htmlFor={`action-post-template-${index}`} className="block text-xs font-medium mb-1 text-mission-control-text-dim">
                             Content template
                           </label>
-                          <textarea
+                          <TextArea
                             id={`action-post-template-${index}`}
                             value={action.config.template || ''}
                             onChange={e =>
@@ -654,7 +660,8 @@ export default function XAutomationsTab() {
                             }
                             placeholder="Draft post content..."
                             rows={3}
-                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none text-sm"
+                            variant="soft"
+                            resize="vertical"
                           />
                         </div>
                       )}
@@ -664,7 +671,7 @@ export default function XAutomationsTab() {
                           <label htmlFor={`action-prompt-${index}`} className="block text-xs font-medium mb-1 text-mission-control-text-dim">
                             Custom prompt
                           </label>
-                          <textarea
+                          <TextArea
                             id={`action-prompt-${index}`}
                             value={action.config.prompt || ''}
                             onChange={e =>
@@ -672,7 +679,8 @@ export default function XAutomationsTab() {
                             }
                             placeholder="Describe what the AI should do with the trigger data..."
                             rows={3}
-                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none text-sm"
+                            variant="soft"
+                            resize="vertical"
                           />
                         </div>
                       )}
@@ -688,14 +696,18 @@ export default function XAutomationsTab() {
                 const Icon = option.icon;
 
                 return (
-                  <button
+                  <Button
                     key={option.type}
                     onClick={() => addAction(option.type)}
-                    className="flex items-center gap-2 p-3 rounded-lg border border-mission-control-border hover:border-mission-control-accent hover:bg-mission-control-accent/10 transition-all text-sm"
+                    size="2"
+                    variant="ghost"
+                    radius="medium"
+                    className="flex items-center gap-2 w-full"
+                    style={{ justifyContent: 'flex-start' }}
                   >
                     <Icon size={16} />
                     {option.label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -709,28 +721,28 @@ export default function XAutomationsTab() {
                 <label htmlFor="max-per-hour" className="block text-sm font-medium mb-2">
                   Max per hour
                 </label>
-                <input
+                <TextField.Root
                   id="max-per-hour"
                   type="number"
                   value={builderMaxHourly}
                   onChange={e => setBuilderMaxHourly(parseInt(e.target.value) || 10)}
                   min="1"
                   max="100"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                  size="2"
                 />
               </div>
               <div>
                 <label htmlFor="max-per-day" className="block text-sm font-medium mb-2">
                   Max per day
                 </label>
-                <input
+                <TextField.Root
                   id="max-per-day"
                   type="number"
                   value={builderMaxDaily}
                   onChange={e => setBuilderMaxDaily(parseInt(e.target.value) || 50)}
                   min="1"
                   max="1000"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                  size="2"
                 />
               </div>
             </div>
@@ -738,18 +750,24 @@ export default function XAutomationsTab() {
 
           {/* Save Button */}
           <div className="flex gap-3">
-            <button
+            <Button
               onClick={closeBuilder}
-              className="flex-1 px-4 py-3 bg-mission-control-border rounded-lg hover:bg-mission-control-border/80 transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
+              className="flex-1"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={saveAutomation}
-              className="flex-1 px-4 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors font-medium"
+              size="2"
+              variant="soft"
+              radius="medium"
+              className="flex-1"
             >
               {editingAutomation ? 'Update Automation' : 'Create Automation'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -771,24 +789,28 @@ export default function XAutomationsTab() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               onClick={() => {
                 window.dispatchEvent(new CustomEvent('x-agent-chat-inject', {
                   detail: { message: 'I want to create a new automation for my X/Twitter account. Help me define the trigger, conditions, and actions. When ready, output the automation as a ```automation JSON block.' }
                 }));
               }}
-              className="flex items-center gap-2 px-4 py-2 border border-info text-info rounded-lg hover:bg-info-subtle transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
             >
               <Sparkles size={16} />
               Create with AI
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => openBuilder()}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
+              size="2"
+              variant="soft"
+              radius="medium"
             >
               <Plus size={16} />
               Manual
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -798,12 +820,14 @@ export default function XAutomationsTab() {
             <Zap size={32} className="text-mission-control-text-dim opacity-50" />
             <p className="text-sm font-medium text-mission-control-text">No automations yet</p>
             <p className="text-xs text-mission-control-text-dim max-w-xs">Build IFTTT-style rules to automate your X account responses and actions.</p>
-            <button
+            <Button
               onClick={() => openBuilder()}
-              className="px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-all duration-150"
+              size="2"
+              variant="soft"
+              radius="medium"
             >
               Create your first automation
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="space-y-4">
@@ -837,38 +861,44 @@ export default function XAutomationsTab() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
+                      <IconButton
                         onClick={() => toggleAutomation(automation.id, automation.enabled)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          automation.enabled
-                            ? 'bg-success-subtle text-success hover:bg-success-subtle'
-                            : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border'
-                        }`}
+                        size="2"
+                        variant={automation.enabled ? 'soft' : 'ghost'}
+                        color={automation.enabled ? 'green' : 'gray'}
+                        radius="medium"
                         title={automation.enabled ? 'Disable' : 'Enable'}
                       >
                         <Power size={16} />
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
                         onClick={() => testAutomation(automation.id)}
-                        className="p-2 rounded-lg hover:bg-mission-control-border transition-colors"
+                        size="2"
+                        variant="ghost"
+                        radius="medium"
                         title="Test automation"
                       >
                         <Play size={16} />
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
                         onClick={() => openBuilder(automation)}
-                        className="p-2 rounded-lg hover:bg-mission-control-border transition-colors"
+                        size="2"
+                        variant="ghost"
+                        radius="medium"
                         title="Edit"
                       >
                         <Edit size={16} />
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
                         onClick={() => deleteAutomation(automation.id)}
-                        className="p-2 rounded-lg hover:bg-mission-control-border text-error transition-colors"
+                        size="2"
+                        variant="ghost"
+                        color="red"
+                        radius="medium"
                         title="Delete"
                       >
                         <Trash2 size={16} />
-                      </button>
+                      </IconButton>
                     </div>
                   </div>
 
@@ -915,29 +945,32 @@ export default function XAutomationsTab() {
         )}
         {/* Execution Log */}
         <div className="mt-6 bg-mission-control-surface rounded-lg border border-mission-control-border">
-          <button
+          <Button
             onClick={() => setShowLog(!showLog)}
-            className="flex items-center gap-2 w-full text-left px-4 py-3 text-sm font-medium hover:bg-mission-control-border/30 transition-colors rounded-lg"
+            size="2"
+            variant="ghost"
+            radius="medium"
+            className="flex items-center gap-2 w-full text-left px-4 py-3"
+            style={{ justifyContent: 'flex-start' }}
           >
             {showLog ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <History size={14} className="text-mission-control-accent" />
             <span>Execution Log</span>
             <span className="text-mission-control-text-dim ml-1">({executionLog.length})</span>
-          </button>
+          </Button>
 
           {showLog && (
             <div className="px-4 pb-4">
               {/* Filter */}
               <div className="mb-3">
-                <input
-                  type="text"
+                <TextField.Root
                   value={logFilter}
                   onChange={e => {
                     setLogFilter(e.target.value);
                     setLogDisplayLimit(20);
                   }}
                   placeholder="Filter by automation name..."
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-xs outline-none focus:border-mission-control-accent"
+                  size="1"
                 />
               </div>
 
@@ -966,9 +999,13 @@ export default function XAutomationsTab() {
 
                         return (
                           <div key={entry.id} className="rounded-lg border border-mission-control-border bg-mission-control-bg overflow-hidden">
-                            <button
+                            <Button
                               onClick={() => setExpandedLogEntry(isExpanded ? null : entry.id)}
-                              className="flex items-center gap-3 w-full text-left px-3 py-2 text-xs hover:bg-mission-control-border/20 transition-colors"
+                              size="1"
+                              variant="ghost"
+                              radius="medium"
+                              className="flex items-center gap-3 w-full text-left px-3 py-2"
+                              style={{ justifyContent: 'flex-start' }}
                             >
                               {isExpanded ? <ChevronDown size={12} className="flex-shrink-0" /> : <ChevronRight size={12} className="flex-shrink-0" />}
                               <span className="text-mission-control-text-dim w-28 flex-shrink-0 tabular-nums">
@@ -984,7 +1021,7 @@ export default function XAutomationsTab() {
                               }`}>
                                 {entry.status}
                               </span>
-                            </button>
+                            </Button>
 
                             {isExpanded && (
                               <div className="px-3 pb-3 pt-1 border-t border-mission-control-border space-y-2">
@@ -1018,12 +1055,15 @@ export default function XAutomationsTab() {
                     </div>
 
                     {filteredLog.length > logDisplayLimit && (
-                      <button
+                      <Button
                         onClick={() => setLogDisplayLimit(prev => prev + 20)}
-                        className="mt-3 w-full text-xs text-mission-control-text-dim hover:text-mission-control-text py-2 border border-mission-control-border rounded-lg hover:bg-mission-control-border/20 transition-colors"
+                        size="1"
+                        variant="ghost"
+                        radius="medium"
+                        className="mt-3 w-full"
                       >
                         Load more ({filteredLog.length - logDisplayLimit} remaining)
-                      </button>
+                      </Button>
                     )}
                   </>
                 );

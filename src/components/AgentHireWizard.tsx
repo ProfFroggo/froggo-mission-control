@@ -3,6 +3,7 @@ import {
   X, ChevronRight, CheckCircle, Bot, Cpu, Loader2, User, Briefcase,
   Search, Calendar, Tag, FlaskConical,
 } from 'lucide-react';
+import { Button, IconButton, TextField, TextArea, Switch } from '@radix-ui/themes';
 import type { CatalogAgent } from '../types/catalog';
 import { catalogApi } from '../lib/api';
 import { useStore } from '../store/store';
@@ -114,14 +115,16 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             </div>
           </div>
           {step !== 'installing' && (
-            <button
+            <IconButton
               type="button"
+              size="2"
+              variant="ghost"
+              radius="medium"
               onClick={onClose}
-              className="icon-btn"
               aria-label="Close"
             >
               <X size={18} />
-            </button>
+            </IconButton>
           )}
         </div>
 
@@ -154,15 +157,17 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             </p>
 
             <div className="relative mb-4">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-              <input
-                type="text"
+              <TextField.Root
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="e.g. Write a product launch email campaign…"
-                className="w-full pl-8 pr-3 py-2.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                size="2"
                 autoFocus
-              />
+              >
+                <TextField.Slot>
+                  <Search size={14} />
+                </TextField.Slot>
+              </TextField.Root>
             </div>
 
             {/* Match result */}
@@ -190,20 +195,24 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               </div>
             )}
 
-            <button
+            <Button
               type="button"
+              size="2"
+              variant="solid"
               onClick={() => setStep('review')}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium"
+              style={{ width: '100%' }}
             >
               Continue <ChevronRight size={16} />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              size="2"
+              variant="ghost"
               onClick={() => setStep('review')}
-              className="w-full mt-2 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors py-1"
+              style={{ width: '100%', marginTop: '8px' }}
             >
               Skip and review agent
-            </button>
+            </Button>
           </div>
         )}
 
@@ -250,20 +259,23 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             )}
 
             <div className="flex gap-2">
-              <button
+              <Button
                 type="button"
+                size="2"
+                variant="outline"
                 onClick={() => setStep('match')}
-                className="px-4 py-2.5 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
               >
                 Back
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                size="2"
+                variant="solid"
                 onClick={() => setStep('personalize')}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium"
+                style={{ flex: 1 }}
               >
                 Continue <ChevronRight size={16} />
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -280,12 +292,11 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <label className="flex items-center gap-1.5 text-xs font-medium text-mission-control-text-dim mb-1.5">
                 <Briefcase size={12} /> Their role on your team
               </label>
-              <input
-                type="text"
+              <TextField.Root
                 value={role}
                 onChange={e => setRole(e.target.value)}
                 placeholder={agent.role || 'e.g. Head of Growth'}
-                className="w-full px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                size="2"
               />
             </div>
 
@@ -294,12 +305,13 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <label className="flex items-center gap-1.5 text-xs font-medium text-mission-control-text-dim mb-1.5">
                 <Bot size={12} /> Personality or working style
               </label>
-              <textarea
+              <TextArea
                 value={personality}
                 onChange={e => setPersonality(e.target.value)}
                 placeholder="e.g. Direct, data-driven, bias to action"
                 rows={3}
-                className="w-full px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
+                size="2"
+                style={{ resize: 'none' }}
               />
             </div>
 
@@ -308,12 +320,13 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <label className="flex items-center gap-1.5 text-xs font-medium text-mission-control-text-dim mb-1.5">
                 <User size={12} /> Your context for this agent
               </label>
-              <textarea
+              <TextArea
                 value={userContext}
                 onChange={e => setUserContext(e.target.value)}
                 placeholder={`e.g. I'm a VP of Growth at a crypto startup. We use Solana. Focus on DeFi users and KOL partnerships.`}
                 rows={4}
-                className="w-full px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
+                size="2"
+                style={{ resize: 'none' }}
               />
               <p className="text-xs text-mission-control-text-dim mt-1">
                 The more context you give, the better they'll perform from day one.
@@ -331,36 +344,31 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                   Adds a trial tag to the agent. Remove any time from their settings.
                 </p>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={trialMode}
-                onClick={() => setTrialMode(v => !v)}
-                className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
-                  trialMode ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-                }`}
-              >
-                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                  trialMode ? 'translate-x-5' : 'translate-x-0.5'
-                }`} />
-              </button>
+              <Switch
+                size="2"
+                checked={trialMode}
+                onCheckedChange={(checked) => setTrialMode(checked)}
+              />
             </div>
 
             <div className="flex gap-2">
-              <button
+              <Button
                 type="button"
+                size="2"
+                variant="outline"
                 onClick={() => setStep('review')}
-                className="px-4 py-2.5 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
               >
                 Back
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                size="2"
+                variant="solid"
                 onClick={() => setStep('confirm')}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium text-sm"
+                style={{ flex: 1 }}
               >
                 Review &amp; Hire <ChevronRight size={15} />
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -431,21 +439,24 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             </div>
 
             <div className="flex gap-2">
-              <button
+              <Button
                 type="button"
+                size="2"
+                variant="outline"
                 onClick={() => setStep('personalize')}
-                className="px-4 py-2.5 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
               >
                 Back
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                size="2"
+                variant="solid"
                 onClick={handleInstall}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium text-sm"
+                style={{ flex: 1 }}
               >
                 <CheckCircle size={15} />
                 Confirm &amp; Hire
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -481,13 +492,15 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 </code>
               </p>
             </div>
-            <button
+            <Button
               type="button"
+              size="2"
+              variant="solid"
               onClick={() => { onHired(); onClose(); }}
-              className="mt-2 px-6 py-2.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium"
+              style={{ marginTop: '8px' }}
             >
               Done
-            </button>
+            </Button>
           </div>
         )}
       </div>

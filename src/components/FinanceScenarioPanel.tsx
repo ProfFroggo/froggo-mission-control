@@ -3,6 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { Calculator, TrendingUp, TrendingDown, Plus, Trash2, Play, Save, Loader2 } from 'lucide-react';
+import { Button, IconButton, TextField, Select, TextArea } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { financeApi } from '../lib/api';
 
@@ -155,20 +156,18 @@ function QuickProjectionTab() {
               }`}
             >
               {/* Toggle */}
-              <button
+              <IconButton
                 onClick={() => setCancel(item.id, !isCancelled)}
-                className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
-                  isCancelled ? 'bg-error/60' : 'bg-mission-control-accent'
-                }`}
+                size="2"
+                variant={isCancelled ? 'soft' : 'solid'}
+                color={isCancelled ? 'red' : 'gray'}
+                radius="full"
                 aria-label={isCancelled ? 'Restore item' : 'Cancel item'}
                 title={isCancelled ? 'Click to restore' : 'Click to cancel'}
+                className="flex-shrink-0"
               >
-                <span
-                  className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                    isCancelled ? 'translate-x-0.5' : 'translate-x-5'
-                  }`}
-                />
-              </button>
+                <span className="w-2 h-2 rounded-full bg-current" />
+              </IconButton>
 
               {/* Name */}
               <span
@@ -185,15 +184,17 @@ function QuickProjectionTab() {
               </span>
 
               {/* Amount input (disabled when cancelled) */}
-              <input
+              <TextField.Root
                 type="number"
                 disabled={isCancelled}
                 defaultValue={Math.abs(item.amount).toFixed(2)}
                 onChange={(e) => setAdjustAmount(item.id, e.target.value)}
                 min="0"
                 step="0.01"
-                className="w-24 text-right text-sm bg-mission-control-surface border border-mission-control-border rounded px-2 py-1 text-mission-control-text focus:outline-none focus:border-mission-control-accent disabled:opacity-40"
+                size="2"
+                className="w-24"
                 aria-label={`Amount for ${item.description}`}
+                style={{ textAlign: 'right' }}
               />
               <span className="text-xs text-mission-control-text-dim flex-shrink-0">{item.currency}</span>
             </div>
@@ -202,10 +203,13 @@ function QuickProjectionTab() {
       </div>
 
       {/* Calculate button */}
-      <button
+      <Button
         onClick={calculate}
         disabled={calculating}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent hover:bg-mission-control-accent/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+        size="2"
+        variant="soft"
+        radius="medium"
+        className="w-full"
         aria-label="Calculate projection"
       >
         {calculating ? (
@@ -213,7 +217,7 @@ function QuickProjectionTab() {
         ) : (
           <><Calculator className="w-4 h-4" /> Calculate</>
         )}
-      </button>
+      </Button>
 
       {/* Results */}
       {result && (
@@ -418,24 +422,24 @@ function ScenarioBuilderTab() {
         </span>
         <div className="flex items-center gap-2">
           {comparedIds.length >= 2 && (
-            <button
+            <Button
               onClick={() => setCompareMode((v) => !v)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                compareMode
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              size="1"
+              variant={compareMode ? 'soft' : 'ghost'}
+              radius="medium"
             >
               Compare
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent hover:bg-mission-control-accent/90 text-white rounded-lg text-sm font-medium transition-colors"
+            size="2"
+            variant="soft"
+            radius="medium"
             aria-label="New scenario"
           >
             <Plus className="w-4 h-4" /> New Scenario
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -509,21 +513,26 @@ function ScenarioBuilderTab() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
+                    <Button
                       onClick={() => runProjection(scenario.id)}
                       disabled={projecting}
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-mission-control-accent/20 hover:bg-mission-control-accent/30 text-mission-control-accent rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                      size="1"
+                      variant="soft"
+                      radius="medium"
                       aria-label="Run projection"
                     >
                       <Play className="w-3 h-3" /> Run
-                    </button>
-                    <button
+                    </Button>
+                    <IconButton
                       onClick={() => deleteScenario(scenario.id, scenario.name)}
-                      className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
+                      size="2"
+                      variant="ghost"
+                      color="red"
+                      radius="medium"
                       aria-label={`Delete ${scenario.name}`}
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
 
@@ -623,26 +632,26 @@ function ScenarioBuilderTab() {
           {/* Name */}
           <div>
             <label htmlFor="scenario-name" className="block text-xs text-mission-control-text-dim mb-1">Name *</label>
-            <input
+            <TextField.Root
               id="scenario-name"
-              type="text"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="e.g., Cancel Netflix + Gym"
-              className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+              size="2"
             />
           </div>
 
           {/* Description */}
           <div>
             <label htmlFor="scenario-description" className="block text-xs text-mission-control-text-dim mb-1">Description</label>
-            <textarea
+            <TextArea
               id="scenario-description"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               placeholder="Optional notes..."
               rows={2}
-              className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent resize-none"
+              variant="soft"
+              resize="vertical"
             />
           </div>
 
@@ -650,28 +659,30 @@ function ScenarioBuilderTab() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="scenario-account" className="block text-xs text-mission-control-text-dim mb-1">Base Account</label>
-              <select
-                id="scenario-account"
-                value={form.baseAccountId}
-                onChange={(e) => setForm((f) => ({ ...f, baseAccountId: e.target.value }))}
-                className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+              <Select.Root
+                value={form.baseAccountId || '_none'}
+                onValueChange={(val) => setForm((f) => ({ ...f, baseAccountId: val === '_none' ? '' : val }))}
+                size="2"
               >
-                <option value="">None (delta mode)</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
-              </select>
+                <Select.Trigger id="scenario-account" className="w-full" />
+                <Select.Content>
+                  <Select.Item value="_none">None (delta mode)</Select.Item>
+                  {accounts.map((a) => (
+                    <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
             </div>
             <div>
               <label htmlFor="scenario-months" className="block text-xs text-mission-control-text-dim mb-1">Projection months</label>
-              <input
+              <TextField.Root
                 id="scenario-months"
                 type="number"
                 min={1}
                 max={60}
                 value={form.projectionMonths}
                 onChange={(e) => setForm((f) => ({ ...f, projectionMonths: parseInt(e.target.value) || 12 }))}
-                className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                size="2"
               />
             </div>
           </div>
@@ -682,22 +693,23 @@ function ScenarioBuilderTab() {
               <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
                 Income adjustments
               </span>
-              <button
+              <Button
                 onClick={() =>
                   setForm((f) => ({
                     ...f,
                     incomeRows: [...f.incomeRows, { label: '', monthly_delta: 0 }],
                   }))
                 }
-                className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent/80"
+                size="1"
+                variant="ghost"
+                radius="medium"
               >
                 <Plus className="w-3 h-3" /> Add
-              </button>
+              </Button>
             </div>
             {form.incomeRows.map((row, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
+                <TextField.Root
                   value={row.label}
                   onChange={(e) =>
                     setForm((f) => {
@@ -707,9 +719,10 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="e.g., Side project"
-                  className="flex-1 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="flex-1"
                 />
-                <input
+                <TextField.Root
                   type="number"
                   value={row.monthly_delta}
                   onChange={(e) =>
@@ -720,20 +733,24 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="+500"
-                  className="w-24 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="w-24"
                 />
-                <button
+                <IconButton
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
                       incomeRows: f.incomeRows.filter((_, j) => j !== i),
                     }))
                   }
-                  className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
+                  size="2"
+                  variant="ghost"
+                  color="red"
+                  radius="medium"
                   aria-label="Remove income row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                </IconButton>
               </div>
             ))}
           </div>
@@ -744,22 +761,23 @@ function ScenarioBuilderTab() {
               <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
                 Expense adjustments
               </span>
-              <button
+              <Button
                 onClick={() =>
                   setForm((f) => ({
                     ...f,
                     expenseRows: [...f.expenseRows, { category: '', monthly_delta: 0 }],
                   }))
                 }
-                className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent/80"
+                size="1"
+                variant="ghost"
+                radius="medium"
               >
                 <Plus className="w-3 h-3" /> Add
-              </button>
+              </Button>
             </div>
             {form.expenseRows.map((row, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
+                <TextField.Root
                   value={row.category}
                   onChange={(e) =>
                     setForm((f) => {
@@ -769,9 +787,10 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="e.g., subscriptions"
-                  className="flex-1 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="flex-1"
                 />
-                <input
+                <TextField.Root
                   type="number"
                   value={row.monthly_delta}
                   onChange={(e) =>
@@ -782,20 +801,24 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="-50"
-                  className="w-24 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="w-24"
                 />
-                <button
+                <IconButton
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
                       expenseRows: f.expenseRows.filter((_, j) => j !== i),
                     }))
                   }
-                  className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
+                  size="2"
+                  variant="ghost"
+                  color="red"
+                  radius="medium"
                   aria-label="Remove expense row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                </IconButton>
               </div>
             ))}
           </div>
@@ -806,22 +829,23 @@ function ScenarioBuilderTab() {
               <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
                 One-time events
               </span>
-              <button
+              <Button
                 onClick={() =>
                   setForm((f) => ({
                     ...f,
                     eventRows: [...f.eventRows, { label: '', amount: 0, date: '' }],
                   }))
                 }
-                className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent/80"
+                size="1"
+                variant="ghost"
+                radius="medium"
               >
                 <Plus className="w-3 h-3" /> Add
-              </button>
+              </Button>
             </div>
             {form.eventRows.map((row, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
+                <TextField.Root
                   value={row.label}
                   onChange={(e) =>
                     setForm((f) => {
@@ -831,9 +855,10 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="e.g., Vacation"
-                  className="flex-1 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="flex-1"
                 />
-                <input
+                <TextField.Root
                   type="number"
                   value={row.amount}
                   onChange={(e) =>
@@ -844,9 +869,10 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="-3000"
-                  className="w-24 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="w-24"
                 />
-                <input
+                <TextField.Root
                   type="date"
                   value={row.date}
                   onChange={(e) =>
@@ -856,43 +882,51 @@ function ScenarioBuilderTab() {
                       return { ...f, eventRows: next };
                     })
                   }
-                  className="w-32 px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="w-32"
                 />
-                <button
+                <IconButton
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
                       eventRows: f.eventRows.filter((_, j) => j !== i),
                     }))
                   }
-                  className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
+                  size="2"
+                  variant="ghost"
+                  color="red"
+                  radius="medium"
                   aria-label="Remove event row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                </IconButton>
               </div>
             ))}
           </div>
 
           {/* Actions */}
           <div className="flex items-center gap-2 pt-2">
-            <button
+            <Button
               onClick={saveAndProject}
               disabled={saving || projecting}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+              size="2"
+              variant="soft"
+              radius="medium"
             >
               {saving || projecting ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> {saving ? 'Saving...' : 'Projecting...'}</>
               ) : (
                 <><Save className="w-4 h-4" /> Save & Project</>
               )}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={resetForm}
-              className="px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text rounded-lg text-sm transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -917,18 +951,16 @@ export default function FinanceScenarioPanel() {
       {/* Tab strip */}
       <div className="flex items-center gap-1 mb-4">
         {tabs.map(({ id, label, icon: Icon }) => (
-          <button
+          <Button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              activeTab === id
-                ? 'bg-mission-control-accent text-white'
-                : 'bg-mission-control-bg-alt text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
+            size="2"
+            variant={activeTab === id ? 'soft' : 'ghost'}
+            radius="full"
           >
             <Icon className="w-3.5 h-3.5" />
             {label}
-          </button>
+          </Button>
         ))}
       </div>
 

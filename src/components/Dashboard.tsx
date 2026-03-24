@@ -10,7 +10,7 @@ import {
   RefreshCw, TrendingUp, TrendingDown, Minus, Users,
   Pencil, GripVertical, X, LayoutGrid, Check
 } from 'lucide-react';
-import { Button, IconButton, Badge, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Spinner, Select } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 import AgentDetailModal from './AgentDetailModal';
 import { useStore } from '../store/store';
@@ -262,15 +262,18 @@ function WidgetCard({
       )}
       {editMode && (
         <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
-          <select
+          <Select.Root
             value={slot.size}
-            onChange={e => onResize(slot.id, e.target.value as WidgetSize)}
-            className="text-xs px-1.5 py-0.5 rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text cursor-pointer focus:outline-none focus:border-mission-control-accent/50"
+            onValueChange={val => onResize(slot.id, val as WidgetSize)}
+            size="1"
           >
-            {(Object.entries(SIZE_LABELS) as [WidgetSize, string][]).map(([val, label]) => (
-              <option key={val} value={val}>{label}</option>
-            ))}
-          </select>
+            <Select.Trigger />
+            <Select.Content>
+              {(Object.entries(SIZE_LABELS) as [WidgetSize, string][]).map(([val, label]) => (
+                <Select.Item key={val} value={val}>{label}</Select.Item>
+              ))}
+            </Select.Content>
+          </Select.Root>
           <IconButton
             onClick={() => onRemove(slot.id)}
             title="Remove widget"
@@ -314,9 +317,11 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon: Icon, color, pulse, highlight, onClick, sub, agents }: StatCardProps) {
   return (
-    <button
+    <Button
       onClick={onClick}
-      className={`flex-1 min-w-0 p-4 backdrop-blur-xl rounded-lg border transition-all group text-left ${
+      variant="ghost"
+      style={{ flex: 1, minWidth: 0, padding: '1rem', textAlign: 'left', height: 'auto', display: 'block' }}
+      className={`backdrop-blur-xl rounded-lg border transition-all group ${
         highlight && value > 0
           ? 'bg-warning-subtle border-warning-border hover:border-warning shadow-lg'
           : 'bg-mission-control-surface/80 border-mission-control-border hover:border-mission-control-accent/50'
@@ -343,7 +348,7 @@ function StatCard({ label, value, icon: Icon, color, pulse, highlight, onClick, 
           )}
         </div>
       )}
-    </button>
+    </Button>
   );
 }
 
@@ -524,12 +529,13 @@ function ApprovalsQueue({
             </span>
           )}
         </div>
-        <button
+        <Button
           onClick={() => onNavigate?.('approvals')}
-          className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors"
+          size="1"
+          variant="ghost"
         >
           View All <ArrowRight size={12} />
-        </button>
+        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto max-h-[400px]">
@@ -630,12 +636,13 @@ function ActivityFeed({
             </span>
           )}
         </div>
-        <button
+        <Button
           onClick={() => onNavigate?.('kanban')}
-          className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors"
+          size="1"
+          variant="ghost"
         >
           All Tasks <ArrowRight size={12} />
-        </button>
+        </Button>
       </div>
 
       {/* Agent leaderboard — top 3 most active today */}
@@ -650,11 +657,14 @@ function ActivityFeed({
               const agent = agentMap.get(agentId);
               const rankColors = ['text-warning', 'text-mission-control-text-dim', 'text-warning'];
               return (
-                <button
+                <Button
                   key={agentId}
                   onClick={() => onAgentClick?.(agentId)}
-                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-mission-control-surface/60 border border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-all group flex-1 min-w-0 overflow-hidden"
+                  variant="ghost"
+                  size="1"
                   title={`Open ${agent?.name || agentId} details`}
+                  style={{ flex: 1, minWidth: 0, height: 'auto', overflow: 'hidden' }}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-mission-control-surface/60 border border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-all group"
                 >
                   <span className={`text-xs font-bold ${rankColors[idx]}`}>{idx + 1}</span>
                   <AgentAvatar agentId={agentId} fallbackEmoji={agent?.avatar} size="xs" />
@@ -664,7 +674,7 @@ function ActivityFeed({
                   <span className="ml-auto text-xs font-semibold tabular-nums text-mission-control-text-dim flex-shrink-0">
                     {count}
                   </span>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -696,13 +706,15 @@ function ActivityFeed({
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-0.5">
                         {agent ? (
-                          <button
+                          <Button
                             onClick={e => { e.stopPropagation(); onAgentClick?.(agent.id); }}
-                            className="hover:opacity-80 transition-opacity"
+                            variant="ghost"
+                            size="1"
                             title={`Open ${agent.name} details`}
+                            style={{ padding: 0 }}
                           >
                             <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
-                          </button>
+                          </Button>
                         ) : (
                           <div className="w-6 h-6 rounded-full bg-mission-control-border flex items-center justify-center">
                             <Bot size={12} className="text-mission-control-text-dim" />
@@ -712,12 +724,14 @@ function ActivityFeed({
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-mission-control-text-dim">
                           {agent ? (
-                            <button
+                            <Button
                               onClick={e => { e.stopPropagation(); onAgentClick?.(agent.id); }}
-                              className="font-medium text-mission-control-text hover:text-mission-control-accent transition-colors"
+                              variant="ghost"
+                              size="1"
+                              style={{ padding: 0 }}
                             >
                               {agent.name}
-                            </button>
+                            </Button>
                           ) : (
                             <span className="font-medium text-mission-control-text">Agent</span>
                           )}
@@ -1072,10 +1086,13 @@ function AgentProductivitySummary({
               const maxCompleted = agentProductivity[0]?.completed ?? 1;
               const pct = maxCompleted > 0 ? (completed / maxCompleted) * 100 : 0;
               return (
-                <button
+                <Button
                   key={agent}
                   onClick={() => onAgentClick?.(agent)}
-                  className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-mission-control-border/40 transition-colors group text-left"
+                  variant="ghost"
+                  size="1"
+                  style={{ width: '100%', height: 'auto', textAlign: 'left', display: 'flex' }}
+                  className="items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-mission-control-border/40 transition-colors group"
                 >
                   <span className={`text-xs font-bold w-4 flex-shrink-0 ${rankColors[idx] ?? 'text-mission-control-text-dim'}`}>
                     {idx + 1}
@@ -1097,7 +1114,7 @@ function AgentProductivitySummary({
                       />
                     </div>
                   </div>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -1285,12 +1302,13 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
           <Calendar size={16} className="text-info" />
           <h2 className="font-semibold text-sm">Today&apos;s Schedule</h2>
         </div>
-        <button
+        <Button
           onClick={() => onNavigate?.('schedule')}
-          className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors"
+          size="1"
+          variant="ghost"
         >
           Full Calendar <ChevronRight size={12} />
-        </button>
+        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto max-h-[300px]">
@@ -1356,12 +1374,13 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
             })}
             {eventsWithLinks.length > 6 && (
               <div className="p-2 text-center">
-                <button
+                <Button
                   onClick={() => onNavigate?.('schedule')}
-                  className="text-xs text-mission-control-accent hover:underline"
+                  size="1"
+                  variant="ghost"
                 >
                   +{eventsWithLinks.length - 6} more
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -1728,24 +1747,18 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
         return (
           <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border p-6 flex flex-col items-center justify-center min-h-[120px] gap-2">
             <Inbox size={24} className="text-mission-control-text-dim" />
-            <button
-              onClick={() => onNavigate?.('inbox')}
-              className="text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors font-medium"
-            >
+            <Button onClick={() => onNavigate?.('inbox')} size="1" variant="ghost">
               Open Inbox
-            </button>
+            </Button>
           </div>
         );
       case 'campaign-status':
         return (
           <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border p-6 flex flex-col items-center justify-center min-h-[120px] gap-2">
             <BarChart2 size={24} className="text-mission-control-text-dim" />
-            <button
-              onClick={() => onNavigate?.('analytics')}
-              className="text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors font-medium"
-            >
+            <Button onClick={() => onNavigate?.('analytics')} size="1" variant="ghost">
               View Campaigns
-            </button>
+            </Button>
           </div>
         );
       case 'velocity':
@@ -1810,13 +1823,14 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
         {/* Add widget button — visible in edit mode */}
         {editMode && (
           <div className="col-span-1 sm:col-span-4 flex justify-center pt-2 pb-4">
-            <button
+            <Button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-mission-control-surface border border-dashed border-mission-control-accent/40 text-mission-control-accent text-sm font-medium hover:border-mission-control-accent hover:bg-mission-control-accent/5 transition-all"
+              size="2"
+              variant="outline"
             >
               <Plus size={16} />
               Add Widget
-            </button>
+            </Button>
           </div>
         )}
       </div>
