@@ -265,7 +265,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
               size="2"
               variant="ghost"
               color="gray"
-              radius="medium"
+             
               title="Refresh sources"
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
@@ -275,7 +275,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
               size="2"
               variant="ghost"
               color="gray"
-              radius="medium"
+             
               aria-label="Close"
             >
               <X size={16} />

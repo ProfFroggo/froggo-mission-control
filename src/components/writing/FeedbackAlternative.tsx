@@ -24,7 +24,7 @@ export default function FeedbackAlternative({ index, text, commentary, onAccept 
         onClick={() => onAccept(text)}
         size="1"
         variant="ghost"
-        radius="medium"
+       
         title="Accept this alternative"
         aria-label="Accept this alternative"
       >

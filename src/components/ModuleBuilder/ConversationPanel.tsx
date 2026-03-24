@@ -153,7 +153,7 @@ export default function ConversationPanel({
               type="submit"
               size="2"
               variant="solid"
-              radius="medium"
+             
               disabled={!input.trim() || isFinished || isStreaming}
             >
               <Send size={16} />

@@ -92,7 +92,7 @@ export default function FactList() {
                   <IconButton
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={() => setEditingId(fact.id)}
                     title="Edit"
                   >
@@ -101,7 +101,7 @@ export default function FactList() {
                   <IconButton
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={() => handleDelete(fact.id)}
                     title="Delete"
                   >

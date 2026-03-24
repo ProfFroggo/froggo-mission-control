@@ -65,7 +65,7 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
           <IconButton
             size="1"
             variant="ghost"
-            radius="medium"
+           
             onClick={onClose}
           >
             <X size={15} />

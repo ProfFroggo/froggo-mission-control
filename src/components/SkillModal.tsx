@@ -561,7 +561,7 @@ ${skillData.instructions}
               variant="ghost"
               color="gray"
               size="2"
-              radius="medium"
+             
             >
               <X size={16} />
             </IconButton>

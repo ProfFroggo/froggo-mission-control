@@ -44,6 +44,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ─── Translucent surface system ─────────────────────────────────────────────
+   Forces bg-mission-control-surface / card to honour Radix
+   panelBackground="translucent". Without this, the Tailwind utility resolves
+   to --color-panel-solid (opaque), ignoring what Radix sets on --color-panel.
+   backdrop-filter provides the frosted-glass depth effect.
+   ──────────────────────────────────────────────────────────────────────────── */
+.bg-mission-control-surface,
+.bg-mission-control-card {
+  background-color: color-mix(in srgb, var(--mission-control-bg, #0a0a0a) 85%, transparent) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

@@ -173,7 +173,7 @@ function ArtifactCard({ lang, code, onOpen }: { lang: string; code: string; onOp
         onClick={async () => { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
         size="1"
         variant="ghost"
-        radius="medium"
+       
         title="Copy code"
         aria-label="Copy code"
         className="opacity-0 group-hover:opacity-100"
@@ -185,7 +185,7 @@ function ArtifactCard({ lang, code, onOpen }: { lang: string; code: string; onOp
           onClick={() => onOpen(lang, code)}
           size="1"
           variant="soft"
-          radius="medium"
+         
         >
           <ExternalLink size={11} /> Open
         </Button>
@@ -205,7 +205,7 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
           onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
           size="1"
           variant="ghost"
-          radius="medium"
+         
           title="Copy code"
         >
           {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}

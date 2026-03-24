@@ -24,7 +24,7 @@ export default function VersionDiff({ changes, versionLabel, onClose }: VersionD
           onClick={onClose}
           size="1"
           variant="ghost"
-          radius="medium"
+         
           title="Close diff"
           aria-label="Close diff"
         >

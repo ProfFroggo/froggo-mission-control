@@ -92,7 +92,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
           variant="ghost"
           color="gray"
           size="2"
-          radius="medium"
+         
         >
           <X size={16} />
         </IconButton>

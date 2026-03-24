@@ -122,7 +122,7 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
             onClick={() => setShowRejectInput(false)}
             variant="ghost"
             size="2"
-            radius="medium"
+           
           >
             <X size={12} />
           </IconButton>

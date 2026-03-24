@@ -219,7 +219,7 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
           <IconButton
             size="2"
             variant="ghost"
-            radius="medium"
+           
             onClick={onSkip}
             aria-label="Skip tour"
           >
@@ -256,7 +256,7 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
             <IconButton
               size="2"
               variant="ghost"
-              radius="medium"
+             
               disabled={currentStep === 0}
               onClick={handlePrevious}
               aria-label="Previous step"

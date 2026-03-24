@@ -141,28 +141,30 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
             variant="ghost"
             color="gray"
             size="2"
-            radius="medium"
+           
           >
             <X size={16} />
           </IconButton>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 px-6 pt-4 border-b border-mission-control-border">
+        <div className="flex gap-1 px-6 border-b border-mission-control-border">
           {(['overview', 'permissions', 'security'] as const).map((tab) => (
-            <Button
+            <button
               key={tab}
+              type="button"
               onClick={() => setActiveTab(tab)}
-              variant={activeTab === tab ? 'soft' : 'ghost'}
-              color={activeTab === tab ? 'blue' : 'gray'}
-              size="2"
-              className="capitalize rounded-none"
+              className={`flex items-center gap-2 px-4 py-3 border-b-2 -mb-px text-sm font-medium capitalize transition-colors ${
+                activeTab === tab
+                  ? 'border-mission-control-accent text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {tab === 'overview' && <BarChart2 size={14} />}
               {tab === 'permissions' && <Lock size={14} />}
               {tab === 'security' && <Shield size={14} />}
               {tab}
-            </Button>
+            </button>
           ))}
         </div>
 

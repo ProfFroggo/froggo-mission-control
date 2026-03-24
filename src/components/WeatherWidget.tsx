@@ -97,7 +97,7 @@ export default function WeatherWidget() {
           disabled={loading}
           size="2"
           variant="ghost"
-          radius="medium"
+         
           title="Refresh"
           aria-label="Refresh weather"
         >
@@ -117,7 +117,7 @@ export default function WeatherWidget() {
           <div className="text-center py-6 text-mission-control-text-dim">
             <AlertCircle size={32} className="mx-auto mb-2 text-error" />
             <p className="text-sm">{error}</p>
-            <Button onClick={fetchWeather} size="1" variant="ghost" radius="medium" className="mt-2">
+            <Button onClick={fetchWeather} size="1" variant="ghost" className="mt-2">
               Try again
             </Button>
           </div>
@@ -169,7 +169,7 @@ export default function WeatherWidget() {
                   onClick={() => setExpanded(!expanded)}
                   variant="ghost"
                   size="2"
-                  radius="medium"
+                 
                   className="w-full justify-between"
                 >
                   <span>3-Day Forecast</span>

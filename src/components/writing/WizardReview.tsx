@@ -226,7 +226,7 @@ export default function WizardReview() {
                 <IconButton
                   size="1"
                   variant="ghost"
-                  radius="medium"
+                 
                   onClick={() => removeTheme(i)}
                 >
                   <X size={10} />
@@ -246,7 +246,7 @@ export default function WizardReview() {
             <IconButton
               size="2"
               variant="soft"
-              radius="medium"
+             
               onClick={addTheme}
               disabled={!newTheme.trim()}
             >
@@ -290,7 +290,7 @@ export default function WizardReview() {
                   <IconButton
                     size="2"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={() => removeChapter(i)}
                   >
                     <Trash2 size={14} />
@@ -353,7 +353,7 @@ export default function WizardReview() {
                   <IconButton
                     size="2"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={() => removeCharacter(i)}
                   >
                     <Trash2 size={14} />
@@ -428,7 +428,7 @@ export default function WizardReview() {
                   <IconButton
                     size="2"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={() => removeTimelineEvent(i)}
                   >
                     <Trash2 size={14} />

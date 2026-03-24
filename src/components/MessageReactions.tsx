@@ -124,7 +124,7 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
                 title={label}
                 size="2"
                 variant={myReactions.has(emoji) ? 'soft' : 'ghost'}
-                radius="medium"
+               
                 aria-label={label}
               >
                 {icon}

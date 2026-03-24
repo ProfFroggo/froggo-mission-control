@@ -375,7 +375,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
         <IconButton
           size="2"
           variant="soft"
-          radius="medium"
+         
           onClick={handleSend}
           disabled={streaming || !instructions.trim()}
         >

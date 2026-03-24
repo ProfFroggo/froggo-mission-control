@@ -221,20 +221,20 @@ export default function PerformanceBenchmarks() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex bg-mission-control-border rounded-lg p-1">
+          <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
             {(['wow', 'mom', 'yoy'] as const).map((mode) => (
-              <Button
+              <button
                 key={mode}
+                type="button"
                 onClick={() => setCompareMode(mode)}
-                size="2"
-                variant={compareMode === mode ? 'solid' : 'ghost'}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  compareMode === mode
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+                }`}
               >
-                {mode === 'wow'
-                  ? 'Week/Week'
-                  : mode === 'mom'
-                  ? 'Month/Month'
-                  : 'Year/Year'}
-              </Button>
+                {mode === 'wow' ? 'Week/Week' : mode === 'mom' ? 'Month/Month' : 'Year/Year'}
+              </button>
             ))}
           </div>
 

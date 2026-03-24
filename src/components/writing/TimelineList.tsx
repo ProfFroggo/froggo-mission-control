@@ -62,7 +62,7 @@ export default function TimelineList() {
                   <IconButton
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={() => setEditingId(evt.id)}
                     title="Edit"
                   >
@@ -71,7 +71,7 @@ export default function TimelineList() {
                   <IconButton
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={() => handleDelete(evt.id, evt.date)}
                     title="Delete"
                   >

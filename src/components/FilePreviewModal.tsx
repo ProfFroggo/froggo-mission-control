@@ -110,7 +110,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
               onClick={handleDownload}
               size="2"
               variant="ghost"
-              radius="medium"
+             
               title="Download"
               aria-label="Download file"
             >
@@ -120,7 +120,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
               onClick={handleClose}
               size="2"
               variant="ghost"
-              radius="medium"
+             
               title="Close (ESC)"
               aria-label="Close modal"
             >
@@ -163,7 +163,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
                   onClick={handleDownload}
                   size="2"
                   variant="solid"
-                  radius="medium"
+                 
                   className="mx-auto"
                 >
                   <Download size={16} />

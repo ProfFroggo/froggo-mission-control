@@ -243,7 +243,7 @@
 .radix-themes {
   /* Surface — Radix color scale */
   --mission-control-bg:               var(--color-background);
-  --mission-control-surface:          var(--color-panel-solid);
+  --mission-control-surface:          var(--color-panel);
   --mission-control-border:           var(--gray-5);
   --mission-control-border-glass:     var(--gray-a4);
   --mission-control-border-glass-hover: var(--gray-a6);
@@ -260,7 +260,7 @@
   /* Aliases */
   --mission-control-bg-alt:           var(--color-surface);
   --mission-control-bg0:              var(--color-background);
-  --mission-control-card:             var(--color-panel-solid);
+  --mission-control-card:             var(--color-panel);
 
   /* Interactive states (derived from Radix vars) */
   --color-hover:  var(--gray-a3);

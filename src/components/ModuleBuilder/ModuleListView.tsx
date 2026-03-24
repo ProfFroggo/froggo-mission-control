@@ -196,7 +196,7 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
                   <IconButton
                     size="2"
                     variant="ghost"
-                    radius="medium"
+                   
                     color="red"
                     className="opacity-0 group-hover:opacity-100 transition-all"
                     title="Delete module"

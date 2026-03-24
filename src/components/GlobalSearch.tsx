@@ -724,7 +724,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
               </div>
             );
           })}
-        </Box>
+        </div>
 
         {/* Footer */}
         <Flex align="center" justify="between" p="3" className="border-t border-mission-control-border bg-mission-control-bg/50 text-xs text-mission-control-text-dim">

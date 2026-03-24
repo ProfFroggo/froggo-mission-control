@@ -337,7 +337,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
           disabled={loading}
           size="2"
           variant="ghost"
-          radius="medium"
+         
           aria-label="Refresh metrics"
           title="Refresh metrics"
         >
@@ -350,7 +350,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
           disabled={history.length === 0}
           size="1"
           variant="soft"
-          radius="medium"
+         
           title="Export metrics as CSV"
         >
           <Download size={12} aria-hidden="true" />
@@ -362,7 +362,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
           onClick={onClose}
           size="2"
           variant="ghost"
-          radius="medium"
+         
           aria-label="Close health dashboard"
         >
           <X size={14} />

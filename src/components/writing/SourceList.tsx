@@ -102,7 +102,7 @@ export default function SourceList() {
                   <IconButton
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={() => setEditingId(source.id)}
                     title="Edit"
                   >
@@ -111,7 +111,7 @@ export default function SourceList() {
                   <IconButton
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={() => handleDelete(source.id)}
                     title="Delete"
                   >

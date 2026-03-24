@@ -42,3 +42,5 @@ memory/
 .claude/settings.json
 sbom.json
 .claude/worktrees/
+.next-verify/
+.next-coder-lcp/

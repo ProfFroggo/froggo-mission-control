@@ -738,25 +738,33 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           </Select.Root>
 
           {/* View toggle */}
-          <div className="flex gap-0.5 flex-shrink-0 border border-mission-control-border rounded-lg overflow-hidden">
-            <IconButton
-              variant={viewMode === 'list' ? 'solid' : 'ghost'}
-              size="1"
+          <div className="flex flex-shrink-0 border border-mission-control-border rounded-lg overflow-hidden">
+            <button
+              type="button"
               onClick={() => setViewMode('list')}
               aria-label="List view"
               aria-pressed={viewMode === 'list'}
+              className={`p-1.5 transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+              }`}
             >
               <List size={14} />
-            </IconButton>
-            <IconButton
-              variant={viewMode === 'grid' ? 'solid' : 'ghost'}
-              size="1"
+            </button>
+            <button
+              type="button"
               onClick={() => setViewMode('grid')}
               aria-label="Grid view"
               aria-pressed={viewMode === 'grid'}
+              className={`p-1.5 transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+              }`}
             >
               <Grid size={14} />
-            </IconButton>
+            </button>
           </div>
 
           <div className="w-px h-5 bg-mission-control-border flex-shrink-0" />
@@ -825,7 +833,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 <IconButton
                   size="1"
                   variant="ghost"
-                  radius="medium"
+                 
                   onClick={() => setNewFolderInputVisible(v => !v)}
                   title="New folder"
                 >
@@ -834,7 +842,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 <IconButton
                   size="1"
                   variant="ghost"
-                  radius="medium"
+                 
                   onClick={() => setSidebarOpen(false)}
                   title="Collapse sidebar"
                 >
@@ -860,7 +868,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 <IconButton
                   size="1"
                   variant="solid"
-                  radius="medium"
+                 
                   onClick={handleCreateFolder}
                   disabled={newFolderCreating || !newFolderName.trim()}
                   title="Create folder"
@@ -870,7 +878,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 <IconButton
                   size="1"
                   variant="ghost"
-                  radius="medium"
+                 
                   onClick={() => { setNewFolderInputVisible(false); setNewFolderName(''); }}
                   title="Cancel"
                 >
@@ -934,7 +942,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
             <IconButton
               size="1"
               variant="ghost"
-              radius="medium"
+             
               onClick={() => setSidebarOpen(true)}
               title="Expand sidebar"
             >
@@ -1050,7 +1058,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                         <IconButton
                           size="1"
                           variant="ghost"
-                          radius="medium"
+                         
                           onClick={() => toggleStar(file.id)}
                           title={isStarred ? 'Unstar' : 'Star'}
                         >
@@ -1059,7 +1067,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                         <IconButton
                           size="1"
                           variant="ghost"
-                          radius="medium"
+                         
                           onClick={() => handleLinkToTask(file)}
                           title="Link to task"
                         >
@@ -1069,7 +1077,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                           size="1"
                           variant="ghost"
                           color="red"
-                          radius="medium"
+                         
                           onClick={() => handleDelete(file)}
                           title="Delete"
                         >
@@ -1101,7 +1109,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       <IconButton
                         size="1"
                         variant="ghost"
-                        radius="medium"
+                       
                         onClick={(e) => { e.stopPropagation(); toggleStar(file.id); }}
                         className={`absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity ${isStarred ? 'opacity-100' : ''}`}
                         title={isStarred ? 'Unstar' : 'Star'}
@@ -1136,7 +1144,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
               <IconButton
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
                 onClick={closeDetail}
               >
                 <X size={14} />
@@ -1180,7 +1188,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                         size="1"
                         variant="ghost"
                         color="red"
-                        radius="medium"
+                       
                         onClick={() => handleTagRemove(detailFile, tag)}
                         style={{ width: 'auto', height: 'auto', minWidth: 0, minHeight: 0, padding: '1px' }}
                       >
@@ -1352,7 +1360,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   <IconButton
                     size="2"
                     variant="solid"
-                    radius="medium"
+                   
                     onClick={sendMiniChat}
                     disabled={miniChatLoading || !miniChatInput.trim()}
                   >
@@ -1388,7 +1396,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 <IconButton
                   size="2"
                   variant="ghost"
-                  radius="medium"
+                 
                   onClick={() => { setViewerOpen(false); setDetailFile(null); }}
                 >
                   <X size={20} />

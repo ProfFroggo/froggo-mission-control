@@ -124,7 +124,7 @@ export default function ProjectSelector() {
                     size="2"
                     variant={type === 'memoir' ? 'soft' : 'outline'}
                     color="gray"
-                    radius="medium"
+                   
                   >
                     <BookOpen size={16} />
                     Memoir
@@ -134,7 +134,7 @@ export default function ProjectSelector() {
                     size="2"
                     variant={type === 'novel' ? 'soft' : 'outline'}
                     color="gray"
-                    radius="medium"
+                   
                   >
                     <BookText size={16} />
                     Novel
@@ -187,7 +187,7 @@ export default function ProjectSelector() {
                 onClick={() => openProject(project.id)}
                 variant="ghost"
                 size="2"
-                radius="medium"
+               
                 className="w-full text-left p-4 h-auto flex items-start group"
               >
                 <div className="flex items-start justify-between w-full">
@@ -216,7 +216,7 @@ export default function ProjectSelector() {
                     size="1"
                     variant="ghost"
                     color="red"
-                    radius="medium"
+                   
                     title="Delete project"
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >

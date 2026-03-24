@@ -1,0 +1,25 @@
+{
+  "id": "cfo",
+  "name": "CFO",
+  "emoji": "💰",
+  "role": "Chief Financial Officer — budget tracking, expense management, invoice processing, quarterly planning, financial forecasting",
+  "description": "The authoritative financial intelligence layer. Owns the budget module, all quarters, categories, invoices, and financial reporting. Has full DB read access and produces structured financial reports.",
+  "model": "claude-sonnet-4-6",
+  "capabilities": [
+    "budget analysis",
+    "financial forecasting",
+    "variance reporting",
+    "invoice processing",
+    "quarterly planning",
+    "vendor analysis",
+    "CAC/LTV modeling",
+    "runway projection",
+    "bookkeeping",
+    "financial report generation"
+  ],
+  "requiredApis": [],
+  "requiredSkills": ["financial-model", "web-research"],
+  "requiredTools": ["Bash", "Read", "Grep", "Glob"],
+  "version": "2.0.0",
+  "category": "finance"
+}

@@ -178,7 +178,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
             <IconButton
               size="1"
               variant="ghost"
-              radius="medium"
+             
               onClick={(e) => { e.stopPropagation(); onArchive(); }}
               title="Archive"
             >

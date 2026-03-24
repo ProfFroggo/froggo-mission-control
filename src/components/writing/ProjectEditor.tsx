@@ -191,7 +191,7 @@ export default function ProjectEditor() {
             <IconButton
               size="2"
               variant="ghost"
-              radius="medium"
+             
               onClick={toggleChaptersPanel}
               title={isChaptersCollapsed ? 'Show chapters sidebar' : 'Hide chapters sidebar'}
             >
@@ -200,7 +200,7 @@ export default function ProjectEditor() {
             <IconButton
               size="2"
               variant={isChatCollapsed ? 'ghost' : 'soft'}
-              radius="medium"
+             
               onClick={toggleChatPanel}
               title={isChatCollapsed ? 'Show chat pane' : 'Hide chat pane'}
             >
@@ -214,7 +214,7 @@ export default function ProjectEditor() {
               <IconButton
                 size="2"
                 variant={versionOpen ? 'soft' : 'ghost'}
-                radius="medium"
+               
                 onClick={toggleVersion}
                 title={versionOpen ? 'Hide version history' : 'Show version history'}
               >
@@ -224,7 +224,7 @@ export default function ProjectEditor() {
             <IconButton
               size="2"
               variant={contextOpen ? 'soft' : 'ghost'}
-              radius="medium"
+             
               onClick={toggleContext}
               title={contextOpen ? 'Hide context panel' : 'Show context panel'}
             >

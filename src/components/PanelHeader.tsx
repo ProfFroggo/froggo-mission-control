@@ -15,9 +15,17 @@
  *   Use <PanelHeader> standalone — it renders its own border-b by default.
  */
 
-import { ReactNode } from 'react';
+import React, { ReactNode, isValidElement } from 'react';
 import { LucideIcon } from 'lucide-react';
 import { Button, IconButton, Spinner, Badge } from '@radix-ui/themes';
+
+/** Renders an icon prop that may be a Lucide component (function or forwardRef object) or a pre-rendered ReactNode. */
+function renderIcon(Icon: LucideIcon | ReactNode, size: number, className: string) {
+  if (!Icon) return null;
+  if (isValidElement(Icon)) return Icon;
+  // forwardRef icons have typeof === 'object', not 'function'
+  return React.createElement(Icon as React.ElementType, { size, className });
+}
 
 interface PanelHeaderAction {
   icon?: LucideIcon | ReactNode;
@@ -62,11 +70,7 @@ export default function PanelHeader({
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {Icon && (
             <div className="flex-shrink-0">
-              {typeof Icon === 'function' ? (
-                <Icon size={16} className="text-mission-control-accent" />
-              ) : (
-                Icon
-              )}
+              {renderIcon(Icon, 16, 'text-mission-control-accent')}
             </div>
           )}
           <div className="min-w-0 flex-1">
@@ -100,11 +104,7 @@ export default function PanelHeader({
       <div className="flex items-center gap-3">
         {Icon && (
           <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
-            {typeof Icon === 'function' ? (
-              <Icon size={24} className="text-mission-control-accent" />
-            ) : (
-              Icon
-            )}
+            {renderIcon(Icon, 24, 'text-mission-control-accent')}
           </div>
         )}
         <div>
@@ -144,7 +144,7 @@ export default function PanelHeader({
 function renderActions(actions?: PanelHeaderAction[]) {
   if (!actions) return null;
   return actions.map((action, index) => {
-    const ActionIcon = typeof action.icon === 'function' ? action.icon as LucideIcon : null;
+    const ActionIcon = (action.icon && !isValidElement(action.icon)) ? action.icon as LucideIcon : null;
     const radixVariant = action.variant === 'primary' ? 'solid' : action.variant === 'ghost' ? 'ghost' : 'surface';
     const radixColor = action.variant === 'primary' ? 'violet' : 'gray';
 

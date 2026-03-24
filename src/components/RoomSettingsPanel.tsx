@@ -75,7 +75,7 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
             variant="ghost"
             color="gray"
             size="2"
-            radius="medium"
+           
           >
             <X size={16} />
           </IconButton>

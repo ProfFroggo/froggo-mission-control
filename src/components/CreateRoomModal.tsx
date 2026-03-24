@@ -61,7 +61,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
             variant="ghost"
             color="gray"
             size="2"
-            radius="medium"
+           
           >
             <X size={18} />
           </IconButton>

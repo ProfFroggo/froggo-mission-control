@@ -61,7 +61,7 @@ export default function CharacterList() {
                   <IconButton
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={() => setEditingId(char.id)}
                     title="Edit"
                   >
@@ -70,7 +70,7 @@ export default function CharacterList() {
                   <IconButton
                     size="1"
                     variant="ghost"
-                    radius="medium"
+                   
                     onClick={() => handleDelete(char.id, char.name)}
                     title="Delete"
                   >

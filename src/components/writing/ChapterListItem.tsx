@@ -106,7 +106,7 @@ export default function ChapterListItem({
           {...listeners}
           size="1"
           variant="ghost"
-          radius="medium"
+         
           className="ml-1 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
           aria-label={`Drag to reorder ${chapter.title}`}
         >
@@ -140,7 +140,7 @@ export default function ChapterListItem({
               <IconButton
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
                 onClick={handleStartRename}
                 title="Rename chapter"
               >
@@ -149,7 +149,7 @@ export default function ChapterListItem({
               <IconButton
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
                 onClick={handleDelete}
                 title="Delete chapter"
               >

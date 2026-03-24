@@ -238,7 +238,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
             {saving ? 'Saving...' : 'Save'}
           </Button>
           {onClose && (
-            <IconButton size="2" variant="ghost" radius="medium" onClick={onClose} aria-label="Close">
+            <IconButton size="2" variant="ghost" onClick={onClose} aria-label="Close">
               <X size={16} />
             </IconButton>
           )}
@@ -446,7 +446,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
                       <IconButton
                         size="2"
                         variant="ghost"
-                        radius="medium"
+                       
                         color="red"
                         onClick={() => removeCondition(idx)}
                         title="Remove condition"

@@ -56,7 +56,7 @@ function SortableItem({ panel, isLastVisible, onToggle }: {
         variant="ghost"
         color="gray"
         size="2"
-        radius="medium"
+       
         className="cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
       >
         <GripVertical size={20} />
@@ -150,7 +150,7 @@ export default function EditPanelsModal() {
             variant="ghost"
             color="gray"
             size="2"
-            radius="medium"
+           
           >
             <X size={22} />
           </IconButton>

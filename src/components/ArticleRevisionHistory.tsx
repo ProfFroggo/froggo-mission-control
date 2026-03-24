@@ -118,7 +118,7 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
             onClick={onClose}
             size="1"
             variant="ghost"
-            radius="medium"
+           
             aria-label="Close"
           >
             <X size={14} />
@@ -212,7 +212,7 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
                     size="1"
                     variant="solid"
                     color="blue"
-                    radius="medium"
+                   
                   >
                     <RotateCcw size={11} />
                     {restoring ? 'Restoring...' : 'Restore this version'}

@@ -687,7 +687,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         onClick={() => setShowTemplates(v => !v)}
                         size="1"
                         variant="ghost"
-                        radius="medium"
+                       
                       >
                         <Lightbulb size={12} />
                         Use template
@@ -739,7 +739,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     aria-label="No priority"
                     size="2"
                     variant={!priority ? 'soft' : 'outline'}
-                    radius="medium"
+                   
                     className="flex-1"
                   >
                     None
@@ -752,7 +752,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                       aria-label={`Priority: ${p.label}`}
                       size="2"
                       variant={priority === p.id ? 'soft' : 'outline'}
-                      radius="medium"
+                     
                       className="flex-1"
                     >
                       {p.icon}
@@ -845,7 +845,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     aria-pressed={!assignedTo}
                     size="2"
                     variant={!assignedTo ? 'soft' : 'outline'}
-                    radius="medium"
+                   
                     className="p-2 text-left flex items-center gap-2"
                   >
                     <span className="text-base">👤</span>
@@ -870,7 +870,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                           aria-pressed={assignedTo === agent.id}
                           size="2"
                           variant={assignedTo === agent.id ? 'soft' : 'outline'}
-                          radius="medium"
+                         
                           disabled={isDisabled}
                           className="p-2 text-left flex flex-col gap-1 h-auto"
                         >
@@ -920,7 +920,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         aria-pressed={reviewerId === agent.id}
                         size="2"
                         variant={reviewerId === agent.id ? 'soft' : 'outline'}
-                        radius="medium"
+                       
                         className="p-2 text-left flex items-center gap-2"
                       >
                         <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />

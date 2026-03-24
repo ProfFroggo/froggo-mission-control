@@ -210,7 +210,7 @@ function InteractiveStarRating({ value, onChange }: { value: number; onChange: (
             key={i}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             onMouseEnter={() => setHover(v)}
             onMouseLeave={() => setHover(0)}
             onClick={() => onChange(v)}

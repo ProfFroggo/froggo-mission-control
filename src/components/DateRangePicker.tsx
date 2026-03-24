@@ -106,7 +106,7 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
                 variant="ghost"
                 color="gray"
                 size="2"
-                radius="medium"
+               
               >
                 <X size={16} />
               </IconButton>

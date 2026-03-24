@@ -151,7 +151,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
             <p className="text-xs text-mission-control-text-dim">
               Comparing {agentIds.length} agents
             </p>
-          </div>
+          </Box>
           <IconButton
             onClick={handleClose}
             size="2"

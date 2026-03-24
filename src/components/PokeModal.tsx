@@ -373,7 +373,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
           onClick={onClose}
           size="2"
           variant="ghost"
-          radius="medium"
+         
           aria-label="Close"
         >
           <X size={18} />
@@ -451,7 +451,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             disabled={!input.trim() || sending || loading}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             aria-label="Send"
           >
             <Send size={16} />

@@ -324,18 +324,20 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
     <div className="space-y-5">
       {/* Period selector + refresh + share */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+        <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
           {(['7d', '30d', '90d'] as Period[]).map(p => (
-            <Button
+            <button
               key={p}
               type="button"
-              size="1"
-              variant={period === p ? 'solid' : 'ghost'}
-              color={period === p ? 'indigo' : 'gray'}
               onClick={() => setPeriod(p)}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                period === p
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+              }`}
             >
               {p}
-            </Button>
+            </button>
           ))}
         </div>
         <div className="flex items-center gap-1">
@@ -344,7 +346,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
               type="button"
               size="2"
               variant="ghost"
-              radius="medium"
+             
               title="Copy report to clipboard"
               aria-label="Share performance report"
               onClick={handleShareReport}
@@ -356,7 +358,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
             type="button"
             size="2"
             variant="ghost"
-            radius="medium"
+           
             disabled={loading}
             title="Refresh review"
             aria-label="Refresh performance review"
@@ -527,7 +529,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                 type="button"
                 size="2"
                 variant="ghost"
-                radius="medium"
+               
                 disabled={planLoading}
                 title="Refresh coaching plan"
                 aria-label="Refresh coaching plan"

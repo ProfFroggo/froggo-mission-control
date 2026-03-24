@@ -436,10 +436,6 @@ export default function EpicCalendar({
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold text-mission-control-text flex items-center gap-2">
-              <Calendar size={24} className="text-mission-control-accent" />
-              Epic Calendar
-            </h1>
             <div className="text-sm text-mission-control-text-dim">
               {getDateRangeText()}
             </div>
@@ -452,7 +448,7 @@ export default function EpicCalendar({
               disabled={loading}
               size="2"
               variant="ghost"
-              radius="medium"
+             
               title="Refresh events"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -464,7 +460,7 @@ export default function EpicCalendar({
                 onClick={() => navigateDate('prev')}
                 size="2"
                 variant="ghost"
-                radius="medium"
+               
               >
                 <ChevronLeft size={16} />
               </IconButton>
@@ -472,7 +468,7 @@ export default function EpicCalendar({
                 onClick={() => navigateDate('today')}
                 size="2"
                 variant="ghost"
-                radius="medium"
+               
               >
                 Today
               </Button>
@@ -480,24 +476,27 @@ export default function EpicCalendar({
                 onClick={() => navigateDate('next')}
                 size="2"
                 variant="ghost"
-                radius="medium"
+               
               >
                 <ChevronRight size={16} />
               </IconButton>
             </div>
 
             {/* View Switcher */}
-            <div className="flex items-center gap-1 bg-mission-control-bg rounded-lg p-1">
+            <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
               {(['month', 'week', 'day', 'agenda'] as CalendarView[]).map((v) => (
-                <Button
+                <button
                   key={v}
+                  type="button"
                   onClick={() => setView(v)}
-                  size="2"
-                  variant={view === v ? 'soft' : 'ghost'}
-                  radius="medium"
+                  className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+                    view === v
+                      ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+                  }`}
                 >
                   {v.charAt(0).toUpperCase() + v.slice(1)}
-                </Button>
+                </button>
               ))}
             </div>
 
@@ -506,7 +505,7 @@ export default function EpicCalendar({
               onClick={onCreateClick || handleCreateEvent}
               size="2"
               variant="soft"
-              radius="medium"
+             
             >
               <Plus size={16} />
               {createButtonLabel || 'New Event'}
@@ -580,7 +579,7 @@ export default function EpicCalendar({
               onClick={() => setPartialError(null)}
               size="2"
               variant="ghost"
-              radius="medium"
+             
             >
               <X size={14} />
             </IconButton>
@@ -603,7 +602,7 @@ export default function EpicCalendar({
                 onClick={fetchEvents}
                 size="2"
                 variant="soft"
-                radius="medium"
+               
                 className="mt-4"
               >
                 Retry
@@ -1355,7 +1354,7 @@ function EventDetailPopover({
             onClick={onEdit}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             title="Edit event"
           >
             <Edit2 size={15} />
@@ -1364,7 +1363,7 @@ function EventDetailPopover({
             onClick={onDelete}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             title="Delete event"
           >
             <Trash2 size={15} />
@@ -1384,7 +1383,7 @@ function EventDetailPopover({
             onClick={onClose}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             title="Close"
           >
             <X size={15} />
@@ -1423,7 +1422,7 @@ function EventDetailPopover({
               </a>
               <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
                 <span className="truncate flex-1">{meetLink.replace('https://', '')}</span>
-                <IconButton onClick={copyMeetLink} size="1" variant="ghost" radius="medium" title="Copy link" className="flex-shrink-0">
+                <IconButton onClick={copyMeetLink} size="1" variant="ghost" title="Copy link" className="flex-shrink-0">
                   <Copy size={11} />
                 </IconButton>
               </div>
@@ -1505,14 +1504,14 @@ function EventDetailPopover({
         {totalAttendees > 0 && (
           <div className="px-5 py-3 border-t border-mission-control-border bg-mission-control-bg/50 rounded-b-2xl flex items-center gap-3">
             <span className="text-xs text-mission-control-text-dim mr-auto">Going?</span>
-            <Button size="1" variant="soft" radius="medium">
+            <Button size="1" variant="soft">
               <Check size={12} />
               Yes
             </Button>
-            <Button size="1" variant="ghost" radius="medium">
+            <Button size="1" variant="ghost">
               No
             </Button>
-            <Button size="1" variant="ghost" radius="medium">
+            <Button size="1" variant="ghost">
               Maybe
             </Button>
           </div>
@@ -1648,7 +1647,7 @@ function EventModal({
             onClick={onClose}
             size="2"
             variant="ghost"
-            radius="medium"
+           
           >
             <X size={20} />
           </IconButton>
@@ -1783,7 +1782,7 @@ function EventModal({
                   size="2"
                   variant="ghost"
                   color="red"
-                  radius="medium"
+                 
                 >
                   <Trash2 size={16} />
                   Delete Event
@@ -1796,7 +1795,7 @@ function EventModal({
                 onClick={onClose}
                 size="2"
                 variant="ghost"
-                radius="medium"
+               
                 disabled={saving}
               >
                 Cancel
@@ -1806,7 +1805,7 @@ function EventModal({
                 disabled={saving}
                 size="2"
                 variant="soft"
-                radius="medium"
+               
               >
                 {saving ? (
                   <>
@@ -1855,7 +1854,7 @@ function DeleteConfirmDialog({
             onClick={onCancel}
             size="2"
             variant="ghost"
-            radius="medium"
+           
           >
             Cancel
           </Button>
@@ -1864,7 +1863,7 @@ function DeleteConfirmDialog({
             size="2"
             variant="soft"
             color="red"
-            radius="medium"
+           
           >
             Delete Event
           </Button>
@@ -1942,7 +1941,7 @@ function RescheduleConfirmDialog({
             onClick={onCancel}
             size="2"
             variant="ghost"
-            radius="medium"
+           
           >
             Cancel
           </Button>
@@ -1950,7 +1949,7 @@ function RescheduleConfirmDialog({
             onClick={onConfirm}
             size="2"
             variant="soft"
-            radius="medium"
+           
           >
             Reschedule
           </Button>

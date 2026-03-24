@@ -57,7 +57,7 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
             <h2 className="text-base font-semibold text-mission-control-text">Build Plan Review</h2>
             <p className="text-sm text-mission-control-text-dim mt-0.5">{spec.name}</p>
           </div>
-          <IconButton size="2" variant="ghost" radius="medium" onClick={onCancel} aria-label="Close">
+          <IconButton size="2" variant="ghost" onClick={onCancel} aria-label="Close">
             <X size={18} />
           </IconButton>
         </div>
@@ -98,7 +98,7 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
                 className="flex items-start gap-3 px-4 py-3 bg-mission-control-bg cursor-pointer hover:bg-mission-control-bg/80 transition-colors"
                 onClick={() => toggleExpand(i)}
               >
-                <IconButton size="1" variant="ghost" radius="medium" className="mt-0.5 flex-shrink-0" aria-label={expandedTasks.has(i) ? 'Collapse' : 'Expand'}>
+                <IconButton size="1" variant="ghost" className="mt-0.5 flex-shrink-0" aria-label={expandedTasks.has(i) ? 'Collapse' : 'Expand'}>
                   {expandedTasks.has(i) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 </IconButton>
                 <div className="flex-1 min-w-0">

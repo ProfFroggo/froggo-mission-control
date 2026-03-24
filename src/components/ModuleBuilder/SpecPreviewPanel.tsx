@@ -89,24 +89,27 @@ export default function SpecPreviewPanel({
             </span>
           </div>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 border-b border-mission-control-border">
           {tabs.map(tab => (
-            <Button
+            <button
               key={tab.id}
-              size="1"
-              variant={activeTab === tab.id ? 'soft' : 'ghost'}
-              color={activeTab === tab.id ? 'indigo' : 'gray'}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-2.5 border-b-2 -mb-px text-xs font-medium transition-colors ${
+                activeTab === tab.id
+                  ? 'border-mission-control-accent text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {tab.icon}
               {tab.label}
               {(tab.badge ?? 0) > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-[9px] rounded-full bg-[--accent-9] text-[--accent-contrast] font-bold">
+                <span className="ml-0.5 px-1.5 py-0.5 text-[9px] rounded-full bg-mission-control-accent/20 text-mission-control-accent font-bold">
                   {tab.badge}
                 </span>
               )}
               {tab.action}
-            </Button>
+            </button>
           ))}
         </div>
       </div>

@@ -201,7 +201,7 @@ function StepPlatformSetup({
                 onClick={() => onChange({ ...data, teamSize: opt.value })}
                 size="2"
                 variant={data.teamSize === opt.value ? 'soft' : 'outline'}
-                radius="medium"
+               
               >
                 {opt.label}
               </Button>
@@ -448,7 +448,7 @@ function StepFirstTask({
           onClick={onSkip}
           variant="ghost"
           size="1"
-          radius="medium"
+         
           color="gray"
         >
           Skip for now

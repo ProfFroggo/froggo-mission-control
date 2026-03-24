@@ -149,7 +149,7 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
             variant="ghost"
             color="gray"
             size="1"
-            radius="medium"
+           
           >
             <ChevronUp size={12} />
           </IconButton>
@@ -160,7 +160,7 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
             variant="ghost"
             color="gray"
             size="1"
-            radius="medium"
+           
           >
             <ChevronDown size={12} />
           </IconButton>
@@ -170,7 +170,7 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
             variant="ghost"
             color="red"
             size="1"
-            radius="medium"
+           
           >
             <Trash2 size={12} />
           </IconButton>
@@ -549,7 +549,7 @@ export default function AutomationBuilderModal({
               variant="ghost"
               color="gray"
               size="2"
-              radius="medium"
+             
             >
               <X size={16} />
             </IconButton>

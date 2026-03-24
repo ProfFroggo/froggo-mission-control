@@ -520,7 +520,7 @@ export function MissionControlComposer({
         <ComposerPrimitive.Send disabled={disabled || loading} asChild>
           <IconButton
             size="2"
-            radius="medium"
+           
             disabled={disabled || loading}
             aria-label="Send message"
             title="Send (Enter)"

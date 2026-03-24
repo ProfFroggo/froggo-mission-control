@@ -123,7 +123,7 @@ export default function ThreadListItem({
               onClick={handleStarClick}
               size="2"
               variant="ghost"
-              radius="medium"
+             
               title={thread.has_starred ? 'Unstar' : 'Star'}
               aria-label={thread.has_starred ? 'Unstar' : 'Star'}
             >
@@ -135,7 +135,7 @@ export default function ThreadListItem({
               onClick={handleMarkReadClick}
               size="2"
               variant="ghost"
-              radius="medium"
+             
               title={hasUnread ? 'Mark as read' : 'Mark as unread'}
               aria-label={hasUnread ? 'Mark as read' : 'Mark as unread'}
             >

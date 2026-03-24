@@ -262,7 +262,7 @@ export default function BaseModal({
               onClick={handleClose}
               size="2"
               variant="soft"
-              radius="medium"
+             
               aria-label={closeButtonLabel}
               className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 shadow-lg"
             >
@@ -326,7 +326,7 @@ export function BaseModalHeader({
           onClick={onClose}
           size="2"
           variant="ghost"
-          radius="medium"
+         
           aria-label={closeButtonLabel}
           className="flex-shrink-0"
         >
@@ -432,7 +432,7 @@ export function BaseModalButton({
       variant={radixVariant}
       color={radixColor}
       size={radixSize}
-      radius="medium"
+     
       className={className}
     >
       {loading ? (

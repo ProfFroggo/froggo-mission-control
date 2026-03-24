@@ -135,7 +135,7 @@ export default function DraggableVideoWindow({
           <IconButton
             size="1"
             variant="ghost"
-            radius="medium"
+           
             onClick={(e) => {
               e.stopPropagation();
               onClose();
@@ -195,7 +195,7 @@ export default function DraggableVideoWindow({
           <IconButton
             size="1"
             variant="ghost"
-            radius="medium"
+           
             onClick={minimize}
             title="Minimize"
           >
@@ -204,7 +204,7 @@ export default function DraggableVideoWindow({
           <IconButton
             size="1"
             variant="ghost"
-            radius="medium"
+           
             onClick={toggleViewMode}
             title={viewMode === 'fullwidth' ? 'Exit full width' : 'Full width'}
           >
@@ -213,7 +213,7 @@ export default function DraggableVideoWindow({
           <IconButton
             size="1"
             variant="ghost"
-            radius="medium"
+           
             onClick={onClose}
             title="Close"
           >

@@ -133,7 +133,7 @@ export default function PromptDialog({
             disabled={isSubmitting}
             size="2"
             variant="ghost"
-            radius="medium"
+           
             aria-label="Close"
           >
             <X size={16} />

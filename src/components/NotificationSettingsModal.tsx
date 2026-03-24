@@ -263,7 +263,7 @@ export default function NotificationSettingsModal({
           <IconButton
             size="2"
             variant="ghost"
-            radius="medium"
+           
             onClick={onClose}
             title="Close (ESC)"
             aria-label="Close modal"
@@ -443,7 +443,7 @@ export default function NotificationSettingsModal({
                       <IconButton
                         size="1"
                         variant="ghost"
-                        radius="medium"
+                       
                         onClick={() => removeKeyword(keyword)}
                         aria-label={`Remove keyword ${keyword}`}
                       >

@@ -88,7 +88,7 @@ export default function EmailWidget() {
         <IconButton
           size="2"
           variant="ghost"
-          radius="medium"
+         
           onClick={fetchEmail}
           disabled={loading}
           title="Refresh"
