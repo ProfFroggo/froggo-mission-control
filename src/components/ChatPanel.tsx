@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { AssistantRuntimeProvider } from '@assistant-ui/react';
 import { useMissionControlRuntime } from './chat/ChatRuntime';
@@ -1188,89 +1189,98 @@ export default function ChatPanel() {
               <span className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
               <span className="text-mission-control-text-dim">{getStatusText()}</span>
               {connectionState === 'disconnected' && (
-                <button onClick={reconnect} className="text-mission-control-accent hover:underline flex items-center gap-1">
+                <Button onClick={reconnect} variant="ghost" size="1" style={{ gap: 4 }}>
                   <RefreshCw size={10} /> Reconnect
-                </button>
+                </Button>
               )}
             </div>
           )}
         </div>
         
         <div className="flex items-center gap-2">
-          <button
+          <IconButton
             onClick={() => setIsVoiceMode(!isVoiceMode)}
-            className={`p-2 rounded-lg transition-colors ${
-              isVoiceMode ? 'bg-review-subtle text-review' : 'bg-mission-control-border text-mission-control-text-dim hover:text-review'
-            }`}
+            size="2"
+            variant={isVoiceMode ? 'soft' : 'ghost'}
+            radius="medium"
             title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
             aria-label={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
             aria-pressed={isVoiceMode}
           >
             {isVoiceMode ? <PhoneOff size={16} /> : <Phone size={16} />}
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={() => setShowSearch(!showSearch)}
-            className={`p-2 rounded-lg transition-colors ${
-              showSearch ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
+            size="2"
+            variant={showSearch ? 'soft' : 'ghost'}
+            radius="medium"
             title={showSearch ? 'Hide search' : 'Search messages'}
             aria-label={showSearch ? 'Hide message search' : 'Search messages'}
             aria-expanded={showSearch}
           >
             <Search size={16} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={() => setSpeakResponses(!speakResponses)}
-            className={`p-2 rounded-lg transition-colors ${
-              speakResponses ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim'
-            }`}
+            size="2"
+            variant={speakResponses ? 'soft' : 'ghost'}
+            radius="medium"
             title={speakResponses ? 'Voice on' : 'Voice off'}
             aria-label={speakResponses ? 'Disable voice responses' : 'Enable voice responses'}
             aria-pressed={speakResponses}
           >
             {speakResponses ? <Volume2 size={16} /> : <VolumeX size={16} />}
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={clearChat}
-            className="p-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            size="2"
+            variant="ghost"
+            radius="medium"
             title="Clear chat"
             aria-label="Clear chat history"
           >
             <Trash2 size={16} />
-          </button>
+          </IconButton>
           <div className="w-px h-5 bg-mission-control-border mx-1" />
-          <button
+          <Button
             onClick={startTeamMeeting}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-warning text-white hover:bg-warning-hover transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+            variant="solid"
+            size="2"
+            radius="medium"
             title="Start Team Meeting — All agents join"
+            style={{ gap: 6 }}
           >
             <UsersRound size={15} />
             <span className="hidden sm:inline">Team Meeting</span>
-          </button>
-          <button
-            onClick={() => setShowRoomList(!showRoomList)}
-            className={`p-2 rounded-lg transition-colors relative ${
-              showRoomList ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-            title="Chat Rooms"
-            aria-label={`Chat rooms (${rooms.length})`}
-            aria-expanded={showRoomList}
-          >
-            <Users size={16} />
+          </Button>
+          <div className="relative">
+            <IconButton
+              onClick={() => setShowRoomList(!showRoomList)}
+              size="2"
+              variant={showRoomList ? 'soft' : 'ghost'}
+              radius="medium"
+              title="Chat Rooms"
+              aria-label={`Chat rooms (${rooms.length})`}
+              aria-expanded={showRoomList}
+            >
+              <Users size={16} />
+            </IconButton>
             {rooms.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-mission-control-accent text-white text-xs font-bold rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-mission-control-accent text-white text-xs font-bold rounded-full flex items-center justify-center pointer-events-none">
                 {rooms.length}
               </span>
             )}
-          </button>
-          <button
+          </div>
+          <IconButton
             onClick={() => setShowCreateRoom(true)}
-            className="p-2 rounded-lg bg-mission-control-accent text-white hover:opacity-90 transition-opacity"
+            size="2"
+            variant="solid"
+            radius="medium"
             title="Create Chat Room"
             aria-label="Create new chat room"
           >
             <MessageSquarePlus size={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -1284,12 +1294,14 @@ export default function ChatPanel() {
           <div className="p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Chat Rooms</span>
-              <button
+              <Button
                 onClick={() => { setShowCreateRoom(true); setShowRoomList(false); }}
-                className="text-xs text-mission-control-accent hover:underline flex items-center gap-1"
+                variant="ghost"
+                size="1"
+                style={{ gap: 4 }}
               >
                 <MessageSquarePlus size={12} /> New Room
-              </button>
+              </Button>
             </div>
             {rooms.length === 0 ? (
               <p className="text-sm text-mission-control-text-dim py-3 text-center">
@@ -1298,23 +1310,25 @@ export default function ChatPanel() {
             ) : (
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {rooms.map(room => (
-                  <button
+                  <Button
                     key={room.id}
                     onClick={() => { setActiveRoom(room.id); setShowRoomList(false); }}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-mission-control-bg border border-transparent hover:border-mission-control-border transition-all text-left"
+                    variant="ghost"
+                    radius="medium"
+                    style={{ width: '100%', justifyContent: 'flex-start', padding: '10px 10px' }}
                   >
                     <div className="flex -space-x-1.5">
                       {room.agents.slice(0, 3).map(id => (
                         <AgentAvatar key={id} agentId={id} size="xs" />
                       ))}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 text-left ml-3">
                       <div className="text-sm font-medium truncate">{room.name}</div>
                       <div className="text-xs text-mission-control-text-dim">
                         {room.messageCount ?? room.messages.length} messages · {new Date(room.updatedAt).toLocaleDateString()}
                       </div>
                     </div>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -1345,12 +1359,16 @@ export default function ChatPanel() {
               className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg pl-10 pr-10 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
             />
             {searchQuery && (
-              <button
+              <IconButton
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim hover:text-mission-control-text"
+                size="1"
+                variant="ghost"
+                radius="full"
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+                aria-label="Clear search"
               >
                 <X size={14} />
-              </button>
+              </IconButton>
             )}
           </div>
           {searchQuery && (
@@ -1436,27 +1454,33 @@ export default function ChatPanel() {
                   key={att.id}
                   className="flex items-center gap-1 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
                 >
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setPreviewFile(att)}
-                    className="flex items-center gap-2 px-3 py-2 cursor-pointer bg-transparent border-none text-inherit"
+                    variant="ghost"
+                    size="2"
+                    radius="medium"
                     title="Click to preview"
                     aria-label={`Preview attachment ${att.name}`}
+                    style={{ gap: 8 }}
                   >
                     <Icon size={16} className="text-mission-control-accent" aria-hidden="true" />
                     <span className="text-sm truncate max-w-32">{att.name}</span>
                     <span className="text-xs text-mission-control-text-dim">
                       {(att.size / 1024).toFixed(1)}KB
                     </span>
-                  </button>
-                  <button
+                  </Button>
+                  <IconButton
                     type="button"
                     onClick={() => removeAttachment(att.id)}
-                    className="p-1 mr-1 hover:bg-mission-control-border rounded"
+                    size="1"
+                    variant="ghost"
+                    radius="full"
                     aria-label={`Remove attachment ${att.name}`}
+                    style={{ marginRight: 4 }}
                   >
-                    <X size={14} className="text-mission-control-text-dim" aria-hidden="true" />
-                  </button>
+                    <X size={14} aria-hidden="true" />
+                  </IconButton>
                 </div>
               );
             })}
@@ -1468,12 +1492,14 @@ export default function ChatPanel() {
           <div className="flex items-center gap-2 p-3 mb-3 rounded-md bg-error/10 border border-error/20 text-error text-sm">
             <AlertTriangle size={14} className="shrink-0" />
             <span className="flex-1">{streamError}</span>
-            <button
+            <Button
               onClick={handleRetry}
-              className="text-xs underline hover:no-underline shrink-0"
+              variant="ghost"
+              size="1"
+              className="shrink-0"
             >
               Retry
-            </button>
+            </Button>
           </div>
         )}
 
@@ -1491,23 +1517,27 @@ export default function ChatPanel() {
             <div className="flex items-center gap-2 mb-2">
               <Sparkles size={14} className="text-mission-control-accent" />
               <span className="text-xs text-mission-control-text-dim">Suggested replies</span>
-              <button
+              <Button
                 onClick={() => setSuggestedReplies([])}
-                className="ml-auto text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                variant="ghost"
+                size="1"
+                style={{ marginLeft: 'auto' }}
               >
                 Clear
-              </button>
+              </Button>
             </div>
             <div className="flex flex-wrap gap-2">
               {suggestedReplies.map((suggestion, idx) => (
-                <button
+                <Button
                   key={idx}
                   onClick={() => applySuggestion(suggestion)}
-                  className="px-3 py-2 bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg text-sm hover:border-mission-control-accent hover:bg-mission-control-accent/20 transition-all text-left"
+                  variant="outline"
+                  size="2"
+                  radius="medium"
                   title="Click to use this reply"
                 >
                   {suggestion}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -1525,42 +1555,42 @@ export default function ChatPanel() {
           />
 
           {/* Attach button */}
-          <button
+          <IconButton
             onClick={() => fileInputRef.current?.click()}
-            className="p-3 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-all"
+            size="3"
+            variant="ghost"
+            radius="medium"
             title="Attach files"
             aria-label="Attach files"
           >
             <Paperclip size={20} />
-          </button>
+          </IconButton>
 
-          <button
+          <IconButton
             onClick={toggleVoice}
-            className={`p-3 rounded-lg transition-all ${
-              listening
-                ? 'bg-error text-white animate-pulse'
-                : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
+            size="3"
+            variant={listening ? 'soft' : 'ghost'}
+            radius="medium"
+            className={listening ? 'animate-pulse' : ''}
             aria-label={listening ? 'Stop voice input' : 'Start voice input'}
             aria-pressed={listening}
           >
             {listening ? <MicOff size={20} /> : <Mic size={20} />}
-          </button>
+          </IconButton>
 
           {/* Suggest Replies button */}
-          <button
+          <IconButton
             onClick={generateSuggestions}
             disabled={messages.length === 0 || loadingSuggestions}
-            className={`p-3 rounded-lg transition-all ${
-              loadingSuggestions
-                ? 'bg-mission-control-accent text-white animate-pulse'
-                : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-accent/10'
-            }`}
+            size="3"
+            variant={loadingSuggestions ? 'soft' : 'ghost'}
+            radius="medium"
+            className={loadingSuggestions ? 'animate-pulse' : ''}
             title="AI suggested replies"
             aria-label="Generate suggested replies"
           >
             {loadingSuggestions ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
-          </button>
+          </IconButton>
 
           {/* Composer — textarea + send handled by assistant-ui ComposerPrimitive */}
           <MissionControlComposer
@@ -1667,12 +1697,14 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
           >
             Download
           </a>
-          <button
+          <Button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text hover:bg-mission-control-bg-alt"
+            variant="outline"
+            size="2"
+            radius="medium"
           >
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -1794,52 +1826,46 @@ const MessageItem = memo(function MessageItem({
           {!msg.streaming && (
             <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred || reaction.mine ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-100`}>
               {/* Thumbs up */}
-              <button
+              <IconButton
                 onClick={(e) => handleReaction('up', e)}
-                className={`p-1.5 rounded-lg transition-all duration-100 flex items-center gap-0.5 ${
-                  reaction.mine === 'up'
-                    ? 'bg-success/10 text-success shadow-sm border border-success/30'
-                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-success hover:bg-success/10 border border-mission-control-border'
-                }`}
+                size="1"
+                variant={reaction.mine === 'up' ? 'soft' : 'ghost'}
+                radius="medium"
                 title="Helpful"
                 aria-label="Mark as helpful"
+                style={{ gap: 2 }}
               >
                 <ThumbsUp size={13} className={reaction.mine === 'up' ? 'fill-current' : ''} />
                 {reaction.up > 0 && (
                   <span className="text-xs font-medium leading-none">{reaction.up}</span>
                 )}
-              </button>
+              </IconButton>
               {/* Thumbs down */}
-              <button
+              <IconButton
                 onClick={(e) => handleReaction('down', e)}
-                className={`p-1.5 rounded-lg transition-all duration-100 flex items-center gap-0.5 ${
-                  reaction.mine === 'down'
-                    ? 'bg-error/10 text-error shadow-sm border border-error/30'
-                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-error hover:bg-error/10 border border-mission-control-border'
-                }`}
+                size="1"
+                variant={reaction.mine === 'down' ? 'soft' : 'ghost'}
+                radius="medium"
                 title="Not helpful"
                 aria-label="Mark as not helpful"
+                style={{ gap: 2 }}
               >
                 <ThumbsDown size={13} className={reaction.mine === 'down' ? 'fill-current' : ''} />
                 {reaction.down > 0 && (
                   <span className="text-xs font-medium leading-none">{reaction.down}</span>
                 )}
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 onClick={(e) => onToggleStar(msg, e)}
-                className={`p-1.5 rounded-lg transition-all duration-100 ${
-                  isStarred
-                    ? 'bg-warning-subtle text-warning shadow-sm'
-                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-warning hover:bg-warning-subtle border border-mission-control-border'
-                }`}
+                size="1"
+                variant={isStarred ? 'soft' : 'ghost'}
+                radius="medium"
                 title={isStarred ? 'Unstar message' : 'Star message'}
+                aria-label={isStarred ? 'Unstar message' : 'Star message'}
               >
-                <Star
-                  size={14}
-                  className={isStarred ? 'fill-current' : ''}
-                />
-              </button>
-              <button
+                <Star size={14} className={isStarred ? 'fill-current' : ''} />
+              </IconButton>
+              <IconButton
                 onClick={async () => {
                   const textToCopy = Array.isArray(msg.content)
                     ? msg.content
@@ -1855,11 +1881,14 @@ const MessageItem = memo(function MessageItem({
                     showToast('error', 'Copy Failed', 'Unable to copy to clipboard');
                   }
                 }}
-                className="p-1.5 rounded-lg bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border border border-mission-control-border transition-all"
+                size="1"
+                variant="ghost"
+                radius="medium"
                 title="Copy message"
+                aria-label="Copy message"
               >
                 <Copy size={14} />
-              </button>
+              </IconButton>
             </div>
           )}
 

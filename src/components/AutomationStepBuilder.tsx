@@ -319,7 +319,7 @@ function StepRow({ step, index, total, onMove, onDelete, onChangeType, onChangeC
             height: 22,
             borderRadius: 6,
             background: 'var(--mission-control-accent)',
-            color: '#fff',
+            color: 'white',
             fontSize: 11,
             fontWeight: 700,
             display: 'flex',

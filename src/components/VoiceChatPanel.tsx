@@ -585,7 +585,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             <div className="flex items-center gap-2">
               <div className="relative">
                 <AgentAvatar agentId={selectedAgent.id} size="sm" />
-                {speaking && <div className="absolute inset-0 rounded-full border-2 border-green-400 animate-ping opacity-40" />}
+                {speaking && <div className="absolute inset-0 rounded-full border-2 border-[var(--color-success)] animate-ping opacity-40" />}
               </div>
               <div>
                 <span className="text-sm font-medium text-mission-control-text">{selectedAgent.name}</span>

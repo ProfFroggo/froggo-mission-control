@@ -283,7 +283,7 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
               width: 16,
               height: 16,
               borderRadius: '50%',
-              background: '#fff',
+              background: 'white',
               transition: 'left 0.2s',
             }}
           />
@@ -310,7 +310,7 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
           style={{
             display: 'flex', alignItems: 'center', gap: 4,
             padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
-            background: 'var(--mission-control-accent)', color: '#fff', border: 'none', cursor: 'pointer',
+            background: 'var(--mission-control-accent)', color: 'white', border: 'none', cursor: 'pointer',
           }}
         >
           <Play size={12} /> Run now
@@ -480,7 +480,7 @@ function EmptyState({ onNew, onBrowseTemplates }: { onNew: () => void; onBrowseT
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-            background: 'var(--mission-control-accent)', color: '#fff', border: 'none', cursor: 'pointer',
+            background: 'var(--mission-control-accent)', color: 'white', border: 'none', cursor: 'pointer',
           }}
         >
           <Plus size={16} /> New Automation
@@ -687,7 +687,7 @@ export default function AutomationsPanel() {
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '10px 18px', borderRadius: 10, fontSize: 13, fontWeight: 600,
-              background: 'var(--mission-control-accent)', color: '#fff', border: 'none',
+              background: 'var(--mission-control-accent)', color: 'white', border: 'none',
               cursor: 'pointer', boxShadow: '0 2px 8px color-mix(in srgb, var(--mission-control-accent) 40%, transparent)',
             }}
           >

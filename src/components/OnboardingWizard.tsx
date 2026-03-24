@@ -642,7 +642,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           ))}
         </div>
         {sysCheck.cli === 'fail' && (
-          <div className="p-3 rounded-lg bg-amber-500/10 border border-warning-border mb-3 text-xs space-y-1.5">
+          <div className="p-3 rounded-lg bg-warning border border-warning mb-3 text-xs space-y-1.5" style={{ background: 'var(--color-warning-bg)', borderColor: 'var(--color-warning-border)' }}>
             <p className="font-medium text-warning">Claude CLI not detected</p>
             <p className="text-mission-control-text-dim">Mission Control requires the Claude Code CLI to spawn agents.</p>
             <a

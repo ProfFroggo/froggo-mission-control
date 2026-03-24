@@ -2,7 +2,7 @@
 // BudgetPanel — full-featured budget module: quarters, categories, invoices, AI chat
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextField, TextArea, Checkbox } from '@radix-ui/themes';
 import {
   Wallet, Plus, Pencil, Trash2, X, RefreshCw, Upload, FileText, DollarSign,
   TrendingDown, Bot, AlertTriangle, CheckCircle, Clock, Ban,
@@ -349,39 +349,48 @@ function QuarterModal({ data, onSave, onClose }: {
     <ModalWrap title={isEdit ? 'Edit Quarter' : 'New Quarter'} onClose={onClose}>
       <div className="space-y-3">
         <Field label="Name">
-          <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Q1 2026" />
+          <TextField.Root value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Q1 2026" size="1" />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Year">
-            <input type="number" value={form.year} onChange={e => setForm(p => ({ ...p, year: Number(e.target.value), start_date: '', end_date: '' }))} />
+            <TextField.Root type="number" value={String(form.year)} onChange={e => setForm(p => ({ ...p, year: Number(e.target.value), start_date: '', end_date: '' }))} size="1" />
           </Field>
           <Field label="Quarter">
-            <select value={form.quarter} onChange={e => setForm(p => ({ ...p, quarter: Number(e.target.value), start_date: '', end_date: '' }))}>
-              {[1,2,3,4].map(q => <option key={q} value={q}>Q{q}</option>)}
-            </select>
+            <Select.Root value={String(form.quarter)} onValueChange={val => setForm(p => ({ ...p, quarter: Number(val), start_date: '', end_date: '' }))}>
+              <Select.Trigger className="w-full" />
+              <Select.Content>
+                {[1,2,3,4].map(q => <Select.Item key={q} value={String(q)}>Q{q}</Select.Item>)}
+              </Select.Content>
+            </Select.Root>
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Start Date"><input type="date" value={form.start_date} onChange={e => setForm(p => ({ ...p, start_date: e.target.value }))} /></Field>
-          <Field label="End Date"><input type="date" value={form.end_date} onChange={e => setForm(p => ({ ...p, end_date: e.target.value }))} /></Field>
+          <Field label="Start Date"><TextField.Root type="date" value={form.start_date} onChange={e => setForm(p => ({ ...p, start_date: e.target.value }))} size="1" /></Field>
+          <Field label="End Date"><TextField.Root type="date" value={form.end_date} onChange={e => setForm(p => ({ ...p, end_date: e.target.value }))} size="1" /></Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Total Budget"><input type="number" value={form.total_budget} onChange={e => setForm(p => ({ ...p, total_budget: Number(e.target.value) }))} /></Field>
+          <Field label="Total Budget"><TextField.Root type="number" value={String(form.total_budget)} onChange={e => setForm(p => ({ ...p, total_budget: Number(e.target.value) }))} size="1" /></Field>
           <Field label="Currency">
-            <select value={form.currency} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
-              {['USD','EUR','MXN','BRL','GBP','USDC'].map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <Select.Root value={form.currency} onValueChange={val => setForm(p => ({ ...p, currency: val }))}>
+              <Select.Trigger className="w-full" />
+              <Select.Content>
+                {['USD','EUR','MXN','BRL','GBP','USDC'].map(c => <Select.Item key={c} value={c}>{c}</Select.Item>)}
+              </Select.Content>
+            </Select.Root>
           </Field>
         </div>
         <Field label="Status">
-          <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as any }))}>
-            <option value="planning">Planning</option>
-            <option value="active">Active</option>
-            <option value="closed">Closed</option>
-          </select>
+          <Select.Root value={form.status} onValueChange={val => setForm(p => ({ ...p, status: val as any }))}>
+            <Select.Trigger className="w-full" />
+            <Select.Content>
+              <Select.Item value="planning">Planning</Select.Item>
+              <Select.Item value="active">Active</Select.Item>
+              <Select.Item value="closed">Closed</Select.Item>
+            </Select.Content>
+          </Select.Root>
         </Field>
         <Field label="Notes">
-          <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} className="resize-none" />
+          <TextArea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} className="resize-none w-full" size="1" />
         </Field>
       </div>
       <ModalActions onClose={onClose} onSave={handleSave} saving={saving} label={isEdit ? 'Save Changes' : 'Create Quarter'} />
@@ -460,24 +469,28 @@ function CategoryModal({ data, quarterId, currency, onSave, onClose }: {
         {/* Preset picker */}
         {!isEdit && (
           <div>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="1"
               onClick={() => setShowPresets(p => !p)}
-              className="text-[11px] text-mission-control-accent hover:underline flex items-center gap-1"
+              className="text-[11px] text-mission-control-accent flex items-center gap-1"
             >
               <Sparkles size={11} /> {showPresets ? 'Hide presets' : 'Start from a preset'}
-            </button>
+            </Button>
             {showPresets && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {CATEGORY_PRESETS.map(p => (
-                  <button
+                  <Button
                     key={p.name} type="button"
+                    variant="ghost"
+                    size="1"
                     onClick={() => applyPreset(p)}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-mission-control-border hover:border-mission-control-accent/60 text-[11px] text-mission-control-text-dim hover:text-mission-control-text transition-all"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-mission-control-border text-[11px] text-mission-control-text-dim"
                   >
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
                     {p.name}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -485,15 +498,15 @@ function CategoryModal({ data, quarterId, currency, onSave, onClose }: {
         )}
 
         <Field label="Name">
-          <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. KOL Partnerships" autoFocus={isEdit} />
+          <TextField.Root value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. KOL Partnerships" autoFocus={isEdit} size="1" />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label={`Planned Budget (${currency})`}>
-            <input type="number" value={form.planned} onChange={e => setForm(p => ({ ...p, planned: Number(e.target.value) }))} />
+            <TextField.Root type="number" value={String(form.planned)} onChange={e => setForm(p => ({ ...p, planned: Number(e.target.value) }))} size="1" />
           </Field>
           <Field label="CAC Est. (per user)">
-            <input type="number" value={form.cac} onChange={e => setForm(p => ({ ...p, cac: Number(e.target.value) }))} placeholder="0" />
+            <TextField.Root type="number" value={String(form.cac)} onChange={e => setForm(p => ({ ...p, cac: Number(e.target.value) }))} placeholder="0" size="1" />
           </Field>
         </div>
 
@@ -509,8 +522,8 @@ function CategoryModal({ data, quarterId, currency, onSave, onClose }: {
             <input type="color" value={form.color} onChange={e => setForm(p => ({ ...p, color: e.target.value }))}
               className="unstyled w-8 h-8 rounded cursor-pointer border border-mission-control-border" />
             {PALETTE.map(c => (
-              <button key={c} type="button" onClick={() => setForm(p => ({ ...p, color: c }))}
-                className={`w-5 h-5 rounded-full border-2 transition-all ${form.color === c ? 'border-white scale-110' : 'border-transparent'}`}
+              <IconButton key={c} type="button" variant="ghost" size="1" onClick={() => setForm(p => ({ ...p, color: c }))}
+                className={`w-5 h-5 rounded-full border-2 transition-all p-0 min-w-0 ${form.color === c ? 'border-white scale-110' : 'border-transparent'}`}
                 style={{ backgroundColor: c }} />
             ))}
           </div>
@@ -524,33 +537,36 @@ function CategoryModal({ data, quarterId, currency, onSave, onClose }: {
               {form.tags.map(t => (
                 <span key={t} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border border-mission-control-accent/40 bg-mission-control-accent/10 text-mission-control-accent">
                   {t}
-                  <button type="button" onClick={() => removeTag(t)} className="hover:text-error transition-colors leading-none">×</button>
+                  <IconButton type="button" variant="ghost" size="1" onClick={() => removeTag(t)} className="leading-none w-3 h-3 min-w-0">
+                    <X size={9} />
+                  </IconButton>
                 </span>
               ))}
             </div>
           )}
           <div className="flex gap-2">
-            <input
+            <TextField.Root
               value={tagInput}
               onChange={e => setTagInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); } }}
               placeholder="Add tag (Enter to confirm)"
-              className="flex-1 text-xs"
+              className="flex-1"
+              size="1"
             />
           </div>
           {/* Suggested tags */}
           <div className="flex flex-wrap gap-1 mt-1.5">
             {ALL_PRESET_TAGS.filter(t => !form.tags.includes(t) && (!tagInput || t.includes(tagInput.toLowerCase()))).slice(0, 12).map(t => (
-              <button key={t} type="button" onClick={() => addTag(t)}
-                className="px-1.5 py-0.5 rounded text-[10px] border border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/50 hover:text-mission-control-accent transition-colors">
+              <Button key={t} type="button" variant="ghost" size="1" onClick={() => addTag(t)}
+                className="px-1.5 py-0.5 rounded text-[10px] border border-mission-control-border text-mission-control-text-dim">
                 + {t}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
 
         <Field label="Notes">
-          <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} className="resize-none" />
+          <TextArea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} className="resize-none w-full" size="1" />
         </Field>
       </div>
       <ModalActions onClose={onClose} onSave={handleSave} saving={saving} label={isEdit ? 'Save Changes' : 'Create Category'} />
@@ -649,58 +665,67 @@ function InvoiceModal({ data, quarterId, currency, categories, allInvoices, onSa
         )}
 
         <Field label="Title">
-          <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="KOL Partnership, Event Sponsorship…" />
+          <TextField.Root value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="KOL Partnership, Event Sponsorship…" size="1" />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Invoice #">
-            <input value={form.invoice_number} onChange={e => setForm(p => ({ ...p, invoice_number: e.target.value }))} placeholder="INV-001" />
+            <TextField.Root value={form.invoice_number} onChange={e => setForm(p => ({ ...p, invoice_number: e.target.value }))} placeholder="INV-001" size="1" />
           </Field>
           <Field label="Vendor">
-            <input value={form.vendor} onChange={e => setForm(p => ({ ...p, vendor: e.target.value }))} placeholder="Company name" />
+            <TextField.Root value={form.vendor} onChange={e => setForm(p => ({ ...p, vendor: e.target.value }))} placeholder="Company name" size="1" />
           </Field>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
           <div className="col-span-2">
             <Field label="Amount">
-              <input type="number" step="0.01" value={form.amount || ''} onChange={e => setForm(p => ({ ...p, amount: Number(e.target.value) }))} placeholder="0.00" />
+              <TextField.Root type="number" step="0.01" value={form.amount ? String(form.amount) : ''} onChange={e => setForm(p => ({ ...p, amount: Number(e.target.value) }))} placeholder="0.00" size="1" />
             </Field>
           </div>
           <Field label="Currency">
-            <select value={form.currency} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
-              {['USD','EUR','MXN','BRL','GBP','USDC'].map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <Select.Root value={form.currency} onValueChange={val => setForm(p => ({ ...p, currency: val }))}>
+              <Select.Trigger className="w-full" />
+              <Select.Content>
+                {['USD','EUR','MXN','BRL','GBP','USDC'].map(c => <Select.Item key={c} value={c}>{c}</Select.Item>)}
+              </Select.Content>
+            </Select.Root>
           </Field>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Date">
-            <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} />
+            <TextField.Root type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} size="1" />
           </Field>
           <Field label="Status">
-            <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as any }))}>
-              <option value="pending">Pending</option>
-              <option value="paid">Paid</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+            <Select.Root value={form.status} onValueChange={val => setForm(p => ({ ...p, status: val as any }))}>
+              <Select.Trigger className="w-full" />
+              <Select.Content>
+                <Select.Item value="pending">Pending</Select.Item>
+                <Select.Item value="paid">Paid</Select.Item>
+                <Select.Item value="cancelled">Cancelled</Select.Item>
+              </Select.Content>
+            </Select.Root>
           </Field>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Category">
-            <select value={form.category_id} onChange={e => setForm(p => ({ ...p, category_id: e.target.value }))}>
-              <option value="">Uncategorized</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <Select.Root value={form.category_id || ''} onValueChange={val => setForm(p => ({ ...p, category_id: val }))}>
+              <Select.Trigger className="w-full" />
+              <Select.Content>
+                <Select.Item value="">Uncategorized</Select.Item>
+                {categories.map(c => <Select.Item key={c.id} value={c.id}>{c.name}</Select.Item>)}
+              </Select.Content>
+            </Select.Root>
           </Field>
           <Field label="Notes">
-            <input value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Optional notes" />
+            <TextField.Root value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Optional notes" size="1" />
           </Field>
         </div>
 
         <Field label="Description">
-          <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} className="resize-none" placeholder="Brief context" />
+          <TextArea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} className="resize-none w-full" placeholder="Brief context" size="1" />
         </Field>
 
         {/* Onchain TX */}
@@ -710,12 +735,15 @@ function InvoiceModal({ data, quarterId, currency, categories, allInvoices, onSa
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
-              <input value={form.tx_hash} onChange={e => setForm(p => ({ ...p, tx_hash: e.target.value }))}
-                className="font-mono text-xs" placeholder="0x…" />
+              <TextField.Root value={form.tx_hash} onChange={e => setForm(p => ({ ...p, tx_hash: e.target.value }))}
+                className="font-mono" placeholder="0x…" size="1" />
             </div>
-            <select value={form.tx_chain} onChange={e => setForm(p => ({ ...p, tx_chain: e.target.value }))}>
-              {CHAINS.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <Select.Root value={form.tx_chain} onValueChange={val => setForm(p => ({ ...p, tx_chain: val }))}>
+              <Select.Trigger className="w-full" />
+              <Select.Content>
+                {CHAINS.map(c => <Select.Item key={c.id} value={c.id}>{c.name}</Select.Item>)}
+              </Select.Content>
+            </Select.Root>
           </div>
         </div>
       </div>
@@ -1212,15 +1240,14 @@ export default function BudgetPanel() {
           </div>
 
           {quarters.length > 0 && (
-            <select
-              value={activeQuarterId || ''}
-              onChange={e => setActiveQuarterId(e.target.value)}
-              className="unstyled text-xs bg-mission-control-bg border border-mission-control-border rounded-lg px-2 py-1.5 text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-            >
-              {quarters.map(q => (
-                <option key={q.id} value={q.id}>{q.name} ({q.status})</option>
-              ))}
-            </select>
+            <Select.Root value={activeQuarterId || ''} onValueChange={val => setActiveQuarterId(val)}>
+              <Select.Trigger />
+              <Select.Content>
+                {quarters.map(q => (
+                  <Select.Item key={q.id} value={q.id}>{q.name} ({q.status})</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
           )}
 
           <div className="flex items-center gap-1.5">
@@ -1244,13 +1271,13 @@ export default function BudgetPanel() {
         {/* Tabs */}
         <div className="flex px-6">
           {tabItems.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors ${
+            <Button key={t.id} variant="ghost" size="1" onClick={() => setTab(t.id)}
+              className={`flex items-center gap-1.5 px-3 py-2.5 font-medium border-b-2 -mb-px transition-colors rounded-none ${
                 tab === t.id ? 'border-mission-control-accent text-mission-control-accent' : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               <t.icon size={12} /> {t.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -1581,13 +1608,14 @@ export default function BudgetPanel() {
                   })}
 
                   {/* New Quarter card */}
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => setQuarterModal({ mode: 'create' })}
-                    className="rounded-xl border-2 border-dashed border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-surface/50 p-4 flex flex-col items-center justify-center gap-2 text-mission-control-text-dim hover:text-mission-control-text transition-all min-h-[160px]"
+                    className="rounded-xl border-2 border-dashed border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-surface/50 p-4 flex flex-col items-center justify-center gap-2 text-mission-control-text-dim hover:text-mission-control-text transition-all min-h-[160px] w-full h-full"
                   >
                     <Plus size={24} />
                     <span className="text-sm font-medium">New Quarter</span>
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
@@ -1627,43 +1655,43 @@ export default function BudgetPanel() {
             {/* Toolbar */}
             <div className="flex items-center gap-2 px-4 py-2.5 border-b border-mission-control-border/50 bg-mission-control-surface/60 shrink-0 flex-wrap">
               <div className="relative flex-1 min-w-32">
-                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-                <input
+                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none z-10" />
+                <TextField.Root
                   value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)}
                   placeholder="Search invoices…"
-                  className="pl-7 text-xs py-1.5"
+                  className="pl-6"
+                  size="1"
                 />
               </div>
 
               {/* Status filter */}
               <div className="flex rounded-lg border border-mission-control-border overflow-hidden">
                 {(['all', 'pending', 'paid', 'cancelled'] as const).map(f => (
-                  <button key={f} onClick={() => setStatusFilter(f)}
-                    className={`px-2 py-1 text-[10px] font-medium capitalize transition-colors ${
+                  <Button key={f} variant="ghost" size="1" onClick={() => setStatusFilter(f)}
+                    className={`px-2 py-1 capitalize rounded-none transition-colors ${
                       statusFilter === f ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text'
                     }`}
-                  >{f}</button>
+                  >{f}</Button>
                 ))}
               </div>
 
               {/* Category filter */}
-              <select
-                value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-                className="unstyled text-xs bg-mission-control-bg border border-mission-control-border rounded-lg px-2 py-1.5 text-mission-control-text focus:outline-none"
-              >
-                <option value="">All categories</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <Select.Root value={categoryFilter} onValueChange={val => setCategoryFilter(val)}>
+                <Select.Trigger placeholder="All categories" />
+                <Select.Content>
+                  <Select.Item value="">All categories</Select.Item>
+                  {categories.map(c => <Select.Item key={c.id} value={c.id}>{c.name}</Select.Item>)}
+                </Select.Content>
+              </Select.Root>
 
               {/* All quarters toggle */}
-              <button
+              <Button
+                variant={showAllQuarters ? 'soft' : 'ghost'}
+                size="1"
                 onClick={() => { setShowAllQuarters(p => !p); setSelectedIds(new Set()); }}
-                className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
-                  showAllQuarters ? 'bg-mission-control-accent/10 border-mission-control-accent text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
               >
                 {showAllQuarters ? 'All Time' : activeQuarter?.name || 'Quarter'}
-              </button>
+              </Button>
 
               <Button variant="ghost" size="1" onClick={exportInvoicesCSV} title="Export to CSV">
                 <Download size={11} /> Export
@@ -1704,9 +1732,10 @@ export default function BudgetPanel() {
                   <thead className="sticky top-0 bg-mission-control-surface border-b border-mission-control-border">
                     <tr>
                       <th className="w-8 px-3 py-2 text-left">
-                        <input type="checkbox" className="unstyled w-3 h-3 cursor-pointer accent-info"
+                        <Checkbox
                           checked={selectedIds.size === displayInvoices.length && displayInvoices.length > 0}
-                          onChange={e => setSelectedIds(e.target.checked ? new Set(displayInvoices.map(i => i.id)) : new Set())}
+                          onCheckedChange={checked => setSelectedIds(checked ? new Set(displayInvoices.map(i => i.id)) : new Set())}
+                          size="1"
                         />
                       </th>
                       {['Invoice', 'Vendor', 'Amount', 'Date', 'Category', 'Status', ''].map(h => (
@@ -1721,9 +1750,10 @@ export default function BudgetPanel() {
                       return (
                         <tr key={inv.id} className={`hover:bg-mission-control-surface/50 transition-colors ${selectedIds.has(inv.id) ? 'bg-mission-control-accent/5' : ''}`}>
                           <td className="px-3 py-2">
-                            <input type="checkbox" className="unstyled w-3 h-3 cursor-pointer accent-info"
+                            <Checkbox
                               checked={selectedIds.has(inv.id)}
-                              onChange={e => setSelectedIds(prev => { const n = new Set(prev); e.target.checked ? n.add(inv.id) : n.delete(inv.id); return n; })}
+                              onCheckedChange={checked => setSelectedIds(prev => { const n = new Set(prev); checked ? n.add(inv.id) : n.delete(inv.id); return n; })}
+                              size="1"
                             />
                           </td>
                           <td className="px-2 py-2 max-w-[200px]">
@@ -1744,15 +1774,14 @@ export default function BudgetPanel() {
                             ) : <span className="text-mission-control-text-dim/50">—</span>}
                           </td>
                           <td className="px-2 py-2">
-                            <select
-                              value={inv.status}
-                              onChange={e => handleInvoiceStatus(inv.id, e.target.value)}
-                              className={`unstyled text-[10px] px-1.5 py-0.5 rounded border font-medium cursor-pointer ${S.cls}`}
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="paid">Paid</option>
-                              <option value="cancelled">Cancelled</option>
-                            </select>
+                            <Select.Root value={inv.status} onValueChange={val => handleInvoiceStatus(inv.id, val)}>
+                              <Select.Trigger className={`text-[10px] font-medium ${S.cls}`} />
+                              <Select.Content>
+                                <Select.Item value="pending">Pending</Select.Item>
+                                <Select.Item value="paid">Paid</Select.Item>
+                                <Select.Item value="cancelled">Cancelled</Select.Item>
+                              </Select.Content>
+                            </Select.Root>
                           </td>
                           <td className="px-2 py-2">
                             <div className="flex items-center gap-1">
@@ -1811,20 +1840,20 @@ export default function BudgetPanel() {
               const allTags = Array.from(new Set(categories.flatMap(c => c.tags || []))).sort();
               return (
                 <div className="flex flex-wrap gap-1.5 mb-4">
-                  <button
+                  <Button
+                    variant={!tagFilter ? 'solid' : 'ghost'}
+                    size="1"
                     onClick={() => setTagFilter('')}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                      !tagFilter ? 'bg-mission-control-accent text-white' : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-                    }`}
-                  >All</button>
+                    className="rounded-full"
+                  >All</Button>
                   {allTags.map(t => (
-                    <button
+                    <Button
                       key={t}
+                      variant={tagFilter === t ? 'solid' : 'ghost'}
+                      size="1"
                       onClick={() => setTagFilter(tagFilter === t ? '' : t)}
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                        tagFilter === t ? 'bg-mission-control-accent text-white' : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-                      }`}
-                    >{t}</button>
+                      className="rounded-full"
+                    >{t}</Button>
                   ))}
                 </div>
               );
@@ -1938,17 +1967,15 @@ export default function BudgetPanel() {
                       {cat.tags && cat.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {cat.tags.map(t => (
-                            <button
+                            <Button
                               key={t}
+                              variant={tagFilter === t ? 'solid' : 'ghost'}
+                              size="1"
                               onClick={() => setTagFilter(tagFilter === t ? '' : t)}
-                              className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
-                                tagFilter === t
-                                  ? 'bg-mission-control-accent text-white'
-                                  : 'border border-mission-control-border/60 text-mission-control-text-dim hover:border-mission-control-accent/50 hover:text-mission-control-accent'
-                              }`}
+                              className="rounded-full px-1.5 py-0.5 text-[10px]"
                             >
                               {t}
-                            </button>
+                            </Button>
                           ))}
                         </div>
                       )}
@@ -2050,11 +2077,11 @@ export default function BudgetPanel() {
                   </div>
                   <div className="flex rounded-lg border border-mission-control-border overflow-hidden">
                     {(['quarterly', 'annual'] as const).map(m => (
-                      <button key={m} onClick={() => setImportMode(m)}
-                        className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${importMode === m ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+                      <Button key={m} variant="ghost" size="1" onClick={() => setImportMode(m)}
+                        className={`px-3 py-1.5 capitalize rounded-none transition-colors ${importMode === m ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
                       >
                         {m === 'quarterly' ? `Quarterly (${importPreview.quarterlyView.length} quarters)` : `Annual (1 period)`}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>

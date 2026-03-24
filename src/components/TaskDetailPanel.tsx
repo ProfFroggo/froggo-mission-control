@@ -888,7 +888,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <>
               <div className="h-2 flex-1 bg-gradient-to-r from-mission-control-border/60 to-mission-control-border rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-green-700 to-green-400 transition-all duration-500 rounded-full"
+                  className="h-full bg-gradient-to-r from-[var(--color-success-hover)] to-[var(--color-success)] transition-all duration-500 rounded-full"
                   style={{ width: `${subtaskProgress}%` }}
                 />
               </div>

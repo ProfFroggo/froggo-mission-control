@@ -1,134 +1,471 @@
 "use client";
 
-import { ThreadPrimitive, MessagePrimitive, ComposerPrimitive, ActionBarPrimitive, useMessage } from "@assistant-ui/react";
-import { Send, Loader2, MessageSquare, Copy, Check } from "lucide-react";
+import {
+  ThreadPrimitive,
+  MessagePrimitive,
+  ComposerPrimitive,
+  ActionBarPrimitive,
+  BranchPickerPrimitive,
+  useMessage,
+} from "@assistant-ui/react";
+import { Box, Flex, Text, IconButton } from "@radix-ui/themes";
+import {
+  Send,
+  Loader2,
+  Copy,
+  Check,
+  MessageSquare,
+  ThumbsUp,
+  ThumbsDown,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Edit3,
+  ChevronDown,
+} from "lucide-react";
 import { useState } from "react";
 import MarkdownMessage from "../MarkdownMessage";
-import { Spinner } from "../LoadingStates";
 
-// ──────────────────────────────────────────────────────────
-// Text renderer — wraps MarkdownMessage for assistant content
-// ──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// CSS keyframes injected once
+// ─────────────────────────────────────────────────────────────────
 
-function AssistantTextPart({ text }: { text: string }) {
+let _cssInjected = false;
+function ensureCSS() {
+  if (_cssInjected || typeof document === "undefined") return;
+  _cssInjected = true;
+  const s = document.createElement("style");
+  s.textContent = `
+    @keyframes aui-thinking-dot {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+      40%           { transform: scale(1);   opacity: 1;   }
+    }
+    @keyframes aui-cursor-blink {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0; }
+    }
+    @keyframes aui-fade-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+    .aui-message-enter { animation: aui-fade-in 0.2s ease both; }
+    .aui-action-bar { opacity: 0; transition: opacity 0.15s; }
+    .aui-message-root:hover .aui-action-bar,
+    .aui-message-root:focus-within .aui-action-bar { opacity: 1; }
+    .aui-scroll-btn { opacity: 0; transition: opacity 0.2s; }
+    .aui-scroll-btn.visible { opacity: 1; }
+  `;
+  document.head.appendChild(s);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MarkdownText — assistant content renderer
+// ─────────────────────────────────────────────────────────────────
+
+function MarkdownText({ text }: { text: string }) {
   return <MarkdownMessage content={text} />;
 }
 
-// ──────────────────────────────────────────────────────────
-// Streaming indicator — shown below assistant content while running
-// ──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// Streaming cursors: thinking dots + inline cursor
+// ─────────────────────────────────────────────────────────────────
 
-function StreamingIndicator() {
-  const isRunning = useMessage((s) => s.status?.type === "running");
-  if (!isRunning) return null;
+function ThinkingDots() {
+  ensureCSS();
   return (
-    <div className="mt-2 flex items-center gap-1.5">
-      <Spinner size={14} />
-    </div>
-  );
-}
-
-// ──────────────────────────────────────────────────────────
-// Copy button — shown on hover for assistant messages
-// ──────────────────────────────────────────────────────────
-
-function AssistantCopyButton() {
-  const [copied, setCopied] = useState(false);
-
-  return (
-    <ActionBarPrimitive.Root
-      hideWhenRunning
-      autohide="not-last"
-      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+    <span
+      style={{ display: "inline-flex", gap: 4, alignItems: "center", padding: "2px 0" }}
+      aria-label="Agent is thinking"
     >
-      <ActionBarPrimitive.Copy
-        copiedDuration={1500}
-        onClick={() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        }}
-        className="p-1.5 rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/40 transition-all"
-        aria-label="Copy message"
-        title="Copy message"
-      >
-        {copied ? <Check size={13} /> : <Copy size={13} />}
-      </ActionBarPrimitive.Copy>
-    </ActionBarPrimitive.Root>
-  );
-}
-
-// ──────────────────────────────────────────────────────────
-// Timestamp — shown below user messages
-// ──────────────────────────────────────────────────────────
-
-function MessageTimestamp() {
-  const createdAt = useMessage((s) => s.createdAt);
-  if (!createdAt) return null;
-  const now = Date.now();
-  const diffMs = now - createdAt.getTime();
-  const diffMin = Math.floor(diffMs / 60_000);
-  let label: string;
-  if (diffMs < 60_000) {
-    label = "just now";
-  } else if (diffMin < 60) {
-    label = `${diffMin}m ago`;
-  } else {
-    label = createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  }
-  return (
-    <span className="mt-1 text-xs text-mission-control-text-dim opacity-60 select-none">
-      {label}
+      {[0, 150, 300].map((delay) => (
+        <span
+          key={delay}
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            background: "var(--accent-9)",
+            display: "inline-block",
+            animation: `aui-thinking-dot 1.2s ease-in-out infinite`,
+            animationDelay: `${delay}ms`,
+          }}
+        />
+      ))}
     </span>
   );
 }
 
-// ──────────────────────────────────────────────────────────
-// Assistant message bubble
-// ──────────────────────────────────────────────────────────
+function StreamingCursor() {
+  ensureCSS();
+  return (
+    <span
+      aria-hidden
+      style={{
+        display: "inline-block",
+        width: 2,
+        height: "0.85em",
+        marginLeft: 1,
+        background: "var(--accent-9)",
+        verticalAlign: "text-bottom",
+        borderRadius: 1,
+        animation: "aui-cursor-blink 0.8s step-end infinite",
+      }}
+    />
+  );
+}
+
+function AssistantStreamState() {
+  const isRunning = useMessage((s) => s.status?.type === "running");
+  const hasText = useMessage((s) =>
+    s.content.some((p: any) => p.type === "text" && p.text?.trim?.())
+  );
+  if (!isRunning) return null;
+  return hasText ? <StreamingCursor /> : <ThinkingDots />;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Action bars
+// ─────────────────────────────────────────────────────────────────
+
+type SmallIconBtnProps = {
+  onClick?: () => void;
+  title: string;
+  active?: boolean;
+  children: React.ReactNode;
+  asChild?: boolean;
+};
+
+function SmallBtn({ onClick, title, active, children, asChild }: SmallIconBtnProps) {
+  const style: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 28,
+    height: 28,
+    borderRadius: "var(--radius-2)",
+    border: "1px solid transparent",
+    background: "transparent",
+    color: active ? "var(--accent-9)" : "var(--gray-9)",
+    cursor: "pointer",
+    transition: "all 0.12s",
+    flexShrink: 0,
+  };
+  if (asChild) return <>{children}</>;
+  return (
+    <button type="button" onClick={onClick} title={title} style={style} aria-label={title}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.background = "var(--gray-a3)";
+        (e.currentTarget as HTMLElement).style.color = "var(--gray-12)";
+        (e.currentTarget as HTMLElement).style.borderColor = "var(--gray-5)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.background = "transparent";
+        (e.currentTarget as HTMLElement).style.color = active ? "var(--accent-9)" : "var(--gray-9)";
+        (e.currentTarget as HTMLElement).style.borderColor = "transparent";
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function AssistantActionBar() {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <Flex
+      gap="1"
+      align="center"
+      mt="1"
+      className="aui-action-bar"
+      style={{ minHeight: 32 }}
+    >
+      {/* Copy */}
+      <ActionBarPrimitive.Copy
+        copiedDuration={1500}
+        onClick={() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 28,
+          height: 28,
+          borderRadius: "var(--radius-2)",
+          border: "1px solid transparent",
+          background: "transparent",
+          color: copied ? "var(--green-10)" : "var(--gray-9)",
+          cursor: "pointer",
+          transition: "all 0.12s",
+        }}
+        title="Copy message"
+        aria-label="Copy message"
+      >
+        {copied ? <Check size={13} /> : <Copy size={13} />}
+      </ActionBarPrimitive.Copy>
+
+      {/* Thumbs up */}
+      <ActionBarPrimitive.FeedbackPositive
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 28,
+          height: 28,
+          borderRadius: "var(--radius-2)",
+          border: "1px solid transparent",
+          background: "transparent",
+          color: "var(--gray-9)",
+          cursor: "pointer",
+          transition: "all 0.12s",
+        }}
+        title="Good response"
+        aria-label="Good response"
+      >
+        <ThumbsUp size={13} />
+      </ActionBarPrimitive.FeedbackPositive>
+
+      {/* Thumbs down */}
+      <ActionBarPrimitive.FeedbackNegative
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 28,
+          height: 28,
+          borderRadius: "var(--radius-2)",
+          border: "1px solid transparent",
+          background: "transparent",
+          color: "var(--gray-9)",
+          cursor: "pointer",
+          transition: "all 0.12s",
+        }}
+        title="Bad response"
+        aria-label="Bad response"
+      >
+        <ThumbsDown size={13} />
+      </ActionBarPrimitive.FeedbackNegative>
+
+      {/* Regenerate — only last assistant message */}
+      <ActionBarPrimitive.Reload
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 28,
+          height: 28,
+          borderRadius: "var(--radius-2)",
+          border: "1px solid transparent",
+          background: "transparent",
+          color: "var(--gray-9)",
+          cursor: "pointer",
+          transition: "all 0.12s",
+        }}
+        title="Regenerate response"
+        aria-label="Regenerate response"
+      >
+        <RefreshCw size={13} />
+      </ActionBarPrimitive.Reload>
+
+      {/* Branch picker — shows count when > 1 branch */}
+      <BranchPickerPrimitive.Root
+        hideWhenSingleBranch
+        style={{ display: "contents" }}
+      >
+        <Flex
+          align="center"
+          gap="1"
+          style={{
+            borderLeft: "1px solid var(--gray-4)",
+            paddingLeft: 6,
+            marginLeft: 2,
+          }}
+        >
+          <BranchPickerPrimitive.Previous
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 22,
+              height: 22,
+              borderRadius: "var(--radius-1)",
+              border: "1px solid transparent",
+              background: "transparent",
+              color: "var(--gray-9)",
+              cursor: "pointer",
+            }}
+            aria-label="Previous branch"
+          >
+            <ChevronLeft size={12} />
+          </BranchPickerPrimitive.Previous>
+          <Text size="1" style={{ color: "var(--gray-9)", minWidth: 24, textAlign: "center" }}>
+            <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
+          </Text>
+          <BranchPickerPrimitive.Next
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 22,
+              height: 22,
+              borderRadius: "var(--radius-1)",
+              border: "1px solid transparent",
+              background: "transparent",
+              color: "var(--gray-9)",
+              cursor: "pointer",
+            }}
+            aria-label="Next branch"
+          >
+            <ChevronRight size={12} />
+          </BranchPickerPrimitive.Next>
+        </Flex>
+      </BranchPickerPrimitive.Root>
+    </Flex>
+  );
+}
+
+function UserActionBar() {
+  return (
+    <Flex
+      gap="1"
+      align="center"
+      mt="1"
+      justify="end"
+      className="aui-action-bar"
+      style={{ minHeight: 28 }}
+    >
+      <ActionBarPrimitive.Edit
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 28,
+          height: 28,
+          borderRadius: "var(--radius-2)",
+          border: "1px solid transparent",
+          background: "transparent",
+          color: "var(--gray-9)",
+          cursor: "pointer",
+          transition: "all 0.12s",
+        }}
+        title="Edit message"
+        aria-label="Edit message"
+      >
+        <Edit3 size={13} />
+      </ActionBarPrimitive.Edit>
+    </Flex>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Message bubbles
+// ─────────────────────────────────────────────────────────────────
 
 export function AssistantMessageBubble() {
+  ensureCSS();
   return (
-    <MessagePrimitive.Root className="flex gap-3 mt-6 items-start group">
-      {/* Agent avatar */}
-      <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 flex-shrink-0 mt-0.5" aria-hidden />
-
-      <div className="flex-1 min-w-0 flex flex-col items-start max-w-[80%]">
-        <div className="relative rounded-xl rounded-tl-sm bg-mission-control-surface/80 border border-mission-control-border text-mission-control-text px-4 py-3 text-sm break-words shadow-sm w-full">
+    <MessagePrimitive.Root className="aui-message-root aui-message-enter">
+      <Box py="3" px="1" style={{ maxWidth: "100%" }}>
+        {/* Content */}
+        <Box
+          style={{
+            fontSize: "var(--font-size-2)",
+            lineHeight: "1.65",
+            color: "var(--gray-12)",
+            wordBreak: "break-word",
+          }}
+        >
           <MessagePrimitive.Content
-            components={{
-              Text: AssistantTextPart,
-            }}
+            components={{ Text: MarkdownText }}
           />
-          <StreamingIndicator />
-          <AssistantCopyButton />
-        </div>
-      </div>
+          <AssistantStreamState />
+        </Box>
+        {/* Action bar — hidden until hover */}
+        <ActionBarPrimitive.Root
+          hideWhenRunning
+          autohide="never"
+          style={{ display: "contents" }}
+        >
+          <AssistantActionBar />
+        </ActionBarPrimitive.Root>
+      </Box>
     </MessagePrimitive.Root>
   );
 }
-
-// ──────────────────────────────────────────────────────────
-// User message bubble
-// ──────────────────────────────────────────────────────────
 
 export function UserMessageBubble() {
+  ensureCSS();
   return (
-    <MessagePrimitive.Root className="flex gap-3 mt-6 items-start justify-end">
-      <div className="flex-1 min-w-0 flex flex-col items-end max-w-[80%]">
-        <div className="rounded-xl rounded-tr-sm bg-mission-control-accent/10 border border-mission-control-accent/20 text-mission-control-text px-4 py-3 text-sm break-words shadow-sm">
-          <MessagePrimitive.Content />
-        </div>
-        <MessageTimestamp />
-      </div>
+    <MessagePrimitive.Root className="aui-message-root aui-message-enter">
+      <Flex justify="end" py="2" px="1">
+        <Flex direction="column" align="end" style={{ maxWidth: "75%" }}>
+          {/* Bubble */}
+          <Box
+            style={{
+              background: "var(--accent-4)",
+              border: "1px solid var(--accent-6)",
+              borderRadius: "16px 16px 4px 16px",
+              padding: "10px 16px",
+              fontSize: "var(--font-size-2)",
+              lineHeight: "1.6",
+              color: "var(--gray-12)",
+              wordBreak: "break-word",
+              boxShadow: "0 1px 3px var(--black-a2)",
+            }}
+          >
+            <MessagePrimitive.Content />
+          </Box>
+          {/* Action bar */}
+          <ActionBarPrimitive.Root
+            autohide="not-last"
+            style={{ display: "contents" }}
+          >
+            <UserActionBar />
+          </ActionBarPrimitive.Root>
+        </Flex>
+      </Flex>
     </MessagePrimitive.Root>
   );
 }
 
-// ──────────────────────────────────────────────────────────
-// Composer — wraps ComposerPrimitive.Root with our styling.
-// The parent ChatPanel keeps its own input/send state via
-// the runtime's onNew callback, so we use the managed input.
-// ──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// Scroll-to-bottom button
+// ─────────────────────────────────────────────────────────────────
+
+function ScrollToBottomButton() {
+  return (
+    <ThreadPrimitive.ScrollToBottom asChild>
+      <button
+        style={{
+          position: "absolute",
+          bottom: 12,
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "6px 14px 6px 10px",
+          borderRadius: "var(--radius-5)",
+          background: "var(--color-panel-solid)",
+          border: "1px solid var(--gray-5)",
+          color: "var(--gray-11)",
+          fontSize: "var(--font-size-1)",
+          cursor: "pointer",
+          boxShadow: "0 2px 8px var(--black-a4)",
+          transition: "all 0.15s",
+          zIndex: 10,
+        }}
+        aria-label="Scroll to latest"
+      >
+        <ChevronDown size={14} />
+        <span>Latest</span>
+      </button>
+    </ThreadPrimitive.ScrollToBottom>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Composer — growing textarea + actions + send
+// ─────────────────────────────────────────────────────────────────
 
 export function MissionControlComposer({
   placeholder,
@@ -140,48 +477,123 @@ export function MissionControlComposer({
   loading?: boolean;
 }) {
   return (
-    <ComposerPrimitive.Root className="flex-1 flex items-end gap-2">
-      <div className="flex-1 relative">
-        <ComposerPrimitive.Input
-          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors text-sm leading-relaxed"
-          placeholder={placeholder ?? "Message... (Enter to send, Shift+Enter for newline)"}
-          submitMode="enter"
-          disabled={disabled}
-          rows={1}
-          autoFocus
-        />
-      </div>
-      <ComposerPrimitive.Send
-        disabled={disabled || loading}
-        className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50 flex-shrink-0"
-        aria-label="Send message"
-        title="Send message (Enter)"
-      >
-        {loading ? (
-          <Loader2 size={20} className="animate-spin" />
-        ) : (
-          <Send size={20} />
-        )}
-      </ComposerPrimitive.Send>
+    <ComposerPrimitive.Root
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        background: "var(--color-surface)",
+        border: "1px solid var(--gray-5)",
+        borderRadius: "var(--radius-4)",
+        padding: "10px 12px 10px 16px",
+        transition: "border-color 0.15s, box-shadow 0.15s",
+        boxShadow: "0 1px 4px var(--black-a2)",
+      }}
+      className="focus-within:border-[var(--accent-8)] focus-within:shadow-[0_0_0_2px_var(--accent-a4)]"
+    >
+      {/* Textarea */}
+      <ComposerPrimitive.Input
+        style={{
+          display: "block",
+          width: "100%",
+          background: "transparent",
+          border: "none",
+          outline: "none",
+          resize: "none",
+          color: "var(--gray-12)",
+          fontSize: "var(--font-size-2)",
+          lineHeight: "1.55",
+          fontFamily: "inherit",
+          minHeight: 22,
+          maxHeight: 160,
+          overflow: "auto",
+        }}
+        className="placeholder:text-[var(--gray-9)]"
+        placeholder={placeholder ?? "Message… (Enter to send, Shift+Enter for newline)"}
+        submitMode="enter"
+        disabled={disabled}
+        rows={1}
+        autoFocus
+      />
+
+      {/* Bottom row: right-aligned send */}
+      <Flex justify="end" align="center">
+        <ComposerPrimitive.Send disabled={disabled || loading} asChild>
+          <IconButton
+            size="2"
+            radius="medium"
+            disabled={disabled || loading}
+            aria-label="Send message"
+            title="Send (Enter)"
+          >
+            {loading ? (
+              <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
+            ) : (
+              <Send size={16} />
+            )}
+          </IconButton>
+        </ComposerPrimitive.Send>
+      </Flex>
     </ComposerPrimitive.Root>
   );
 }
 
-// ──────────────────────────────────────────────────────────
-// Thread — viewport + messages list + empty state
-// ──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// Thread — root with auto-scroll viewport
+// ─────────────────────────────────────────────────────────────────
 
 export function MissionControlThread() {
+  ensureCSS();
   return (
-    <ThreadPrimitive.Root className="flex flex-col h-full">
-      <ThreadPrimitive.Viewport className="flex-1 overflow-y-auto px-4 py-4">
+    <ThreadPrimitive.Root
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        position: "relative",
+      }}
+    >
+      <ThreadPrimitive.Viewport
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "0 20px 20px",
+          scrollBehavior: "smooth",
+        }}
+      >
+        {/* Empty state */}
         <ThreadPrimitive.Empty>
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-mission-control-text-dim">
-            <MessageSquare size={32} className="opacity-40" />
-            <p className="text-sm">Start a conversation</p>
-          </div>
+          <Flex
+            direction="column"
+            align="center"
+            justify="center"
+            gap="3"
+            style={{ height: "100%", minHeight: 280, color: "var(--gray-9)" }}
+          >
+            <Box
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                background: "var(--accent-3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <MessageSquare size={22} style={{ color: "var(--accent-9)" }} />
+            </Box>
+            <Text size="2" color="gray" weight="medium">
+              Start a conversation
+            </Text>
+            <Text size="1" color="gray" style={{ opacity: 0.65 }}>
+              Send a message to your agent
+            </Text>
+          </Flex>
         </ThreadPrimitive.Empty>
 
+        {/* Messages */}
         <ThreadPrimitive.Messages
           components={{
             UserMessage: UserMessageBubble,
@@ -189,6 +601,9 @@ export function MissionControlThread() {
           }}
         />
       </ThreadPrimitive.Viewport>
+
+      {/* Scroll-to-bottom floating button */}
+      <ScrollToBottomButton />
     </ThreadPrimitive.Root>
   );
 }

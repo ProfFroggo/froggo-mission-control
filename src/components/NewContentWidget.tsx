@@ -120,13 +120,13 @@ export default function NewContentWidget() {
           className={totalNew > 0 ? 'text-review' : 'text-mission-control-text-dim'} 
         />
         {totalNew > 0 && (
-          <span className="px-3 py-1 bg-purple-500 text-white text-sm font-bold rounded-full shadow-lg">
+          <span className="px-3 py-1 text-white text-sm font-bold rounded-full shadow-lg" style={{ background: 'var(--color-review)' }}>
             {totalNew}
           </span>
         )}
       </div>
       
-      <div className="text-3xl font-bold mb-3 bg-gradient-to-br from-mission-control-text to-purple-400 bg-clip-text text-transparent">
+      <div className="text-3xl font-bold mb-3 bg-gradient-to-br from-mission-control-text to-[var(--color-review)] bg-clip-text text-transparent">
         {totalNew} New
       </div>
       

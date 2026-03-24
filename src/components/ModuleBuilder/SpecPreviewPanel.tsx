@@ -337,7 +337,7 @@ function WireframeTab({ wireframe, spec, onRegenerate }: { wireframe: string; sp
           overflowY: 'auto',
           overflowX: 'hidden',
           maxHeight: '480px',
-          background: '#0d0d1a',
+          background: 'var(--mission-control-bg)',
           borderRadius: '8px',
           padding: '16px',
         }}

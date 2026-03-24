@@ -102,7 +102,7 @@ function TaskBar({ task, startMs, pxPerDay, rowHeight, color, onClick }: TaskBar
       <span
         style={{
           fontSize: 11,
-          color: '#fff',
+          color: 'white',
           fontWeight: 500,
           overflow: 'hidden',
           textOverflow: 'ellipsis',

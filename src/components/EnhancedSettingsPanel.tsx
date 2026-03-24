@@ -191,40 +191,30 @@ const defaultSettings: AppSettings = {
   },
 };
 
-// Apply theme and accent color to document
-function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fontFamily: string, fontSize: number) {
+// Apply theme and font settings to document.
+// Surface/text colors are now handled by the .radix-themes CSS bridge —
+// we only need to update the Radix Theme appearance + non-theme vars.
+function applyTheme(theme: 'dark' | 'light' | 'system', _accentColor: string, fontFamily: string, fontSize: number) {
   const root = document.documentElement;
 
-  let actualTheme = theme;
-  if (theme === 'system') {
-    actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
+  const actualTheme: 'dark' | 'light' = theme === 'system'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : theme;
 
+  // Keep CSS class on root for non-Radix styles that use .light/.dark selectors
   root.classList.remove('dark', 'light');
   root.classList.add(actualTheme);
 
-  if (actualTheme === 'dark') {
-    root.style.setProperty('--mission-control-bg', '#0a0a0a');
-    root.style.setProperty('--mission-control-surface', '#141414');
-    root.style.setProperty('--mission-control-border', '#262626');
-    root.style.setProperty('--mission-control-text', '#fafafa');
-    root.style.setProperty('--mission-control-text-dim', '#a1a1aa');
-  } else {
-    root.style.setProperty('--mission-control-bg', '#fafafa');
-    root.style.setProperty('--mission-control-surface', '#ffffff');
-    root.style.setProperty('--mission-control-border', '#e4e4e7');
-    root.style.setProperty('--mission-control-text', '#18181b');
-    root.style.setProperty('--mission-control-text-dim', '#71717a');
-  }
+  // Clear any stale inline CSS vars that would override the .radix-themes bridge
+  const bridgeVars = [
+    '--mission-control-bg', '--mission-control-surface', '--mission-control-border',
+    '--mission-control-text', '--mission-control-text-dim',
+    '--mission-control-accent', '--mission-control-accent-dim',
+    '--mission-control-bg-alt', '--mission-control-bg0', '--mission-control-card',
+  ];
+  bridgeVars.forEach(v => root.style.removeProperty(v));
 
-  root.style.setProperty('--mission-control-accent', accentColor);
-
-  const hex = accentColor.replace('#', '');
-  const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - 30);
-  const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - 30);
-  const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - 30);
-  root.style.setProperty('--mission-control-accent-dim', `rgb(${r}, ${g}, ${b})`);
-
+  // Apply font vars (not theme-sensitive, stay as manual setters)
   const fontMap: Record<string, string> = {
     system: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     inter: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
@@ -233,6 +223,9 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
   };
   root.style.setProperty('--mission-control-font', fontMap[fontFamily] || fontMap.system);
   root.style.setProperty('--mission-control-font-size', `${fontSize}px`);
+
+  // Dispatch event so App.tsx can sync the Radix <Theme appearance> prop
+  window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: actualTheme } }));
 }
 
 type Tab = 'general' | 'appearance' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs' | 'performance' | 'data' | 'accessibility' | 'developer' | 'platform' | 'sessions';

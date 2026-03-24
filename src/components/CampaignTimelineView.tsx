@@ -46,27 +46,27 @@ function MilestoneDot({ type, taskStatus, isPast }: { type: MilestoneType; taskS
         className="rounded-full border-2 flex items-center justify-center flex-shrink-0"
         style={{
           width: size, height: size,
-          borderColor: 'var(--color-success, #22c55e)',
-          backgroundColor: isPast ? 'var(--color-success, #22c55e)' : 'var(--mission-control-bg0, #111)',
+          borderColor: 'var(--color-success)',
+          backgroundColor: isPast ? 'var(--color-success)' : 'var(--mission-control-bg0)',
         }}
       >
-        <Play size={7} style={{ color: isPast ? '#fff' : 'var(--color-success, #22c55e)' }} />
+        <Play size={7} style={{ color: isPast ? 'white' : 'var(--color-success)' }} />
       </div>
     );
   }
 
   if (type === 'end') {
-    const color = isPast ? 'var(--color-error, #ef4444)' : 'var(--color-info, #6366f1)';
+    const color = isPast ? 'var(--color-error)' : 'var(--color-info)';
     return (
       <div
         className="rounded-full border-2 flex items-center justify-center flex-shrink-0"
         style={{
           width: size, height: size,
           borderColor: color,
-          backgroundColor: isPast ? color : 'var(--mission-control-bg0, #111)',
+          backgroundColor: isPast ? color : 'var(--mission-control-bg0)',
         }}
       >
-        <Flag size={7} style={{ color: isPast ? '#fff' : color }} />
+        <Flag size={7} style={{ color: isPast ? 'white' : color }} />
       </div>
     );
   }
@@ -74,11 +74,11 @@ function MilestoneDot({ type, taskStatus, isPast }: { type: MilestoneType; taskS
   // task dot
   const isDone = taskStatus === 'done';
   const color = isDone || isPast
-    ? 'var(--mission-control-text-dim, #888)'
-    : 'var(--color-info, #6366f1)';
+    ? 'var(--mission-control-text-dim)'
+    : 'var(--color-info)';
 
   return isDone ? (
-    <CheckCircle2 size={size} style={{ color: 'var(--color-success, #22c55e)', flexShrink: 0 }} />
+    <CheckCircle2 size={size} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
   ) : (
     <Circle size={size} style={{ color, flexShrink: 0 }} />
   );

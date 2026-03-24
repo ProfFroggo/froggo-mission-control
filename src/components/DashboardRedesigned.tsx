@@ -100,11 +100,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   };
 
   const quickActions = [
-    { icon: Calendar, label: 'Calendar', color: 'from-blue-600 to-blue-700' },
-    { icon: Mail, label: 'Email', color: 'from-green-600 to-green-700' },
-    { icon: XIcon, label: 'X Mentions', color: 'from-gray-700 to-gray-900' },
-    { icon: MessageSquare, label: 'Messages', color: 'from-purple-600 to-purple-700' },
-    { icon: Sparkles, label: 'Daily Brief', color: 'from-orange-600 to-orange-700' },
+    { icon: Calendar, label: 'Calendar', color: 'from-[var(--color-info)] to-[var(--color-info-hover)]' },
+    { icon: Mail, label: 'Email', color: 'from-[var(--color-success)] to-[var(--color-success-hover)]' },
+    { icon: XIcon, label: 'X Mentions', color: 'from-[var(--mission-control-border)] to-[var(--mission-control-bg)]' },
+    { icon: MessageSquare, label: 'Messages', color: 'from-[var(--color-review)] to-[var(--color-review-hover)]' },
+    { icon: Sparkles, label: 'Daily Brief', color: 'from-[var(--color-danger)] to-[var(--color-danger-hover)]' },
   ];
 
   const getSessionIcon = (session: any) => {
@@ -131,7 +131,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
       {/* HERO SECTION - Modern, spacious, attention-grabbing */}
       <div className="relative overflow-hidden bg-gradient-to-br from-mission-control-surface via-mission-control-bg to-mission-control-surface border-b border-mission-control-border/50">
         {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-mission-control-accent/5 via-transparent to-purple-500/5 animate-gradient-x opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-r from-mission-control-accent/5 via-transparent to-[var(--color-review)]/5 animate-gradient-x opacity-50" />
         
         <div className="relative w-full px-8 py-8">
           {/* Greeting & Status Row */}
@@ -215,13 +215,13 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             onClick={() => onNavigate?.('approvals')}
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${pendingApprovals.length > 0 
-                ? 'bg-gradient-to-br from-orange-500/20 via-orange-500/10 to-transparent border-2 border-warning-border hover:border-warning-border shadow-xl shadow-orange-500/20' 
+                ? 'bg-gradient-to-br from-[var(--color-danger)]/20 via-[var(--color-danger)]/10 to-transparent border-2 border-warning-border hover:border-warning-border shadow-xl'
                 : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
               } hover:scale-105`}
           >
             {/* Animated background gradient */}
             {pendingApprovals.length > 0 && (
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-red-500/10 animate-gradient-x opacity-50" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-danger)]/10 to-[var(--color-error)]/10 animate-gradient-x opacity-50" />
             )}
             
             <div className="relative z-10">
@@ -234,7 +234,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-orange-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-danger)] bg-clip-text text-transparent">
                 {pendingApprovals.length}
               </div>
               
@@ -254,7 +254,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             onClick={() => onNavigate?.('kanban')}
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${inProgressTasks.length > 0 
-                ? 'bg-gradient-to-br from-blue-500/20 via-blue-500/10 to-transparent border border-info-border hover:border-info-border shadow-lg' 
+                ? 'bg-gradient-to-br from-[var(--color-info)]/20 via-[var(--color-info)]/10 to-transparent border border-info-border hover:border-info-border shadow-lg'
                 : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
               } hover:scale-105`}
           >
@@ -268,7 +268,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-blue-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-info)] bg-clip-text text-transparent">
                 {inProgressTasks.length}
               </div>
               
@@ -278,7 +278,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               {inProgressTasks.length > 0 && (
                 <div className="h-2 bg-mission-control-border/50 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-[var(--color-info)] to-[var(--color-info-hover)] rounded-full transition-all duration-500"
                     style={{ width: `${Math.min((inProgressTasks.length / (inProgressTasks.length + needsReview.length)) * 100, 100)}%` }}
                   />
                 </div>
@@ -291,7 +291,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             onClick={() => onNavigate?.('kanban')}
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${urgentTasks.length > 0 || unassignedTasks.length > 0
-                ? 'bg-gradient-to-br from-yellow-500/20 via-yellow-500/10 to-transparent border border-warning-border hover:border-warning-border shadow-lg' 
+                ? 'bg-gradient-to-br from-[var(--color-warning)]/20 via-[var(--color-warning)]/10 to-transparent border border-warning-border hover:border-warning-border shadow-lg'
                 : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
               } hover:scale-105`}
           >
@@ -305,7 +305,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-yellow-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-warning)] bg-clip-text text-transparent">
                 {urgentTasks.length + unassignedTasks.length}
               </div>
               
@@ -324,7 +324,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             onClick={() => onNavigate?.('agents')}
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${activeSubagents.length > 0
-                ? 'bg-gradient-to-br from-green-500/20 via-green-500/10 to-transparent border border-success-border hover:border-success-border shadow-lg' 
+                ? 'bg-gradient-to-br from-[var(--color-success)]/20 via-[var(--color-success)]/10 to-transparent border border-success-border hover:border-success-border shadow-lg'
                 : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
               } hover:scale-105`}
           >
@@ -336,7 +336,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-green-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-success)] bg-clip-text text-transparent">
                 {totalAgentCount}
               </div>
               
@@ -483,7 +483,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             className="w-full p-6 flex items-center justify-between hover:bg-mission-control-bg/20 transition-all group"
           >
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-review-border">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-[var(--color-review)]/20 to-[var(--color-info)]/20 border border-review-border">
                 <Users size={24} className="text-review" />
               </div>
               

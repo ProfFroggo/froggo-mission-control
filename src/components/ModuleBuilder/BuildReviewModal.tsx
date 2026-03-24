@@ -71,7 +71,7 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
               </div>
               <div
                 style={{
-                  background: '#0d0d1a',
+                  background: 'var(--mission-control-bg)',
                   borderRadius: '6px',
                   padding: '10px',
                   maxHeight: '140px',

@@ -1099,7 +1099,7 @@ Respond as ${agentName(agentId)}:`;
           <div className="space-y-1.5">
             {/* Host (user) */}
             <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-mission-control-bg/40">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-mission-control-accent to-purple-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                 K
               </div>
               <span className="text-sm font-medium text-mission-control-text flex-1">You (Host)</span>
@@ -1164,7 +1164,7 @@ Respond as ${agentName(agentId)}:`;
       <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface/50 flex items-center gap-3 overflow-x-auto">
         {/* User */}
         <div className="flex flex-col items-center gap-1 flex-shrink-0">
-          <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br from-mission-control-accent to-purple-500 flex items-center justify-center text-white text-sm font-semibold ${listening ? 'ring-2 ring-mission-control-accent ring-offset-2 ring-offset-mission-control-bg' : ''}`}>
+          <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] flex items-center justify-center text-white text-sm font-semibold ${listening ? 'ring-2 ring-mission-control-accent ring-offset-2 ring-offset-mission-control-bg' : ''}`}>
             K
             {listening && (
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-mission-control-accent border-2 border-mission-control-bg" />
@@ -1255,7 +1255,7 @@ Respond as ${agentName(agentId)}:`;
           return (
             <div key={entry.id} className={`flex gap-2.5 ${isUser ? 'flex-row-reverse' : ''}`}>
               {isUser ? (
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-mission-control-accent to-purple-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 mt-0.5">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 mt-0.5">
                   K
                 </div>
               ) : (
@@ -1273,7 +1273,7 @@ Respond as ${agentName(agentId)}:`;
                 </span>
                 <div className={`px-3 py-2 rounded-2xl ${
                   isUser
-                    ? 'bg-gradient-to-br from-mission-control-accent to-purple-500 text-white rounded-tr-sm'
+                    ? 'bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] text-white rounded-tr-sm'
                     : `bg-mission-control-surface border ${theme?.border || 'border-mission-control-border'} rounded-tl-sm`
                 }`}>
                   {isUser ? (

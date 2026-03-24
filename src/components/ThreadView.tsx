@@ -79,11 +79,11 @@ function ThreadMessage({
       {/* Avatar */}
       <div className="flex-shrink-0 w-8">
         {isMe ? (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-mission-control-accent to-purple-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white/10 dark:ring-white/20">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white/10 dark:ring-white/20">
             K
           </div>
         ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-sm ring-2 ring-white/10 dark:ring-white/20">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--color-info)] to-[var(--color-review)] flex items-center justify-center shadow-sm ring-2 ring-white/10 dark:ring-white/20">
             <User size={14} className="text-white" />
           </div>
         )}
@@ -136,7 +136,7 @@ function ThreadMessage({
           <div
             className={`px-4 py-3 transition-all ${
               isMe
-                ? 'bg-gradient-to-br from-mission-control-accent to-purple-500 text-white shadow-md rounded-2xl rounded-tr-sm'
+                ? 'bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] text-white shadow-md rounded-2xl rounded-tr-sm'
                 : 'bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border/60 shadow-sm hover:shadow-md rounded-2xl rounded-tl-sm'
             } ${!message.is_read && !isMe ? 'ring-2 ring-mission-control-accent/30' : ''}`}
           >

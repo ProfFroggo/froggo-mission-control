@@ -397,7 +397,7 @@ export default function AnalyticsPanel() {
                     {/* Progress bar */}
                     <div className="mt-3 bg-mission-control-border rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-mission-control-accent to-blue-400 rounded-full h-2 transition-all"
+                        className="bg-gradient-to-r from-mission-control-accent to-[var(--color-info)] rounded-full h-2 transition-all"
                         style={{
                           width: `${project.totalTasks > 0 
                             ? (project.completedTasks / project.totalTasks) * 100 

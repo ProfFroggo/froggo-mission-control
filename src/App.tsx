@@ -172,53 +172,54 @@ function App() {
       });
   }, [syncPanels]);
 
-  // Apply saved theme and accent color on startup
+  // Apply saved theme on startup — surface/text colors are handled by the
+  // .radix-themes CSS bridge, so we only need to sync the Radix appearance prop.
   useEffect(() => {
     const saved = safeStorage.getItem('mission-control-settings');
     if (saved) {
       try {
         const settings = JSON.parse(saved);
         const theme = settings.theme || 'dark';
-        const accentColor = settings.accentColor || '#6e56cf';
         // Load UI scaling preference
         if (settings.uiScaling && ['90%','95%','100%','105%','110%'].includes(settings.uiScaling)) {
           setRadixScaling(settings.uiScaling as '90%' | '95%' | '100%' | '105%' | '110%');
         }
-        
-        // Determine actual theme
-        let actualTheme = theme;
-        if (theme === 'system') {
-          actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-        
+
+        const actualTheme: 'dark' | 'light' = theme === 'system'
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : theme;
+
         const root = document.documentElement;
+        // Clear any stale inline vars from old sessions, let .radix-themes bridge take over
+        const bridgeVars = [
+          '--mission-control-bg', '--mission-control-surface', '--mission-control-border',
+          '--mission-control-text', '--mission-control-text-dim',
+          '--mission-control-accent', '--mission-control-accent-dim',
+          '--mission-control-bg-alt', '--mission-control-bg0', '--mission-control-card',
+        ];
+        bridgeVars.forEach(v => root.style.removeProperty(v));
+
         root.classList.remove('dark', 'light');
         root.classList.add(actualTheme);
-
-        // Sync Radix Theme appearance
         setRadixAppearance(actualTheme === 'light' ? 'light' : 'dark');
-
-        // Apply theme colors — fixed values, no user-configurable accent
-        if (actualTheme === 'dark') {
-          root.style.setProperty('--mission-control-bg', '#0a0a0a');
-          root.style.setProperty('--mission-control-surface', '#141414');
-          root.style.setProperty('--mission-control-border', '#262626');
-          root.style.setProperty('--mission-control-text', '#fafafa');
-          root.style.setProperty('--mission-control-text-dim', '#a1a1aa');
-        } else {
-          root.style.setProperty('--mission-control-bg', '#fafafa');
-          root.style.setProperty('--mission-control-surface', '#ffffff');
-          root.style.setProperty('--mission-control-border', '#e4e4e7');
-          root.style.setProperty('--mission-control-text', '#18181b');
-          root.style.setProperty('--mission-control-text-dim', '#71717a');
-        }
-        // Accent is always violet (Radix violet-9) — not user configurable
-        root.style.setProperty('--mission-control-accent', '#6e56cf');
-        root.style.setProperty('--mission-control-accent-dim', '#5b47b0');
-      } catch (e) {
-        // '[App] Failed to apply saved theme:', e;
+      } catch (_e) {
+        // '[App] Failed to apply saved theme'
       }
     }
+  }, []);
+
+  // Listen for theme change events from settings panel / themeToggle utility
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { theme } = (e as CustomEvent).detail ?? {};
+      if (theme === 'light' || theme === 'dark') {
+        document.documentElement.classList.remove('dark', 'light');
+        document.documentElement.classList.add(theme);
+        setRadixAppearance(theme);
+      }
+    };
+    window.addEventListener('themeChange', handler);
+    return () => window.removeEventListener('themeChange', handler);
   }, []);
 
   // Listen for scaling change events from settings panel
@@ -283,14 +284,8 @@ function App() {
       // Theme toggle - ⌘⇧D
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
         e.preventDefault();
-        const newTheme = toggleTheme();
-        const themeName = getThemeDisplayName(newTheme);
-        // Sync Radix Theme appearance with toggle
-        const resolvedTheme = newTheme === 'system'
-          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-          : newTheme;
-        setRadixAppearance(resolvedTheme === 'light' ? 'light' : 'dark');
-        showToast('success', 'Theme Changed', `Switched to ${themeName}`);
+        const newTheme = toggleTheme(); // dispatches themeChange event → handled above
+        showToast('success', 'Theme Changed', `Switched to ${getThemeDisplayName(newTheme)}`);
         return;
       }
 

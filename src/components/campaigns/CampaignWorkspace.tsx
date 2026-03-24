@@ -25,7 +25,7 @@ import CampaignROIDashboard from '../CampaignROIDashboard';
 import CampaignCommentsPanel from '../CampaignCommentsPanel';
 import ReactMarkdown from 'react-markdown';
 import ContextPanel from '../ContextPanel';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Select, TextArea } from '@radix-ui/themes';
 
 type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'performance' | 'roi' | 'comments' | 'checklist' | 'context';
 
@@ -233,22 +233,22 @@ function ChannelsTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1"><Link size={10} /> Live URL</label>
-                    <input
+                    <TextField.Root
                       type="url"
                       placeholder="https://..."
                       value={channelLinks[ch] ?? ''}
                       onChange={e => setChannelLinks(prev => ({ ...prev, [ch]: e.target.value }))}
-                      className="w-full px-2 py-1.5 text-xs bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
+                      size="1"
                     />
                   </div>
                   <div>
                     <label className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1"><StickyNote size={10} /> Notes</label>
-                    <input
+                    <TextField.Root
                       type="text"
                       placeholder="Quick note..."
                       value={channelNotes[ch] ?? ''}
                       onChange={e => setChannelNotes(prev => ({ ...prev, [ch]: e.target.value }))}
-                      className="w-full px-2 py-1.5 text-xs bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
+                      size="1"
                     />
                   </div>
                 </div>
@@ -339,20 +339,20 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
                 <div className="space-y-1.5">
                   <div>
                     <label className="text-xs text-mission-control-text-dim">Target</label>
-                    <input
+                    <TextField.Root
                       type="number"
                       value={entry.target || ''}
                       onChange={e => setKpis(prev => ({ ...prev, [key]: { ...entry, target: parseFloat(e.target.value) || 0 } }))}
-                      className="w-full px-2 py-1 text-xs bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent/50"
+                      size="1"
                     />
                   </div>
                   <div>
                     <label className="text-xs text-mission-control-text-dim">Actual</label>
-                    <input
+                    <TextField.Root
                       type="number"
                       value={entry.actual || ''}
                       onChange={e => setKpis(prev => ({ ...prev, [key]: { ...entry, actual: parseFloat(e.target.value) || 0 } }))}
-                      className="w-full px-2 py-1 text-xs bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent/50"
+                      size="1"
                     />
                   </div>
                 </div>
@@ -832,37 +832,34 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
           <div className="space-y-3">
             <div>
               <label className="text-xs text-mission-control-text-dim mb-1 block">Status</label>
-              <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
-                className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none">
-                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-              </select>
+              <Select.Root value={form.status} onValueChange={val => setForm(p => ({ ...p, status: val }))}>
+                <Select.Trigger className="w-full" />
+                <Select.Content>
+                  {STATUS_OPTIONS.map(s => <Select.Item key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</Select.Item>)}
+                </Select.Content>
+              </Select.Root>
             </div>
             <div>
               <label className="text-xs text-mission-control-text-dim mb-1 block">Description</label>
-              <input type="text" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+              <TextField.Root value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} size="1" />
             </div>
             <div>
               <label className="text-xs text-mission-control-text-dim mb-1 block">Target audience</label>
-              <input type="text" value={form.targetAudience} onChange={e => setForm(p => ({ ...p, targetAudience: e.target.value }))}
-                className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+              <TextField.Root value={form.targetAudience} onChange={e => setForm(p => ({ ...p, targetAudience: e.target.value }))} size="1" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-1 block">Budget (USD)</label>
-                <input type="number" value={form.budget} onChange={e => setForm(p => ({ ...p, budget: e.target.value }))}
-                  className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+                <TextField.Root type="number" value={form.budget} onChange={e => setForm(p => ({ ...p, budget: e.target.value }))} size="1" />
               </div>
               <div />
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-1 block">Start date</label>
-                <input type="date" value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))}
-                  className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+                <TextField.Root type="date" value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))} size="1" />
               </div>
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-1 block">End date</label>
-                <input type="date" value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))}
-                  className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+                <TextField.Root type="date" value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))} size="1" />
               </div>
             </div>
             <div className="flex gap-2">
@@ -926,8 +923,7 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
         </div>
         {editingBrief ? (
           <div className="space-y-2">
-            <textarea value={brief} onChange={e => setBrief(e.target.value)} rows={6}
-              className="w-full px-3 py-2 text-sm bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 resize-none"
+            <TextArea value={brief} onChange={e => setBrief(e.target.value)} rows={6} variant="soft"
               placeholder="Write the campaign brief: strategy, key messages, creative direction..." />
             <div className="flex gap-2">
               <Button variant="solid" size="1" onClick={handleSaveBrief} disabled={saving}>
@@ -1061,18 +1057,21 @@ function LinkAutomationModal({ campaignId, onClose }: { campaignId: string; onCl
                 <>
                   <div>
                     <label className="text-xs text-mission-control-text-dim mb-1 block">Automation</label>
-                    <select value={selectedId} onChange={e => setSelectedId(e.target.value)}
-                      className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none">
-                      <option value="">Select automation...</option>
-                      {available.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                    </select>
+                    <Select.Root value={selectedId} onValueChange={setSelectedId}>
+                      <Select.Trigger className="w-full" placeholder="Select automation..." />
+                      <Select.Content>
+                        {available.map(a => <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>)}
+                      </Select.Content>
+                    </Select.Root>
                   </div>
                   <div>
                     <label className="text-xs text-mission-control-text-dim mb-1 block">Trigger</label>
-                    <select value={triggerType} onChange={e => setTriggerType(e.target.value)}
-                      className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none">
-                      {TRIGGER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
+                    <Select.Root value={triggerType} onValueChange={setTriggerType}>
+                      <Select.Trigger className="w-full" />
+                      <Select.Content>
+                        {TRIGGER_OPTIONS.map(t => <Select.Item key={t.value} value={t.value}>{t.label}</Select.Item>)}
+                      </Select.Content>
+                    </Select.Root>
                   </div>
                   <Button variant="solid" size="1" onClick={handleLink} disabled={!selectedId || saving} className="w-full justify-center">
                     {saving ? <Spinner size={12} /> : <Zap size={13} />} Link Automation
@@ -1135,8 +1134,7 @@ function CampaignSettings({
     <div className="absolute right-0 top-full mt-1 w-64 bg-mission-control-bg border border-mission-control-border rounded-lg shadow-xl z-20 p-4 space-y-3">
       <div>
         <label className="text-xs text-mission-control-text-dim mb-1 block">Name</label>
-        <input value={name} onChange={e => setName(e.target.value)}
-          className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+        <TextField.Root value={name} onChange={e => setName(e.target.value)} size="1" />
       </div>
       <div className="flex gap-2">
         <Button variant="solid" size="1" onClick={handleSave} disabled={saving} className="flex-1">
@@ -1455,12 +1453,12 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
                 </div>
               ))}
               {availableAgents.length > 0 && (
-                <select defaultValue="" onChange={e => { if (e.target.value) handleAddMember(e.target.value); e.target.value = ''; }}
-                  disabled={!!addingAgent}
-                  className="text-xs px-2 py-1 bg-mission-control-accent/20 border border-mission-control-accent/40 text-mission-control-accent rounded-full focus:outline-none cursor-pointer">
-                  <option value="" disabled>+ Add agent</option>
-                  {availableAgents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
+                <Select.Root value="" onValueChange={val => { if (val) handleAddMember(val); }} disabled={!!addingAgent}>
+                  <Select.Trigger placeholder="+ Add agent" />
+                  <Select.Content>
+                    {availableAgents.map(a => <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>)}
+                  </Select.Content>
+                </Select.Root>
               )}
             </div>
           </div>

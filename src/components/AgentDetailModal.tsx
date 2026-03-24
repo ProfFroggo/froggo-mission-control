@@ -427,8 +427,6 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
   const [rulesDraft, setRulesDraft] = useState('');
   const [rulesSaving, setRulesSaving] = useState(false);
 
-  const inputBase = 'w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent';
-
   const handleClose = () => {
     setIsClosing(true);
     setTimeout(() => {
@@ -1588,7 +1586,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                               </div>
                               <div className="h-2 bg-mission-control-surface rounded-full overflow-hidden">
                                 <div
-                                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
+                                  className="h-full bg-gradient-to-r from-[var(--color-info)] to-[var(--color-review)] transition-all duration-300"
                                   style={{ width: `${skill.proficiency * 100}%` }}
                                 />
                               </div>

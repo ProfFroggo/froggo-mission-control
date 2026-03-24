@@ -26,10 +26,29 @@ export function convertToThreadMessage(
   if (typeof msg.content === "string") {
     textContent = msg.content;
   } else if (Array.isArray(msg.content)) {
-    textContent = msg.content
-      .filter((b) => b.type === "text")
-      .map((b) => (b.text as string) ?? "")
-      .join("");
+    const parts: string[] = [];
+    for (const block of msg.content) {
+      if (block.type === "text" && block.text) {
+        parts.push(block.text as string);
+      } else if (block.type === "tool_use" && block.name) {
+        // Render tool call as a fenced markdown block so MarkdownMessage styles it nicely
+        const inputStr = block.input
+          ? "\n```json\n" + JSON.stringify(block.input, null, 2) + "\n```"
+          : "";
+        parts.push(`**Using tool: \`${block.name}\`**${inputStr}`);
+      } else if (block.type === "tool_result") {
+        // Extract text from tool result content
+        const result = block.content;
+        if (typeof result === "string" && result.trim()) {
+          parts.push(result);
+        } else if (Array.isArray(result)) {
+          for (const r of result as { type: string; text?: string }[]) {
+            if (r.type === "text" && r.text?.trim()) parts.push(r.text);
+          }
+        }
+      }
+    }
+    textContent = parts.join("\n\n");
   }
 
   const role = msg.role as "user" | "assistant" | "system";

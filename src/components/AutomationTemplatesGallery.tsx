@@ -264,7 +264,7 @@ function StepPreview({ steps }: { steps: TemplateStep[] }) {
               height: 20,
               borderRadius: 5,
               background: 'var(--mission-control-accent)',
-              color: '#fff',
+              color: 'white',
               fontSize: 11,
               fontWeight: 700,
               display: 'flex',
