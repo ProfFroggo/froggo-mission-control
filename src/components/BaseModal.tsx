@@ -242,7 +242,7 @@ export default function BaseModal({
           aria-describedby={ariaDescribedby}
           tabIndex={-1}
           className={`
-            glass-modal rounded-lg w-full pointer-events-auto
+            glass-modal rounded-xl w-full pointer-events-auto
             overflow-hidden flex flex-col shadow-2xl
             ${sizeClass}
             ${isClosing ? 'modal-content-exit' : 'modal-content-enter'}
@@ -300,30 +300,32 @@ export function BaseModalHeader({
   titleId,
 }: BaseModalHeaderProps) {
   return (
-    <div className={`flex items-start gap-3 p-6 border-b border-mission-control-border ${className}`}>
-      {icon && (
-        <div className="flex-shrink-0 mt-0.5">
-          {icon}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <h2 id={titleId} className="text-lg sm:text-xl font-semibold text-mission-control-text">
-          {title}
-        </h2>
-        {subtitle && (
-          <p className="text-sm text-mission-control-text-dim mt-1">
-            {subtitle}
-          </p>
+    <div className={`flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0 ${className}`}>
+      <div className="flex items-center gap-3 min-w-0">
+        {icon && (
+          <div className="flex-shrink-0">
+            {icon}
+          </div>
         )}
+        <div className="flex-1 min-w-0">
+          <h2 id={titleId} className="text-base font-semibold text-mission-control-text">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="text-xs text-mission-control-text-dim mt-0.5">
+              {subtitle}
+            </p>
+          )}
+        </div>
       </div>
       {showCloseButton && onClose && (
         <button
           onClick={onClose}
-          className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
+          className="p-1.5 rounded-lg hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors flex-shrink-0"
           aria-label={closeButtonLabel}
           type="button"
         >
-          <X size={16} className="text-mission-control-text-dim hover:text-mission-control-text" />
+          <X size={16} />
         </button>
       )}
     </div>
@@ -348,8 +350,8 @@ export function BaseModalBody({
   maxHeight,
 }: BaseModalBodyProps) {
   return (
-    <div 
-      className={`overflow-y-auto ${noPadding ? '' : 'p-6'} ${className}`}
+    <div
+      className={`flex-1 overflow-y-auto ${noPadding ? '' : 'px-6 py-4'} ${className}`}
       style={{ maxHeight }}
     >
       {children}
@@ -374,7 +376,7 @@ export function BaseModalFooter({ children, className = '', align = 'right' }: B
   }[align];
 
   return (
-    <div className={`flex flex-wrap items-center gap-3 p-6 border-t border-mission-control-border ${alignClass} ${className}`}>
+    <div className={`flex flex-wrap items-center gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0 ${alignClass} ${className}`}>
       {children}
     </div>
   );

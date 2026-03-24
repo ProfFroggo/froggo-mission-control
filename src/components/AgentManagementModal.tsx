@@ -701,7 +701,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
       aria-hidden="true"
     >
       <div
-        className="glass-modal rounded-lg max-w-2xl w-full max-h-[88vh] overflow-hidden flex flex-col"
+        className="glass-modal rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}
         role="presentation"
       >

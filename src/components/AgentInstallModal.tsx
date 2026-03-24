@@ -166,7 +166,7 @@ export default function AgentInstallModal({
 
             {/* Credentials warning */}
             {(entry.agent.credentials?.length ?? 0) > 0 && (
-              <p className="text-sm text-amber-400">
+              <p className="text-sm text-warning">
                 Requires {entry.agent.credentials!.length} API key
                 {entry.agent.credentials!.length !== 1 ? 's' : ''} — you'll be prompted after install.
               </p>
@@ -186,7 +186,7 @@ export default function AgentInstallModal({
           <button
             type="button"
             onClick={handleInstall}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-green-600/90 hover:bg-green-600 text-white rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-mission-control-accent hover:bg-mission-control-accent-dim text-white rounded-lg transition-colors"
           >
             <Bot size={14} />
             Install Agent
@@ -235,8 +235,8 @@ export default function AgentInstallModal({
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-mission-control-border">
-          <CheckCircle size={20} className="text-green-400 flex-shrink-0" />
-          <h2 className="text-lg font-semibold text-mission-control-text">Agent Installed</h2>
+          <CheckCircle size={20} className="text-success flex-shrink-0" />
+          <h2 className="text-base font-semibold text-mission-control-text">Agent Installed</h2>
         </div>
 
         {/* Body */}
@@ -244,7 +244,7 @@ export default function AgentInstallModal({
           <div className="space-y-4">
             {/* Success message */}
             <p className="text-sm text-mission-control-text">
-              <span className="font-medium text-green-400">{entry.name}</span> installed successfully.
+              <span className="font-medium text-success">{entry.name}</span> installed successfully.
             </p>
 
             {/* Workspace path */}
@@ -254,7 +254,7 @@ export default function AgentInstallModal({
             </div>
 
             {/* Gateway restart advisory */}
-            <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm">
+            <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-warning-subtle border border-warning-border text-warning text-sm">
               <RefreshCw size={15} className="flex-shrink-0 mt-0.5" />
               <span>Reload the page for the new agent to appear in the agent list.</span>
             </div>
@@ -287,13 +287,13 @@ export default function AgentInstallModal({
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-mission-control-border">
-        <AlertTriangle size={20} className="text-red-400 flex-shrink-0" />
-        <h2 className="text-lg font-semibold text-mission-control-text">Installation Failed</h2>
+        <AlertTriangle size={20} className="text-error flex-shrink-0" />
+        <h2 className="text-base font-semibold text-mission-control-text">Installation Failed</h2>
       </div>
 
       {/* Body */}
       <BaseModalBody>
-        <p className="text-sm text-red-400">
+        <p className="text-sm text-error">
           {errorMsg ?? 'An unexpected error occurred during installation.'}
         </p>
       </BaseModalBody>

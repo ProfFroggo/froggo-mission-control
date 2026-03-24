@@ -86,7 +86,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden">
+      <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-xl shadow-2xl overflow-hidden">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border">
@@ -129,18 +129,19 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
         {currentProgressIndex >= 0 && (
           <div className="flex items-center gap-1 px-6 pt-4 pb-2">
             {PROGRESS_STEPS.map((s, i) => (
-              <div key={s} className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full transition-colors ${
+              <div key={s} className="flex items-center gap-1 flex-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold tabular-nums transition-colors flex-shrink-0 ${
                   step === s
-                    ? 'bg-mission-control-accent'
+                    ? 'bg-mission-control-accent text-white'
                     : currentProgressIndex > i
-                      ? 'bg-success'
-                      : 'bg-mission-control-border'
-                }`} />
-                {i < PROGRESS_STEPS.length - 1 && <div className="w-6 h-px bg-mission-control-border" />}
+                      ? 'bg-success-subtle text-success'
+                      : 'bg-mission-control-border text-mission-control-text-dim'
+                }`}>
+                  {i + 1}
+                </div>
+                {i < PROGRESS_STEPS.length - 1 && <div className="flex-1 h-px bg-mission-control-border" />}
               </div>
             ))}
-            <span className="ml-2 text-xs text-mission-control-text-dim capitalize">{step}</span>
           </div>
         )}
 
@@ -215,10 +216,10 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
             {/* Badges */}
             <div className="flex flex-wrap gap-1.5 mb-4">
-              <span className="px-2 py-0.5 text-[11px] font-medium rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim uppercase tracking-wide">
+              <span className="px-2 py-0.5 text-xs font-medium rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim uppercase tracking-wide">
                 {agent.category}
               </span>
-              <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${modelBadge.cls}`}>
+              <span className={`px-2 py-0.5 text-xs font-medium rounded ${modelBadge.cls}`}>
                 {modelBadge.label}
               </span>
             </div>
@@ -229,7 +230,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 <p className="text-xs font-medium text-mission-control-text-dim mb-2">Capabilities</p>
                 <div className="flex flex-wrap gap-1">
                   {agent.capabilities.map((cap, i) => (
-                    <span key={i} className="px-1.5 py-0.5 text-[11px] rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim">
+                    <span key={i} className="px-1.5 py-0.5 text-xs rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim">
                       {cap}
                     </span>
                   ))}
@@ -314,7 +315,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 rows={4}
                 className="w-full px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
               />
-              <p className="text-[11px] text-mission-control-text-dim mt-1">
+              <p className="text-xs text-mission-control-text-dim mt-1">
                 The more context you give, the better they'll perform from day one.
               </p>
             </div>
@@ -380,7 +381,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <div className="flex items-start gap-3 px-4 py-3">
                 <Bot size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Agent</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Agent</p>
                   <p className="text-sm font-medium">{agent.name}</p>
                   <p className="text-xs text-mission-control-text-dim">{agent.description || agent.role || '—'}</p>
                 </div>
@@ -389,7 +390,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <div className="flex items-start gap-3 px-4 py-3">
                 <Briefcase size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Role</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Role</p>
                   <p className="text-sm">{role || agent.role || 'Agent'}</p>
                 </div>
               </div>
@@ -398,10 +399,10 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 <div className="flex items-start gap-3 px-4 py-3">
                   <Tag size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-mission-control-text-dim mb-1">Assigned tasks</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-1">Assigned tasks</p>
                     <div className="flex flex-wrap gap-1">
                       {agent.capabilities.slice(0, 5).map((cap, i) => (
-                        <span key={i} className="px-1.5 py-0.5 text-[11px] rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim">
+                        <span key={i} className="px-1.5 py-0.5 text-xs rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim">
                           {cap}
                         </span>
                       ))}
@@ -413,7 +414,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <div className="flex items-start gap-3 px-4 py-3">
                 <Calendar size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Start date</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Start date</p>
                   <p className="text-sm">{startDate}</p>
                 </div>
               </div>
@@ -422,7 +423,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 <div className="flex items-start gap-3 px-4 py-3 bg-info-subtle/30">
                   <FlaskConical size={14} className="text-info mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-info mb-0.5">Trial mode</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-info mb-0.5">Trial mode</p>
                     <p className="text-sm text-mission-control-text-dim">7-day trial tag applied</p>
                   </div>
                 </div>

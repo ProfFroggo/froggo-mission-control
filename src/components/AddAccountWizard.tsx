@@ -15,7 +15,7 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   google: {
     name: 'Google',
     logo: '🔵',
-    color: 'var(--color-info)',
+    color: 'var(--mission-control-info)',
     description: 'Gmail, Calendar, Drive, Contacts',
     supportedTypes: ['email', 'calendar', 'drive', 'contacts'] as DataType[],
     authMethods: ['oauth'] as const,
@@ -23,7 +23,7 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   icloud: {
     name: 'iCloud',
     logo: '☁️',
-    color: 'var(--color-info)',
+    color: 'var(--mission-control-info)',
     description: 'Mail, Calendar, Contacts',
     supportedTypes: ['email', 'calendar', 'contacts'] as DataType[],
     authMethods: ['app-password'] as const,
@@ -32,7 +32,7 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   microsoft: {
     name: 'Microsoft',
     logo: '🔷',
-    color: 'var(--color-info)',
+    color: 'var(--mission-control-info)',
     description: 'Outlook, Calendar, OneDrive, Contacts',
     supportedTypes: ['email', 'calendar', 'drive', 'contacts', 'tasks'] as DataType[],
     authMethods: ['oauth'] as const,
@@ -169,12 +169,12 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <div>
-            <h2 className="text-xl font-semibold">Add Connected Account</h2>
-            <p className="text-sm text-mission-control-text-dim mt-1">
+            <h2 className="text-base font-semibold text-mission-control-text">Add Connected Account</h2>
+            <p className="text-xs text-mission-control-text-dim mt-0.5">
               {step === 'provider' && 'Choose your provider'}
               {step === 'email' && 'Enter your email address'}
               {step === 'dataTypes' && 'Select services to connect'}
@@ -186,7 +186,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           <button
             onClick={onClose}
             disabled={step === 'connecting'}
-            className="p-2 hover:bg-mission-control-bg rounded-lg transition-colors disabled:opacity-50"
+            className="p-1.5 hover:bg-mission-control-border rounded-lg text-mission-control-text-dim hover:text-mission-control-text transition-colors disabled:opacity-50"
             aria-label="Close wizard"
           >
             <X size={20} />
@@ -496,7 +496,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
         {/* Footer Actions */}
         {step !== 'connecting' && step !== 'success' && (
-          <div className="flex items-center justify-between p-6 border-t border-mission-control-border">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-mission-control-border flex-shrink-0">
             <button
               onClick={handleBack}
               disabled={step === 'provider'}

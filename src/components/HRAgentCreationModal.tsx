@@ -500,7 +500,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
       <button className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default" onClick={handleClose} type="button" aria-label="Close" />
-      <div className={`relative w-full max-w-lg bg-mission-control-bg border border-mission-control-accent/30 rounded-2xl shadow-2xl shadow-mission-control-accent/10 flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
+      <div className={`relative w-full max-w-lg bg-mission-control-bg border border-mission-control-accent/30 rounded-xl shadow-2xl shadow-mission-control-accent/10 flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
 
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
@@ -709,17 +709,17 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
             </div>
           ) : pendingConfig ? null : (
             <div className="flex gap-2">
-              <TextField.Root size="2" className="flex-1">
-                <TextField.Input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  disabled={isTyping}
-                  placeholder={isTyping ? 'HR is thinking...' : 'Type your response...'}
-                  autoFocus
-                />
-              </TextField.Root>
+              <TextField.Root
+                size="2"
+                className="flex-1"
+                type="text"
+                value={input}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isTyping}
+                placeholder={isTyping ? 'HR is thinking...' : 'Type your response...'}
+                autoFocus
+              />
               <IconButton onClick={handleSend} disabled={!input.trim() || isTyping} variant="solid" color="grass" size="2">
                 {isTyping ? <Spinner size="1" /> : <Send size={18} />}
               </IconButton>

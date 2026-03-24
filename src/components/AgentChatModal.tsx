@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2, Mic, MessageSquare, AlertTriangle, XCircle } from 'lucide-react';
+import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Mic, MessageSquare, AlertTriangle, XCircle } from 'lucide-react';
+import { IconButton, TextArea, Spinner } from '@radix-ui/themes';
 import MarkdownMessage from './MarkdownMessage';
 import SessionStatsBar from './SessionStatsBar';
 import StreamingText from './StreamingText';
@@ -202,7 +203,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
       aria-label="Close modal backdrop"
     >
       <div
-        className={`glass-modal rounded-lg max-w-3xl w-full h-[80vh] flex flex-col ${
+        className={`glass-modal rounded-xl max-w-3xl w-full h-[80vh] max-h-[85vh] flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`}
         onClick={handleInnerClick}
@@ -210,7 +211,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             {(() => {
               const theme = getAgentTheme(agent.id);
@@ -231,9 +232,9 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
               );
             })()}
             <div>
-              <h2 className="text-xl font-semibold flex items-center gap-2">
+              <h2 className="text-base font-semibold text-mission-control-text flex items-center gap-2">
                 Chat with {agent.name}
-                <span className="text-sm px-2 py-0.5 bg-success-subtle text-success rounded">
+                <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-lg">
                   Live LLM
                 </span>
               </h2>
@@ -244,24 +245,24 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <IconButton
               onClick={() => setIsVoiceMode(!isVoiceMode)}
-              className={`p-2 rounded-lg transition-colors ${
-                isVoiceMode
-                  ? 'bg-review-subtle text-review hover:bg-review-subtle'
-                  : 'hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              variant="ghost"
+              color="gray"
+              size="2"
               title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
             >
               {isVoiceMode ? <MessageSquare size={16} /> : <Mic size={16} />}
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               onClick={handleClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              variant="ghost"
+              color="gray"
+              size="2"
               aria-label="Close modal"
             >
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -277,7 +278,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
 
         {/* Quick Prompts */}
         {!isVoiceMode && messages.length === 0 && (
-          <div className="p-4 border-b border-mission-control-border">
+          <div className="px-6 py-4 border-b border-mission-control-border flex-shrink-0">
             <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase mb-2">
               Quick Prompts
             </h3>
@@ -355,7 +356,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                   <Bot size={14} />
                 </div>
                 <div className="rounded-2xl rounded-tl-sm px-4 py-3 text-sm bg-mission-control-surface border border-mission-control-border">
-                  <Loader2 size={14} className="animate-spin text-mission-control-text-dim" />
+                  <Spinner size="1" />
                 </div>
               </div>
             )}
@@ -365,24 +366,27 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
 
         {/* Input */}
         {!isVoiceMode && (
-          <div className="p-4 border-t border-mission-control-border">
+          <div className="px-6 py-4 border-t border-mission-control-border flex-shrink-0">
             <div className="flex gap-2">
-              <textarea
+              <TextArea
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={`Message ${agent.name}...`}
                 rows={2}
                 disabled={sending}
-                className="flex-1 resize-none rounded-lg border border-mission-control-border bg-mission-control-bg2 px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50"
+                variant="soft"
+                className="flex-1 resize-none"
               />
-              <button
+              <IconButton
                 onClick={() => sendMessage()}
                 disabled={!input.trim() || sending}
-                className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                variant="solid"
+                color="grass"
+                size="3"
               >
-                {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-              </button>
+                {sending ? <Spinner size="1" /> : <Send size={16} />}
+              </IconButton>
             </div>
           </div>
         )}

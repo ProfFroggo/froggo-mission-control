@@ -112,23 +112,23 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
       onKeyDown={handleBackdropClick}
       aria-label="Close modal backdrop"
     >
-      <div 
-        className={`glass-modal rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
+      <div
+        className={`glass-modal rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
-        }`} 
+        }`}
         onClick={handleInnerClick}
         role="presentation"
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <div>
-            <h2 className="text-xl font-semibold">{account.email}</h2>
-            <div className="flex items-center gap-2 mt-1">
+            <h2 className="text-base font-semibold text-mission-control-text">{account.email}</h2>
+            <div className="flex items-center gap-2 mt-0.5">
               <span className="text-sm text-mission-control-text-dim capitalize">{account.provider}</span>
               <span className="text-mission-control-text-dim">•</span>
               <span className={`text-sm ${getStatusColor()}`}>
-                {account.status === 'connected' ? 'Connected' : 
+                {account.status === 'connected' ? 'Connected' :
                  account.status === 'error' ? 'Error' :
                  account.status === 'needs-reauth' ? 'Needs Reauth' : 'Checking'}
               </span>
@@ -136,7 +136,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+            className="p-1.5 rounded-lg hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             aria-label="Close modal"
           >
             <X size={16} />
@@ -164,7 +164,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
@@ -476,7 +476,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                 </p>
                 <button
                   onClick={onRemove}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                  className="px-4 py-2 bg-error text-white rounded-lg hover:opacity-90 transition-colors text-sm font-medium"
                 >
                   Remove Account
                 </button>
@@ -486,17 +486,17 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-mission-control-border">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
           <button
             onClick={onRefresh}
-            className="px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors flex items-center gap-2"
+            className="px-4 py-2 text-sm text-mission-control-text-dim hover:bg-mission-control-border rounded-lg transition-colors flex items-center gap-2"
           >
             <RefreshCw size={16} />
             Test Connection
           </button>
           <button
             onClick={handleClose}
-            className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+            className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
           >
             Done
           </button>

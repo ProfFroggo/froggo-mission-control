@@ -207,20 +207,20 @@ export default function AgentTokenDetailModal({
       aria-label="Close token detail modal"
     >
       <div
-        className="bg-mission-control-bg border border-mission-control-border rounded-2xl w-[640px] max-h-[88vh] flex flex-col shadow-2xl"
+        className="bg-mission-control-bg border border-mission-control-border rounded-xl w-[640px] max-h-[85vh] flex flex-col shadow-2xl"
         onClick={handleInnerClick}
         onKeyDown={handleInnerClick}
         role="presentation"
       >
         {/* Header */}
-        <div className="p-5 border-b border-mission-control-border flex items-center justify-between">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.color }} />
             <div>
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-base font-semibold text-mission-control-text">
                 {agent.charAt(0).toUpperCase() + agent.slice(1)}
               </h3>
-              <p className="text-sm text-mission-control-text-dim">Token Usage & Cost</p>
+              <p className="text-xs text-mission-control-text-dim">Token Usage & Cost</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -309,16 +309,16 @@ export default function AgentTokenDetailModal({
                         <td className="py-2 px-3 text-mission-control-text-dim">
                           {truncateModel(entry.model)}
                         </td>
-                        <td className="py-2 px-3 text-right text-info">
+                        <td className="py-2 px-3 text-right text-info tabular-nums">
                           {entry.input_tokens.toLocaleString()}
                         </td>
-                        <td className="py-2 px-3 text-right text-review">
+                        <td className="py-2 px-3 text-right text-review tabular-nums">
                           {entry.output_tokens.toLocaleString()}
                         </td>
-                        <td className="py-2 px-3 text-right text-success font-medium">
+                        <td className="py-2 px-3 text-right text-success font-medium tabular-nums">
                           {entry.total_tokens.toLocaleString()}
                         </td>
-                        <td className="py-2 px-3 text-right text-warning">
+                        <td className="py-2 px-3 text-right text-warning tabular-nums">
                           ${entry.cost.toFixed(4)}
                         </td>
                       </tr>
@@ -350,23 +350,23 @@ export default function AgentTokenDetailModal({
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
                 <div className="text-xs text-mission-control-text-dim mb-1">Total Calls</div>
-                <div className="text-lg font-semibold">{totalCalls}</div>
+                <div className="text-lg font-semibold tabular-nums">{totalCalls}</div>
               </div>
               {uniqueSessions > 0 && (
                 <div>
                   <div className="text-xs text-mission-control-text-dim mb-1">Sessions</div>
-                  <div className="text-lg font-semibold">{uniqueSessions}</div>
+                  <div className="text-lg font-semibold tabular-nums">{uniqueSessions}</div>
                 </div>
               )}
               <div>
                 <div className="text-xs text-mission-control-text-dim mb-1">Total Tokens</div>
-                <div className="text-lg font-semibold text-success">
+                <div className="text-lg font-semibold text-success tabular-nums">
                   {totalTokens.toLocaleString()}
                 </div>
               </div>
               <div>
                 <div className="text-xs text-mission-control-text-dim mb-1">Total Cost</div>
-                <div className="text-lg font-semibold text-warning">
+                <div className="text-lg font-semibold text-warning tabular-nums">
                   ${totalCost.toFixed(4)}
                 </div>
               </div>

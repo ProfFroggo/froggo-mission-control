@@ -287,7 +287,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
               key={suggestion}
               type="button"
               onClick={() => addTrait(suggestion)}
-              className="px-2 py-0.5 text-[11px] rounded-full border border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent hover:text-mission-control-accent transition-colors"
+              className="px-2 py-0.5 text-xs rounded-full border border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent hover:text-mission-control-accent transition-colors"
             >
               + {suggestion}
             </button>
@@ -334,7 +334,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
               }`}
             >
               <div className="text-xs font-semibold">{preset.label}</div>
-              <div className="text-[11px] opacity-70 mt-0.5">{preset.description}</div>
+              <div className="text-xs opacity-70 mt-0.5">{preset.description}</div>
             </button>
           ))}
         </div>
@@ -399,7 +399,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-bg text-xs text-mission-control-text"
               >
                 <span>{skill}</span>
-                <span className="px-1 py-0.5 rounded bg-mission-control-accent/10 text-mission-control-accent text-[10px] font-semibold tabular-nums">
+                <span className="px-1 py-0.5 rounded bg-mission-control-accent/10 text-mission-control-accent text-xs font-semibold tabular-nums">
                   {(i * 3 + 5) % 12 + 1}
                 </span>
               </div>
@@ -424,7 +424,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
             {recentMessages.map(msg => (
               <div key={msg.id} className="rounded-lg bg-mission-control-bg border border-mission-control-border px-3 py-2">
                 <p className="text-xs text-mission-control-text leading-relaxed line-clamp-2">{msg.content}</p>
-                <p className="text-[10px] text-mission-control-text-dim mt-1">
+                <p className="text-xs text-mission-control-text-dim mt-1">
                   {new Date(msg.timestamp).toLocaleString()}
                 </p>
               </div>
@@ -464,7 +464,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
         {showHint && (
           <div className="rounded-lg bg-info-subtle border border-info-border p-3">
             <p className="text-xs font-semibold text-info mb-2">Expected format</p>
-            <pre className="text-[11px] text-mission-control-text-dim whitespace-pre-wrap font-mono leading-relaxed">
+            <pre className="text-xs text-mission-control-text-dim whitespace-pre-wrap font-mono leading-relaxed">
               {SOUL_HINT}
             </pre>
           </div>

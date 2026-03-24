@@ -1063,9 +1063,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <div className="p-6 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
+        <div className="px-6 py-4 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="relative flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden bg-mission-control-bg">
+            <div className="relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-mission-control-bg">
               <img
                 src={`/api/agents/${agent.id}/avatar`}
                 alt={agent.name}
@@ -1085,9 +1085,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-semibold text-mission-control-text">{agent.name}</h2>
+                <h2 className="text-base font-semibold text-mission-control-text">{agent.name}</h2>
                 {(agent as any).model && (
-                  <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-mission-control-border text-mission-control-text-dim border border-mission-control-border/60">
+                  <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-mission-control-border text-mission-control-text-dim border border-mission-control-border/60">
                     <Cpu size={10} />
                     {(agent as any).model}
                   </span>
@@ -1228,7 +1228,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         <Clock size={16} className="text-info" />
                         <span className="text-sm text-mission-control-text-dim">Avg Time</span>
                       </div>
-                      <div className="text-3xl font-bold text-info">
+                      <div className="text-3xl font-bold text-info tabular-nums">
                         {details.avgTime}
                       </div>
                       <div className="text-xs text-mission-control-text-dim mt-1">per task completion</div>
@@ -1236,10 +1236,10 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
 
                     <div className="bg-mission-control-bg rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <Activity size={16} className="text-amber-400" />
+                        <Activity size={16} className="text-warning" />
                         <span className="text-sm text-mission-control-text-dim">In Progress</span>
                       </div>
-                      <div className="text-3xl font-bold text-amber-400">
+                      <div className="text-3xl font-bold text-warning tabular-nums">
                         {details.inProgressTasks}
                       </div>
                       <div className="text-xs text-mission-control-text-dim mt-1">active tasks</div>
@@ -1364,9 +1364,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-4">Task Breakdown</h3>
                     <div className="space-y-3">
                       {[
-                        { label: 'Completed', count: details.successfulTasks, color: 'bg-green-500', pct: details.totalTasks > 0 ? (details.successfulTasks / details.totalTasks) * 100 : 0 },
+                        { label: 'Completed', count: details.successfulTasks, color: 'bg-success', pct: details.totalTasks > 0 ? (details.successfulTasks / details.totalTasks) * 100 : 0 },
                         { label: 'In Progress', count: details.inProgressTasks, color: 'bg-warning', pct: details.totalTasks > 0 ? (details.inProgressTasks / details.totalTasks) * 100 : 0 },
-                        { label: 'Failed/Blocked', count: details.failedTasks, color: 'bg-red-500', pct: details.totalTasks > 0 ? (details.failedTasks / details.totalTasks) * 100 : 0 },
+                        { label: 'Failed/Blocked', count: details.failedTasks, color: 'bg-error', pct: details.totalTasks > 0 ? (details.failedTasks / details.totalTasks) * 100 : 0 },
                       ].map((item) => (
                         <div key={item.label}>
                           <div className="flex items-center justify-between text-sm mb-1">
@@ -1390,7 +1390,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                           <div key={task.id} className="flex items-center justify-between bg-mission-control-bg rounded-lg px-4 py-2.5 gap-3">
                             <span className="text-sm text-mission-control-text flex-1 min-w-0 truncate">{task.title}</span>
                             <div className="flex items-center gap-2 flex-shrink-0">
-                              <span className={`text-[11px] px-1.5 py-0.5 rounded ${
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
                                 task.status === 'done' ? 'bg-success-subtle text-success' :
                                 task.status === 'in-progress' ? 'bg-info-subtle text-info' :
                                 task.status === 'failed' ? 'bg-error-subtle text-error' :
@@ -1399,7 +1399,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                 {task.status}
                               </span>
                               {task.completedAt > 0 && (
-                                <span className="text-[11px] text-mission-control-text-dim">
+                                <span className="text-xs text-mission-control-text-dim">
                                   {new Date(task.completedAt).toLocaleDateString()}
                                 </span>
                               )}
@@ -1718,7 +1718,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                 {session.label || session.key.slice(0, 40)}
                               </span>
                               {session.isActive && (
-                                <span className="px-1.5 py-0.5 text-[10px] bg-success-subtle text-success rounded">Active</span>
+                                <span className="px-1.5 py-0.5 text-xs bg-success-subtle text-success rounded">Active</span>
                               )}
                             </div>
                           </div>
@@ -1729,7 +1729,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             </div>
                             <div>
                               <span className="block text-mission-control-text-dim/60">Tokens</span>
-                              <span>{(session.tokens / 1000).toFixed(1)}k</span>
+                              <span className="tabular-nums">{(session.tokens / 1000).toFixed(1)}k</span>
                             </div>
                             <div>
                               <span className="block text-mission-control-text-dim/60">Last Active</span>
@@ -1737,7 +1737,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             </div>
                           </div>
                           <div className="mt-3 pt-3 border-t border-mission-control-border flex items-center justify-between">
-                            <div className="text-[11px] text-mission-control-text-dim/60 truncate flex-1" title={session.key}>
+                            <div className="text-xs text-mission-control-text-dim/60 truncate flex-1" title={session.key}>
                               {session.key}
                             </div>
                             <button

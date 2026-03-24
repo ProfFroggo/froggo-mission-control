@@ -264,7 +264,7 @@ function CollapsibleSection({ title, icon, children, defaultOpen = true, descrip
         <p className="text-sm text-mission-control-text-dim mb-3">{description}</p>
       )}
       {isOpen && (
-        <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border p-4">
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
           {children}
         </div>
       )}
@@ -658,13 +658,13 @@ function SessionsManagementSection() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-mission-control-text truncate">{s.agentName}</span>
                       {s.compacted && (
-                        <span className="px-1.5 py-0.5 text-[10px] bg-info-subtle text-info rounded">compacted</span>
+                        <span className="px-1.5 py-0.5 text-xs bg-info-subtle text-info rounded">compacted</span>
                       )}
                     </div>
-                    <div className="text-[11px] text-mission-control-text-dim truncate">
+                    <div className="text-xs text-mission-control-text-dim truncate">
                       {s.key}
                     </div>
-                    <div className="flex gap-3 text-[10px] text-mission-control-text-dim mt-0.5">
+                    <div className="flex gap-3 text-xs text-mission-control-text-dim mt-0.5">
                       <span>{s.messageCount} msgs</span>
                       <span>Last: {formatAge(s.lastActivity)}</span>
                       <span>Created: {formatAge(s.createdAt)}</span>
@@ -999,7 +999,7 @@ function TokenBudgetSection() {
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${Math.min(pct, 100)}%`,
-                    backgroundColor: isOver ? 'var(--color-error, #ef4444)' : isWarn ? 'var(--color-warning, #f59e0b)' : 'var(--color-accent)',
+                    backgroundColor: isOver ? 'var(--mission-control-error)' : isWarn ? 'var(--mission-control-warning)' : 'var(--mission-control-accent)',
                   }}
                 />
               </div>

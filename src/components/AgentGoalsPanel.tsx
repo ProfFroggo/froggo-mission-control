@@ -36,10 +36,10 @@ function DeadlineBadge({ deadline }: { deadline: string }) {
   if (days === null) return null;
 
   const color = days > 14
-    ? 'var(--color-success)'
+    ? 'var(--mission-control-success)'
     : days >= 7
-    ? 'var(--color-warning)'
-    : 'var(--color-error)';
+    ? 'var(--mission-control-warning)'
+    : 'var(--mission-control-error)';
 
   const label = days < 0
     ? `${Math.abs(days)}d overdue`
@@ -49,7 +49,7 @@ function DeadlineBadge({ deadline }: { deadline: string }) {
 
   return (
     <span
-      className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border border-mission-control-border"
+      className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full border border-mission-control-border"
       style={{ color, borderColor: color, background: `color-mix(in srgb, ${color} 12%, transparent)` }}
     >
       <Clock size={9} />
@@ -65,22 +65,22 @@ function GoalProgressBar({ current, target, status }: { current: string; target:
   if (cur !== null && tgt !== null && tgt > 0) {
     const pct = Math.min(100, Math.round((cur / tgt) * 100));
     const color = status === 'completed'
-      ? 'var(--color-success)'
+      ? 'var(--mission-control-success)'
       : pct >= 75
-      ? 'var(--color-success)'
+      ? 'var(--mission-control-success)'
       : pct >= 40
-      ? 'var(--color-warning)'
-      : 'var(--color-error)';
+      ? 'var(--mission-control-warning)'
+      : 'var(--mission-control-error)';
 
     return (
       <div className="space-y-1">
-        <div className="flex items-center justify-between text-[10px] text-mission-control-text-dim">
+        <div className="flex items-center justify-between text-xs text-mission-control-text-dim">
           <span>{current} / {target}</span>
           <span style={{ color }}>{pct}%</span>
         </div>
         <div
           className="h-1.5 rounded-full overflow-hidden"
-          style={{ background: 'var(--color-mission-control-border)' }}
+          style={{ background: 'var(--mission-control-border)' }}
         >
           <div
             className="h-full rounded-full transition-all duration-500"
@@ -92,16 +92,16 @@ function GoalProgressBar({ current, target, status }: { current: string; target:
   }
 
   const statusColor = status === 'completed'
-    ? 'var(--color-success)'
+    ? 'var(--mission-control-success)'
     : status === 'cancelled'
-    ? 'var(--color-error)'
+    ? 'var(--mission-control-error)'
     : status === 'paused'
-    ? 'var(--color-warning)'
-    : 'var(--color-info)';
+    ? 'var(--mission-control-warning)'
+    : 'var(--mission-control-info)';
 
   return (
     <span
-      className="inline-flex text-[10px] font-medium px-2 py-0.5 rounded-full border border-mission-control-border capitalize"
+      className="inline-flex text-xs font-medium px-2 py-0.5 rounded-full border border-mission-control-border capitalize"
       style={{ color: statusColor, borderColor: statusColor, background: `color-mix(in srgb, ${statusColor} 12%, transparent)` }}
     >
       {status}
@@ -214,7 +214,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
           <Target size={14} className="text-mission-control-text-dim" />
           <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Goals</span>
           {goals.length > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-mission-control-border text-mission-control-text-dim font-medium">
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-mission-control-border text-mission-control-text-dim font-medium tabular-nums">
               {activeGoals.length} active
             </span>
           )}
@@ -255,7 +255,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
           className="rounded-lg border border-mission-control-border bg-mission-control-bg p-4 space-y-3"
         >
           <div>
-            <label className="block text-[10px] font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
+            <label className="block text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
               Goal title
             </label>
             <input
@@ -270,7 +270,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
+              <label className="block text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
                 Target
               </label>
               <input
@@ -283,7 +283,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
               />
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
+              <label className="block text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
                 Deadline
               </label>
               <input
@@ -370,7 +370,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
                     setEditingGoalId(goal.id === editingGoalId ? null : goal.id);
                     setEditCurrent(goal.current);
                   }}
-                  className="ml-auto inline-flex items-center gap-1 text-[10px] text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                  className="ml-auto inline-flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                 >
                   Update progress
                   <ChevronRight size={10} />
@@ -394,14 +394,14 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
                   <button
                     type="button"
                     onClick={() => void handleUpdateProgress(goal.id)}
-                    className="px-2.5 py-1.5 text-[10px] font-medium rounded-md bg-mission-control-accent text-white hover:opacity-90 transition-opacity"
+                    className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-mission-control-accent text-white hover:opacity-90 transition-opacity"
                   >
                     Save
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingGoalId(null)}
-                    className="px-2.5 py-1.5 text-[10px] font-medium rounded-md border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                    className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                   >
                     Cancel
                   </button>
@@ -413,7 +413,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
       )}
 
       {completedGoals.length > 0 && (
-        <div className="text-[11px] text-mission-control-text-dim text-center pt-1">
+        <div className="text-xs text-mission-control-text-dim text-center pt-1">
           {completedGoals.length} completed goal{completedGoals.length !== 1 ? 's' : ''}
         </div>
       )}

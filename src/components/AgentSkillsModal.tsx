@@ -17,7 +17,7 @@ interface AgentSkill {
 function profColor(p: number): string {
   if (p >= 8) return 'text-success bg-success-subtle border-success-border';
   if (p >= 6) return 'text-info bg-info-subtle border-info-border';
-  if (p >= 4) return 'text-amber-400 bg-warning/10 border-amber-500/30';
+  if (p >= 4) return 'text-warning bg-warning-subtle border-warning-border';
   return 'text-error bg-error-subtle border-error-border';
 }
 
@@ -94,11 +94,11 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
         tabIndex={0}
         aria-label="Close agent skills"
       />
-      <div className={`relative w-full max-w-2xl bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
+      <div className={`relative w-full max-w-2xl bg-mission-control-bg border border-mission-control-border rounded-xl shadow-2xl flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <Award size={20} className="text-mission-control-accent" />
-          <h2 className="font-bold text-mission-control-text flex-1">Agent Skills & Proficiency</h2>
+          <h2 className="text-base font-semibold text-mission-control-text flex-1">Agent Skills & Proficiency</h2>
           <Select.Root value={selectedAgent} onValueChange={setSelectedAgent} size="1">
             <Select.Trigger />
             <Select.Content>
@@ -112,7 +112,7 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
             <div className="text-center text-mission-control-text-dim py-8">Loading...</div>
           ) : Object.keys(grouped).length === 0 ? (
