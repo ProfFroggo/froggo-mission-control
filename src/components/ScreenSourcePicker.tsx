@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Box, Flex } from '@radix-ui/themes';
 import { Monitor, AppWindow, X, RefreshCw, Loader2, AlertTriangle, Lock } from 'lucide-react';
 
 export interface ScreenSource {
@@ -72,20 +72,20 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div role="dialog" aria-modal="true" aria-label="Screen source picker" className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-[640px] max-w-[90vw] max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border">
+        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border">
           <h2 className="text-lg font-semibold text-mission-control-text">Share Your Screen</h2>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <IconButton variant="ghost" size="1" onClick={fetchSources} title="Refresh">
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </IconButton>
             <IconButton variant="ghost" size="1" onClick={onCancel}>
               <X size={16} />
             </IconButton>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Filter tabs */}
-        <div className="flex gap-1 px-5 pt-3">
+        <Flex gap="1" px="5" pt="3">
           {(['all', 'screen', 'window'] as const).map(f => (
             <Button key={f} variant={filter === f ? 'solid' : 'ghost'} size="1" onClick={() => setFilter(f)}>
               {f === 'screen' && <Monitor size={12} />}
@@ -93,17 +93,17 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
               {f === 'all' ? 'All' : f === 'screen' ? `Screens (${screens.length})` : `Windows (${windows.length})`}
             </Button>
           ))}
-        </div>
+        </Flex>
 
         {/* Sources grid */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <Box p="5" className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 text-mission-control-text-dim">
+            <Flex direction="column" align="center" justify="center" py="9" className="text-mission-control-text-dim">
               <Loader2 size={32} className="animate-spin mb-3" />
               <p className="text-sm">Loading available sources…</p>
-            </div>
+            </Flex>
           ) : error === 'no-permission' ? (
-            <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+            <Flex direction="column" align="center" justify="center" py="9" px="6" className="text-center">
               <div className="mb-4"><Lock size={40} className="mx-auto text-mission-control-text-dim" /></div>
               <h3 className="text-lg font-semibold text-mission-control-text mb-2">Screen Recording Permission Required</h3>
               <p className="text-sm text-mission-control-text-dim mb-4 max-w-md">
@@ -118,7 +118,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
                   <li>Restart Mission Control</li>
                 </ol>
               </div>
-              <div className="flex gap-3">
+              <Flex gap="3">
                 <Button
                   variant="ghost"
                   size="1"
@@ -131,19 +131,19 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
                 <Button variant="solid" size="1" onClick={fetchSources}>
                   Check Again
                 </Button>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-12 text-error">
+            <Flex direction="column" align="center" justify="center" py="9" className="text-error">
               <p className="text-sm flex items-center gap-1"><AlertTriangle size={14} className="inline" /> {error}</p>
               <Button variant="ghost" size="1" onClick={fetchSources}>
                 Retry
               </Button>
-            </div>
+            </Flex>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-mission-control-text-dim">
+            <Flex direction="column" align="center" justify="center" py="9" className="text-mission-control-text-dim">
               <p className="text-sm">No sources found</p>
-            </div>
+            </Flex>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {filtered.map(source => (
@@ -158,22 +158,22 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
                     {source.thumbnail ? (
                       <img src={source.thumbnail} alt={source.name} className="w-full h-full object-contain" draggable={false} />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-mission-control-text-dim">
+                      <Flex align="center" justify="center" className="w-full h-full text-mission-control-text-dim">
                         {source.id.startsWith('screen:') ? <Monitor size={32} /> : <AppWindow size={32} />}
-                      </div>
+                      </Flex>
                     )}
                     {selected === source.id && (
-                      <div className="absolute inset-0 bg-mission-control-accent/10 flex items-center justify-center">
-                        <div className="w-6 h-6 rounded-full bg-mission-control-accent flex items-center justify-center">
+                      <Flex align="center" justify="center" className="absolute inset-0 bg-mission-control-accent/10">
+                        <Flex align="center" justify="center" className="w-6 h-6 rounded-full bg-mission-control-accent">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
-                        </div>
-                      </div>
+                        </Flex>
+                      </Flex>
                     )}
                   </div>
                   {/* Label */}
-                  <div className="px-2 py-2 flex items-center gap-1.5">
+                  <Flex align="center" gap="1" px="2" py="2">
                     {source.appIcon ? (
                       <img src={source.appIcon} alt={`${source.name} icon`} className="w-4 h-4 flex-shrink-0" />
                     ) : source.id.startsWith('screen:') ? (
@@ -182,22 +182,22 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
                       <AppWindow size={12} className="text-mission-control-text-dim flex-shrink-0" />
                     )}
                     <span className="text-xs text-mission-control-text truncate">{source.name}</span>
-                  </div>
+                  </Flex>
                 </button>
               ))}
             </div>
           )}
-        </div>
+        </Box>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-mission-control-border">
+        <Flex align="center" justify="end" gap="3" px="5" py="4" className="border-t border-mission-control-border">
           <Button variant="ghost" size="1" onClick={onCancel}>
             Cancel
           </Button>
           <Button variant="solid" size="1" onClick={handleConfirm} disabled={!selected}>
             Share
           </Button>
-        </div>
+        </Flex>
       </div>
     </div>
   );

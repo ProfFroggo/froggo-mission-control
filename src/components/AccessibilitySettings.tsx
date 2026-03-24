@@ -12,7 +12,7 @@
 import { useState } from 'react';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { Eye, EyeOff, Volume2, VolumeX, Keyboard, Type, Minus, Plus, Check, Lightbulb } from 'lucide-react';
-import { Button, IconButton, Switch, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Switch, TextField, Box, Flex } from '@radix-ui/themes';
 
 export default function AccessibilitySettings() {
   const { settings, updateSettings, announce } = useAccessibility();
@@ -57,8 +57,8 @@ export default function AccessibilitySettings() {
 
         <div className="space-y-4">
           {/* Reduced Motion */}
-          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-            <div className="flex items-center gap-3">
+          <Flex align="center" justify="between" p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+            <Flex align="center" gap="3">
               {settings.reducedMotion ? (
                 <EyeOff size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               ) : (
@@ -72,7 +72,7 @@ export default function AccessibilitySettings() {
                   Minimize animations and transitions
                 </p>
               </div>
-            </div>
+            </Flex>
             <Switch
               id="reduced-motion"
               size="2"
@@ -83,11 +83,11 @@ export default function AccessibilitySettings() {
               }}
               aria-label="Toggle reduced motion"
             />
-          </div>
+          </Flex>
 
           {/* High Contrast */}
-          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-            <div className="flex items-center gap-3">
+          <Flex align="center" justify="between" p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+            <Flex align="center" gap="3">
               <Eye size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               <div>
                 <label htmlFor="high-contrast" className="text-sm font-medium text-mission-control-text cursor-pointer">
@@ -97,7 +97,7 @@ export default function AccessibilitySettings() {
                   Increase color contrast for better visibility
                 </p>
               </div>
-            </div>
+            </Flex>
             <Switch
               id="high-contrast"
               size="2"
@@ -108,11 +108,11 @@ export default function AccessibilitySettings() {
               }}
               aria-label="Toggle high contrast mode"
             />
-          </div>
+          </Flex>
 
           {/* Font Size */}
-          <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-            <div className="flex items-center gap-3 mb-4">
+          <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+            <Flex align="center" gap="3" mb="4">
               <Type size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               <div className="flex-1">
                 <span className="text-sm font-medium text-mission-control-text">
@@ -122,10 +122,10 @@ export default function AccessibilitySettings() {
                   Adjust text size: {settings.fontSize}%
                 </p>
               </div>
-            </div>
+            </Flex>
 
             {/* Font size slider */}
-            <div className="flex items-center gap-3">
+            <Flex align="center" gap="3">
               <IconButton
                 variant="ghost"
                 size="2"
@@ -137,10 +137,11 @@ export default function AccessibilitySettings() {
                 <Minus size={16} aria-hidden="true" />
               </IconButton>
 
-              <div
+              <Flex
                 role="group"
                 aria-labelledby="font-size-label"
-                className="flex-1 flex gap-2"
+                gap="2"
+                className="flex-1"
               >
                 {fontSizeOptions.map(option => (
                   <Button
@@ -158,7 +159,7 @@ export default function AccessibilitySettings() {
                     )}
                   </Button>
                 ))}
-              </div>
+              </Flex>
 
               <IconButton
                 variant="ghost"
@@ -170,8 +171,8 @@ export default function AccessibilitySettings() {
               >
                 <Plus size={16} aria-hidden="true" />
               </IconButton>
-            </div>
-          </div>
+            </Flex>
+          </Box>
         </div>
       </section>
 
@@ -183,8 +184,8 @@ export default function AccessibilitySettings() {
 
         <div className="space-y-4">
           {/* Keyboard Navigation Indicators */}
-          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-            <div className="flex items-center gap-3">
+          <Flex align="center" justify="between" p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+            <Flex align="center" gap="3">
               <Keyboard size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               <div>
                 <label htmlFor="keyboard-nav" className="text-sm font-medium text-mission-control-text cursor-pointer">
@@ -194,7 +195,7 @@ export default function AccessibilitySettings() {
                   Display visible focus indicators when using keyboard
                 </p>
               </div>
-            </div>
+            </Flex>
             <Switch
               id="keyboard-nav"
               size="2"
@@ -205,7 +206,7 @@ export default function AccessibilitySettings() {
               }}
               aria-label="Toggle keyboard focus indicators"
             />
-          </div>
+          </Flex>
         </div>
       </section>
 
@@ -217,8 +218,8 @@ export default function AccessibilitySettings() {
 
         <div className="space-y-4">
           {/* Enable announcements */}
-          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-            <div className="flex items-center gap-3">
+          <Flex align="center" justify="between" p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+            <Flex align="center" gap="3">
               {settings.screenReaderEnabled ? (
                 <Volume2 size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               ) : (
@@ -232,7 +233,7 @@ export default function AccessibilitySettings() {
                   Enable additional screen reader announcements
                 </p>
               </div>
-            </div>
+            </Flex>
             <Switch
               id="screen-reader"
               size="2"
@@ -243,14 +244,14 @@ export default function AccessibilitySettings() {
               }}
               aria-label="Toggle screen reader announcements"
             />
-          </div>
+          </Flex>
 
           {/* Test announcements */}
-          <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
             <label htmlFor="test-announcement" className="text-sm font-medium text-mission-control-text block mb-2">
               Test Screen Reader Announcement
             </label>
-            <div className="flex gap-2">
+            <Flex gap="2">
               <TextField.Root
                 id="test-announcement"
                 size="2"
@@ -272,11 +273,11 @@ export default function AccessibilitySettings() {
               >
                 Announce
               </Button>
-            </div>
+            </Flex>
             <p id="test-announcement-help" className="text-xs text-mission-control-text-dim mt-2">
               Test how screen readers will announce messages
             </p>
-          </div>
+          </Box>
         </div>
       </section>
 

@@ -4,7 +4,7 @@ import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import IconBadge from './IconBadge';
 import { inboxApi, scheduleApi } from '../lib/api';
-import { Button, IconButton, Badge } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Box, Flex } from '@radix-ui/themes';
 
 interface UnifiedNotification {
   id: string;
@@ -138,11 +138,11 @@ export default function NotificationsPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+      <Box p="4" className="border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" mb="4">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg">
               <Bell size={24} className="text-mission-control-accent" />
             </div>
@@ -152,7 +152,7 @@ export default function NotificationsPanel() {
                 {unreadCount} unread {urgentCount > 0 && `• ${urgentCount} urgent`}
               </p>
             </div>
-          </div>
+          </Flex>
           <Button
             variant="soft"
             color="gray"
@@ -163,10 +163,10 @@ export default function NotificationsPanel() {
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
           </Button>
-        </div>
+        </Flex>
 
         {/* Filter tabs */}
-        <div className="flex gap-2">
+        <Flex gap="2">
           {(['all', 'unread', 'urgent'] as const).map((f) => (
             <Button
               key={f}
@@ -180,11 +180,11 @@ export default function NotificationsPanel() {
               {f === 'urgent' && `Urgent (${urgentCount})`}
             </Button>
           ))}
-        </div>
-      </div>
+        </Flex>
+      </Box>
 
       {/* Notifications List */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <Box p="4" className="flex-1 overflow-y-auto">
         {filteredNotifications.length === 0 ? (
           <EmptyState
             type="notifications"
@@ -207,28 +207,28 @@ export default function NotificationsPanel() {
                       : 'bg-mission-control-surface border-mission-control-border shadow-card'
                   }`}
                 >
-                  <div className="flex items-start gap-3">
+                  <Flex align="start" gap="3">
                     <IconBadge icon={Icon} size={16} color={config.color} />
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                    <Box className="flex-1 min-w-0">
+                      <Flex align="center" gap="2" mb="1">
                         <span className="font-medium">{notif.title}</span>
                         {notif.urgent && (
                           <Badge color="red" variant="soft">Urgent</Badge>
                         )}
-                      </div>
+                      </Flex>
                       <p className="text-sm text-mission-control-text-dim truncate">{notif.description}</p>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-mission-control-text-dim">
+                      <Flex align="center" gap="2" mt="2" className="text-xs text-mission-control-text-dim">
                         <span className={`px-1.5 py-0.5 rounded ${config.color.replace('text-', 'bg-').replace('/10', '/20')}`}>
                           {config.label}
                         </span>
                         <Clock size={10} />
                         <span className="tabular-nums">{formatTimeAgo(notif.timestamp)}</span>
-                      </div>
-                    </div>
+                      </Flex>
+                    </Box>
 
                     {/* Actions */}
-                    <div className="flex gap-1 flex-shrink-0">
+                    <Flex gap="1" className="flex-shrink-0">
                       {notif.actionable && (
                         <IconButton
                           variant="soft"
@@ -251,14 +251,14 @@ export default function NotificationsPanel() {
                       >
                         <X size={16} />
                       </IconButton>
-                    </div>
-                  </div>
+                    </Flex>
+                  </Flex>
                 </div>
               );
             })}
           </div>
         )}
-      </div>
-    </div>
+      </Box>
+    </Flex>
   );
 }
