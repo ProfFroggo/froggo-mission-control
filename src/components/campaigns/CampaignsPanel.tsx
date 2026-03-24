@@ -2,7 +2,7 @@
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex, Box } from '@radix-ui/themes';
 import {
   Megaphone, Plus, Search, RefreshCw, AlertCircle, LayoutGrid, List
 } from 'lucide-react';
@@ -37,10 +37,10 @@ const STATUS_FILTERS = [
 
 function EmptyCampaigns({ onNew }: { onNew: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center flex-1 text-center py-16">
-      <div className="w-16 h-16 rounded-2xl bg-mission-control-surface border border-mission-control-border flex items-center justify-center mb-4">
+    <Flex direction="column" align="center" justify="center" py="9" className="flex-1 text-center">
+      <Flex align="center" justify="center" mb="4" className="w-16 h-16 rounded-2xl bg-mission-control-surface border border-mission-control-border">
         <Megaphone size={28} className="text-mission-control-text-dim" />
-      </div>
+      </Flex>
       <h3 className="text-lg font-semibold text-mission-control-text mb-2">No campaigns yet</h3>
       <p className="text-sm text-mission-control-text-dim max-w-xs mb-6">
         Create a campaign to plan, track and measure your marketing efforts across all channels.
@@ -52,7 +52,7 @@ function EmptyCampaigns({ onNew }: { onNew: () => void }) {
       >
         <Plus size={16} /> Create your first campaign
       </Button>
-    </div>
+    </Flex>
   );
 }
 
@@ -121,11 +121,11 @@ export default function CampaignsPanel() {
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg0">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-mission-control-accent/20 rounded-lg">
+      <Flex align="center" justify="between" px="6" py="4" className="border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" gap="3">
+          <Box p="2" className="bg-mission-control-accent/20 rounded-lg">
             <Megaphone size={24} className="text-mission-control-accent" />
-          </div>
+          </Box>
           <div>
             <h1 className="text-xl font-semibold text-mission-control-text">Campaigns</h1>
             <p className="text-sm text-mission-control-text-dim">
@@ -135,8 +135,8 @@ export default function CampaignsPanel() {
               {liveCount === 0 && planningCount === 0 ? `${campaigns.filter(c => c.status !== 'archived').length} campaigns` : ''}
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <IconButton
             onClick={() => load(false)}
             disabled={refreshing}
@@ -147,7 +147,7 @@ export default function CampaignsPanel() {
           >
             <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
           </IconButton>
-          <div className="flex items-center rounded-lg border border-mission-control-border overflow-hidden">
+          <Flex align="center" className="rounded-lg border border-mission-control-border overflow-hidden">
             <IconButton
               onClick={() => setViewMode('grid')}
               size="2"
@@ -166,7 +166,7 @@ export default function CampaignsPanel() {
             >
               <List size={14} />
             </IconButton>
-          </div>
+          </Flex>
           <Button
             onClick={() => setShowCreateWizard(true)}
             size="2"
@@ -174,14 +174,14 @@ export default function CampaignsPanel() {
           >
             <Plus size={15} /> New Campaign
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Filters */}
-      <div className="flex flex-col gap-2 px-6 py-3 border-b border-mission-control-border">
+      <Flex direction="column" gap="2" px="6" py="3" className="border-b border-mission-control-border">
         {/* Search + status tabs */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 max-w-xs">
+        <Flex align="center" gap="3">
+          <Box className="flex-1 max-w-xs">
             <TextField.Root
               placeholder="Search campaigns..."
               value={search}
@@ -192,8 +192,8 @@ export default function CampaignsPanel() {
                 <Search size={14} />
               </TextField.Slot>
             </TextField.Root>
-          </div>
-          <div className="flex items-center gap-1">
+          </Box>
+          <Flex align="center" gap="1">
             {STATUS_FILTERS.map(f => (
               <Button
                 key={f.value}
@@ -205,11 +205,11 @@ export default function CampaignsPanel() {
                 {f.label}
               </Button>
             ))}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Type filters */}
-        <div className="flex items-center gap-1 flex-wrap">
+        <Flex align="center" gap="1" className="flex-wrap">
           {TYPE_FILTERS.map(f => (
             <Button
               key={f.value}
@@ -221,22 +221,22 @@ export default function CampaignsPanel() {
               {f.label}
             </Button>
           ))}
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <Box px="6" py="4" className="flex-1 overflow-y-auto">
         {loading && (
-          <div className="flex items-center justify-center py-16">
+          <Flex align="center" justify="center" py="9">
             <Spinner size={24} />
-          </div>
+          </Flex>
         )}
 
         {error && !loading && (
-          <div className="flex items-center gap-2 px-4 py-3 bg-error-subtle border border-error/30 rounded-lg text-error text-sm">
+          <Flex align="center" gap="2" px="4" py="3" className="bg-error-subtle border border-error/30 rounded-lg text-error text-sm">
             <AlertCircle size={15} />
             {error}
-          </div>
+          </Flex>
         )}
 
         {!loading && !error && filtered.length === 0 && (
@@ -273,7 +273,7 @@ export default function CampaignsPanel() {
             ))}
           </div>
         )}
-      </div>
+      </Box>
 
       {/* Create wizard */}
       {showCreateWizard && (

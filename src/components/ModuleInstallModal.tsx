@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Box, Flex } from '@radix-ui/themes';
 import { X, CheckCircle, XCircle, Loader2, Download, Key, Package, Bot } from 'lucide-react';
 import { moduleApi, catalogApi } from '../lib/api';
 import type { CatalogModule } from '../types/catalog';
@@ -101,47 +101,47 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
   const progress = Math.round((doneCount / steps.length) * 100);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <Flex align="center" justify="center" p="4" className="fixed inset-0 z-50">
       <button className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default border-0 outline-none" onClick={onClose} type="button" aria-label="Close" />
-      <div className="relative w-full max-w-md bg-mission-control-bg border border-mission-control-accent/30 rounded-2xl shadow-2xl flex flex-col max-h-[80vh]">
+      <Flex direction="column" className="relative w-full max-w-md bg-mission-control-bg border border-mission-control-accent/30 rounded-2xl shadow-2xl max-h-[80vh]">
 
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-          <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center text-xl flex-shrink-0">
+        <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
+          <Flex align="center" justify="center" className="w-10 h-10 rounded-lg bg-mission-control-accent/10 text-xl flex-shrink-0">
             {module.icon || '🧩'}
-          </div>
-          <div className="flex-1 min-w-0">
+          </Flex>
+          <Box className="flex-1 min-w-0">
             <h2 className="font-bold">Install {module.name}</h2>
             <p className="text-xs text-mission-control-text-dim truncate">{module.description}</p>
-          </div>
+          </Box>
           <IconButton variant="ghost" size="1" onClick={onClose} aria-label="Close install modal">
             <X size={18} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <Box p="4" className="flex-1 overflow-y-auto space-y-4">
 
           {/* Dependencies overview */}
           {(module.requiredApis.length > 0 || module.requiredAgents.length > 0 || module.requiredNpm.length > 0) && (
             <div className="rounded-lg border border-warning-border bg-warning-subtle/30 p-3 space-y-1.5 text-xs">
               {module.requiredApis.length > 0 && (
-                <div className="flex items-center gap-1.5 text-warning">
+                <Flex align="center" gap="2" className="text-warning">
                   <Key size={11} className="flex-shrink-0" />
                   <span>API keys required: {module.requiredApis.join(', ')}</span>
-                </div>
+                </Flex>
               )}
               {module.requiredAgents.length > 0 && (
-                <div className="flex items-center gap-1.5 text-info">
+                <Flex align="center" gap="2" className="text-info">
                   <Bot size={11} className="flex-shrink-0" />
                   <span>Agents needed: {module.requiredAgents.join(', ')}</span>
-                </div>
+                </Flex>
               )}
               {module.requiredNpm.length > 0 && (
-                <div className="flex items-center gap-1.5 text-mission-control-text-dim">
+                <Flex align="center" gap="2" className="text-mission-control-text-dim">
                   <Package size={11} className="flex-shrink-0" />
                   <span>npm packages: {module.requiredNpm.join(', ')}</span>
-                </div>
+                </Flex>
               )}
               <p className="text-mission-control-text-dim opacity-70 pt-1">
                 Ensure these are available before activating the module.
@@ -152,10 +152,10 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
           {/* Progress bar */}
           {started && (
             <div>
-              <div className="flex justify-between text-xs text-mission-control-text-dim mb-1">
+              <Flex justify="between" className="text-xs text-mission-control-text-dim mb-1">
                 <span>Installing…</span>
                 <span>{progress}%</span>
-              </div>
+              </Flex>
               <div className="h-1.5 rounded-full bg-mission-control-border overflow-hidden">
                 <div
                   className="h-full bg-mission-control-accent rounded-full transition-all duration-500"
@@ -168,39 +168,39 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
           {/* Steps */}
           <div className="space-y-2">
             {steps.map(step => (
-              <div key={step.id} className="flex items-start gap-3 p-2.5 rounded-lg bg-mission-control-surface">
+              <Flex key={step.id} align="start" gap="3" p="3" className="rounded-lg bg-mission-control-surface">
                 <div className="flex-shrink-0 mt-0.5">{STEP_ICON[step.status]}</div>
-                <div className="flex-1 min-w-0">
+                <Box className="flex-1 min-w-0">
                   <div className={`text-sm font-medium ${step.status === 'error' ? 'text-error' : ''}`}>
                     {step.label}
                   </div>
                   <div className="text-xs text-mission-control-text-dim truncate">
                     {step.errorMsg || step.detail}
                   </div>
-                </div>
-              </div>
+                </Box>
+              </Flex>
             ))}
           </div>
 
           {/* Done message */}
           {done && (
-            <div className="flex items-center gap-2 text-success text-sm p-3 rounded-lg border border-success-border bg-success-subtle">
+            <Flex align="center" gap="2" p="3" className="text-success text-sm rounded-lg border border-success-border bg-success-subtle">
               <CheckCircle size={16} className="flex-shrink-0" />
               <span>{module.name} installed successfully! Reload the app to activate.</span>
-            </div>
+            </Flex>
           )}
 
           {/* Failed message */}
           {failed && (
-            <div className="flex items-center gap-2 text-error text-sm p-3 rounded-lg border border-error-border bg-error-subtle">
+            <Flex align="center" gap="2" p="3" className="text-error text-sm rounded-lg border border-error-border bg-error-subtle">
               <XCircle size={16} className="flex-shrink-0" />
               <span>Installation failed. Check the step details above.</span>
-            </div>
+            </Flex>
           )}
-        </div>
+        </Box>
 
         {/* Footer */}
-        <div className="flex items-center gap-3 p-4 border-t border-mission-control-border">
+        <Flex align="center" gap="3" p="4" className="border-t border-mission-control-border">
           {!started ? (
             <>
               <Button type="button" variant="surface" color="gray" size="2" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>
@@ -225,8 +225,8 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
               Installing…
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </Flex>
+      </Flex>
+    </Flex>
   );
 }
