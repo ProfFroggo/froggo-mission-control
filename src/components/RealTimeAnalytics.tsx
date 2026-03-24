@@ -9,6 +9,7 @@ import {
   AlertCircle,
   Radio,
 } from 'lucide-react';
+import { Box, Flex } from '@radix-ui/themes';
 
 interface RealtimeMetric {
   label: string;
@@ -176,9 +177,9 @@ export default function RealTimeAnalytics() {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto p-6">
+    <Flex direction="column" height="100%" p="6" className="overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <Flex align="center" justify="between" mb="6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Radio className="text-mission-control-accent" size={20} />
@@ -189,11 +190,11 @@ export default function RealTimeAnalytics() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-mission-control-text-dim">
+        <Flex align="center" gap="3">
+          <Flex align="center" gap="2" className="text-sm text-mission-control-text-dim">
             <span>Last update:</span>
             <span className="font-medium">{formatTimestamp(lastUpdate)}</span>
-          </div>
+          </Flex>
 
           <button
             type="button"
@@ -209,8 +210,8 @@ export default function RealTimeAnalytics() {
             />
             {isLive ? 'Live' : 'Paused'}
           </button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Real-time Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -223,22 +224,22 @@ export default function RealTimeAnalytics() {
               key={metric.label}
               className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4"
             >
-              <div className="flex items-center justify-between mb-3">
+              <Flex align="center" justify="between" mb="3">
                 <Icon size={16} className={metric.color} />
                 {isLive && (
                   <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
                 )}
-              </div>
+              </Flex>
 
-              <div className="flex items-baseline gap-2 mb-1">
+              <Flex align="baseline" gap="2" mb="1">
                 <span className="text-3xl font-bold">{metric.value}</span>
                 <span className="text-sm text-mission-control-text-dim">{metric.unit}</span>
-              </div>
+              </Flex>
 
               <div className="text-sm text-mission-control-text-dim mb-3">{metric.label}</div>
 
               {/* Sparkline */}
-              <div className="h-8 flex items-end gap-0.5">
+              <Flex align="end" gap="1" className="h-8">
                 {metric.sparkline.map((value, idx) => (
                   <div
                     key={idx}
@@ -249,15 +250,15 @@ export default function RealTimeAnalytics() {
                     }}
                   />
                 ))}
-              </div>
+              </Flex>
             </div>
           );
         })}
       </div>
 
       {/* Live Events Feed */}
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 flex-1">
-        <div className="flex items-center justify-between mb-4">
+      <Box p="6" className="bg-mission-control-surface border border-mission-control-border rounded-2xl flex-1">
+        <Flex align="center" justify="between" mb="4">
           <h3 className="font-semibold flex items-center gap-2">
             <Activity size={16} className="text-mission-control-accent" />
             Live Activity Feed
@@ -265,7 +266,7 @@ export default function RealTimeAnalytics() {
           <div className="text-sm text-mission-control-text-dim">
             Last {liveEvents.length} events
           </div>
-        </div>
+        </Flex>
 
         <div className="space-y-2">
           {liveEvents.length === 0 ? (
@@ -276,64 +277,67 @@ export default function RealTimeAnalytics() {
             liveEvents.map((event) => {
               const Icon = event.icon;
               return (
-                <div
+                <Flex
                   key={event.id}
-                  className="flex items-start gap-3 p-3 bg-mission-control-bg rounded-lg hover:bg-mission-control-border transition-colors"
+                  align="start"
+                  gap="3"
+                  p="3"
+                  className="bg-mission-control-bg rounded-lg hover:bg-mission-control-border transition-colors"
                 >
                   <div className={`p-2 rounded-lg ${event.color.replace('text-', 'bg-')}/20`}>
                     <Icon size={16} className={event.color} />
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
+                  <Box className="flex-1 min-w-0">
+                    <Flex align="center" justify="between" gap="2">
                       <div className="font-medium truncate">{event.title}</div>
                       <div className="text-xs text-mission-control-text-dim whitespace-nowrap">
                         {formatTimestamp(event.timestamp)}
                       </div>
-                    </div>
+                    </Flex>
                     <div className="text-sm text-mission-control-text-dim truncate">
                       {event.description}
                     </div>
-                  </div>
-                </div>
+                  </Box>
+                </Flex>
               );
             })
           )}
         </div>
-      </div>
+      </Box>
 
       {/* System Status */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="flex items-center justify-between">
+        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <Flex align="center" justify="between">
             <div>
               <div className="text-sm text-mission-control-text-dim mb-1">System Status</div>
               <div className="font-medium text-success">Operational</div>
             </div>
             <CheckCircle size={24} className="text-success" />
-          </div>
-        </div>
+          </Flex>
+        </Box>
 
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="flex items-center justify-between">
+        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <Flex align="center" justify="between">
             <div>
               <div className="text-sm text-mission-control-text-dim mb-1">Uptime</div>
               <div className="font-medium">99.9%</div>
             </div>
             <TrendingUp size={24} className="text-info" />
-          </div>
-        </div>
+          </Flex>
+        </Box>
 
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="flex items-center justify-between">
+        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <Flex align="center" justify="between">
             <div>
               <div className="text-sm text-mission-control-text-dim mb-1">Avg Response</div>
               <div className="font-medium">0.8s</div>
             </div>
             <Clock size={24} className="text-review" />
-          </div>
-        </div>
+          </Flex>
+        </Box>
       </div>
-    </div>
+    </Flex>
   );
 }
