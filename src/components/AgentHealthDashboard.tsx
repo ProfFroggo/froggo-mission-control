@@ -206,7 +206,7 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
                 {/* Current task */}
                 <td className="px-4 py-3 max-w-xs">
                   {row.currentTask ? (
-                    <span className="flex items-center gap-1 text-amber-400 text-xs">
+                    <span className="flex items-center gap-1 text-warning text-xs">
                       <Zap size={11} className="flex-shrink-0" />
                       <span className="truncate">{row.currentTask}</span>
                     </span>

@@ -32,15 +32,15 @@ const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
 ];
 
 const RANK_STYLES: Record<number, string> = {
-  1: 'bg-yellow-500/10 border-yellow-500/30',
+  1: 'bg-warning-subtle border-warning-border',
   2: 'bg-mission-control-text-dim/10 border-mission-control-text-dim/30',
-  3: 'bg-amber-600/10 border-amber-600/30',
+  3: 'bg-warning-subtle/60 border-warning-border/60',
 };
 
 const RANK_LABEL_STYLES: Record<number, string> = {
-  1: 'text-yellow-500',
+  1: 'text-warning',
   2: 'text-mission-control-text-dim',
-  3: 'text-amber-600',
+  3: 'text-warning',
 };
 
 function formatDuration(ms: number): string {

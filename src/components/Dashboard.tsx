@@ -318,14 +318,14 @@ function StatCard({ label, value, icon: Icon, color, pulse, highlight, onClick, 
       onClick={onClick}
       className={`flex-1 min-w-0 p-4 backdrop-blur-xl rounded-lg border transition-all group text-left ${
         highlight && value > 0
-          ? 'bg-amber-500/10 border-amber-500/40 hover:border-amber-400/70 shadow-lg shadow-amber-500/5'
+          ? 'bg-warning-subtle border-warning-border hover:border-warning shadow-lg'
           : 'bg-mission-control-surface/80 border-mission-control-border hover:border-mission-control-accent/50'
       }`}
     >
       <div className="flex items-center justify-between mb-2">
         <Icon size={18} className={color} />
         {pulse && value > 0 && (
-          <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
+          <span className="w-2.5 h-2.5 rounded-full bg-warning animate-pulse" />
         )}
       </div>
       <div className={`text-3xl font-bold tabular-nums ${color}`}>{value}</div>
@@ -370,7 +370,7 @@ function StatStrip({
         label="Active Tasks"
         value={inProgressCount}
         icon={Activity}
-        color={inProgressCount > 0 ? 'text-blue-400' : 'text-mission-control-text-dim'}
+        color={inProgressCount > 0 ? 'text-info' : 'text-mission-control-text-dim'}
         agents={inProgressAgents}
         sub={doneTodayCount > 0 ? `${doneTodayCount} completed today` : undefined}
         onClick={() => onNavigate?.('kanban')}
@@ -379,21 +379,21 @@ function StatStrip({
         label="Awaiting Review"
         value={reviewCount}
         icon={Eye}
-        color={reviewCount > 0 ? 'text-violet-400' : 'text-mission-control-text-dim'}
+        color={reviewCount > 0 ? 'text-review' : 'text-mission-control-text-dim'}
         onClick={() => onNavigate?.('kanban')}
       />
       <StatCard
         label="Pre-Review Queue"
         value={internalReviewCount}
         icon={UserCheck}
-        color={internalReviewCount > 0 ? 'text-cyan-400' : 'text-mission-control-text-dim'}
+        color={internalReviewCount > 0 ? 'text-info' : 'text-mission-control-text-dim'}
         onClick={() => onNavigate?.('kanban')}
       />
       <StatCard
         label="Human Attention"
         value={humanReviewCount}
         icon={AlertTriangle}
-        color={humanReviewCount > 0 ? 'text-amber-400' : 'text-mission-control-text-dim'}
+        color={humanReviewCount > 0 ? 'text-warning' : 'text-mission-control-text-dim'}
         highlight={humanReviewCount > 0}
         pulse={humanReviewCount > 0}
         onClick={() => onNavigate?.('kanban')}
@@ -512,14 +512,14 @@ function ApprovalsQueue({
 
   return (
     <div className={`bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border overflow-hidden flex flex-col h-[400px] ${
-      pending.length > 0 ? 'border-orange-500/50 shadow-lg shadow-orange-500/5' : 'border-mission-control-border'
+      pending.length > 0 ? 'border-warning-border shadow-lg' : 'border-mission-control-border'
     }`}>
       <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
-          <Inbox size={16} className={pending.length > 0 ? 'text-orange-400' : 'text-mission-control-text-dim'} />
+          <Inbox size={16} className={pending.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'} />
           <h2 className="font-semibold text-sm">Needs Your Decision</h2>
           {pending.length > 0 && (
-            <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full tabular-nums">
+            <span className="px-2 py-0.5 bg-warning text-white text-xs font-bold rounded-full tabular-nums">
               {pending.length}
             </span>
           )}
@@ -622,7 +622,7 @@ function ActivityFeed({
     <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden flex flex-col h-[400px]">
       <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
-          <Activity size={16} className="text-blue-400" />
+          <Activity size={16} className="text-info" />
           <h2 className="font-semibold text-sm">Activity Feed</h2>
           {inProgressTasks.length > 0 && (
             <span className="px-2 py-0.5 bg-info-subtle text-info text-xs font-medium rounded-full">
@@ -642,13 +642,13 @@ function ActivityFeed({
       {agentLeaderboard.length > 0 && (
         <div className="px-4 py-3 border-b border-mission-control-border/30 bg-mission-control-bg/20">
           <div className="flex items-center gap-1.5 mb-2">
-            <Trophy size={12} className="text-amber-400" />
+            <Trophy size={12} className="text-warning" />
             <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Most Active Today</span>
           </div>
           <div className="flex items-center gap-3 overflow-hidden">
             {agentLeaderboard.map(({ agentId, count }, idx) => {
               const agent = agentMap.get(agentId);
-              const rankColors = ['text-amber-400', 'text-mission-control-text-dim', 'text-amber-700'];
+              const rankColors = ['text-warning', 'text-mission-control-text-dim', 'text-warning'];
               return (
                 <button
                   key={agentId}
@@ -661,7 +661,7 @@ function ActivityFeed({
                   <span className="text-xs font-medium text-mission-control-text truncate group-hover:text-mission-control-accent transition-colors">
                     {agent?.name || agentId}
                   </span>
-                  <span className="ml-auto text-xs font-semibold text-mission-control-text-dim flex-shrink-0">
+                  <span className="ml-auto text-xs font-semibold tabular-nums text-mission-control-text-dim flex-shrink-0">
                     {count}
                   </span>
                 </button>
@@ -729,7 +729,7 @@ function ActivityFeed({
                         </p>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-info animate-pulse" />
                         <span className="px-1.5 py-0.5 bg-info-subtle text-info text-xs font-medium rounded-full">
                           in progress
                         </span>
@@ -912,8 +912,8 @@ function TaskCompletionSparkline({ sparkline, loading }: { sparkline: SparklineD
             {/* Fill area under the line */}
             <defs>
               <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-accent,#6366f1)" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="var(--color-accent,#6366f1)" stopOpacity="0.01" />
+                <stop offset="0%" stopColor="var(--mission-control-accent,#6366f1)" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="var(--mission-control-accent,#6366f1)" stopOpacity="0.01" />
               </linearGradient>
             </defs>
             <polygon
@@ -928,7 +928,7 @@ function TaskCompletionSparkline({ sparkline, loading }: { sparkline: SparklineD
             <polyline
               points={points.map(p => `${p.x},${p.y}`).join(' ')}
               fill="none"
-              stroke="var(--color-accent,#6366f1)"
+              stroke="var(--mission-control-accent,#6366f1)"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -945,8 +945,8 @@ function TaskCompletionSparkline({ sparkline, loading }: { sparkline: SparklineD
                     cx={p.x}
                     cy={p.y}
                     r={isToday ? 3.5 : 2.5}
-                    fill={isToday ? 'var(--color-accent,#6366f1)' : 'var(--color-surface,#1e1e2e)'}
-                    stroke="var(--color-accent,#6366f1)"
+                    fill={isToday ? 'var(--mission-control-accent,#6366f1)' : 'var(--mission-control-surface,#1e1e2e)'}
+                    stroke="var(--mission-control-accent,#6366f1)"
                     strokeWidth={1.5}
                   />
                   <text
@@ -954,7 +954,7 @@ function TaskCompletionSparkline({ sparkline, loading }: { sparkline: SparklineD
                     y={H}
                     textAnchor="middle"
                     fontSize={8}
-                    fill={isToday ? 'var(--color-accent,#6366f1)' : 'var(--color-text-dim,#888)'}
+                    fill={isToday ? 'var(--mission-control-accent,#6366f1)' : 'var(--mission-control-text-dim,#888)'}
                     fontWeight={isToday ? 'bold' : 'normal'}
                   >
                     {label}
@@ -965,7 +965,7 @@ function TaskCompletionSparkline({ sparkline, loading }: { sparkline: SparklineD
                       y={p.y - 5}
                       textAnchor="middle"
                       fontSize={8}
-                      fill={isToday ? 'var(--color-accent,#6366f1)' : 'var(--color-text-dim,#888)'}
+                      fill={isToday ? 'var(--mission-control-accent,#6366f1)' : 'var(--mission-control-text-dim,#888)'}
                       fontWeight={isToday ? 'bold' : 'normal'}
                     >
                       {p.count}
@@ -996,7 +996,7 @@ function VelocityMetric({ velocity, loading }: { velocity: VelocityData | null; 
   return (
     <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden">
       <div className="p-4 border-b border-mission-control-border/50 flex items-center gap-2">
-        <Zap size={16} className="text-amber-400" />
+        <Zap size={16} className="text-warning" />
         <h2 className="font-semibold text-sm">Velocity</h2>
         <span className="text-xs text-mission-control-text-dim">7-day avg</span>
       </div>
@@ -1049,12 +1049,12 @@ function AgentProductivitySummary({
   loading: boolean;
   onAgentClick?: (agentId: string) => void;
 }) {
-  const rankColors = ['text-amber-400', 'text-mission-control-text-dim', 'text-amber-700'];
+  const rankColors = ['text-warning', 'text-mission-control-text-dim', 'text-warning'];
 
   return (
     <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden">
       <div className="p-4 border-b border-mission-control-border/50 flex items-center gap-2">
-        <Users size={16} className="text-blue-400" />
+        <Users size={16} className="text-info" />
         <h2 className="font-semibold text-sm">Agent Productivity</h2>
         <span className="text-xs text-mission-control-text-dim">by tasks completed</span>
       </div>
@@ -1147,7 +1147,7 @@ function TaskThroughputChart({ tasks }: { tasks: Task[] }) {
     <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden">
       <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <BarChart2 size={16} className="text-violet-400" />
+          <BarChart2 size={16} className="text-review" />
           <h2 className="font-semibold text-sm">Tasks Completed</h2>
           <span className="text-xs text-mission-control-text-dim">last 7 days</span>
         </div>
@@ -1176,9 +1176,9 @@ function TaskThroughputChart({ tasks }: { tasks: Task[] }) {
                   width={barW}
                   height={barH}
                   rx={3}
-                  fill={day.isToday ? 'var(--color-accent, #6366f1)' : day.count > 0 ? 'var(--color-accent, #6366f1)' : 'var(--color-accent, #6366f1)'}
+                  fill={day.isToday ? 'var(--mission-control-accent, #6366f1)' : day.count > 0 ? 'var(--mission-control-accent, #6366f1)' : 'var(--mission-control-accent, #6366f1)'}
                   fillOpacity={day.isToday ? 1 : day.count > 0 ? 0.19 : 0.08}
-                  stroke={day.isToday ? 'var(--color-accent, #6366f1)' : 'transparent'}
+                  stroke={day.isToday ? 'var(--mission-control-accent, #6366f1)' : 'transparent'}
                   strokeWidth={day.isToday ? 1 : 0}
                 />
                 {day.count > 0 && (
@@ -1187,7 +1187,7 @@ function TaskThroughputChart({ tasks }: { tasks: Task[] }) {
                     y={y - 3}
                     textAnchor="middle"
                     fontSize={9}
-                    fill={day.isToday ? 'var(--color-accent, #6366f1)' : 'var(--color-text-dim, #888)'}
+                    fill={day.isToday ? 'var(--mission-control-accent, #6366f1)' : 'var(--mission-control-text-dim, #888)'}
                     fontWeight={day.isToday ? 'bold' : 'normal'}
                   >
                     {day.count}
@@ -1198,7 +1198,7 @@ function TaskThroughputChart({ tasks }: { tasks: Task[] }) {
                   y={chartH + 15}
                   textAnchor="middle"
                   fontSize={9}
-                  fill={day.isToday ? 'var(--color-accent, #6366f1)' : 'var(--color-text-dim, #888)'}
+                  fill={day.isToday ? 'var(--mission-control-accent, #6366f1)' : 'var(--mission-control-text-dim, #888)'}
                   fontWeight={day.isToday ? 'bold' : 'normal'}
                 >
                   {day.label === 'Today' ? 'Today' : day.label}
@@ -1282,7 +1282,7 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
     <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden flex flex-col min-h-[280px] max-h-[480px]">
       <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Calendar size={16} className="text-blue-400" />
+          <Calendar size={16} className="text-info" />
           <h2 className="font-semibold text-sm">Today&apos;s Schedule</h2>
         </div>
         <button
@@ -1313,17 +1313,17 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
                 <div
                   key={event.id}
                   className={`p-3 hover:bg-mission-control-border/40 transition-colors ${
-                    happening ? 'bg-info-subtle/30 border-l-2 border-l-blue-400' : ''
+                    happening ? 'bg-info-subtle/30 border-l-2 border-l-info' : ''
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`w-14 text-right flex-shrink-0 ${
-                      happening ? 'text-blue-400 font-semibold' : 'text-mission-control-text-dim'
+                      happening ? 'text-info font-semibold' : 'text-mission-control-text-dim'
                     }`}>
                       <span className="text-xs">{formatTime(event)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${happening ? 'text-blue-400' : 'text-mission-control-text'}`}>
+                      <p className={`text-sm font-medium truncate ${happening ? 'text-info' : 'text-mission-control-text'}`}>
                         {event.summary}
                         {happening && (
                           <span className="ml-2 px-1.5 py-0.5 bg-info text-white text-xs rounded-full font-bold">
@@ -1681,17 +1681,17 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
         return (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border">
             <StatCard label="Active Tasks" value={derived.inProgressTasks.length} icon={Activity}
-              color={derived.inProgressTasks.length > 0 ? 'text-blue-400' : 'text-mission-control-text-dim'}
+              color={derived.inProgressTasks.length > 0 ? 'text-info' : 'text-mission-control-text-dim'}
               agents={inProgressAgents} sub={derived.doneTodayCount > 0 ? `${derived.doneTodayCount} done today` : undefined}
               onClick={() => onNavigate?.('kanban')} />
             <StatCard label="Awaiting Review" value={derived.reviewTasks.length} icon={Eye}
-              color={derived.reviewTasks.length > 0 ? 'text-violet-400' : 'text-mission-control-text-dim'}
+              color={derived.reviewTasks.length > 0 ? 'text-review' : 'text-mission-control-text-dim'}
               onClick={() => onNavigate?.('kanban')} />
             <StatCard label="Pre-Review Queue" value={derived.internalReviewTasks.length} icon={UserCheck}
-              color={derived.internalReviewTasks.length > 0 ? 'text-cyan-400' : 'text-mission-control-text-dim'}
+              color={derived.internalReviewTasks.length > 0 ? 'text-info' : 'text-mission-control-text-dim'}
               onClick={() => onNavigate?.('kanban')} />
             <StatCard label="Human Attention" value={derived.humanReviewTasks.length} icon={AlertTriangle}
-              color={derived.humanReviewTasks.length > 0 ? 'text-amber-400' : 'text-mission-control-text-dim'}
+              color={derived.humanReviewTasks.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'}
               highlight={derived.humanReviewTasks.length > 0} pulse={derived.humanReviewTasks.length > 0}
               onClick={() => onNavigate?.('kanban')} />
           </div>

@@ -516,7 +516,7 @@ export default function AgentPanel() {
                       to sit above this button. Settings button keeps its existing z-10. */}
                   <button
                     type="button"
-                    className="absolute inset-0 z-[1] rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="absolute inset-0 z-[1] rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-success"
                     onClick={() => setManagingAgent({ id: agent.id, name: agent.name })}
                     aria-label={`Open ${agent.name} management`}
                   />

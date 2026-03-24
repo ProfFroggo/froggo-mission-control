@@ -51,12 +51,12 @@ export default function AgentUtilizationChart() {
       return (
         <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 shadow-lg">
           <p className="font-medium mb-2">{data.agentName}</p>
-          <p className="text-sm text-info">Assigned: {data.tasksAssigned}</p>
-          <p className="text-sm text-success">Completed: {data.tasksCompleted}</p>
-          <p className="text-sm text-warning">In Progress: {data.tasksInProgress}</p>
-          <p className="text-sm text-review">Completion Rate: {data.completionRate}%</p>
-          <p className="text-sm text-warning">Avg Time: {data.avgCompletionTime.toFixed(1)}h</p>
-          <p className="text-sm text-pink-400">Total Time: {data.totalTimeSpent.toFixed(1)}h</p>
+          <p className="text-sm tabular-nums text-info">Assigned: {data.tasksAssigned}</p>
+          <p className="text-sm tabular-nums text-success">Completed: {data.tasksCompleted}</p>
+          <p className="text-sm tabular-nums text-warning">In Progress: {data.tasksInProgress}</p>
+          <p className="text-sm tabular-nums text-review">Completion Rate: {data.completionRate}%</p>
+          <p className="text-sm tabular-nums text-warning">Avg Time: {data.avgCompletionTime.toFixed(1)}h</p>
+          <p className="text-sm tabular-nums text-danger">Total Time: {data.totalTimeSpent.toFixed(1)}h</p>
         </div>
       );
     }
@@ -117,21 +117,21 @@ export default function AgentUtilizationChart() {
             {topAgent ? topAgent.agentName : 'None'}
           </div>
           {topAgent && (
-            <div className="text-sm text-mission-control-text-dim mt-1">
+            <div className="text-sm tabular-nums text-mission-control-text-dim mt-1">
               {topAgent.tasksCompleted} tasks completed
             </div>
           )}
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="text-sm text-mission-control-text-dim mb-1">Total Tasks</div>
-          <div className="text-2xl font-bold text-info">{totalTasks}</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide mb-1">Total Tasks</div>
+          <div className="text-2xl font-bold tabular-nums text-info">{totalTasks}</div>
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="text-sm text-mission-control-text-dim mb-1 flex items-center gap-2">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide mb-1 flex items-center gap-2">
             <Clock size={16} className="text-warning" />
             Total Hours
           </div>
-          <div className="text-2xl font-bold text-warning">
+          <div className="text-2xl font-bold tabular-nums text-warning">
             {totalHours.toFixed(1)}h
           </div>
         </div>
@@ -209,25 +209,25 @@ export default function AgentUtilizationChart() {
                     <span className="font-medium">{agent.agentName}</span>
                   </div>
                 </td>
-                <td className="p-3 text-right text-info">{agent.tasksAssigned}</td>
-                <td className="p-3 text-right text-success">{agent.tasksCompleted}</td>
+                <td className="p-3 text-right tabular-nums text-info">{agent.tasksAssigned}</td>
+                <td className="p-3 text-right tabular-nums text-success">{agent.tasksCompleted}</td>
                 <td className="p-3 text-right">
                   <span
-                    className={
+                    className={`tabular-nums ${
                       agent.completionRate >= 80
                         ? 'text-success'
                         : agent.completionRate >= 50
                         ? 'text-warning'
                         : 'text-error'
-                    }
+                    }`}
                   >
                     {agent.completionRate}%
                   </span>
                 </td>
-                <td className="p-3 text-right text-mission-control-text-dim">
+                <td className="p-3 text-right tabular-nums text-mission-control-text-dim">
                   {agent.avgCompletionTime.toFixed(1)}h
                 </td>
-                <td className="p-3 text-right text-warning">
+                <td className="p-3 text-right tabular-nums text-warning">
                   {agent.totalTimeSpent.toFixed(1)}h
                 </td>
               </tr>

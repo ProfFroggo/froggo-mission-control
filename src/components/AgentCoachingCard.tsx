@@ -56,7 +56,7 @@ function ScoreRing({ score }: { score: number }) {
   const radius = 44;
   const circumference = 2 * Math.PI * radius;
   const filled = (score / 100) * circumference;
-  const color = score >= 75 ? 'var(--color-success)' : score >= 45 ? 'var(--color-warning)' : 'var(--color-error)';
+  const color = score >= 75 ? 'var(--success)' : score >= 45 ? 'var(--warning)' : 'var(--error)';
 
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: 112, height: 112 }}>
@@ -64,7 +64,7 @@ function ScoreRing({ score }: { score: number }) {
         <circle
           cx="56" cy="56" r={radius}
           fill="none"
-          stroke="var(--color-mission-control-border)"
+          stroke="var(--mission-control-border)"
           strokeWidth="8"
         />
         <circle
@@ -79,7 +79,7 @@ function ScoreRing({ score }: { score: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-bold tabular-nums" style={{ color }}>{score}</span>
-        <span className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">score</span>
+        <span className="text-xs text-mission-control-text-dim uppercase tracking-wider">score</span>
       </div>
     </div>
   );
@@ -103,10 +103,10 @@ function SuccessSparkline({ points }: { points: number[] }) {
   const last = points[points.length - 1];
   const prev = points[points.length - 2];
   const color = last > prev
-    ? 'var(--color-success)'
+    ? 'var(--success)'
     : last < prev
-    ? 'var(--color-error)'
-    : 'var(--color-warning)';
+    ? 'var(--error)'
+    : 'var(--warning)';
 
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-label="Success rate trend sparkline">
@@ -411,15 +411,15 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
           {sparkPoints.length >= 2 && (
             <div className="rounded-2xl border border-mission-control-border bg-mission-control-bg px-4 py-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider">
+                <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
                   Success rate — 5-week trend
                 </span>
                 <span className="text-xs font-bold tabular-nums" style={{
                   color: sparkPoints[sparkPoints.length - 1] > sparkPoints[sparkPoints.length - 2]
-                    ? 'var(--color-success)'
+                    ? 'var(--success)'
                     : sparkPoints[sparkPoints.length - 1] < sparkPoints[sparkPoints.length - 2]
-                    ? 'var(--color-error)'
-                    : 'var(--color-warning)',
+                    ? 'var(--error)'
+                    : 'var(--warning)',
                 }}>
                   {sparkPoints[sparkPoints.length - 1]}%
                 </span>

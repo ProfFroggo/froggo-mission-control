@@ -54,7 +54,7 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
     if (intensity < 40) return 'bg-success-subtle';
     if (intensity < 60) return 'bg-success-subtle';
     if (intensity < 80) return 'bg-success-subtle';
-    return 'bg-green-300';
+    return 'bg-success';
   };
 
   const peakDay = DAYS[
@@ -162,7 +162,7 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
               <div className="w-4 h-4 rounded bg-success-subtle" />
               <div className="w-4 h-4 rounded bg-success-subtle" />
               <div className="w-4 h-4 rounded bg-success-subtle" />
-              <div className="w-4 h-4 rounded bg-green-300" />
+              <div className="w-4 h-4 rounded bg-success" />
             </div>
             <span className="text-xs text-mission-control-text-dim">More</span>
           </div>

@@ -344,7 +344,7 @@ export default function AnalyticsPanel() {
                 Project Statistics
               </h3>
               {projectStats.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-mission-control-text-muted">
+                <div className="flex flex-col items-center justify-center py-12 text-mission-control-text-dim">
                   <BarChart3 size={32} className="mb-3 opacity-30" />
                   <p className="text-sm">No data for this period</p>
                   <p className="text-xs mt-1 opacity-70">Activity will appear here once agents start working</p>

@@ -59,7 +59,7 @@ function OrchestratorMetrics({ m, compact }: { m: Record<string, number>; compac
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Stat icon={Zap} label="Cron Runs" value={m.cronRuns ?? 0} color="text-success" sub="scheduled jobs" />
-        <Stat icon={TrendingUp} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-pink-400" sub="actions taken" />
+        <Stat icon={TrendingUp} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-danger" sub="actions taken" />
       </div>
     </div>
   );
@@ -97,7 +97,7 @@ function HRMetrics({ m, compact }: { m: Record<string, number>; compact: boolean
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Stat icon={Shield} label="Reviews Done" value={m.reviewsDone ?? 0} color="text-warning" sub="approvals handled" />
-        <Stat icon={TrendingUp} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-pink-400" sub="actions taken" />
+        <Stat icon={TrendingUp} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-danger" sub="actions taken" />
       </div>
     </div>
   );
@@ -139,8 +139,8 @@ function QCMetrics({ m, compact }: { m: Record<string, number>; compact: boolean
             <Shield size={13} className={ratingColor} />
             <span className="text-xs text-mission-control-text-dim">Pass Rate</span>
           </div>
-          <div className={`text-xl font-bold ${ratingColor}`}>{passRate.toFixed(1)}%</div>
-          <ProgressBar value={passRate} max={100} color={passRate >= 90 ? 'bg-green-500' : passRate >= 75 ? 'bg-yellow-500' : 'bg-red-500'} />
+          <div className={`text-xl font-bold tabular-nums ${ratingColor}`}>{passRate.toFixed(1)}%</div>
+          <ProgressBar value={passRate} max={100} color={passRate >= 90 ? 'bg-success' : passRate >= 75 ? 'bg-warning' : 'bg-error'} />
           <div className="text-xs text-mission-control-text-dim mt-1">{m.reviewsTotal ?? 0} total reviews</div>
         </div>
         <Stat icon={ThumbsUp} label="Approved" value={m.reviewsApproved ?? 0} color="text-success" sub="passed review" />
@@ -198,7 +198,7 @@ function InboxMetrics({ m, compact }: { m: Record<string, number>; compact: bool
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Stat icon={Zap} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-warning" sub="auto-actions" />
-        <Stat icon={TrendingUp} label="Total Actions" value={m.totalActions ?? 0} color="text-pink-400" sub="all time" />
+        <Stat icon={TrendingUp} label="Total Actions" value={m.totalActions ?? 0} color="text-danger" sub="all time" />
       </div>
     </div>
   );
@@ -320,9 +320,9 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
             <Target size={16} className="text-success" />
             <span className="text-xs text-mission-control-text-dim">Accuracy Rate</span>
           </div>
-          <div className="text-2xl font-bold text-success">{m.completionRate.toFixed(1)}%</div>
-          <ProgressBar value={m.completionRate} max={100} color="bg-green-500" />
-          <div className="text-xs text-mission-control-text-dim mt-1">{m.completedTasks} / {m.totalTasks} tasks</div>
+          <div className="text-2xl font-bold tabular-nums text-success">{m.completionRate.toFixed(1)}%</div>
+          <ProgressBar value={m.completionRate} max={100} color="bg-success" />
+          <div className="text-xs tabular-nums text-mission-control-text-dim mt-1">{m.completedTasks} / {m.totalTasks} tasks</div>
         </div>
 
         <div className="bg-mission-control-bg rounded-lg p-3">
@@ -330,9 +330,9 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
             <CheckCircle size={16} className="text-info" />
             <span className="text-xs text-mission-control-text-dim">Task Completion</span>
           </div>
-          <div className="text-2xl font-bold text-info">{m.completedTasks}</div>
+          <div className="text-2xl font-bold tabular-nums text-info">{m.completedTasks}</div>
           <ProgressBar value={m.completedTasks} max={m.totalTasks || 1} color="bg-info" />
-          <div className="text-xs text-mission-control-text-dim mt-1">{m.inProgressTasks} in progress</div>
+          <div className="text-xs tabular-nums text-mission-control-text-dim mt-1">{m.inProgressTasks} in progress</div>
         </div>
 
         <div className="bg-mission-control-bg rounded-lg p-3">
@@ -340,10 +340,10 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
             <Clock size={16} className="text-review" />
             <span className="text-xs text-mission-control-text-dim">Avg Task Time</span>
           </div>
-          <div className="text-2xl font-bold text-review">{formatAvgTime(m.avgTaskTimeHours)}</div>
+          <div className="text-2xl font-bold tabular-nums text-review">{formatAvgTime(m.avgTaskTimeHours)}</div>
           <div className="text-xs text-mission-control-text-dim mt-2">
             {m.reviewSuccessRate > 0 && (
-              <span className="text-success">{m.reviewSuccessRate.toFixed(0)}% review pass</span>
+              <span className="tabular-nums text-success">{m.reviewSuccessRate.toFixed(0)}% review pass</span>
             )}
           </div>
         </div>
@@ -356,7 +356,7 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
             <span className="text-xs text-mission-control-text-dim">Last 7 Days</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold text-warning">{m.completedLast7Days}</span>
+            <span className="text-xl font-bold tabular-nums text-warning">{m.completedLast7Days}</span>
             <span className="text-xs text-mission-control-text-dim">tasks completed</span>
           </div>
           {m.performanceTrend && <div className="mt-2"><Sparkline data={m.performanceTrend} /></div>}
@@ -364,11 +364,11 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
 
         <div className="bg-mission-control-bg rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={14} className="text-pink-400" />
+            <TrendingUp size={14} className="text-danger" />
             <span className="text-xs text-mission-control-text-dim">Subtask Progress</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold text-pink-400">{m.subtaskCompletionRate.toFixed(0)}%</span>
+            <span className="text-xl font-bold tabular-nums text-danger">{m.subtaskCompletionRate.toFixed(0)}%</span>
             <span className="text-xs text-mission-control-text-dim">completion</span>
           </div>
           <ProgressBar value={m.subtaskCompletionRate} max={100} color="bg-review" />

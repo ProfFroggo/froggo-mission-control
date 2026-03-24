@@ -307,7 +307,7 @@ export default function AdvancedAgentComparison({
                           </td>
                           <td className="p-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <span className="text-success font-medium">
+                              <span className="text-success font-medium tabular-nums">
                                 {agent.tasksCompleted}
                               </span>
                               {getTrendIcon(
@@ -319,7 +319,7 @@ export default function AdvancedAgentComparison({
                           </td>
                           <td className="p-4 text-right">
                             <span
-                              className={`font-medium ${
+                              className={`font-medium tabular-nums ${
                                 agent.completionRate >= 80
                                   ? 'text-success'
                                   : agent.completionRate >= 50
@@ -331,13 +331,13 @@ export default function AdvancedAgentComparison({
                             </span>
                           </td>
                           <td className="p-4 text-right">
-                            <span className="text-warning font-medium">
+                            <span className="text-warning font-medium tabular-nums">
                               {agent.avgCompletionTime.toFixed(1)}h
                             </span>
                           </td>
                           <td className="p-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <span className="text-info font-medium">
+                              <span className="text-info font-medium tabular-nums">
                                 {agent.efficiency.toFixed(2)}
                               </span>
                               <span className="text-xs text-mission-control-text-dim">
@@ -353,7 +353,7 @@ export default function AdvancedAgentComparison({
                                   style={{ width: `${agent.consistency}%` }}
                                 />
                               </div>
-                              <span className="text-review font-medium w-12">
+                              <span className="text-review font-medium tabular-nums w-12">
                                 {Math.round(agent.consistency)}%
                               </span>
                             </div>

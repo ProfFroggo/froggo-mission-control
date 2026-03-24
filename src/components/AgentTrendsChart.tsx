@@ -237,7 +237,7 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
                   y1={y}
                   x2={CHART_W - CHART_PADDING.right}
                   y2={y}
-                  stroke="var(--color-border, #334155)"
+                  stroke="var(--mission-control-border, #334155)"
                   strokeWidth={0.5}
                   strokeDasharray="3,3"
                 />
@@ -247,7 +247,7 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
                   textAnchor="end"
                   dominantBaseline="middle"
                   fontSize={9}
-                  fill="var(--color-text-dim, #64748b)"
+                  fill="var(--mission-control-text-dim, #64748b)"
                 >
                   {tick}
                 </text>
@@ -267,7 +267,7 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
                   y={CHART_PADDING.top + innerH + 14}
                   textAnchor="middle"
                   fontSize={8}
-                  fill="var(--color-text-dim, #64748b)"
+                  fill="var(--mission-control-text-dim, #64748b)"
                 >
                   {formatDate(date)}
                 </text>
@@ -318,7 +318,7 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
             y1={yPos(0)}
             x2={CHART_W - CHART_PADDING.right}
             y2={yPos(0)}
-            stroke="var(--color-border, #334155)"
+            stroke="var(--mission-control-border, #334155)"
             strokeWidth={1}
           />
         </svg>
@@ -349,19 +349,19 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
                       {agent.name}
                     </span>
                   </td>
-                  <td className="py-2 pr-4 text-right font-medium">{totalTasks(agent)}</td>
-                  <td className="py-2 pr-4 text-right text-mission-control-text-dim">
+                  <td className="py-2 pr-4 text-right font-medium tabular-nums">{totalTasks(agent)}</td>
+                  <td className="py-2 pr-4 text-right tabular-nums text-mission-control-text-dim">
                     {avgDaily(agent)}
                   </td>
                   <td className="py-2 text-right">
                     <span
-                      className={
+                      className={`tabular-nums ${
                         avgSuccessRate(agent) >= 80
                           ? 'text-success'
                           : avgSuccessRate(agent) >= 50
                           ? 'text-warning'
-                          : 'text-destructive'
-                      }
+                          : 'text-error'
+                      }`}
                     >
                       {avgSuccessRate(agent)}%
                     </span>
