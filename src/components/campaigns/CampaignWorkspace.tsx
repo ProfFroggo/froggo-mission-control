@@ -1468,9 +1468,18 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (
-              <Button key={tab.id} variant={activeTab === tab.id ? 'solid' : 'ghost'} color={activeTab === tab.id ? 'violet' : 'gray'} size="1" onClick={() => setActiveTab(tab.id)}>
-                <Icon size={13} /> {tab.label}
-              </Button>
+              <button
+                type="button"
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-mission-control-accent text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
+              >
+                <Icon size={13} />{tab.label}
+              </button>
             );
           })}
         </div>

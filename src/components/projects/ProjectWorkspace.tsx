@@ -857,7 +857,7 @@ const StableIframe = memo(function StableIframe({ src, title }: { src: string; t
   return (
     <iframe
       src={src}
-      className="w-full h-full border border-mission-control-border rounded-lg bg-white"
+      className="w-full h-full border border-mission-control-border rounded-lg bg-mission-control-surface"
       title={title}
       style={{ minHeight: 500 }}
     />

@@ -337,7 +337,7 @@ export default function VIPSettingsPanel() {
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Star className="text-warning" size={20} />
-                        <span className="text-lg font-semibold text-white">{vip.label}</span>
+                        <span className="text-lg font-semibold text-mission-control-text">{vip.label}</span>
                         <span className={`text-sm inline-flex items-center gap-1 ${catInfo.color}`}>
                           {catInfo.icon} {catInfo.label}
                         </span>

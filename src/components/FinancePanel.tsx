@@ -374,32 +374,40 @@ export default function FinancePanel() {
       </div>
 
       {/* Account Tab Strip */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-mission-control-border overflow-x-auto flex-shrink-0">
+      <div className="flex items-center border-b border-mission-control-border overflow-x-auto flex-shrink-0">
         {/* All Accounts tab */}
-        <Button
-          variant={selectedAccountId === null ? 'solid' : 'ghost'}
-          size="1"
+        <button
+          type="button"
           onClick={() => setSelectedAccountId(null)}
           aria-label="View all accounts"
           style={{ flexShrink: 0 }}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+            selectedAccountId === null
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
         >
           All Accounts
-        </Button>
+        </button>
 
         {/* Individual account tabs */}
         {accounts.map((acc) => (
           <div key={acc.id} className="flex-shrink-0 flex items-center group">
-            <Button
-              variant={selectedAccountId === acc.id ? 'solid' : 'ghost'}
-              size="1"
+            <button
+              type="button"
               onClick={() => setSelectedAccountId(acc.id)}
               aria-label={`View ${acc.name} account`}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+                selectedAccountId === acc.id
+                  ? 'border-mission-control-accent text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {acc.name}
               <span className="ml-1 text-xs opacity-70">
                 {formatCurrency(acc.computed_balance, acc.currency)}
               </span>
-            </Button>
+            </button>
             {/* Archive button (not for default account) */}
             {acc.id !== 'acc-default' && (
               <IconButton
