@@ -136,17 +136,15 @@ function AssetsTab({ campaign }: { campaign: Campaign }) {
       <div className="flex items-center gap-2 px-4 py-3 border-b border-mission-control-border flex-wrap">
         <div className="flex items-center gap-1">
           {ASSET_TYPES.map(t => (
-            <button
+            <Button
               key={t}
+              variant={filterType === t ? 'solid' : 'ghost'}
+              color={filterType === t ? 'violet' : 'gray'}
+              size="1"
               onClick={() => setFilterType(t)}
-              className={`px-2.5 py-1 text-xs rounded-full transition-colors capitalize ${
-                filterType === t
-                  ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
-              }`}
             >
               {t || 'All'}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="ml-auto flex items-center gap-2">
@@ -264,15 +262,11 @@ function ChannelsTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
             {ALL_CHANNELS.filter(ch => !activeChannels.includes(ch)).map(ch => {
               const Icon = CHANNEL_ICONS[ch];
               return (
-                <button
-                  key={ch}
-                  onClick={() => handleToggleChannel(ch)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-mission-control-border rounded-lg text-mission-control-text-dim hover:border-mission-control-accent/40 hover:text-mission-control-accent transition-colors"
-                >
+                <Button key={ch} variant="ghost" size="1" onClick={() => handleToggleChannel(ch)}>
                   {Icon && <Icon size={11} />}
                   {CHANNEL_LABELS[ch]}
                   <Plus size={10} />
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -962,15 +956,10 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
             const Icon = CHANNEL_ICONS[ch];
             const active = (campaign.channels ?? []).includes(ch);
             return (
-              <button key={ch} onClick={() => handleChannelToggle(ch)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg border transition-all ${
-                  active
-                    ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                    : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/30'
-                }`}>
+              <Button key={ch} variant={active ? 'solid' : 'ghost'} color={active ? 'violet' : 'gray'} size="1" onClick={() => handleChannelToggle(ch)}>
                 {Icon && <Icon size={11} />}
                 {CHANNEL_LABELS[ch]}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -1278,18 +1267,12 @@ function ChecklistTab({ campaign }: { campaign: Campaign }) {
               {cat}
             </h4>
             {catItems.map(item => (
-              <button
+              <Button
                 key={item.id}
+                variant={item.checked ? 'soft' : 'ghost'}
+                color={item.checked ? 'green' : 'gray'}
+                size="1"
                 onClick={() => toggle(item)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors text-left"
-                style={{
-                  borderColor: item.checked
-                    ? 'var(--color-success, #22c55e)40'
-                    : 'var(--mission-control-border)',
-                  backgroundColor: item.checked
-                    ? 'var(--color-success, #22c55e)08'
-                    : 'var(--mission-control-surface)',
-                }}
               >
                 {item.checked ? (
                   <CheckCircle2 size={16} style={{ color: 'var(--color-success, #22c55e)', flexShrink: 0 }} />
@@ -1305,7 +1288,7 @@ function ChecklistTab({ campaign }: { campaign: Campaign }) {
                 >
                   {item.label}
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
         );
@@ -1487,14 +1470,9 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors flex-shrink-0 ${
-                  activeTab === tab.id
-                    ? 'border-mission-control-accent text-mission-control-accent'
-                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-                }`}>
+              <Button key={tab.id} variant={activeTab === tab.id ? 'solid' : 'ghost'} color={activeTab === tab.id ? 'violet' : 'gray'} size="1" onClick={() => setActiveTab(tab.id)}>
                 <Icon size={13} /> {tab.label}
-              </button>
+              </Button>
             );
           })}
         </div>

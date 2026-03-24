@@ -398,19 +398,11 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               const Icon = t.icon;
               const sel = types.includes(t.value);
               return (
-                <button
-                  key={t.value}
-                  onClick={() => toggleType(t.value)}
-                  className={`flex flex-col gap-1.5 p-3 rounded-lg border text-left transition-all ${
-                    sel
-                      ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                      : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'
-                  }`}
-                >
+                <Button key={t.value} variant={sel ? 'solid' : 'ghost'} color={sel ? 'violet' : 'gray'} size="1" onClick={() => toggleType(t.value)}>
                   <Icon size={15} />
                   <span className="text-xs font-medium">{t.label}</span>
                   <span className="text-xs opacity-60 leading-tight">{t.desc}</span>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -432,24 +424,17 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             const Icon = g.icon;
             const sel = goal === g.value;
             return (
-              <button
-                key={g.value}
+              <Button key={g.value} variant={sel ? 'solid' : 'ghost'} color={sel ? 'violet' : 'gray'} size="1"
                 onClick={() => {
                   if (step !== 'goal') return;
                   setGoal(g.value);
                   setMessages(prev => [...prev, userMsg(g.label)]);
                   advanceTo('channels');
-                }}
-                className={`flex flex-col gap-1.5 p-3 rounded-lg border text-left transition-all ${
-                  sel
-                    ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                    : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
-              >
+                }}>
                 <Icon size={15} />
                 <span className="text-xs font-medium">{g.label}</span>
                 <span className="text-xs opacity-60 leading-tight">{g.desc}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -462,19 +447,11 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               const Icon = CHANNEL_ICONS[ch];
               const sel = channels.includes(ch);
               return (
-                <button
-                  key={ch}
-                  onClick={() => toggleChannel(ch)}
-                  className={`flex items-center gap-2.5 p-3 rounded-lg border text-left transition-all ${
-                    sel
-                      ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                      : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'
-                  }`}
-                >
+                <Button key={ch} variant={sel ? 'solid' : 'ghost'} color={sel ? 'violet' : 'gray'} size="1" onClick={() => toggleChannel(ch)}>
                   {Icon && <Icon size={15} />}
                   <span className="text-sm font-medium">{CHANNEL_LABELS[ch]}</span>
                   {sel && <Check size={11} className="ml-auto flex-shrink-0" />}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -589,13 +566,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               {agents.map(agent => {
                 const sel = selectedAgents.includes(agent.id);
                 return (
-                  <button
-                    key={agent.id}
-                    onClick={() => toggleAgent(agent.id)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-all text-left ${
-                      sel ? 'border-mission-control-accent/50 bg-mission-control-accent/10' : 'border-mission-control-border hover:border-mission-control-accent/30'
-                    }`}
-                  >
+                  <Button key={agent.id} variant={sel ? 'soft' : 'ghost'} color={sel ? 'violet' : 'gray'} size="1" onClick={() => toggleAgent(agent.id)}>
                     <AgentAvatar agentId={agent.id} size="sm" fallbackEmoji={agent.emoji} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-mission-control-text">{agent.name}</div>
@@ -604,7 +575,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                     <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${sel ? 'border-mission-control-accent bg-mission-control-accent' : 'border-mission-control-border'}`}>
                       {sel && <Check size={9} className="text-white" />}
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
               {agents.length === 0 && (
@@ -717,12 +688,10 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               const Icon = t.icon;
               const sel = types.includes(t.value);
               return (
-                <button key={t.value} onClick={() => toggleType(t.value)}
-                  className={`flex flex-col gap-1 p-2.5 rounded-lg border text-left transition-all ${sel ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'}`}
-                >
+                <Button key={t.value} variant={sel ? 'solid' : 'ghost'} color={sel ? 'violet' : 'gray'} size="1" onClick={() => toggleType(t.value)}>
                   <Icon size={13} />
                   <span className="text-xs font-medium">{t.label}</span>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -738,12 +707,10 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           {GOAL_OPTIONS.map(g => {
             const Icon = g.icon;
             return (
-              <button key={g.value} onClick={() => { setGoal(g.value); sendDiscoveryMessage(g.label); }}
-                className={`flex flex-col gap-1 p-2.5 rounded-lg border text-left transition-all ${goal === g.value ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'}`}
-              >
+              <Button key={g.value} variant={goal === g.value ? 'solid' : 'ghost'} color={goal === g.value ? 'violet' : 'gray'} size="1" onClick={() => { setGoal(g.value); sendDiscoveryMessage(g.label); }}>
                 <Icon size={13} />
                 <span className="text-xs font-medium">{g.label}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -755,13 +722,11 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               const Icon = CHANNEL_ICONS[ch];
               const sel = channels.includes(ch);
               return (
-                <button key={ch} onClick={() => toggleChannel(ch)}
-                  className={`flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all ${sel ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'}`}
-                >
+                <Button key={ch} variant={sel ? 'solid' : 'ghost'} color={sel ? 'violet' : 'gray'} size="1" onClick={() => toggleChannel(ch)}>
                   {Icon && <Icon size={13} />}
                   <span className="text-xs font-medium">{CHANNEL_LABELS[ch]}</span>
                   {sel && <Check size={10} className="ml-auto flex-shrink-0" />}
-                </button>
+                </Button>
               );
             })}
           </div>
