@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import {
   Mic, MicOff, Play, Square, Download, Trash2, Clock,
   Users, Calendar, ChevronDown, ChevronUp, FileText, Upload,
@@ -250,7 +251,7 @@ export default function MeetingTranscribe() {
           </div>
           {activeMeeting && (
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <span className="w-2 h-2 bg-error rounded-full animate-pulse" />
               <span className="text-sm text-error font-medium">Recording</span>
             </div>
           )}
@@ -281,28 +282,28 @@ export default function MeetingTranscribe() {
               className="w-full px-3 py-2 bg-mission-control-surface rounded-lg border border-mission-control-border focus:border-review-border outline-none text-sm disabled:opacity-50"
             />
             {!activeMeeting ? (
-              <button onClick={startNewMeeting}
-                className="w-full py-2 bg-review hover:bg-review/80 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+              <Button variant="solid" size="1" onClick={startNewMeeting} style={{ width: '100%', justifyContent: 'center' }}>
                 <Play className="w-4 h-4" /> Start Meeting
-              </button>
+              </Button>
             ) : (
-              <button onClick={endActiveMeeting}
-                className="w-full py-2 bg-error hover:bg-error/80 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+              <Button variant="soft" color="red" size="1" onClick={endActiveMeeting} style={{ width: '100%', justifyContent: 'center' }}>
                 <Square className="w-4 h-4" /> End Meeting
-              </button>
+              </Button>
             )}
           </div>
 
           {/* Upload */}
           <div className="p-4 border-b border-mission-control-border">
             <input ref={fileInputRef} type="file" accept="audio/*,video/*" onChange={handleFileUpload} className="hidden" />
-            <button
+            <Button
+              variant="ghost"
+              size="1"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading || !!activeMeeting}
-              className="w-full py-2 bg-success hover:bg-success/80 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{ width: '100%', justifyContent: 'center' }}
             >
               {isUploading ? <><Loader2 className="w-4 h-4 animate-spin" />Transcribing…</> : <><Upload className="w-4 h-4" />Upload Recording</>}
-            </button>
+            </Button>
             <p className="text-[11px] text-mission-control-text-dim mt-1 text-center">Requires Gemini API key · MP3, WAV, WebM, M4A</p>
             {uploadError && <div className="mt-2 p-2 bg-error-subtle text-error rounded-lg text-xs">{uploadError}</div>}
           </div>
@@ -334,10 +335,9 @@ export default function MeetingTranscribe() {
                               <span>{formatDuration(duration)}</span>
                             </div>
                           </div>
-                          <button type="button" onClick={e => { e.stopPropagation(); toggleExpanded(meeting.id); }}
-                            className="p-1 hover:bg-mission-control-border rounded flex-shrink-0">
+                          <IconButton variant="ghost" size="1" onClick={e => { e.stopPropagation(); toggleExpanded(meeting.id); }}>
                             {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                          </button>
+                          </IconButton>
                         </div>
                         {meeting.status === 'active' && (
                           <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 bg-error-subtle text-error rounded-full">Live</span>

@@ -49,11 +49,11 @@ interface MiniChatMessage {
 }
 
 const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
-  code:      { icon: Code,      color: 'text-green-400 bg-green-500/10',    label: 'Code' },
-  design:    { icon: Palette,   color: 'text-purple-400 bg-purple-500/10',  label: 'Design' },
+  code:      { icon: Code,      color: 'text-success bg-success',    label: 'Code' },
+  design:    { icon: Palette,   color: 'text-review bg-review',      label: 'Design' },
   docs:      { icon: BookOpen,  color: 'text-cyan-400 bg-cyan-500/10',      label: 'Docs' },
   campaigns: { icon: Megaphone, color: 'text-pink-400 bg-pink-500/10',      label: 'Campaigns' },
-  projects:  { icon: FolderOpen,color: 'text-amber-400 bg-amber-500/10',    label: 'Projects' },
+  projects:  { icon: FolderOpen,color: 'text-warning bg-warning',    label: 'Projects' },
   other:     { icon: File,      color: 'text-mission-control-text-dim bg-mission-control-bg0/10', label: 'Other' },
 };
 
@@ -1025,7 +1025,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                           className="p-1 hover:bg-mission-control-border rounded transition-colors"
                           title={isStarred ? 'Unstar' : 'Star'}
                         >
-                          <Star size={11} className={isStarred ? 'text-yellow-400 fill-yellow-400' : 'text-mission-control-text-dim'} />
+                          <Star size={11} className={isStarred ? 'text-warning fill-warning' : 'text-mission-control-text-dim'} />
                         </button>
                         <button onClick={() => handleLinkToTask(file)} className="p-1 hover:bg-mission-control-border rounded transition-colors" title="Link to task">
                           <Link size={11} className="text-mission-control-text-dim" />
@@ -1061,7 +1061,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                         className={`absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${isStarred ? 'opacity-100' : ''}`}
                         title={isStarred ? 'Unstar' : 'Star'}
                       >
-                        <Star size={12} className={isStarred ? 'text-yellow-400 fill-yellow-400' : 'text-mission-control-text-dim'} />
+                        <Star size={12} className={isStarred ? 'text-warning fill-warning' : 'text-mission-control-text-dim'} />
                       </button>
                       <div className={`p-2.5 rounded-lg ${catConf.color} mb-2 flex items-center justify-center`}>
                         <FileIcon size={20} />
@@ -1214,11 +1214,11 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     onClick={() => toggleStar(detailFile.id)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-xs flex-1 justify-center border ${
                       starred.has(detailFile.id)
-                        ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
+                        ? 'bg-warning border-warning text-warning'
                         : 'bg-mission-control-border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                     }`}
                   >
-                    <Star size={12} className={starred.has(detailFile.id) ? 'fill-yellow-400' : ''} />
+                    <Star size={12} className={starred.has(detailFile.id) ? 'fill-warning' : ''} />
                     {starred.has(detailFile.id) ? 'Starred' : 'Star'}
                   </button>
                   <button

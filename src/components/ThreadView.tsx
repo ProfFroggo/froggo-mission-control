@@ -100,7 +100,7 @@ function ThreadMessage({
             {formatMessageTime(message.timestamp)}
           </span>
           {message.is_starred && (
-            <Star size={10} className="text-warning fill-yellow-500" />
+            <Star size={10} className="text-warning fill-warning" />
           )}
         </div>
 
@@ -113,8 +113,8 @@ function ThreadMessage({
                 onClick={() => onToggleStar(message.id)}
                 className={`p-1.5 rounded-lg transition-all ${
                   message.is_starred
-                    ? 'bg-yellow-100 text-warning shadow-sm'
-                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-warning hover:bg-yellow-50 border border-mission-control-border'
+                    ? 'bg-warning text-warning shadow-sm'
+                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-warning hover:bg-warning border border-mission-control-border'
                 }`}
                 title={message.is_starred ? 'Unstar' : 'Star'}
               >

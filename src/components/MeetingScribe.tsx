@@ -550,7 +550,7 @@ ${transcriptText}`;
           {isRecording ? (
             <button
               onClick={() => stopRecording()}
-              className="w-full py-5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-lg font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-red-500/20"
+              className="w-full py-5 bg-error hover:bg-error/80 text-white rounded-lg text-lg font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-error/20"
             >
               <Square size={24} />
               Stop Recording

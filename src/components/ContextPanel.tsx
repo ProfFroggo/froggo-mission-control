@@ -210,7 +210,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
               {uploadSteps.map((step, i) => (
                 <div key={i} className="flex items-center gap-2">
                   {step.status === 'done' ? (
-                    <CheckCircle2 size={14} className="text-green-400 flex-shrink-0" />
+                    <CheckCircle2 size={14} className="text-success flex-shrink-0" />
                   ) : step.status === 'active' ? (
                     <Loader2 size={14} className="animate-spin text-mission-control-accent flex-shrink-0" />
                   ) : (
@@ -232,7 +232,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
         </div>
 
         {uploadError && (
-          <p className="text-xs text-red-400 mb-3">{uploadError}</p>
+          <p className="text-xs text-error mb-3">{uploadError}</p>
         )}
 
         {/* File Grid */}
@@ -280,7 +280,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
                   )}
                   <button
                     onClick={() => handleDelete(file.id)}
-                    className="p-1.5 text-mission-control-text-dim hover:text-red-400 hover:bg-mission-control-bg rounded-lg transition-colors"
+                    className="p-1.5 text-mission-control-text-dim hover:text-error hover:bg-mission-control-bg rounded-lg transition-colors"
                     title="Delete file"
                   >
                     <Trash2 size={13} />

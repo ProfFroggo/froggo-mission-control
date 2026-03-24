@@ -106,7 +106,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
       {reminders.map((reminder) => (
         <button
           key={reminder.session_id}
-          className="w-full bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 shadow-lg animate-slide-in cursor-pointer text-left"
+          className="w-full bg-warning border-2 border-warning rounded-lg p-4 shadow-lg animate-slide-in cursor-pointer text-left"
           onClick={() => handleReminderClick(reminder.session_id)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleReminderClick(reminder.session_id); }}
         >

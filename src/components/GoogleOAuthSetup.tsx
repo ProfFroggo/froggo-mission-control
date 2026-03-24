@@ -77,7 +77,7 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2 w-full">
+        <div className="flex items-center gap-2 text-error text-xs bg-error border border-error rounded-lg px-3 py-2 w-full">
           <AlertCircle size={14} className="flex-shrink-0" />
           <span>{error}</span>
         </div>

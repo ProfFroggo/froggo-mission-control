@@ -64,7 +64,7 @@ export function DependencyGate({ children }: Props) {
             <div className="text-left space-y-2 bg-mission-control-surface border border-mission-control-border p-4 rounded-lg">
               {criticalMissing.map(r => (
                 <div key={r.path} className="space-y-1">
-                  <p className="text-sm text-red-400 font-medium">{r.label}</p>
+                  <p className="text-sm text-error font-medium">{r.label}</p>
                   <p className="text-xs text-mission-control-text-dim font-mono break-all">{r.path}</p>
                 </div>
               ))}

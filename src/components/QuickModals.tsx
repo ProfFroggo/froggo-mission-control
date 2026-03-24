@@ -316,11 +316,11 @@ function PlatformIcon({ platform }: { platform: string }) {
   switch (platform) {
     case 'whatsapp':
       return (
-        <span className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold">W</span>
+        <span className="w-5 h-5 rounded-full bg-success flex items-center justify-center text-white text-xs font-bold">W</span>
       );
     case 'telegram':
       return (
-        <span className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">T</span>
+        <span className="w-5 h-5 rounded-full bg-info flex items-center justify-center text-white text-xs font-bold">T</span>
       );
     case 'discord':
       return (

@@ -95,9 +95,9 @@ export default function PerformanceTable() {
     const success = agent.success_rate;
     const clara = agent.clara_approval_rate;
 
-    if (success >= 0.8 && clara >= 0.85) return 'bg-green-500';
-    if (success >= 0.6 && clara >= 0.7) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (success >= 0.8 && clara >= 0.85) return 'bg-success';
+    if (success >= 0.6 && clara >= 0.7) return 'bg-warning';
+    return 'bg-error';
   };
 
   const sortedData = [...data].sort((a, b) => {
@@ -290,7 +290,7 @@ export default function PerformanceTable() {
                       <div className="flex-1">
                         {entry.type === 'lifecycle' ? (
                           <div>
-                            <div className="text-sm font-medium text-amber-400">
+                            <div className="text-sm font-medium text-warning">
                               Lifecycle: {entry.field}
                             </div>
                             <div className="text-xs text-mission-control-text-dim mt-1">

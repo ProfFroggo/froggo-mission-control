@@ -196,11 +196,11 @@ export default function LiveActivity({ sessionKey }: LiveActivityProps) {
               {activity.type === 'thinking' ? (
                 <Zap size={14} className="text-violet-500 flex-shrink-0 animate-pulse" />
               ) : activity.status === 'active' ? (
-                <Loader2 size={14} className="text-blue-500 flex-shrink-0 animate-spin" />
+                <Loader2 size={14} className="text-info flex-shrink-0 animate-spin" />
               ) : activity.status === 'error' ? (
-                <XCircle size={14} className="text-red-500 flex-shrink-0" />
+                <XCircle size={14} className="text-error flex-shrink-0" />
               ) : (
-                <CheckCircle size={14} className="text-green-500 flex-shrink-0" />
+                <CheckCircle size={14} className="text-success flex-shrink-0" />
               )}
               
               <div className="flex-1 min-w-0">

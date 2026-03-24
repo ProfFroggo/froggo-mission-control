@@ -146,7 +146,7 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
               return (
                 <div
                   key={`wb-${i}`}
-                  className="rounded-full bg-red-400 transition-all duration-75"
+                  className="rounded-full bg-error transition-all duration-75"
                   style={{
                     width: 2,
                     height: `${Math.max(15, height * 100)}%`,
@@ -183,9 +183,9 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
           <div className="w-full h-1 bg-mission-control-border rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
-                confidenceColor === 'grass' ? 'bg-green-500' :
-                confidenceColor === 'orange' ? 'bg-amber-500' :
-                'bg-red-500'
+                confidenceColor === 'grass' ? 'bg-success' :
+                confidenceColor === 'orange' ? 'bg-warning' :
+                'bg-error'
               }`}
               style={{ width: confidenceWidth }}
             />
