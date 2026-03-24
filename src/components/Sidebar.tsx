@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, type ComponentType } from 'react';
-import { IconButton, Button } from '@radix-ui/themes';
+import { IconButton, Button, Box, Flex } from '@radix-ui/themes';
 import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
@@ -161,7 +161,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       onClick={() => setMobileOpen(true)}
       size="3"
       variant="outline"
-      radius="medium"
+     
       className={`fixed top-3 left-3 z-40 md:hidden ${mobileOpen ? 'hidden' : 'flex'}`}
       aria-label="Open navigation"
     >
@@ -191,7 +191,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
         onClick={() => setMobileOpen(false)}
         size="2"
         variant="ghost"
-        radius="medium"
+       
         className="absolute top-3 right-3 md:hidden"
         aria-label="Close navigation"
       >
@@ -199,13 +199,13 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       </IconButton>
 
       {/* Search button */}
-      <div className="px-2 pt-3 pb-1">
+      <Box px="2" pt="3" pb="1">
         <Button
           onClick={onOpenSearch}
           variant="ghost"
           color="gray"
           size="2"
-          radius="medium"
+         
           className={`w-full ${expanded ? 'justify-start' : 'justify-center'}`}
           title={expanded ? undefined : 'Search (⌘K)'}
           aria-label="Search (⌘K)"
@@ -220,7 +220,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             </kbd>
           )}
         </Button>
-      </div>
+      </Box>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto pt-2 pb-4 px-2" aria-label="Primary navigation">
@@ -248,14 +248,15 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             if (id === 'kanban') badge = activeTasks;
 
             return (
-              <Button
+              <button
                 key={id}
+                type="button"
                 onClick={() => handleNavigate(id)}
-                variant={isActive ? 'soft' : 'ghost'}
-                color={isActive ? undefined : 'gray'}
-                size="2"
-                radius="medium"
-                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 relative group ${expanded ? '' : 'justify-center'}`}
+                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-lg relative group transition-colors text-sm font-medium ${expanded ? '' : 'justify-center'} ${
+                  isActive
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
+                }`}
                 title={expanded ? undefined : `${label} (${shortcut})`}
                 aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
                 aria-current={isActive ? 'page' : undefined}
@@ -265,7 +266,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
 
                 {expanded && (
                   <>
-                    <span className="text-sm font-medium flex-1 text-left truncate">{label}</span>
+                    <span className="flex-1 text-left truncate">{label}</span>
                     {badge > 0 && (
                       <NumberBadge
                         count={badge}
@@ -273,7 +274,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                         position="inline"
                         variant={isActive ? 'secondary' : 'primary'}
                         size="sm"
-                        className={isActive ? 'bg-mission-control-text/20 text-mission-control-text' : 'bg-mission-control-accent/20 text-mission-control-accent'}
+                        className={isActive ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'bg-mission-control-accent/20 text-mission-control-accent'}
                       />
                     )}
                   </>
@@ -288,7 +289,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                     size="sm"
                   />
                 )}
-              </Button>
+              </button>
             );
           })}
         </div>
@@ -298,9 +299,9 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       <AgentActivityBar onNavigate={handleNavigate} expanded={expanded} />
 
       {/* Bottom section */}
-      <div className="p-2 border-t border-mission-control-border space-y-1" role="group" aria-label="Settings">
+      <Box p="2" className="border-t border-mission-control-border space-y-1" role="group" aria-label="Settings">
         {/* Action icons in a compact horizontal row */}
-        <div className={`flex items-center ${expanded ? 'justify-between' : 'justify-center'} gap-0.5 px-1`}>
+        <Flex align="center" justify={expanded ? 'between' : 'center'} gap="1" px="1">
           {/* Edit Panels - only visible when expanded */}
           {expanded && (
             <IconButton
@@ -308,7 +309,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               size="2"
               variant="ghost"
               color="gray"
-              radius="medium"
+             
               className="no-drag"
               title="Edit Panels (⌘⇧E)"
               aria-label="Edit Panels"
@@ -323,7 +324,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               size="2"
               variant="ghost"
               color="gray"
-              radius="medium"
+             
               className="no-drag"
               title="Help (⌘H)"
               aria-label="Help"
@@ -338,7 +339,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               size="2"
               variant="ghost"
               color="gray"
-              radius="medium"
+             
               className="no-drag"
               title="Keyboard shortcuts (?)"
               aria-label="Keyboard shortcuts"
@@ -347,26 +348,27 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             </IconButton>
           )}
           {/* Settings - always visible */}
-          <IconButton
+          <button
+            type="button"
             onClick={() => handleNavigate('settings')}
-            size="2"
-            variant={currentView === 'settings' ? 'soft' : 'ghost'}
-            color={currentView === 'settings' ? undefined : 'gray'}
-            radius="medium"
-            className="no-drag"
+            className={`no-drag p-1.5 rounded-lg transition-colors ${
+              currentView === 'settings'
+                ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
+            }`}
             title="Settings (⌘,)"
             aria-label="Settings"
             aria-current={currentView === 'settings' ? 'page' : undefined}
           >
             <Settings size={16} aria-hidden="true" />
-          </IconButton>
+          </button>
           {/* Expand/Collapse - always visible */}
           <IconButton
             onClick={() => setExpanded(!expanded)}
             size="2"
             variant="ghost"
             color="gray"
-            radius="medium"
+           
             className="no-drag"
             title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
             aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
@@ -374,8 +376,8 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           >
             {expanded ? <ChevronLeft size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Box>
     </aside>
 
     {/* Focus Mode Selector */}

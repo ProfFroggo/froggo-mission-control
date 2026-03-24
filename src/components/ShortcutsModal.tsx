@@ -8,7 +8,7 @@
  */
 
 import { X, Keyboard } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
+import { IconButton, Box, Flex, Text, Heading, Grid } from '@radix-ui/themes';
 
 interface ShortcutsModalProps {
   isOpen: boolean;
@@ -120,14 +120,14 @@ function Key({ label }: { label: string }) {
 
 function ShortcutEntry({ row }: { row: ShortcutRow }) {
   return (
-    <div className="flex items-center justify-between py-1 px-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors gap-4">
-      <span className="text-sm text-mission-control-text truncate">{row.description}</span>
-      <div className="flex items-center gap-1 flex-shrink-0">
+    <Flex align="center" justify="between" py="1" px="2" gap="4" className="rounded-lg hover:bg-mission-control-bg/50 transition-colors">
+      <Text size="2" className="text-mission-control-text truncate">{row.description}</Text>
+      <Flex align="center" gap="1" className="flex-shrink-0">
         {row.keys.map((k, i) => (
           <Key key={i} label={k} />
         ))}
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 }
 
@@ -135,8 +135,11 @@ export default function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps)
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
       onClick={onClose}
       role="button"
       tabIndex={0}
@@ -148,8 +151,9 @@ export default function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps)
         }
       }}
     >
-      <div
-        className="glass-modal rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
+      <Flex
+        direction="column"
+        className="glass-modal rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -157,54 +161,53 @@ export default function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps)
         onKeyDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-mission-control-border flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-mission-control-accent/20 rounded-lg">
+        <Flex align="center" justify="between" p="5" className="border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
+            <Box p="2" className="bg-mission-control-accent/20 rounded-lg">
               <Keyboard size={20} className="text-mission-control-accent" aria-hidden="true" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-mission-control-text">Keyboard Shortcuts</h2>
-              <p className="text-xs text-mission-control-text-dim">Navigate faster without leaving the keyboard</p>
-            </div>
-          </div>
+            </Box>
+            <Box>
+              <Heading size="3" as="h2" className="text-mission-control-text">Keyboard Shortcuts</Heading>
+              <Text size="1" className="text-mission-control-text-dim">Navigate faster without leaving the keyboard</Text>
+            </Box>
+          </Flex>
           <IconButton
             onClick={onClose}
             size="2"
             variant="ghost"
-            radius="medium"
             aria-label="Close shortcuts"
           >
             <X size={18} aria-hidden="true" />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Shortcut grid */}
-        <div className="overflow-y-auto p-5">
-          <div className="grid grid-cols-2 gap-6">
+        <Box p="5" className="overflow-y-auto">
+          <Grid columns="2" gap="5">
             {SHORTCUT_GROUPS.map((group) => (
-              <div key={group.category} className="space-y-1">
-                <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">
+              <Box key={group.category} className="space-y-1">
+                <Text size="1" weight="medium" className="text-mission-control-text-dim uppercase tracking-wide" mb="2" as="div">
                   {group.category}
-                </h3>
+                </Text>
                 {group.items.map((row, i) => (
                   <ShortcutEntry key={i} row={row} />
                 ))}
-              </div>
+              </Box>
             ))}
-          </div>
-        </div>
+          </Grid>
+        </Box>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-mission-control-border bg-mission-control-bg flex-shrink-0">
-          <p className="text-xs text-mission-control-text-dim">
+        <Box px="5" py="3" className="border-t border-mission-control-border bg-mission-control-bg flex-shrink-0">
+          <Text size="1" className="text-mission-control-text-dim">
             Press{' '}
             <kbd className="inline-flex items-center px-1.5 py-0.5 text-xs font-mono bg-mission-control-border rounded border border-mission-control-border/50 text-mission-control-text">
               Esc
             </kbd>{' '}
             to close &nbsp;&bull;&nbsp; ⌘ = Cmd (macOS) / Ctrl (Windows/Linux) &nbsp;&bull;&nbsp; Tab past sidebar to activate the skip-to-content link
-          </p>
-        </div>
-      </div>
-    </div>
+          </Text>
+        </Box>
+      </Flex>
+    </Flex>
   );
 }

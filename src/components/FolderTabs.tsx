@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Settings, Inbox } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Box, Flex } from '@radix-ui/themes';
 import FolderManager from './FolderManager';
 import ErrorDisplay from './ErrorDisplay';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from '@dnd-kit/core';
@@ -185,41 +185,41 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
 
   return (
     <>
-      <div className="border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center overflow-x-auto scrollbar-thin scrollbar-thumb-mission-control-border scrollbar-track-transparent">
+      <Box className="border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" className="overflow-x-auto scrollbar-thin scrollbar-thumb-mission-control-border scrollbar-track-transparent">
           {/* All Sessions Tab */}
-          <Button
-            variant={selectedFolder === null ? 'soft' : 'ghost'}
-            color={selectedFolder === null ? 'indigo' : 'gray'}
-            size="2"
+          <button
+            type="button"
             onClick={() => onSelectFolder(null)}
-            className="px-4 min-w-[140px] whitespace-nowrap rounded-none"
+            className={`flex items-center gap-2 px-4 py-3 border-b-2 -mb-px min-w-[140px] whitespace-nowrap text-sm font-medium transition-colors ${
+              selectedFolder === null
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Inbox size={16} />
-            <span className="font-medium text-sm">All Messages</span>
+            All Messages
             {allSessionsCount > 0 && (
-              <span className={`
-                text-xs px-2 py-0.5 rounded-full
-                ${selectedFolder === null
-                  ? 'bg-mission-control-accent text-white'
+              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                selectedFolder === null
+                  ? 'bg-mission-control-accent/20 text-mission-control-accent'
                   : 'bg-mission-control-border text-mission-control-text-dim'
-                }
-              `}>
+              }`}>
                 {allSessionsCount}
               </span>
             )}
-          </Button>
+          </button>
 
           {/* Folder load error */}
           {folderLoadError && (
-            <div className="px-2 py-1 flex-1 min-w-0">
+            <Box px="2" py="1" flexGrow="1" minWidth="0">
               <ErrorDisplay
                 error={folderLoadError}
                 onRetry={loadFolders}
                 inline
                 context={{ action: 'load folders' }}
               />
-            </div>
+            </Box>
           )}
 
           {/* Folder Tabs (Draggable & Droppable) */}
@@ -248,7 +248,7 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1 px-2 ml-auto border-l border-mission-control-border">
+          <Flex align="center" gap="1" px="2" className="ml-auto border-l border-mission-control-border">
             <IconButton
               size="2"
               variant="ghost"
@@ -267,9 +267,9 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
             >
               <Settings size={16} />
             </IconButton>
-          </div>
-        </div>
-      </div>
+          </Flex>
+        </Flex>
+      </Box>
 
       {/* Folder Manager Modal */}
       {showManager && (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Folder, Check, X } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
+import { IconButton, Box, Flex, Text, Heading } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface FolderSelectorProps {
@@ -91,40 +91,39 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
   };
 
   return (
-    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border max-w-md w-full">
+    <Box className="bg-mission-control-surface rounded-lg border border-mission-control-border max-w-md w-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between" p="4" className="border-b border-mission-control-border">
+        <Flex align="center" gap="2">
           <Folder size={16} className="text-mission-control-accent" />
-          <div>
-            <h3 className="font-semibold">Assign to Folders</h3>
-            <p className="text-xs text-mission-control-text-dim truncate">{getSessionName()}</p>
-          </div>
-        </div>
+          <Box>
+            <Heading size="3" as="h3">Assign to Folders</Heading>
+            <Text size="1" className="text-mission-control-text-dim truncate">{getSessionName()}</Text>
+          </Box>
+        </Flex>
         {onClose && (
           <IconButton
             onClick={onClose}
             size="2"
             variant="ghost"
-            radius="medium"
           >
             <X size={16} />
           </IconButton>
         )}
-      </div>
+      </Flex>
 
       {/* Folders List */}
-      <div className="max-h-96 overflow-y-auto">
+      <Box className="max-h-96 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center p-8">
+          <Flex align="center" justify="center" p="6">
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-mission-control-accent border-t-transparent" />
-          </div>
+          </Flex>
         ) : allFolders.length === 0 ? (
-          <div className="p-8 text-center text-mission-control-text-dim">
+          <Flex direction="column" align="center" p="6" className="text-mission-control-text-dim">
             <Folder size={32} className="mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No folders available</p>
-            <p className="text-xs mt-1">Create a folder first</p>
-          </div>
+            <Text size="2">No folders available</Text>
+            <Text size="1" mt="1">Create a folder first</Text>
+          </Flex>
         ) : (
           <div className="divide-y divide-mission-control-border">
             {allFolders.map((folder) => {
@@ -140,41 +139,41 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
                   className="w-full p-3 flex items-center gap-3 hover:bg-mission-control-bg/50 transition-colors disabled:opacity-50 text-left"
                 >
                   <div className="text-2xl">{folder.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                  <Box flexGrow="1" minWidth="0">
+                    <Flex align="center" gap="2">
                       <span className="font-medium">{folder.name}</span>
                       <div
                         className="w-2.5 h-2.5 rounded-full"
                         style={{ backgroundColor: folder.color }}
                       />
-                    </div>
+                    </Flex>
                     {folder.conversation_count !== undefined && (
-                      <div className="text-xs text-mission-control-text-dim">
+                      <Text size="1" className="text-mission-control-text-dim">
                         {folder.conversation_count} conversation{folder.conversation_count !== 1 ? 's' : ''}
-                      </div>
+                      </Text>
                     )}
-                  </div>
-                  <div className="flex-shrink-0">
+                  </Box>
+                  <Box flexShrink="0">
                     {isWorking ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-mission-control-accent border-t-transparent" />
                     ) : assigned ? (
-                      <div className="w-5 h-5 bg-mission-control-accent rounded flex items-center justify-center">
+                      <Flex align="center" justify="center" className="w-5 h-5 bg-mission-control-accent rounded">
                         <Check size={14} className="text-white" />
-                      </div>
+                      </Flex>
                     ) : (
                       <div className="w-5 h-5 border-2 border-mission-control-border rounded" />
                     )}
-                  </div>
+                  </Box>
                 </button>
               );
             })}
           </div>
         )}
-      </div>
+      </Box>
 
       {/* Footer */}
-      <div className="p-3 border-t border-mission-control-border bg-mission-control-bg/50">
-        <div className="text-xs text-mission-control-text-dim">
+      <Box p="3" className="border-t border-mission-control-border bg-mission-control-bg/50">
+        <Text size="1" className="text-mission-control-text-dim">
           {assignedFolders.length > 0 ? (
             <span>
               In {assignedFolders.length} folder{assignedFolders.length !== 1 ? 's' : ''}:{' '}
@@ -183,8 +182,8 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
           ) : (
             <span>Not in any folders</span>
           )}
-        </div>
-      </div>
-    </div>
+        </Text>
+      </Box>
+    </Box>
   );
 }
