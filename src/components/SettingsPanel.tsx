@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity, Map, Package, AlertCircle, ArrowUpCircle, Terminal, Loader2, ChevronDown, ChevronRight, Clock, DollarSign } from 'lucide-react';
 import { Button, Select, TextField } from '@radix-ui/themes';
+import PanelHeader from './PanelHeader';
+import TabNav from './TabNav';
 import { useUserSettings } from '../store/userSettings';
 import { settingsApi, updateApi } from '../lib/api';
 import { useSettings } from '../hooks/useSettings';
@@ -530,45 +532,40 @@ export default function SettingsPanel() {
   };
 
 
+  const settingsTabs = [
+    { id: 'general', label: 'General' },
+    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'accessibility', label: 'Accessibility', icon: Type },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
+    { id: 'accounts', label: 'Google Workspace', icon: LinkIcon },
+    { id: 'security', label: 'Security', icon: Shield },
+    { id: 'automation', label: 'Automation' },
+    { id: 'exportBackup', label: 'Export & Backup', icon: Database },
+    { id: 'platform', label: 'Platform', icon: Package },
+    { id: 'budgets', label: 'Budgets', icon: DollarSign },
+  ];
+
   return (
-    <div className="h-full overflow-auto p-4">
+    <div className="h-full overflow-auto">
       <div className="w-full">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-heading-2 mb-2 flex items-center gap-2">
-            <Settings size={24} /> Settings
-          </h1>
-          <p className="text-secondary">Configure Mission Control dashboard preferences</p>
+        {/* Header + Tabs */}
+        <div className="border-b border-mission-control-border bg-mission-control-surface">
+          <PanelHeader
+            icon={Settings}
+            title="Settings"
+            subtitle="Configure Mission Control dashboard preferences"
+            border={false}
+          />
+          <TabNav
+            tabs={settingsTabs}
+            activeTab={activeTab}
+            onTabChange={(id) => setActiveTab(id as Tab)}
+            paddingX="px-6"
+          />
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 border-b border-mission-control-border overflow-x-auto pb-px">
-          {([
-            { id: 'general', label: 'General', icon: null },
-            { id: 'appearance', label: 'Appearance', icon: <Palette size={14} /> },
-            { id: 'accessibility', label: 'Accessibility', icon: <Type size={14} /> },
-            { id: 'notifications', label: 'Notifications', icon: <Bell size={14} /> },
-            { id: 'shortcuts', label: 'Shortcuts', icon: <Keyboard size={14} /> },
-            { id: 'accounts', label: 'Google Workspace', icon: <LinkIcon size={14} /> },
-            { id: 'security', label: 'Security', icon: <Shield size={14} /> },
-            { id: 'automation', label: 'Automation', icon: null },
-            { id: 'exportBackup', label: 'Export & Backup', icon: <Database size={14} /> },
-            { id: 'platform', label: 'Platform', icon: <Package size={14} /> },
-            { id: 'budgets', label: 'Budgets', icon: <DollarSign size={14} /> },
-          ] as { id: Tab; label: string; icon: React.ReactNode }[]).map(tab => (
-            <Button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              variant={activeTab === tab.id ? 'soft' : 'ghost'}
-              color={activeTab === tab.id ? 'grass' : 'gray'}
-              size="2"
-              className="whitespace-nowrap flex-shrink-0"
-            >
-              {tab.icon}
-              {tab.label}
-            </Button>
-          ))}
-        </div>
+        <div className="p-4">
 
         {/* Tab Content */}
         {activeTab === 'accounts' && <ConnectedAccountsPanel />}
@@ -1038,6 +1035,7 @@ export default function SettingsPanel() {
             </Button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

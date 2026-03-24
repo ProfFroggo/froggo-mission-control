@@ -17,6 +17,8 @@ import ConfigTab from './ConfigTab';
 import LogsTab from './LogsTab';
 import GlobalNotificationSettings from './GlobalNotificationSettings';
 import { Toggle } from './Toggle';
+import PanelHeader from './PanelHeader';
+import TabNav from './TabNav';
 
 interface NotificationPreferences {
   taskUpdates: boolean;
@@ -1595,50 +1597,63 @@ export default function EnhancedSettingsPanel() {
     }
   };
 
-  return (
-    <div className="h-full overflow-auto p-4">
-      <div className="w-full">
-        {/* Header with Search */}
-        <div className="mb-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h1 className="text-heading-2 mb-2 flex items-center gap-2">
-                <Settings size={24} /> Settings
-              </h1>
-              <p className="text-secondary">Configure Mission Control dashboard preferences</p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSave}
-                variant="solid"
-                color={saved ? 'green' : 'grass'}
-                size="2"
-              >
-                {saved ? <Check size={16} /> : <Save size={16} />}
-                {saved ? 'Saved!' : 'Save'}
-              </Button>
-            </div>
-          </div>
+  const enhancedSettingsTabs = [
+    { id: 'general', label: 'General' },
+    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
+    { id: 'performance', label: 'Performance', icon: Cpu },
+    { id: 'data', label: 'Data', icon: HardDrive },
+    { id: 'accessibility', label: 'Accessibility', icon: Eye },
+    { id: 'developer', label: 'Developer', icon: Code },
+    { id: 'automation', label: 'Automation', icon: Zap },
+    { id: 'accounts', label: 'Accounts', icon: LinkIcon },
+    { id: 'security', label: 'Security', icon: Shield },
+    { id: 'platform', label: 'Platform', icon: Package },
+    { id: 'sessions', label: 'Sessions', icon: Terminal },
+  ];
 
-          {/* Search Bar */}
-          <TextField.Root
-            type="text"
-            placeholder="Search settings..."
-            aria-label="Search settings input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            size="2"
-            className="w-full"
+  return (
+    <div className="h-full overflow-auto">
+      <div className="w-full">
+        {/* Header + Tabs */}
+        <div className="border-b border-mission-control-border bg-mission-control-surface">
+          <PanelHeader
+            icon={Settings}
+            title="Settings"
+            subtitle="Configure Mission Control dashboard preferences"
+            border={false}
+            actions={[
+              {
+                icon: saved ? Check : Save,
+                label: saved ? 'Saved!' : 'Save',
+                onClick: handleSave,
+                variant: 'primary',
+              },
+            ]}
           >
-            <TextField.Slot>
-              <Search size={16} className="text-mission-control-text-dim" />
-            </TextField.Slot>
-          </TextField.Root>
+            <div className="flex flex-col gap-2">
+              {/* Search Bar */}
+              <TextField.Root
+                type="text"
+                placeholder="Search settings..."
+                aria-label="Search settings input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                size="2"
+                className="w-48"
+              >
+                <TextField.Slot>
+                  <Search size={16} className="text-mission-control-text-dim" />
+                </TextField.Slot>
+              </TextField.Root>
+            </div>
+          </PanelHeader>
 
           {/* Setting Presets */}
           {!searchQuery && (
-            <div className="mt-4 flex gap-2">
-              <span className="text-sm text-mission-control-text-dim self-center">Quick presets:</span>
+            <div className="px-6 pb-2 flex gap-2 items-center">
+              <span className="text-sm text-mission-control-text-dim">Quick presets:</span>
               <Button onClick={() => applyPreset('minimal')} variant="soft" color="gray" size="1">
                 Minimal
               </Button>
@@ -1650,40 +1665,19 @@ export default function EnhancedSettingsPanel() {
               </Button>
             </div>
           )}
+
+          {/* Tabs */}
+          {!searchQuery && (
+            <TabNav
+              tabs={enhancedSettingsTabs}
+              activeTab={activeTab}
+              onTabChange={(id) => setActiveTab(id as Tab)}
+              paddingX="px-6"
+            />
+          )}
         </div>
 
-        {/* Tabs */}
-        {!searchQuery && (
-          <div className="flex gap-2 mb-6 border-b border-mission-control-border overflow-x-auto scrollbar-hide pb-0">
-            {[
-              { id: 'general', label: 'General', icon: null },
-              { id: 'appearance', label: 'Appearance', icon: <Palette size={14} /> },
-              { id: 'notifications', label: 'Notifications', icon: <Bell size={14} /> },
-              { id: 'shortcuts', label: 'Shortcuts', icon: <Keyboard size={14} /> },
-              { id: 'performance', label: 'Performance', icon: <Cpu size={14} /> },
-              { id: 'data', label: 'Data', icon: <HardDrive size={14} /> },
-              { id: 'accessibility', label: 'Accessibility', icon: <Eye size={14} /> },
-              { id: 'developer', label: 'Developer', icon: <Code size={14} /> },
-              { id: 'automation', label: 'Automation', icon: <Zap size={14} /> },
-              { id: 'accounts', label: 'Accounts', icon: <LinkIcon size={14} /> },
-              { id: 'security', label: 'Security', icon: <Shield size={14} /> },
-              { id: 'platform', label: 'Platform', icon: <Package size={14} /> },
-              { id: 'sessions', label: 'Sessions', icon: <Terminal size={14} /> },
-            ].map((tab) => (
-              <Button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as Tab)}
-                variant={activeTab === tab.id ? 'soft' : 'ghost'}
-                color={activeTab === tab.id ? 'grass' : 'gray'}
-                size="2"
-                className="whitespace-nowrap"
-              >
-                {tab.icon}
-                {tab.label}
-              </Button>
-            ))}
-          </div>
-        )}
+        <div className="p-4">
 
         {/* Tab Content */}
         {activeTab === 'accounts' && !searchQuery && <ConnectedAccountsPanel />}
@@ -2581,6 +2575,7 @@ export default function EnhancedSettingsPanel() {
             </Button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
