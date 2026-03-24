@@ -228,7 +228,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <div className="flex items-center justify-between mb-4">
                 <Inbox size={28} className={`${pendingApprovals.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'}`} />
                 {pendingApprovals.length > 0 && (
-                  <span className="px-3 py-1 bg-orange-500 text-white text-sm font-bold rounded-full animate-pulse shadow-lg">
+                  <span className="px-3 py-1 bg-danger text-white text-sm font-bold rounded-full animate-pulse shadow-lg">
                     {pendingApprovals.length}
                   </span>
                 )}
@@ -393,7 +393,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                     return (
                       <div 
                         key={task.id} 
-                        className="group p-4 hover:bg-mission-control-border/40 transition-all cursor-pointer border-l-4 border-transparent hover:border-l-blue-400"
+                        className="group p-4 hover:bg-mission-control-border/40 transition-all cursor-pointer border-l-4 border-transparent hover:border-l-info"
                         onClick={() => onNavigate?.('kanban')}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate?.('kanban'); } }}
                         role="button"

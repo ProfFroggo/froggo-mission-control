@@ -84,7 +84,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   productivity:   'text-info border-info-border bg-info-subtle',
   communications: 'text-success border-success-border bg-success-subtle',
   social:         'text-violet-400 border-violet-400/30 bg-violet-400/10',
-  finance:        'text-amber-400 border-amber-400/30 bg-amber-400/10',
+  finance:        'text-warning border-warning bg-warning',
   system:         'text-mission-control-text-dim border-mission-control-border bg-mission-control-surface',
   agent:          'text-cyan-400 border-cyan-400/30 bg-cyan-400/10',
 };
@@ -190,7 +190,7 @@ function StarRating({ rating, max = 5, size = 12 }: { rating: number; max?: numb
         <Star
           key={i}
           size={size}
-          className={i < Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-mission-control-border'}
+          className={i < Math.round(rating) ? 'text-warning fill-warning' : 'text-mission-control-border'}
         />
       ))}
     </span>
@@ -216,7 +216,7 @@ function InteractiveStarRating({ value, onChange }: { value: number; onChange: (
           >
             <Star
               size={20}
-              className={filled ? 'text-amber-400 fill-amber-400' : 'text-mission-control-border hover:text-amber-300 transition-colors'}
+              className={filled ? 'text-warning fill-warning' : 'text-mission-control-border hover:text-warning transition-colors'}
             />
           </button>
         );
@@ -1133,7 +1133,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                       <button
                         type="button"
                         onClick={() => setReviewTarget(module)}
-                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-amber-400 border border-amber-400/30 rounded hover:bg-amber-400/10 transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-warning border border-warning rounded hover:bg-warning transition-colors"
                         title="Write a review"
                       >
                         <Star size={10} />

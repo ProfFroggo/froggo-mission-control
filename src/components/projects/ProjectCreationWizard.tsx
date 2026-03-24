@@ -765,7 +765,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                 <div className="flex items-center gap-2">
                   {gsdDocs
                     ? <GitBranch size={14} className="text-mission-control-accent" />
-                    : <CheckCircle size={14} className="text-green-400" />}
+                    : <CheckCircle size={14} className="text-success" />}
                   <p className="text-xs font-semibold text-mission-control-text uppercase tracking-wide">
                     {gsdDocs ? 'GSD Plan Generated' : 'Ready to Create'}
                   </p>
@@ -822,7 +822,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                     <span className="text-mission-control-text max-w-[140px] truncate">{ref.name}</span>
                     <button
                       onClick={() => setDiscoveryRefs(prev => prev.filter((_, j) => j !== i))}
-                      className="text-mission-control-text-dim hover:text-red-400 ml-0.5 transition-colors"
+                      className="text-mission-control-text-dim hover:text-error ml-0.5 transition-colors"
                     >
                       <X size={10} />
                     </button>
@@ -956,7 +956,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                     <span className="text-xs text-mission-control-text-dim">{(f.size / 1024).toFixed(0)}KB</span>
                     <button
                       onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))}
-                      className="p-1 text-mission-control-text-dim hover:text-red-400 transition-colors"
+                      className="p-1 text-mission-control-text-dim hover:text-error transition-colors"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -1121,19 +1121,19 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               {steps.map(s => (
                 <div key={s.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
                   s.status === 'running' ? 'bg-mission-control-accent/5 border-mission-control-accent/30' :
-                  s.status === 'done'    ? 'bg-green-500/5 border-green-500/20' :
-                  s.status === 'error'   ? 'bg-red-500/5 border-red-500/20' :
+                  s.status === 'done'    ? 'bg-success border-success' :
+                  s.status === 'error'   ? 'bg-error border-error' :
                   'bg-mission-control-surface border-mission-control-border'
                 }`}>
                   <div className="flex-shrink-0 mt-0.5">
                     {s.status === 'running' && <Loader2 size={16} className="text-mission-control-accent animate-spin" />}
-                    {s.status === 'done'    && <CheckCircle size={16} className="text-green-400" />}
-                    {s.status === 'error'   && <XCircle size={16} className="text-red-400" />}
+                    {s.status === 'done'    && <CheckCircle size={16} className="text-success" />}
+                    {s.status === 'error'   && <XCircle size={16} className="text-error" />}
                     {s.status === 'pending' && <Circle size={16} className="text-mission-control-border" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium ${
-                      s.status === 'done' ? 'text-green-400' : s.status === 'error' ? 'text-red-400' :
+                      s.status === 'done' ? 'text-success' : s.status === 'error' ? 'text-error' :
                       s.status === 'running' ? 'text-mission-control-accent' : 'text-mission-control-text-dim'
                     }`}>{s.label}</div>
                     <div className="text-xs text-mission-control-text-dim mt-0.5">{s.errorMsg || s.detail}</div>
@@ -1143,8 +1143,8 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             </div>
 
             {createError && (
-              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <div className="text-sm text-red-400 font-medium">Setup failed</div>
+              <div className="mt-4 p-3 bg-error border border-error rounded-lg">
+                <div className="text-sm text-error font-medium">Setup failed</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">{createError}</div>
               </div>
             )}

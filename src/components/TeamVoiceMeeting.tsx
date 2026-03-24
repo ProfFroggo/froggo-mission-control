@@ -903,7 +903,7 @@ Respond as ${agentName(agentId)}:`;
           <span className="font-semibold text-sm">{room.name}</span>
           {isActive && (
             <div className="flex items-center gap-1.5 ml-2">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-error animate-pulse" />
               <span className="text-xs text-error font-medium">LIVE</span>
               <div className="flex items-center gap-1 ml-1 text-xs text-mission-control-text-dim">
                 <Clock size={11} />
@@ -948,7 +948,7 @@ Respond as ${agentName(agentId)}:`;
             onClick={() => setIsRecording(v => !v)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               isRecording
-                ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                ? 'bg-error text-error border border-error'
                 : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
             title={isRecording ? 'Stop recording' : 'Start recording'}
@@ -1074,8 +1074,8 @@ Respond as ${agentName(agentId)}:`;
 
       {/* Recording banner */}
       {isRecording && (
-        <div className="flex items-center justify-center gap-2 px-4 py-1.5 bg-red-500/10 border-b border-red-500/30 text-red-400 text-xs font-medium">
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+        <div className="flex items-center justify-center gap-2 px-4 py-1.5 bg-error-subtle border-b border-error-border text-error text-xs font-medium">
+          <div className="w-2 h-2 rounded-full bg-error animate-pulse" />
           Meeting is being recorded
         </div>
       )}
@@ -1375,7 +1375,7 @@ Respond as ${agentName(agentId)}:`;
                 disabled={!canInterrupt && (!!processingAgent && !speakingAgent)}
                 className={`p-4 rounded-full transition-all ${
                   canInterrupt && speakingAgent
-                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/40 ring-2 ring-red-400 animate-pulse'
+                    ? 'bg-error text-white shadow-lg shadow-error/40 ring-2 ring-error animate-pulse'
                     : listening
                     ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/30 scale-110'
                     : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'
@@ -1400,7 +1400,7 @@ Respond as ${agentName(agentId)}:`;
                 onClick={toggleScreenShare}
                 className={`p-3 rounded-full transition-all ${
                   screenSharing
-                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                    ? 'bg-info text-white shadow-lg shadow-info/30'
                     : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'
                 }`}
                 title={screenSharing ? 'Stop screen share' : 'Share screen'}
@@ -1421,8 +1421,8 @@ Respond as ${agentName(agentId)}:`;
             }}
             className={`p-5 rounded-full transition-all ${
               isActive
-                ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30'
-                : 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30'
+                ? 'bg-error hover:bg-error text-white shadow-lg'
+                : 'bg-success hover:bg-success text-white shadow-lg'
             }`}
           >
             {isActive ? <PhoneOff size={24} /> : <Mic size={24} />}

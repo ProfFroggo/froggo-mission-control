@@ -36,11 +36,11 @@ const typeConfig: Record<string, { icon: any; color: string; label: string }> = 
   agent_update:     { icon: Bot,           color: 'text-review bg-review-subtle',         label: 'Agent Update'    },
   message_arrival:  { icon: MessageSquare, color: 'text-info bg-info-subtle',             label: 'Message'         },
   approval_pending: { icon: Eye,           color: 'text-warning bg-warning-subtle',       label: 'Review Needed'   },
-  human_review:     { icon: AlertTriangle, color: 'text-amber-400 bg-amber-500/10',       label: 'Human Review'    },
+  human_review:     { icon: AlertTriangle, color: 'text-warning bg-warning-subtle',       label: 'Human Review'    },
   calendar_event:   { icon: Calendar,      color: 'text-pink-400 bg-pink-500/10',         label: 'Event'           },
   system_alert:     { icon: AlertTriangle, color: 'text-error bg-error-subtle',           label: 'Alert'           },
   skill_learned:    { icon: Star,          color: 'text-cyan-400 bg-cyan-500/10',         label: 'Skill'           },
-  approval_needed:  { icon: Shield,        color: 'text-orange-400 bg-orange-500/10',     label: 'Approval Needed' },
+  approval_needed:  { icon: Shield,        color: 'text-danger bg-danger-subtle',         label: 'Approval Needed' },
   error:            { icon: XCircle,       color: 'text-error bg-error-subtle',           label: 'Error'           },
 };
 
@@ -552,7 +552,7 @@ export default function NotificationsPanelV2() {
             <div className="p-2 bg-mission-control-accent/20 rounded-lg relative">
               <Bell size={24} className="text-mission-control-accent" />
               {stats.unread > 0 && (
-                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 bg-error text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   {stats.unread > 9 ? '9+' : stats.unread}
                 </div>
               )}
@@ -735,7 +735,7 @@ export default function NotificationsPanelV2() {
                                     {/* High-priority red "!" badge */}
                                     {highPriority && (
                                       <span
-                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-xs font-bold flex-shrink-0"
+                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-error text-white text-xs font-bold flex-shrink-0"
                                         title="High priority"
                                         aria-label="High priority"
                                       >
@@ -747,7 +747,7 @@ export default function NotificationsPanelV2() {
                                     {!highPriority && notif.priority !== 'normal' && (
                                       <span className={`px-1.5 py-0.5 text-xs rounded flex-shrink-0 whitespace-nowrap ${
                                         notif.priority === 'high'
-                                          ? 'bg-orange-500 text-white'
+                                          ? 'bg-danger text-white'
                                           : 'bg-mission-control-bg0/20 text-mission-control-text-dim'
                                       }`}>
                                         {notif.priority.charAt(0).toUpperCase() + notif.priority.slice(1)}

@@ -113,7 +113,7 @@ function TaskCard({
       {/* Clara review badge */}
       {task.reviewStatus && (
         <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded mb-2 w-fit ${
-          task.reviewStatus === 'approved' ? 'bg-green-500/10 text-green-400' :
+          task.reviewStatus === 'approved' ? 'bg-success text-success' :
           task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-error-subtle text-error' :
           'bg-mission-control-accent/10 text-mission-control-accent animate-pulse'
         }`}>
@@ -131,7 +131,7 @@ function TaskCard({
             <CheckSquare size={11} /> {completedSubtasks}/{subtaskCount}
           </div>
           <div className="h-1 bg-mission-control-surface rounded-full overflow-hidden">
-            <div className={`h-full transition-all ${subtaskProgress === 100 ? 'bg-green-500' : 'bg-mission-control-accent'}`}
+            <div className={`h-full transition-all ${subtaskProgress === 100 ? 'bg-success' : 'bg-mission-control-accent'}`}
               style={{ width: `${subtaskProgress}%` }} />
           </div>
         </div>
@@ -152,14 +152,14 @@ function TaskCard({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {task.status === 'in-progress' ? (
-            <span className="flex items-center justify-center w-5 h-5 rounded bg-green-500/20 text-green-400 animate-pulse" title="Agent working">
+            <span className="flex items-center justify-center w-5 h-5 rounded bg-success text-success animate-pulse" title="Agent working">
               <Zap size={11} />
             </span>
           ) : canStart ? (
             <button
               onClick={e => { e.stopPropagation(); onStartAgent(); }}
               disabled={isSpawning}
-              className="flex items-center justify-center w-5 h-5 rounded bg-green-500 text-white hover:bg-green-600 disabled:opacity-50"
+              className="flex items-center justify-center w-5 h-5 rounded bg-success text-white hover:bg-success disabled:opacity-50"
               title="Start agent"
             >
               {isSpawning ? <Spinner size={11} /> : <Play size={11} />}
