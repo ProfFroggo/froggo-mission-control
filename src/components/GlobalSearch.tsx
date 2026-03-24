@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Mail, MessageSquare, CheckSquare, Brain, Calendar, Filter, Clock, ChevronRight, Hash, User, Zap, Compass } from 'lucide-react';
 import Fuse from 'fuse.js';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Box, Flex, Text } from '@radix-ui/themes';
 import { SkeletonList } from './Skeleton';
 import { gateway } from '../lib/gateway';
 import { sanitizeSearchSnippet } from '../utils/sanitize';
@@ -408,22 +408,24 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
   const activeFilters = [typeFilter, dateFilter, statusFilter].filter(f => f !== 'all').length;
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/60 backdrop-blur-sm"
+    <Flex
+      align="start"
+      justify="center"
+      className="fixed inset-0 z-50 pt-20 bg-black/60 backdrop-blur-sm"
       onClick={onClose}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
       role="button"
       tabIndex={0}
       aria-label="Close search"
     >
-      <div 
+      <Box
         className="w-full max-w-3xl bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => e.stopPropagation()}
         role="presentation"
       >
         {/* Search Input */}
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
           <Search size={20} className="text-[var(--mission-control-accent)] flex-shrink-0" />
           <TextField.Root
             ref={inputRef}
@@ -438,7 +440,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             className="flex-1"
             style={{ background: 'transparent', boxShadow: 'none' }}
           />
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             {loading && (
               <div className="w-5 h-5 border-2 border-[var(--mission-control-accent)] border-t-transparent rounded-full animate-spin" />
             )}
@@ -447,7 +449,6 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                 onClick={() => setShowFilters(!showFilters)}
                 variant={showFilters ? 'soft' : 'ghost'}
                 size="2"
-                radius="medium"
                 title="Toggle filters (Tab)"
               >
                 <Filter size={16} className={activeFilters > 0 ? 'text-[var(--mission-control-accent)]' : ''} />
@@ -462,20 +463,19 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
               onClick={onClose}
               variant="ghost"
               size="2"
-              radius="medium"
             >
               <X size={16} />
             </IconButton>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="p-4 border-b border-mission-control-border bg-mission-control-bg/50 space-y-3">
-            <div className="flex items-center gap-2">
+          <Box p="4" className="border-b border-mission-control-border bg-mission-control-bg/50 space-y-3">
+            <Flex align="center" gap="2">
               <Hash size={14} className="text-mission-control-text-dim" />
-              <span className="text-sm text-mission-control-text-dim font-medium">Type:</span>
-              <div className="flex gap-1 flex-wrap">
+              <Text size="2" weight="medium" className="text-mission-control-text-dim">Type:</Text>
+              <Flex gap="1" wrap="wrap">
                 {(['all', 'task', 'fact', 'message', 'email', 'session', 'agent', 'calendar'] as FilterType[]).map(type => (
                   <Button
                     key={type}
@@ -486,13 +486,13 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     {type === 'all' ? 'All' : typeLabels[type as keyof typeof typeLabels]}
                   </Button>
                 ))}
-              </div>
-            </div>
+              </Flex>
+            </Flex>
 
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <Clock size={14} className="text-mission-control-text-dim" />
-              <span className="text-sm text-mission-control-text-dim font-medium">Date:</span>
-              <div className="flex gap-1">
+              <Text size="2" weight="medium" className="text-mission-control-text-dim">Date:</Text>
+              <Flex gap="1">
                 {(['all', 'today', 'week', 'month'] as DateFilter[]).map(date => (
                   <Button
                     key={date}
@@ -503,13 +503,13 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     {date.charAt(0).toUpperCase() + date.slice(1)}
                   </Button>
                 ))}
-              </div>
-            </div>
+              </Flex>
+            </Flex>
 
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <Zap size={14} className="text-mission-control-text-dim" />
-              <span className="text-sm text-mission-control-text-dim font-medium">Status:</span>
-              <div className="flex gap-1">
+              <Text size="2" weight="medium" className="text-mission-control-text-dim">Status:</Text>
+              <Flex gap="1">
                 {(['all', 'todo', 'internal-review', 'in-progress', 'review', 'human-review', 'done'] as StatusFilter[]).map(status => (
                   <Button
                     key={status}
@@ -520,21 +520,21 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     {status === 'all' ? 'All' : status.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                   </Button>
                 ))}
-              </div>
-            </div>
-          </div>
+              </Flex>
+            </Flex>
+          </Box>
         )}
 
         {/* Results */}
         <div ref={resultsRef} className="max-h-[28rem] overflow-y-auto">
           {/* Search History */}
           {showHistory && searchHistory.length > 0 && (
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+            <Box p="4">
+              <Flex align="center" justify="between" mb="3">
+                <Flex align="center" gap="2">
                   <Clock size={16} className="text-mission-control-text-dim" />
-                  <span className="text-sm font-medium text-mission-control-text-dim">Recent Searches</span>
-                </div>
+                  <Text size="2" weight="medium" className="text-mission-control-text-dim">Recent Searches</Text>
+                </Flex>
                 <Button
                   onClick={clearHistory}
                   variant="ghost"
@@ -542,8 +542,8 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                 >
                   Clear
                 </Button>
-              </div>
-              <div className="space-y-1">
+              </Flex>
+              <Flex direction="column" gap="1">
                 {searchHistory.map((item, index) => (
                   <div
                     key={`${item}-${index}`}
@@ -559,37 +559,37 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     }`}
                   >
                     <Clock size={14} className="text-mission-control-text-dim" />
-                    <span className="text-sm">{item}</span>
+                    <Text size="2">{item}</Text>
                   </div>
                 ))}
-              </div>
-            </div>
+              </Flex>
+            </Box>
           )}
 
           {/* Loading State */}
           {loading && query.length >= 2 && !showHistory && (
-            <div className="p-4">
+            <Box p="4">
               <SkeletonList count={4} />
-            </div>
+            </Box>
           )}
 
           {/* No Results */}
           {filteredResults.length === 0 && panelResults.length === 0 && query.length >= 2 && !loading && !showHistory && (
-            <div className="p-12 text-center text-mission-control-text-dim">
+            <Flex direction="column" align="center" p="6" className="text-mission-control-text-dim">
               <Search size={40} className="mx-auto mb-3 opacity-50" />
-              <p className="text-lg mb-2">No results found</p>
-              <p className="text-sm">Try adjusting your search or filters</p>
-            </div>
+              <Text size="4" mb="2" as="p">No results found</Text>
+              <Text size="2">Try adjusting your search or filters</Text>
+            </Flex>
           )}
 
           {/* Quick Navigation — shown when query is empty (with or without history) */}
           {query.length === 0 && (
-            <div className="p-4">
-              <div className="flex items-center gap-2 mb-3">
+            <Box p="4">
+              <Flex align="center" gap="2" mb="3">
                 <Compass size={16} className="text-mission-control-text-dim" />
-                <span className="text-sm font-medium text-mission-control-text-dim">Quick Navigation</span>
-              </div>
-              <div className="space-y-1">
+                <Text size="2" weight="medium" className="text-mission-control-text-dim">Quick Navigation</Text>
+              </Flex>
+              <Flex direction="column" gap="1">
                 {PANEL_NAV.slice(0, 5).map(panel => (
                   <div
                     key={panel.id}
@@ -600,35 +600,35 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     className="p-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2 hover:bg-mission-control-bg/50"
                   >
                     <Compass size={14} className="text-mission-control-accent" />
-                    <span className="text-sm">Go to {panel.label}</span>
+                    <Text size="2">Go to {panel.label}</Text>
                   </div>
                 ))}
-              </div>
-            </div>
+              </Flex>
+            </Box>
           )}
 
           {/* Empty State — shown when there is a short query but no history */}
           {filteredResults.length === 0 && panelResults.length === 0 && query.length >= 1 && query.length < 2 && !showHistory && (
-            <div className="p-12 text-center text-mission-control-text-dim">
+            <Flex direction="column" align="center" p="6" className="text-mission-control-text-dim">
               <Search size={40} className="mx-auto mb-3 opacity-50" />
-              <p className="text-sm mb-4">Type at least 2 characters to search</p>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <Text size="2" mb="4" as="p">Type at least 2 characters to search</Text>
+              <Flex wrap="wrap" gap="2" justify="center">
                 {Object.entries(typeLabels).map(([key, label]) => (
                   <span key={key} className="px-3 py-1.5 bg-mission-control-border rounded-lg text-xs">
                     {label}
                   </span>
                 ))}
-              </div>
-            </div>
+              </Flex>
+            </Flex>
           )}
 
           {/* Panel Navigation Results — shown at the top when query matches a panel */}
           {panelResults.length > 0 && (
-            <div className="border-b border-mission-control-border">
-              <div className="flex items-center gap-2 px-4 pt-3 pb-1">
+            <Box className="border-b border-mission-control-border">
+              <Flex align="center" gap="2" px="4" pt="3" pb="1">
                 <Compass size={14} className="text-mission-control-text-dim" />
                 <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Navigate to</span>
-              </div>
+              </Flex>
               {panelResults.map(panel => (
                 <div
                   key={panel.id}
@@ -645,14 +645,14 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                   <ChevronRight size={14} className="text-mission-control-text-dim ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               ))}
-            </div>
+            </Box>
           )}
 
           {/* Results List */}
           {filteredResults.map((result, index) => {
             const Icon = typeIcons[result.type];
             const colorClass = typeColors[result.type];
-            
+
             return (
               <div
                 key={`${result.type}-${result.id}-${index}`}
@@ -661,17 +661,17 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                 role="button"
                 tabIndex={0}
                 className={`p-4 border-b border-mission-control-border cursor-pointer transition-all group ${
-                  index === selectedIndex 
-                    ? 'bg-mission-control-accent/10 border-l-2 border-l-mission-control-accent' 
+                  index === selectedIndex
+                    ? 'bg-mission-control-accent/10 border-l-2 border-l-mission-control-accent'
                     : 'hover:bg-mission-control-bg/50 border-l-2 border-l-transparent'
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg ${colorClass} flex-shrink-0`}>
+                <Flex align="start" gap="3">
+                  <Box p="2" flexShrink="0" className={`rounded-lg ${colorClass}`}>
                     <Icon size={16} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                  </Box>
+                  <Box flexGrow="1" minWidth="0">
+                    <Flex align="center" gap="2" mb="1">
                       <span className="font-medium truncate">{result.title}</span>
                       <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${colorClass}`}>
                         {typeLabels[result.type]}
@@ -681,7 +681,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                           • {result.status}
                         </span>
                       )}
-                    </div>
+                    </Flex>
                     {/* Render snippet with HTML highlighting if it contains <mark> tags */}
                     {/* SECURITY: sanitizeSearchSnippet (DOMPurify) allows only <mark> tags; all other HTML stripped */}
                     {result.snippet?.includes('<mark>') ? (
@@ -692,11 +692,11 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                         }}
                       />
                     ) : (
-                      <p className="text-sm text-mission-control-text-dim truncate">
+                      <Text size="2" className="text-mission-control-text-dim truncate" as="p">
                         {result.snippet}
-                      </p>
+                      </Text>
                     )}
-                    <div className="flex items-center gap-2 mt-1 text-xs text-mission-control-text-dim">
+                    <Flex align="center" gap="2" mt="1" className="text-xs text-mission-control-text-dim">
                       {result.source && <span>{result.source}</span>}
                       {result.timestamp && (
                         <>
@@ -712,23 +712,23 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                           </span>
                         </>
                       )}
-                    </div>
-                  </div>
-                  <ChevronRight 
-                    size={16} 
+                    </Flex>
+                  </Box>
+                  <ChevronRight
+                    size={16}
                     className={`text-mission-control-text-dim flex-shrink-0 transition-transform ${
                       index === selectedIndex ? 'translate-x-1 text-mission-control-accent' : 'opacity-0 group-hover:opacity-100'
                     }`}
                   />
-                </div>
+                </Flex>
               </div>
             );
           })}
-        </div>
+        </Box>
 
         {/* Footer */}
-        <div className="p-3 border-t border-mission-control-border bg-mission-control-bg/50 flex items-center justify-between text-xs text-mission-control-text-dim">
-          <div className="flex gap-4">
+        <Flex align="center" justify="between" p="3" className="border-t border-mission-control-border bg-mission-control-bg/50 text-xs text-mission-control-text-dim">
+          <Flex gap="4">
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">↑↓</kbd>
               Navigate
@@ -745,15 +745,15 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
               <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Esc</kbd>
               Close
             </span>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             {filteredResults.length > 0 && (
               <span>{filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''}</span>
             )}
             <span>⌘K • ⌘F</span>
-          </div>
-        </div>
-      </div>
-    </div>
+          </Flex>
+        </Flex>
+      </Box>
+    </Flex>
   );
 }
