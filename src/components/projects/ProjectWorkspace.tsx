@@ -407,7 +407,7 @@ function MilestonesSection({ project }: { project: Project }) {
                   onClick={() => handleDelete(ms)}
                   size="1"
                   variant="ghost"
-                  radius="medium"
+                 
                   title="Delete milestone"
                   style={{ opacity: 0.5 }}
                 >
@@ -1003,7 +1003,7 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
               onClick={() => setSelectedFile(null)}
               size="1"
               variant="ghost"
-              radius="medium"
+             
             >
               <X size={14} />
             </IconButton>
@@ -1144,7 +1144,7 @@ function FilesTab({ project }: { project: Project }) {
               disabled={loading}
               size="1"
               variant="ghost"
-              radius="medium"
+             
               title="Refresh files"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
@@ -1497,7 +1497,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                 onClick={() => setShowSettings(v => !v)}
                 size="2"
                 variant="ghost"
-                radius="medium"
+               
               >
                 <Settings size={15} />
               </IconButton>
@@ -1563,7 +1563,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                 type="button"
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
                   activeTab === tab.id
                     ? 'border-mission-control-accent text-mission-control-accent'
                     : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'

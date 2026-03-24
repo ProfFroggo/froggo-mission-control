@@ -230,7 +230,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
           onClick={() => load()}
           size="2"
           variant="ghost"
-          radius="medium"
+         
         >
           Retry
         </Button>
@@ -245,12 +245,11 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
         <button
           type="button"
           onClick={() => setActiveTab('catalog')}
-          className={`flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors -mb-px ${
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
             activeTab === 'catalog'
-              ? 'border-mission-control-accent text-mission-control-accent font-medium'
+              ? 'border-mission-control-accent text-mission-control-accent'
               : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
-          style={{ background: 'none' }}
         >
           <Bot size={14} />
           Catalog
@@ -258,12 +257,11 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
         <button
           type="button"
           onClick={() => setActiveTab('capabilities')}
-          className={`flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors -mb-px ${
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
             activeTab === 'capabilities'
-              ? 'border-mission-control-accent text-mission-control-accent font-medium'
+              ? 'border-mission-control-accent text-mission-control-accent'
               : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
-          style={{ background: 'none' }}
         >
           <Table2 size={14} />
           Capabilities
@@ -287,18 +285,14 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                   key={cat.id}
                   type="button"
                   onClick={() => setRoleCategory(cat.id)}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-sm transition-colors text-left ${
+                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-left ${
                     roleCategory === cat.id
-                      ? 'font-medium'
-                      : 'text-mission-control-text-dim'
+                      ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50'
                   }`}
-                  style={{
-                    background: roleCategory === cat.id ? 'var(--accent-a3)' : 'transparent',
-                    color: roleCategory === cat.id ? 'var(--accent-11)' : undefined,
-                  }}
                 >
                   <span>{cat.label}</span>
-                  <span className="text-xs tabular-nums" style={{ opacity: 0.6 }}>
+                  <span className="text-xs tabular-nums opacity-60">
                     {count}
                   </span>
                 </button>
@@ -327,7 +321,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                 onClick={() => setShowSortMenu(v => !v)}
                 size="1"
                 variant="ghost"
-                radius="medium"
+               
               >
                 <ArrowUpDown size={12} />
                 {currentSortLabel}
@@ -361,7 +355,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
               disabled={refreshing}
               size="2"
               variant="ghost"
-              radius="medium"
+             
               title="Refresh catalog"
               aria-label="Refresh catalog"
             >
@@ -418,7 +412,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                   size="1"
                   variant="solid"
                   color="blue"
-                  radius="medium"
+                 
                 >
                   Compare
                 </Button>
@@ -429,7 +423,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                 size="1"
                 variant="ghost"
                 color="blue"
-                radius="medium"
+               
                 aria-label="Clear comparison"
               >
                 <X size={12} />
@@ -541,7 +535,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                             size="1"
                             variant={isInCompare ? 'soft' : 'ghost'}
                             color={isInCompare ? 'blue' : 'gray'}
-                            radius="medium"
+                           
                           >
                             <GitCompare size={11} />
                           </IconButton>
@@ -561,7 +555,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                               size="1"
                               variant="ghost"
                               color="red"
-                              radius="medium"
+                             
                             >
                               <Trash2 size={10} /> Fire
                             </Button>
@@ -575,7 +569,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                             onClick={() => setHiringAgent(agent)}
                             size="1"
                             variant="solid"
-                            radius="medium"
+                           
                             style={{ flex: 1, justifyContent: 'center' }}
                           >
                             {isHovered ? <><Zap size={12} /> Quick Hire</> : <><Bot size={12} /> Hire Agent</>}
@@ -588,7 +582,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                             size="1"
                             variant={isInCompare ? 'soft' : 'ghost'}
                             color={isInCompare ? 'blue' : 'gray'}
-                            radius="medium"
+                           
                           >
                             <GitCompare size={11} />
                           </IconButton>

@@ -57,7 +57,7 @@ function SortableFolderTab({ folder, isActive, onClick, isOver }: SortableFolder
       onClick={onClick}
       className={`
         relative flex items-center gap-2 px-4 py-3 min-w-[140px] transition-all
-        border-b-2 whitespace-nowrap cursor-move
+        border-b-2 -mb-px whitespace-nowrap cursor-move
         ${isActive 
           ? 'border-mission-control-accent text-mission-control-accent bg-mission-control-accent/5'
           : isDropOver || isOver
@@ -252,7 +252,7 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
             <IconButton
               size="2"
               variant="ghost"
-              radius="medium"
+             
               onClick={handleCreateFolder}
               title="Create new folder"
             >
@@ -261,7 +261,7 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
             <IconButton
               size="2"
               variant="ghost"
-              radius="medium"
+             
               onClick={() => setShowManager(true)}
               title="Manage folders"
             >

@@ -211,7 +211,7 @@ function ModuleCard({
               <ShieldCheck size={13} className="text-info flex-shrink-0" aria-label="Verified" />
             )}
             {hasUpdate && (
-              <span className="text-xs bg-warning text-warning border border-warning px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'var(--color-warning-bg)', borderColor: 'var(--color-warning-border)' }}>
+              <span className="text-xs bg-warning-subtle text-warning border border-warning-border px-1.5 py-0.5 rounded-full font-medium">
                 Update available
               </span>
             )}
@@ -456,7 +456,7 @@ export default function MarketplaceBrowse() {
     <div className="h-full overflow-y-auto p-6 space-y-5">
       {/* Restart banner */}
       {restartBanner && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-warning border border-warning text-warning text-sm" style={{ background: 'var(--color-warning-bg)', borderColor: 'var(--color-warning-border)' }}>
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-warning-subtle border border-warning-border text-warning text-sm">
           <AlertCircle size={15} className="flex-shrink-0" />
           Please restart Mission Control.app to apply changes.
         </div>

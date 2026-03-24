@@ -316,7 +316,7 @@ Provide a brief, actionable summary.`;
           onClick={onClose}
           variant="ghost"
           size="2"
-          radius="medium"
+         
           aria-label="Close panel"
         >
           <X size={16} />
@@ -329,7 +329,7 @@ Provide a brief, actionable summary.`;
           onClick={() => setActiveTab('suggestions')}
           variant="ghost"
           size="2"
-          className={`flex-1 rounded-none border-b-2 ${
+          className={`flex-1 rounded-none border-b-2 -mb-px ${
             activeTab === 'suggestions'
               ? 'border-[var(--mission-control-accent)] text-[var(--mission-control-accent)]'
               : 'border-transparent'
@@ -342,7 +342,7 @@ Provide a brief, actionable summary.`;
           onClick={() => setActiveTab('sentiment')}
           variant="ghost"
           size="2"
-          className={`flex-1 rounded-none border-b-2 ${
+          className={`flex-1 rounded-none border-b-2 -mb-px ${
             activeTab === 'sentiment'
               ? 'border-[var(--mission-control-accent)] text-[var(--mission-control-accent)]'
               : 'border-transparent'
@@ -355,7 +355,7 @@ Provide a brief, actionable summary.`;
           onClick={() => setActiveTab('summary')}
           variant="ghost"
           size="2"
-          className={`flex-1 rounded-none border-b-2 ${
+          className={`flex-1 rounded-none border-b-2 -mb-px ${
             activeTab === 'summary'
               ? 'border-[var(--mission-control-accent)] text-[var(--mission-control-accent)]'
               : 'border-transparent'
@@ -399,7 +399,7 @@ Provide a brief, actionable summary.`;
                             onClick={() => handleCopySuggestion(suggestion)}
                             variant="ghost"
                             size="2"
-                            radius="medium"
+                           
                             title="Copy to clipboard"
                           >
                             {copiedId === suggestion.id ? (
@@ -412,7 +412,7 @@ Provide a brief, actionable summary.`;
                             onClick={() => handleApplySuggestion(suggestion)}
                             variant="ghost"
                             size="2"
-                            radius="medium"
+                           
                             title="Apply suggestion"
                           >
                             <ChevronRight size={14} />

@@ -332,10 +332,15 @@ export default function FinancePanel() {
         </div>
       )}
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2">
-          <DollarSign size={24} className="text-success" />
-          <h1 className="text-heading-2">Finance Manager</h1>
+      <div className="flex items-center justify-between px-6 py-4 bg-mission-control-surface border-b border-mission-control-border">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+            <DollarSign size={24} className="text-mission-control-accent" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold text-mission-control-text">Finance Manager</h1>
+            <p className="text-sm text-mission-control-text-dim">Track accounts, transactions, and budgets</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -380,8 +385,7 @@ export default function FinancePanel() {
           type="button"
           onClick={() => setSelectedAccountId(null)}
           aria-label="View all accounts"
-          style={{ flexShrink: 0 }}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+          className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
             selectedAccountId === null
               ? 'border-mission-control-accent text-mission-control-accent'
               : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
@@ -397,7 +401,7 @@ export default function FinancePanel() {
               type="button"
               onClick={() => setSelectedAccountId(acc.id)}
               aria-label={`View ${acc.name} account`}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
                 selectedAccountId === acc.id
                   ? 'border-mission-control-accent text-mission-control-accent'
                   : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
@@ -434,7 +438,7 @@ export default function FinancePanel() {
           size="1"
           onClick={() => setShowCreateAccountModal(true)}
           aria-label="Create new account"
-          style={{ flexShrink: 0 }}
+          className="flex-shrink-0"
         >
           <Plus size={14} />
           New Account
@@ -913,7 +917,7 @@ export default function FinancePanel() {
                     placeholder="0.00"
                     min="0"
                     step="0.01"
-                    style={{ flex: 1 }}
+                    className="flex-1"
                   />
                   <Select.Root value={budgetCurrency} onValueChange={setBudgetCurrency}>
                     <Select.Trigger />

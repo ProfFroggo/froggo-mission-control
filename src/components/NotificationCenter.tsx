@@ -191,10 +191,10 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`flex-1 py-2 text-xs font-medium transition-colors ${
+              className={`flex-1 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${
                 tab === t.id
-                  ? 'text-mission-control-accent border-b-2 border-mission-control-accent'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text'
+                  ? 'text-mission-control-accent border-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {t.label}

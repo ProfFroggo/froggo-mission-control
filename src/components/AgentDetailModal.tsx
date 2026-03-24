@@ -1158,7 +1158,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
                 activeTab === tab.key
                   ? 'border-mission-control-accent text-mission-control-accent'
                   : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'

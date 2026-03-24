@@ -630,8 +630,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            style={{ flexShrink: 0, position: 'relative' }}
-            className={`px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+            className={`flex-shrink-0 relative px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
               tab === t.id
                 ? 'border-mission-control-accent text-mission-control-accent'
                 : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'

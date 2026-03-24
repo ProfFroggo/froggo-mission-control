@@ -120,15 +120,15 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
       <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 bg-mission-control-surface border-b border-mission-control-border flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-info-subtle rounded-lg">
-              <HelpCircle size={24} className="text-info" />
+            <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+              <HelpCircle size={24} className="text-mission-control-accent" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">Help & Documentation</h2>
+              <h2 className="text-xl font-semibold text-mission-control-text">Help & Documentation</h2>
               <p className="text-sm text-mission-control-text-dim">
-                {currentPanel && `Context: ${currentPanel.charAt(0).toUpperCase() + currentPanel.slice(1)}`}
+                {currentPanel ? `Context: ${currentPanel.charAt(0).toUpperCase() + currentPanel.slice(1)}` : 'Articles, FAQs, and keyboard shortcuts'}
               </p>
             </div>
           </div>
@@ -138,7 +138,7 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
             variant="ghost"
             color="gray"
             size="2"
-            radius="medium"
+           
           >
             <X size={20} />
           </IconButton>
@@ -270,7 +270,7 @@ function NavButton({ icon, label, active, onClick }: {
     <button
       onClick={onClick}
       className={[
-        'flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
+        'flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
         active
           ? 'border-mission-control-accent text-mission-control-accent'
           : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-border',

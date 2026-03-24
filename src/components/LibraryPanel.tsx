@@ -55,7 +55,7 @@ export default function LibraryPanel() {
               aria-controls={`library-tabpanel-${id}`}
               id={`library-tab-${id}`}
               onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
+              className={`flex items-center gap-2 px-4 py-3 border-b-2 -mb-px transition-colors ${
                 activeTab === id
                   ? 'border-mission-control-accent text-mission-control-accent'
                   : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'

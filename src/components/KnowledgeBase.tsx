@@ -957,7 +957,7 @@ export default function KnowledgeBase() {
                         variant="ghost"
                         color="gray"
                         size="2"
-                        style={{ width: '100%', justifyContent: 'flex-start' }}
+                        className="w-full justify-start"
                       >
                         <BookOpen size={12} className="text-mission-control-text-dim shrink-0" />
                         <span className="text-sm text-mission-control-text truncate">{r.title}</span>
@@ -1034,7 +1034,7 @@ export default function KnowledgeBase() {
               onValueChange={v => setEditing(prev => ({ ...prev, category: v }))}
               size="2"
             >
-              <Select.Trigger style={{ flex: 1 }} />
+              <Select.Trigger className="flex-1" />
               <Select.Content>
                 {allCategories.map(c => (
                   <Select.Item key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</Select.Item>
@@ -1046,7 +1046,7 @@ export default function KnowledgeBase() {
               onValueChange={v => setEditing(prev => ({ ...prev, scope: v }))}
               size="2"
             >
-              <Select.Trigger style={{ flex: 1 }} />
+              <Select.Trigger className="flex-1" />
               <Select.Content>
                 {SCOPE_OPTIONS.map(s => (
                   <Select.Item key={s.value} value={s.value}>{s.label}</Select.Item>
@@ -1073,7 +1073,7 @@ export default function KnowledgeBase() {
             onChange={e => setEditing(v => ({ ...v, content: e.target.value }))}
             placeholder="Write your guidelines in Markdown..."
             rows={18}
-            style={{ fontFamily: 'monospace', resize: 'none' }}
+            className="font-mono resize-none"
           />
           <p className="text-xs text-mission-control-text-dim">
             Markdown supported. Pinned articles are always injected into agent context. Use [[Article Title]] to link to other articles.
@@ -1203,9 +1203,11 @@ export default function KnowledgeBase() {
       <div className="flex flex-col flex-1 min-w-0 h-full">
         <div className="p-4 border-b border-mission-control-border space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 shrink-0">
-              <BookOpen size={16} className="text-mission-control-text-dim" />
-              <span className="font-semibold text-mission-control-text text-sm">Knowledge Base</span>
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="p-1.5 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+                <BookOpen size={16} className="text-mission-control-accent" />
+              </div>
+              <span className="font-semibold text-mission-control-text">Knowledge Base</span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap justify-end">
               <Button
@@ -1242,7 +1244,7 @@ export default function KnowledgeBase() {
                           variant="ghost"
                           color="gray"
                           size="1"
-                          style={{ width: '100%', justifyContent: 'flex-start' }}
+                          className="w-full justify-start"
                         >
                           <FileText size={11} className="text-mission-control-text-dim shrink-0" />
                           {t.label}
@@ -1435,30 +1437,34 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
 
   return (
     <nav className="w-36 shrink-0 border-r border-mission-control-border flex flex-col h-full overflow-y-auto py-3 px-2 space-y-0.5">
-      <Button
+      <button
+        type="button"
         onClick={() => onSelect('all')}
-        variant={selected === 'all' ? 'soft' : 'ghost'}
-        color={selected === 'all' ? 'indigo' : 'gray'}
-        size="1"
-        style={{ width: '100%', justifyContent: 'space-between' }}
+        className={`flex items-center justify-between w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+          selected === 'all'
+            ? 'bg-mission-control-accent/10 text-mission-control-accent'
+            : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50'
+        }`}
       >
         <span>All</span>
         <span className="opacity-60">{total}</span>
-      </Button>
+      </button>
       {categories.map(cat => (
-        <Button
+        <button
           key={cat}
+          type="button"
           onClick={() => onSelect(cat)}
-          variant={selected === cat ? 'soft' : 'ghost'}
-          color={selected === cat ? 'indigo' : 'gray'}
-          size="1"
-          style={{ width: '100%', justifyContent: 'space-between' }}
+          className={`flex items-center justify-between w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+            selected === cat
+              ? 'bg-mission-control-accent/10 text-mission-control-accent'
+              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50'
+          }`}
         >
           <span className="capitalize truncate">{cat}</span>
           {counts[cat] != null && (
             <span className="opacity-60 shrink-0 ml-1">{counts[cat]}</span>
           )}
-        </Button>
+        </button>
       ))}
 
       {/* Add category */}
@@ -1484,28 +1490,28 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
           />
         </div>
       ) : (
-        <Button
-          variant="ghost"
-          color="gray"
-          size="1"
+        <button
+          type="button"
           onClick={() => setAdding(true)}
-          style={{ width: '100%', justifyContent: 'flex-start' }}
+          className="flex items-center justify-between w-full px-2 py-1.5 rounded text-xs transition-colors text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50"
         >
-          <Plus size={11} /> Add Category
-        </Button>
+          <span className="flex items-center gap-1"><Plus size={11} /> Add Category</span>
+        </button>
       )}
 
       {/* Brand Assets section — separator */}
       <div className="border-t border-mission-control-border my-1.5 pt-1.5">
-        <Button
+        <button
+          type="button"
           onClick={() => onSelect('brand-assets')}
-          variant={selected === 'brand-assets' ? 'soft' : 'ghost'}
-          color={selected === 'brand-assets' ? 'indigo' : 'gray'}
-          size="1"
-          style={{ width: '100%', justifyContent: 'flex-start' }}
+          className={`flex items-center justify-between w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+            selected === 'brand-assets'
+              ? 'bg-mission-control-accent/10 text-mission-control-accent'
+              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50'
+          }`}
         >
           <span className="truncate">Brand Assets</span>
-        </Button>
+        </button>
       </div>
     </nav>
   );
@@ -1533,12 +1539,11 @@ function ArticleCard({
 
   return (
     <div
-      className={`group rounded-lg bg-mission-control-surface border transition-colors cursor-pointer ${
+      className={`group rounded-lg bg-mission-control-surface border transition-colors cursor-pointer p-3 ${
         isKeyboardFocused
           ? 'border-info/70 ring-1 ring-info/30'
           : 'border-mission-control-border hover:border-info/40'
       }`}
-      style={{ padding: '0.75rem' }}
       onClick={onView}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -1553,7 +1558,7 @@ function ArticleCard({
             size="1"
             variant="ghost"
             color={isStarred ? 'amber' : 'gray'}
-            radius="medium"
+           
             onClick={e => { e.stopPropagation(); onToggleStar(); }}
             aria-label={isStarred ? 'Unstar article' : 'Star article'}
           >
@@ -1563,7 +1568,7 @@ function ArticleCard({
             size="1"
             variant="ghost"
             color="gray"
-            radius="medium"
+           
             onClick={e => { e.stopPropagation(); onVersionHistory(); }}
             aria-label="Version history"
             title="Version history"
@@ -1574,7 +1579,7 @@ function ArticleCard({
             size="1"
             variant="ghost"
             color="gray"
-            radius="medium"
+           
             onClick={e => { e.stopPropagation(); onTogglePin(); }}
             aria-label={article.pinned ? 'Unpin article' : 'Pin article'}
             title={article.pinned ? 'Unpin' : 'Pin — always inject into agent context'}
@@ -1585,7 +1590,7 @@ function ArticleCard({
             size="1"
             variant="ghost"
             color="gray"
-            radius="medium"
+           
             onClick={e => { e.stopPropagation(); onEdit(); }}
             aria-label="Edit article"
           >
@@ -1595,7 +1600,7 @@ function ArticleCard({
             size="1"
             variant="ghost"
             color="red"
-            radius="medium"
+           
             onClick={e => { e.stopPropagation(); onDelete(); }}
             aria-label="Delete article"
           >
@@ -1707,7 +1712,7 @@ function QuickCreateModal({
                 onValueChange={onChangeCategory}
                 size="2"
               >
-                <Select.Trigger style={{ width: '100%' }} />
+                <Select.Trigger className="w-full" />
                 <Select.Content>
                   {categories.map(c => (
                     <Select.Item key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</Select.Item>
@@ -1721,7 +1726,7 @@ function QuickCreateModal({
                   onChange={e => onChangeCategoryCustom(e.target.value)}
                   placeholder="Category name..."
                   size="2"
-                  style={{ marginTop: '0.375rem' }}
+                  className="mt-1.5"
                 />
               )}
             </div>
@@ -1748,7 +1753,7 @@ function QuickCreateModal({
                 color="gray"
                 size="1"
                 onClick={() => setShowTemplates(v => !v)}
-                style={{ width: '100%' }}
+                className="w-full"
               >
                 <FileText size={12} />
                 Use template
@@ -1764,7 +1769,7 @@ function QuickCreateModal({
                         variant="ghost"
                         color="gray"
                         size="1"
-                        style={{ width: '100%', justifyContent: 'flex-start' }}
+                        className="w-full justify-start"
                       >
                         <Icon size={12} className="text-mission-control-text-dim shrink-0" />
                         {tmpl.label}
@@ -1792,7 +1797,7 @@ function QuickCreateModal({
             onChange={e => onChangeContent(e.target.value)}
             placeholder="Article content (required)..."
             rows={10}
-            style={{ fontFamily: 'monospace', resize: 'none' }}
+            className="font-mono resize-none"
           />
         </div>
 
@@ -1902,7 +1907,7 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
                 variant={previewVersion?.id === v.id ? 'soft' : 'ghost'}
                 color={previewVersion?.id === v.id ? 'indigo' : 'gray'}
                 size="1"
-                style={{ width: '100%', justifyContent: 'flex-start' }}
+                className="w-full justify-start"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-medium text-mission-control-text">
