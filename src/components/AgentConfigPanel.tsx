@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Power, BarChart2, X } from 'lucide-react';
 import { agentApi, catalogApi, settingsApi, libraryApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -1163,13 +1163,13 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                 <p className="text-xs text-mission-control-text-dim mb-2">Agent-specific blocked tool patterns (global blocks in Settings → Security always apply).</p>
                 <div className="border border-mission-control-border rounded-lg overflow-hidden">
                   <div className="p-2 bg-mission-control-surface flex gap-2">
-                    <input
-                      type="text"
+                    <TextField.Root
+                      size="1"
                       value={newDisallowed}
                       onChange={e => setNewDisallowed(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && handleAddAgentDisallowed()}
                       placeholder="e.g. Bash(git push *)"
-                      className="flex-1 text-xs bg-mission-control-bg0 border border-mission-control-border rounded px-2 py-1.5 focus:outline-none focus:border-mission-control-accent font-mono"
+                      style={{ flex: 1 }}
                     />
                     <Button variant="soft" size="1" onClick={handleAddAgentDisallowed}>
                       <Plus size={10} /> Block

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { useEventBus } from '../lib/useEventBus';
 import { createPortal } from 'react-dom';
 import {
@@ -55,7 +55,7 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
 }
 
 const columns: { id: TaskStatus; title: string; color: string; iconColor: string; bg: string; icon: React.ReactNode }[] = [
-  { id: 'todo',            title: 'To Do',            color: 'border-t-[#6b7a8d]', iconColor: 'text-[#6b7a8d]', bg: 'bg-[#6b7a8d]/10', icon: <FileText size={14} /> },
+  { id: 'todo',            title: 'To Do',            color: 'border-t-mission-control-text-dim', iconColor: 'text-mission-control-text-dim', bg: 'bg-mission-control-border/30', icon: <FileText size={14} /> },
   { id: 'internal-review', title: 'Pre-review',  color: 'border-t-review',  iconColor: 'text-review',  bg: 'bg-review-subtle',  icon: <Search size={14} /> },
   { id: 'in-progress',     title: 'In Progress',      color: 'border-t-info', iconColor: 'text-info', bg: 'bg-info-subtle', icon: <Zap size={14} /> },
   { id: 'review',          title: 'Agent Review',     color: 'border-t-review',  iconColor: 'text-review',  bg: 'bg-review-subtle',  icon: <Bot size={14} /> },
@@ -934,17 +934,18 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
           
           <div className="flex items-center gap-2">
             {/* Group 1: Search + Filters + Sort */}
-            <div className="relative">
-              <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim flex-shrink-0" />
-              <input
-                type="text"
-                aria-label="Search tasks"
-                placeholder="Search tasks..."
-                value={filters.search}
-                onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                className="pl-9 pr-4 py-2 bg-mission-control-bg rounded-lg border border-mission-control-border text-sm w-48 focus:outline-none focus:border-mission-control-accent"
-              />
-            </div>
+            <TextField.Root
+              size="1"
+              aria-label="Search tasks"
+              placeholder="Search tasks..."
+              value={filters.search}
+              onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+              style={{ width: '12rem' }}
+            >
+              <TextField.Slot>
+                <Search size={14} aria-hidden="true" />
+              </TextField.Slot>
+            </TextField.Root>
 
             <Button
               variant={activeFiltersCount > 0 ? 'soft' : 'ghost'}
@@ -1051,9 +1052,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               {showSaveViewDialog && (
                 <div id="kanban-save-view-panel" className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 w-64 p-3">
                   <p className="text-xs font-semibold text-mission-control-text-dim mb-2">Save current filters &amp; sort</p>
-                  <input
+                  <TextField.Root
                     autoFocus
-                    type="text"
+                    size="1"
                     value={newViewName}
                     onChange={e => setNewViewName(e.target.value)}
                     onKeyDown={e => {
@@ -1061,7 +1062,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       if (e.key === 'Escape') setShowSaveViewDialog(false);
                     }}
                     placeholder="View name..."
-                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent mb-2"
+                    style={{ width: '100%', marginBottom: '0.5rem' }}
                   />
                   <Button variant="solid" size="1" onClick={saveCurrentView} disabled={!newViewName.trim()} style={{ width: '100%', justifyContent: 'center' }}>
                     Save
@@ -1102,9 +1103,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               </IconButton>
               {showJumpToTask && (
                 <div id="kanban-jump-to-panel" className="absolute right-0 top-full mt-1 z-50 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg p-2 w-64">
-                  <input
+                  <TextField.Root
                     autoFocus
-                    type="text"
+                    size="1"
                     value={jumpToTaskInput}
                     onChange={e => setJumpToTaskInput(e.target.value)}
                     onKeyDown={e => {
@@ -1112,7 +1113,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       if (e.key === 'Escape') setShowJumpToTask(false);
                     }}
                     placeholder="Task ID or title..."
-                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                    style={{ width: '100%' }}
                   />
                   <p className="text-xs text-mission-control-text-dim mt-1.5 px-1">Press Enter to jump</p>
                 </div>

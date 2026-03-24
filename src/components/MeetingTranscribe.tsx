@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import {
   Mic, MicOff, Play, Square, Download, Trash2, Clock,
   Users, Calendar, ChevronDown, ChevronUp, FileText, Upload,
@@ -264,22 +264,22 @@ export default function MeetingTranscribe() {
           {/* New Meeting Form */}
           <div className="p-4 border-b border-mission-control-border space-y-2">
             <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide mb-2">New Meeting</h3>
-            <input
-              type="text"
+            <TextField.Root
+              size="1"
               placeholder="Meeting title"
               value={newMeetingTitle}
               onChange={e => setNewMeetingTitle(e.target.value)}
               disabled={!!activeMeeting}
               onKeyDown={e => e.key === 'Enter' && !activeMeeting && startNewMeeting()}
-              className="w-full px-3 py-2 bg-mission-control-surface rounded-lg border border-mission-control-border focus:border-review-border outline-none text-sm disabled:opacity-50"
+              style={{ width: '100%' }}
             />
-            <input
-              type="text"
+            <TextField.Root
+              size="1"
               placeholder="Participants (comma-separated)"
               value={newMeetingParticipants}
               onChange={e => setNewMeetingParticipants(e.target.value)}
               disabled={!!activeMeeting}
-              className="w-full px-3 py-2 bg-mission-control-surface rounded-lg border border-mission-control-border focus:border-review-border outline-none text-sm disabled:opacity-50"
+              style={{ width: '100%' }}
             />
             {!activeMeeting ? (
               <Button variant="solid" size="1" onClick={startNewMeeting} style={{ width: '100%', justifyContent: 'center' }}>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet, Plus, X, Calculator, ChevronDown, UtensilsCrossed, Lightbulb, ShoppingBag, ImageIcon, ShoppingCart, Car, Tv, Cross, Home, Clipboard, Fuel, ArrowLeftRight, Lock, Globe, ArrowRightLeft } from 'lucide-react';
 // eslint-disable-next-line import/order
-import { Button, IconButton, Badge, Heading } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Heading, TextField } from '@radix-ui/themes';
 import EmptyState from './EmptyState';
 import WidgetLoading from './WidgetLoading';
 import { showToast } from './Toast';
@@ -338,99 +338,99 @@ export default function FinancePanel() {
           <h1 className="text-heading-2">Finance Manager</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant={chatOpen ? 'soft' : 'surface'}
+            color={chatOpen ? 'green' : 'gray'}
+            size="2"
             onClick={() => setChatOpen(!chatOpen)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              chatOpen
-                ? 'bg-success-subtle text-success hover:bg-success/30'
-                : 'bg-mission-control-bg-alt text-mission-control-text-dim hover:bg-mission-control-bg'
-            }`}
             aria-label={chatOpen ? "Close AI chat" : "Open AI chat"}
           >
             <MessageSquare size={16} />
             AI Chat
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="surface"
+            color="gray"
+            size="2"
             onClick={() => setShowExportModal(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text rounded-lg text-sm transition-colors"
             aria-label="Export transactions to XLSX"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
             </svg>
             Export
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="solid"
+            color="blue"
+            size="2"
             onClick={handleUploadClick}
-            className="flex items-center gap-2 px-4 py-2 bg-info hover:bg-info-dim text-white rounded-lg transition-colors"
             aria-label="Upload bank statement"
           >
             <Upload size={16} />
             Upload Statement
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Account Tab Strip */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-mission-control-border overflow-x-auto flex-shrink-0">
         {/* All Accounts tab */}
-        <button
+        <Button
+          variant={selectedAccountId === null ? 'solid' : 'ghost'}
+          size="1"
           onClick={() => setSelectedAccountId(null)}
-          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-            selectedAccountId === null
-              ? 'bg-mission-control-accent text-white'
-              : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:bg-mission-control-bg-alt'
-          }`}
           aria-label="View all accounts"
+          style={{ flexShrink: 0 }}
         >
           All Accounts
-        </button>
+        </Button>
 
         {/* Individual account tabs */}
         {accounts.map((acc) => (
           <div key={acc.id} className="flex-shrink-0 flex items-center group">
-            <button
+            <Button
+              variant={selectedAccountId === acc.id ? 'solid' : 'ghost'}
+              size="1"
               onClick={() => setSelectedAccountId(acc.id)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                selectedAccountId === acc.id
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:bg-mission-control-bg-alt'
-              }`}
               aria-label={`View ${acc.name} account`}
             >
               {acc.name}
-              <span className={`ml-1.5 text-xs ${
-                selectedAccountId === acc.id ? 'text-white/80' : 'text-mission-control-text-dim'
-              }`}>
+              <span className="ml-1 text-xs opacity-70">
                 {formatCurrency(acc.computed_balance, acc.currency)}
               </span>
-            </button>
+            </Button>
             {/* Archive button (not for default account) */}
             {acc.id !== 'acc-default' && (
-              <button
+              <IconButton
+                variant="ghost"
+                size="1"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleArchiveAccount(acc.id, acc.name);
                 }}
-                className="ml-1 p-0.5 rounded-full text-mission-control-text-dim hover:text-error hover:bg-error/10 opacity-0 group-hover:opacity-100 transition-all"
                 aria-label={`Archive ${acc.name}`}
                 title={`Archive ${acc.name}`}
+                style={{ opacity: 0 }}
+                className="group-hover:!opacity-100"
               >
                 <X size={14} />
-              </button>
+              </IconButton>
             )}
           </div>
         ))}
 
         {/* + New Account button */}
-        <button
+        <Button
+          variant="ghost"
+          size="1"
           onClick={() => setShowCreateAccountModal(true)}
-          className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border border-dashed border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent transition-colors"
           aria-label="Create new account"
+          style={{ flexShrink: 0 }}
         >
           <Plus size={14} />
           New Account
-        </button>
+        </Button>
       </div>
 
       {/* Main Content + Chat Split */}
@@ -554,18 +554,18 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button className="mt-4 w-full text-sm text-info hover:text-info transition-colors" aria-label="View all budget categories">
+                <Button variant="ghost" size="1" style={{ width: '100%', justifyContent: 'center', marginTop: '1rem' }} aria-label="View all budget categories">
                   View All Categories →
-                </button>
+                </Button>
               </>
             ) : (
               <div className="text-center py-8 text-mission-control-text/60">
                 <p className="mb-2">
                   {selectedAccountId ? 'No family budget for this account' : 'No family budget set up'}
                 </p>
-                <button onClick={() => openBudgetModal('family')} className="text-info hover:text-info text-sm" aria-label="Create family budget">
+                <Button variant="ghost" size="1" onClick={() => openBudgetModal('family')} aria-label="Create family budget">
                   Create Budget
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -631,18 +631,18 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button className="mt-4 w-full text-sm text-review hover:text-review transition-colors" aria-label="View all crypto budget categories">
+                <Button variant="ghost" size="1" style={{ width: '100%', justifyContent: 'center', marginTop: '1rem' }} aria-label="View all crypto budget categories">
                   View All Categories →
-                </button>
+                </Button>
               </>
             ) : (
               <div className="text-center py-8 text-mission-control-text/60">
                 <p className="mb-2">
                   {selectedAccountId ? 'No crypto budget for this account' : 'No crypto budget set up'}
                 </p>
-                <button onClick={() => openBudgetModal('crypto')} className="text-review hover:text-review text-sm" aria-label="Create crypto budget">
+                <Button variant="ghost" size="1" onClick={() => openBudgetModal('crypto')} aria-label="Create crypto budget">
                   Create Budget
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -674,18 +674,12 @@ export default function FinancePanel() {
                   </div>
                   {item.status === 'pending' && (
                     <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => handleConfirmRecurring(item.id)}
-                        className="text-xs px-3 py-1.5 bg-mission-control-accent text-white rounded-md hover:bg-mission-control-accent/80 transition-colors"
-                      >
+                      <Button size="1" variant="solid" onClick={() => handleConfirmRecurring(item.id)}>
                         Confirm
-                      </button>
-                      <button
-                        onClick={() => handleDismissRecurring(item.id)}
-                        className="text-xs px-3 py-1.5 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text rounded-md transition-colors"
-                      >
+                      </Button>
+                      <Button size="1" variant="surface" color="gray" onClick={() => handleDismissRecurring(item.id)}>
                         Dismiss
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -747,14 +741,15 @@ export default function FinancePanel() {
                               }
                             </select>
                           ) : (
-                            <button
-                              className="text-xs px-2 py-0.5 bg-mission-control-bg-alt border border-mission-control-border rounded-full capitalize cursor-pointer hover:border-mission-control-accent hover:text-mission-control-accent transition-colors"
+                            <Button
+                              variant="ghost"
+                              size="1"
                               onClick={() => setEditingCategoryTxId(tx.id)}
                               title="Click to recategorize"
                               aria-label={`Recategorize ${tx.description} (currently ${tx.category || 'other'})`}
                             >
                               {tx.category || 'other'}
-                            </button>
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -786,15 +781,18 @@ export default function FinancePanel() {
 
         {/* Scenario Projections (collapsible) */}
         <div className="mt-2 mb-6">
-          <button
+          <Button
+            variant="ghost"
+            color="gray"
+            size="2"
             onClick={() => setShowScenarios(!showScenarios)}
-            className="flex items-center gap-2 text-sm font-semibold text-mission-control-text-dim uppercase tracking-wide mb-3 hover:text-mission-control-text transition-colors w-full text-left"
             aria-label={showScenarios ? 'Collapse scenario projections' : 'Expand scenario projections'}
+            style={{ width: '100%', justifyContent: 'flex-start', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}
           >
             <Calculator className="w-4 h-4" />
             Scenario Projections
             <ChevronDown className={`w-4 h-4 transition-transform ml-auto ${showScenarios ? 'rotate-180' : ''}`} />
-          </button>
+          </Button>
           {showScenarios && <FinanceScenarioPanel />}
         </div>
         </div>
@@ -876,13 +874,12 @@ export default function FinancePanel() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="budget-name" className="block text-sm text-mission-control-text-dim mb-1">Budget Name</label>
-                <input
+                <TextField.Root
                   id="budget-name"
-                  type="text"
+                  size="1"
                   value={budgetName}
                   onChange={(e) => setBudgetName(e.target.value)}
                   placeholder="e.g., February 2026 Family Budget"
-                  className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
 
@@ -968,13 +965,12 @@ export default function FinancePanel() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="new-account-name" className="block text-sm text-mission-control-text-dim mb-1">Account Name</label>
-                <input
+                <TextField.Root
                   id="new-account-name"
-                  type="text"
+                  size="1"
                   value={newAccountName}
                   onChange={(e) => setNewAccountName(e.target.value)}
                   placeholder="e.g., Chase Checking"
-                  className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
 
@@ -995,13 +991,12 @@ export default function FinancePanel() {
 
               <div>
                 <label htmlFor="new-account-currency" className="block text-sm text-mission-control-text-dim mb-1">Currency</label>
-                <input
+                <TextField.Root
                   id="new-account-currency"
-                  type="text"
+                  size="1"
                   value={newAccountCurrency}
                   onChange={(e) => setNewAccountCurrency(e.target.value.toUpperCase())}
                   placeholder="EUR"
-                  className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
             </div>

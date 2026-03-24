@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { X, Send, Check, CheckCircle, XCircle, Circle, Loader2, Bot, LayoutTemplate, Upload, Trash2, Sparkles, GitBranch, Zap, Paperclip, ExternalLink, Image as ImageIcon, FileText as FileTextIcon } from 'lucide-react';
 import { projectsApi, agentApi } from '../../lib/api';
 import type { Project } from '../../types/projects';
@@ -838,14 +838,14 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
           {/* Input area */}
           <div className="px-5 py-3.5 border-t border-mission-control-border flex-shrink-0">
             <div className="flex gap-2">
-              <input
-                type="text"
+              <TextField.Root
+                size="1"
                 value={discoveryInput}
                 onChange={e => setDiscoveryInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleDiscoverySend()}
                 placeholder={discoveryLoading ? '' : gsdMode ? 'Describe your idea or pick an option above...' : 'Tell me about your project...'}
                 disabled={discoveryLoading || discoveryReady}
-                className="flex-1 px-3.5 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-xl text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50 transition-colors"
+                style={{ flex: 1 }}
               />
               <IconButton variant="solid" size="1" onClick={handleDiscoverySend} disabled={!discoveryInput.trim() || discoveryLoading || discoveryReady}>
                 <Send size={14} />
@@ -1141,15 +1141,15 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             </div>
           ) : showInput ? (
             <div className="flex gap-2">
-              <input
-                type="text"
+              <TextField.Root
+                size="1"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 disabled={mcTyping}
                 placeholder={phase === 'name' ? 'Project name...' : 'Describe the goal...'}
-                className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 disabled:opacity-50"
                 autoFocus
+                style={{ flex: 1 }}
               />
               <IconButton variant="solid" size="1" onClick={handleSend} disabled={!input.trim() || mcTyping}>
                 <Send size={18} />
