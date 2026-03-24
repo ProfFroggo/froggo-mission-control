@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet, Plus, X, Calculator, ChevronDown, UtensilsCrossed, Lightbulb, ShoppingBag, ImageIcon, ShoppingCart, Car, Tv, Cross, Home, Clipboard, Fuel, ArrowLeftRight, Lock, Globe, ArrowRightLeft } from 'lucide-react';
+// eslint-disable-next-line import/order
+import { Button, IconButton, Badge, Heading } from '@radix-ui/themes';
 import EmptyState from './EmptyState';
 import WidgetLoading from './WidgetLoading';
 import { showToast } from './Toast';
@@ -850,13 +852,14 @@ export default function FinancePanel() {
             </div>
 
             <div className="flex gap-2 justify-end mt-4">
-              <button
+              <Button
                 onClick={() => setUploadModalOpen(false)}
-                className="px-4 py-2 text-sm bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors"
+                variant="outline"
+                size="2"
                 aria-label="Cancel upload"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -935,21 +938,22 @@ export default function FinancePanel() {
             </div>
 
             <div className="flex gap-2 justify-end mt-6">
-              <button
+              <Button
                 onClick={() => setBudgetModalOpen(false)}
-                className="px-4 py-2 text-sm bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors"
+                variant="outline"
+                size="2"
                 aria-label="Cancel budget creation"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateBudget}
                 disabled={budgetSubmitting || !budgetName.trim() || !budgetAmount}
-                className="px-4 py-2 text-sm bg-mission-control-accent hover:opacity-90 disabled:opacity-50 text-white rounded-lg transition-colors"
+                size="2"
                 aria-label="Create budget"
               >
                 {budgetSubmitting ? 'Creating...' : 'Create Budget'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1003,26 +1007,27 @@ export default function FinancePanel() {
             </div>
 
             <div className="flex gap-2 justify-end mt-6">
-              <button
+              <Button
                 onClick={() => {
                   setShowCreateAccountModal(false);
                   setNewAccountName('');
                   setNewAccountType('bank');
                   setNewAccountCurrency('EUR');
                 }}
-                className="px-4 py-2 text-sm bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors"
+                variant="outline"
+                size="2"
                 aria-label="Cancel account creation"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateAccount}
                 disabled={!newAccountName.trim()}
-                className="px-4 py-2 text-sm bg-mission-control-accent hover:opacity-90 disabled:opacity-50 text-white rounded-lg transition-colors"
+                size="2"
                 aria-label="Create account"
               >
                 Create Account
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1084,19 +1089,21 @@ export default function FinancePanel() {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <button
+              <Button
                 onClick={handleExport}
                 disabled={exportLoading}
-                className="flex-1 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors disabled:opacity-50 font-medium"
+                className="flex-1"
+                size="2"
               >
                 {exportLoading ? 'Exporting...' : 'Export XLSX'}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => { setShowExportModal(false); setExportResult(null); }}
-                className="px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text rounded-lg transition-colors"
+                variant="outline"
+                size="2"
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Rocket, Plus, Trash2, Calendar, Clock, ChevronDown, ChevronUp, GripVertical, Send, MessageSquare, Sparkles } from 'lucide-react';
+import { Button, Badge, Spinner } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface CampaignStage {
@@ -285,7 +286,7 @@ export default function XCampaignView() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-mission-control-bg">
-        <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -304,18 +305,8 @@ export default function XCampaignView() {
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setEditingCampaign(null)}
-              className="px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={saveCampaign}
-              className="px-4 py-2 text-sm bg-info hover:bg-info/80 text-mission-control-text rounded-lg transition-colors"
-            >
-              Save Draft
-            </button>
+            <Button onClick={() => setEditingCampaign(null)} variant="ghost" color="gray" size="2">Cancel</Button>
+            <Button onClick={saveCampaign} variant="solid" color="blue" size="2">Save Draft</Button>
           </div>
         </div>
 
@@ -397,7 +388,7 @@ export default function XCampaignView() {
                           <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                             <Clock className="w-3 h-3" />{stage.time}
                           </span>
-                          <span className="px-2 py-0.5 text-xs bg-info-subtle text-info rounded-full">{stage.type}</span>
+                          <Badge color="blue" variant="soft" radius="full">{stage.type}</Badge>
                         </div>
                         {!isExpanded && stage.content && (
                           <p className="text-xs text-mission-control-text-dim truncate mt-1">{stage.content.slice(0, 80)}...</p>
@@ -491,20 +482,11 @@ export default function XCampaignView() {
         </div>
 
         <div className="p-4 border-t border-mission-control-border flex gap-3">
-          <button
-            onClick={saveCampaign}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-bg-alt hover:bg-mission-control-surface text-mission-control-text font-medium rounded-lg border border-mission-control-border transition-colors"
-          >
-            Save Draft
-          </button>
-          <button
-            onClick={scheduleCampaign}
-            disabled={!editingCampaign.start_date}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-info hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed text-mission-control-text font-medium rounded-lg transition-colors"
-          >
+          <Button onClick={saveCampaign} variant="soft" color="gray" size="3" className="flex-1">Save Draft</Button>
+          <Button onClick={scheduleCampaign} disabled={!editingCampaign.start_date} variant="solid" color="grass" size="3" className="flex-1">
             <Send className="w-4 h-4" />
             Schedule Campaign
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -518,13 +500,10 @@ export default function XCampaignView() {
           <Rocket className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Campaigns</h3>
         </div>
-        <button
-          onClick={createNewCampaign}
-          className="flex items-center gap-2 px-3 py-2 text-sm bg-info hover:bg-info/80 text-mission-control-text rounded-lg transition-colors"
-        >
+        <Button onClick={createNewCampaign} variant="solid" color="blue" size="2">
           <Plus className="w-4 h-4" />
           Manual
-        </button>
+        </Button>
       </div>
 
       {/* AI Proposal Banner */}
@@ -542,19 +521,18 @@ export default function XCampaignView() {
                 {aiProposal.stages.length} stages over {Math.max(...aiProposal.stages.map(s => s.dayOffset), 0) + 1} days
               </p>
               <div className="flex gap-2 mt-3">
-                <button
-                  onClick={acceptProposal}
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-mission-control-accent hover:bg-mission-control-accent/80 text-white font-medium rounded-lg transition-colors"
-                >
+                <Button onClick={acceptProposal} variant="solid" color="grass" size="2">
                   <Sparkles className="w-4 h-4" />
-                  Review & Edit
-                </button>
-                <button
+                  Review &amp; Edit
+                </Button>
+                <Button
                   onClick={dismissProposal}
-                  className="px-4 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                  variant="ghost"
+                  color="gray"
+                  size="2"
                 >
                   Dismiss
-                </button>
+                </Button>
               </div>
             </div>
           </div>

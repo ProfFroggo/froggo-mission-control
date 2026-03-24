@@ -5,6 +5,7 @@ import {
   X, RefreshCw, Play, CheckCircle, XCircle, Clock, ChevronRight, ChevronDown,
   AlertCircle,
 } from 'lucide-react';
+import { Button, IconButton, Badge, Heading, Text, Spinner } from '@radix-ui/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -84,19 +85,10 @@ function RunRow({ run }: { run: AutomationRun }) {
         background: 'var(--mission-control-surface)',
       }}
     >
-      <button
+      <Button
+        variant="ghost"
         onClick={() => setExpanded(e => !e)}
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '12px 14px',
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          textAlign: 'left',
-        }}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'transparent', cursor: 'pointer', textAlign: 'left', justifyContent: 'flex-start', height: 'auto' }}
       >
         <StatusIcon status={run.status} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -104,19 +96,12 @@ function RunRow({ run }: { run: AutomationRun }) {
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--mission-control-text)' }}>
               {formatTs(run.startedAt)}
             </span>
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                padding: '1px 6px',
-                borderRadius: 4,
-                color: statusColor(run.status),
-                background: `color-mix(in srgb, ${statusColor(run.status)} 15%, transparent)`,
-                textTransform: 'uppercase',
-              }}
+            <Badge
+              color={run.status === 'success' ? 'grass' : run.status === 'failed' ? 'red' : 'amber'}
+              variant="soft"
             >
               {run.status}
-            </span>
+            </Badge>
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 2 }}>
             <span style={{ fontSize: 11, color: 'var(--mission-control-text-dim)', display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -133,7 +118,7 @@ function RunRow({ run }: { run: AutomationRun }) {
         {expanded
           ? <ChevronDown size={14} style={{ color: 'var(--mission-control-text-dim)', flexShrink: 0 }} />
           : <ChevronRight size={14} style={{ color: 'var(--mission-control-text-dim)', flexShrink: 0 }} />}
-      </button>
+      </Button>
 
       {expanded && (
         <div style={{ borderTop: '1px solid var(--mission-control-border)', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -246,66 +231,24 @@ export default function AutomationRunLog({ automationId, automationName, onClose
           }}
         >
           <div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--mission-control-text)', margin: 0 }}>
-              Run History
-            </h2>
+            <Heading size="4" weight="medium">Run History</Heading>
             {automationName && (
-              <p style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', margin: '2px 0 0' }}>
+              <Text size="1" style={{ color: 'var(--mission-control-text-dim)' }}>
                 {automationName}
-              </p>
+              </Text>
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button
-              onClick={fetchRuns}
-              title="Refresh"
-              style={{
-                padding: 6,
-                borderRadius: 6,
-                border: '1px solid var(--mission-control-border)',
-                background: 'var(--mission-control-surface)',
-                color: 'var(--mission-control-text-dim)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
+            <IconButton variant="surface" size="2" onClick={fetchRuns} title="Refresh">
               <RefreshCw size={14} />
-            </button>
-            <button
-              onClick={handleRerun}
-              disabled={rerunning}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '6px 12px',
-                borderRadius: 6,
-                border: 'none',
-                background: rerunning ? 'var(--mission-control-border)' : 'var(--mission-control-accent)',
-                color: '#fff',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: rerunning ? 'not-allowed' : 'pointer',
-              }}
-            >
+            </IconButton>
+            <Button variant="solid" size="2" onClick={handleRerun} disabled={rerunning}>
               <Play size={12} />
               {rerunning ? 'Running...' : 'Re-run'}
-            </button>
-            <button
-              onClick={onClose}
-              style={{
-                padding: 6,
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--mission-control-text-dim)',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
+            </Button>
+            <IconButton variant="ghost" size="2" onClick={onClose}>
               <X size={18} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -313,8 +256,8 @@ export default function AutomationRunLog({ automationId, automationName, onClose
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {loading && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '40px 0', justifyContent: 'center', color: 'var(--mission-control-text-dim)' }}>
-              <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: 13 }}>Loading runs...</span>
+              <Spinner size="2" />
+              <Text size="2">Loading runs...</Text>
             </div>
           )}
 

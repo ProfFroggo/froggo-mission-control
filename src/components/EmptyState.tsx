@@ -1,38 +1,13 @@
 /**
  * EmptyState Component
- * 
+ *
  * A reusable empty state component for consistent UX across the dashboard.
- * Provides visual feedback when there's no content to display.
- * 
- * Features:
- * - Customizable icon (Lucide icon component) OR preset types
- * - Title and description text
- * - Optional action button (config object or React element)
- * - Uses design system tokens for consistent styling
- * - Responsive and accessible
- * 
- * Usage with preset type:
- * ```tsx
- * <EmptyState
- *   type="inbox"
- *   description="Custom description override"
- *   action={{ label: "Action", onClick: handleClick }}
- * />
- * ```
- * 
- * Usage with custom props:
- * ```tsx
- * <EmptyState
- *   icon={Inbox}
- *   title="No messages yet"
- *   description="Your inbox is empty."
- *   action={{ label: "Send message", onClick: handleSend }}
- * />
- * ```
+ * Migrated to Radix Themes layout primitives.
  */
 
 import { LucideIcon, Inbox, CheckCircle, Search, FolderOpen, Bell, Layout, Wallet, Package } from 'lucide-react';
 import { ReactNode } from 'react';
+import { Flex, Heading, Text, Button } from '@radix-ui/themes';
 
 interface EmptyStateAction {
   label: string;
@@ -127,7 +102,6 @@ const PADDING_CLASSES: Record<'sm' | 'md' | 'lg', string> = {
 };
 
 export default function EmptyState(props: EmptyStateProps) {
-  // Determine if using preset type or custom props
   const isPreset = 'type' in props && props.type !== undefined;
 
   const {
@@ -138,50 +112,46 @@ export default function EmptyState(props: EmptyStateProps) {
     className = '',
   } = props;
 
-  // Resolve effective size: explicit size prop > compact flag > default 'md'
   const effectiveSize: 'sm' | 'md' | 'lg' = size ?? (compact ? 'sm' : 'md');
 
-  // Get icon and title from preset or props
   const Icon = isPreset ? presets[props.type].icon : props.icon;
   const title = isPreset ? presets[props.type].title : props.title;
   const desc = description || (isPreset ? presets[props.type].description : undefined);
 
-  const baseClasses = 'empty-state';
   const paddingClasses = PADDING_CLASSES[effectiveSize];
   const iconSize = ICON_SIZES[effectiveSize];
+  const titleSize = effectiveSize === 'sm' ? '3' : effectiveSize === 'lg' ? '5' : '4';
 
   // Render action button or element
   const renderAction = (): React.ReactElement | null => {
     if (!action) return null;
 
-    // If action is a React element, render it directly
-    if (typeof action === 'object' && '$$typeof' in action) {
+    if (typeof action === 'object' && '$$typeof' in (action as object)) {
       return action as React.ReactElement;
     }
 
-    // Otherwise, it's an EmptyStateAction config
     const actionConfig = action as EmptyStateAction;
     return (
-      <button
+      <Button
         onClick={actionConfig.onClick}
-        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-          actionConfig.variant === 'secondary'
-            ? 'bg-mission-control-border text-mission-control-text hover:bg-mission-control-border/80'
-            : 'bg-mission-control-accent text-white hover:bg-mission-control-accent/90'
-        }`}
+        variant={actionConfig.variant === 'secondary' ? 'surface' : 'soft'}
+        color={actionConfig.variant === 'secondary' ? 'gray' : 'grass'}
+        size="2"
       >
         {actionConfig.label}
-      </button>
+      </Button>
     );
   };
 
   return (
-    <div
-      className={`${baseClasses} ${paddingClasses} ${className}`}
+    <Flex
+      direction="column"
+      align="center"
+      gap="3"
+      className={`empty-state ${paddingClasses} ${className}`}
       role="status"
       aria-live="polite"
     >
-      {/* Icon Container */}
       <div className="empty-state-icon">
         <Icon
           size={iconSize}
@@ -190,21 +160,18 @@ export default function EmptyState(props: EmptyStateProps) {
         />
       </div>
 
-      {/* Title */}
-      <h3 className="empty-state-title">
+      <Heading size={titleSize as '3' | '4' | '5'} color="gray" className="empty-state-title">
         {title}
-      </h3>
+      </Heading>
 
-      {/* Description */}
       {desc && (
-        <p className="empty-state-description">
+        <Text size="2" color="gray" align="center" className="empty-state-description">
           {desc}
-        </p>
+        </Text>
       )}
 
-      {/* Action */}
       {renderAction()}
-    </div>
+    </Flex>
   );
 }
 
@@ -213,61 +180,46 @@ export default function EmptyState(props: EmptyStateProps) {
  * @deprecated Use the type prop instead
  */
 export const EmptyStatePresets = {
-  /** Empty inbox/messages */
   inbox: {
     icon: 'Inbox',
     title: 'No messages yet',
-    description: 'Your inbox is empty. New messages will appear here.'
+    description: 'Your inbox is empty. New messages will appear here.',
   },
-  
-  /** Empty tasks list */
   tasks: {
     icon: 'CheckCircle',
     title: 'No tasks yet',
-    description: 'You don\'t have any tasks assigned. New tasks will appear here.'
+    description: "You don't have any tasks assigned. New tasks will appear here.",
   },
-  
-  /** Empty search results */
   search: {
     icon: 'Search',
     title: 'No results found',
-    description: 'Try adjusting your search terms or filters to find what you\'re looking for.'
+    description: "Try adjusting your search terms or filters to find what you're looking for.",
   },
-  
-  /** Empty library/files */
   library: {
     icon: 'FolderOpen',
     title: 'No files yet',
-    description: 'Your library is empty. Upload files to see them here.'
+    description: 'Your library is empty. Upload files to see them here.',
   },
-  
-  /** Empty notifications */
   notifications: {
     icon: 'Bell',
     title: 'No notifications',
-    description: 'You\'re all caught up! New notifications will appear here.'
+    description: "You're all caught up! New notifications will appear here.",
   },
-  
-  /** Empty kanban column */
   kanban: {
     icon: 'Layout',
     title: 'No items',
-    description: 'This column is empty. Drag items here or create new ones.'
+    description: 'This column is empty. Drag items here or create new ones.',
   },
-  
-  /** Empty finance/transactions */
   finance: {
     icon: 'Wallet',
     title: 'No transactions yet',
-    description: 'Your transaction history is empty. Transactions will appear here.'
+    description: 'Your transaction history is empty. Transactions will appear here.',
   },
-  
-  /** Generic empty state */
   generic: {
     icon: 'Package',
     title: 'Nothing here yet',
-    description: 'This area is currently empty. Content will appear here when available.'
-  }
+    description: 'This area is currently empty. Content will appear here when available.',
+  },
 } as const;
 
 export type EmptyStatePreset = keyof typeof EmptyStatePresets;

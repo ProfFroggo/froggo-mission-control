@@ -1,11 +1,12 @@
 /**
  * LoadingStates.tsx
- * 
+ *
  * Reusable loading components for consistent UX across the dashboard.
  * Provides spinners, skeletons, and loading button states.
+ * Migrated to Radix Themes primitives.
  */
 
-import { Loader2 } from 'lucide-react';
+import { Spinner as RadixSpinner, Button, Flex, Text } from '@radix-ui/themes';
 import { ReactNode } from 'react';
 import EmptyState from './EmptyState';
 
@@ -21,11 +22,9 @@ interface SpinnerProps {
 }
 
 export function Spinner({ size = 16, className = '' }: SpinnerProps) {
+  const radixSize = size <= 14 ? '1' : size <= 20 ? '2' : '3';
   return (
-    <Loader2 
-      size={size} 
-      className={`animate-spin text-mission-control-accent ${className}`} 
-    />
+    <RadixSpinner size={radixSize as '1' | '2' | '3'} className={`text-mission-control-accent ${className}`} />
   );
 }
 
@@ -56,27 +55,19 @@ export function LoadingButton({
   icon,
   type = 'button',
 }: LoadingButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:ring-offset-2 focus:ring-offset-mission-control-bg disabled:opacity-50 disabled:cursor-not-allowed';
-  
-  const variantStyles = {
-    primary: 'bg-mission-control-accent text-white hover:opacity-90',
-    secondary: 'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:border-mission-control-accent',
-    danger: 'bg-error text-white hover:bg-error-hover',
-    ghost: 'text-mission-control-text hover:bg-mission-control-surface',
-  };
-  
-  const sizeStyles = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg',
-  };
+  const radixVariant = variant === 'primary' ? 'solid' : variant === 'ghost' ? 'ghost' : variant === 'danger' ? 'solid' : 'surface';
+  const radixColor = variant === 'danger' ? 'red' : variant === 'primary' ? 'grass' : 'gray';
+  const radixSize = size === 'sm' ? '1' : size === 'lg' ? '3' : '2';
 
   return (
-    <button
+    <Button
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      variant={radixVariant as 'solid' | 'ghost' | 'surface'}
+      color={radixColor as 'red' | 'grass' | 'gray'}
+      size={radixSize as '1' | '2' | '3'}
+      className={className}
     >
       {loading ? (
         <>
@@ -89,7 +80,7 @@ export function LoadingButton({
           {children}
         </>
       )}
-    </button>
+    </Button>
   );
 }
 
@@ -113,7 +104,7 @@ export function Skeleton({ className = '', width = 'w-full', height = 'h-4', rou
   };
 
   return (
-    <div 
+    <div
       className={`${width} ${height} ${roundedStyles[rounded]} bg-mission-control-border animate-pulse ${className}`}
     />
   );
@@ -192,21 +183,20 @@ interface LoadingOverlayProps {
 }
 
 export function LoadingOverlay({ message = 'Loading...', fullScreen = false }: LoadingOverlayProps) {
-  const containerClass = fullScreen 
-    ? 'fixed inset-0 z-50' 
+  const containerClass = fullScreen
+    ? 'fixed inset-0 z-50'
     : 'absolute inset-0';
 
   return (
     <div className={`${containerClass} bg-mission-control-bg/80 backdrop-blur-sm flex items-center justify-center`}>
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 flex flex-col items-center gap-3 shadow-xl">
-        <Spinner size={32} />
-        <p className="text-mission-control-text font-medium">{message}</p>
+        <RadixSpinner size="3" />
+        <Text size="2" weight="medium">{message}</Text>
       </div>
     </div>
   );
 }
 
-// ============================================================================
 // ============================================================================
 // Progress Bar - For long-running operations
 // ============================================================================
@@ -224,10 +214,10 @@ export function ProgressBar({ progress, label, showPercentage = true, className 
   return (
     <div className={`w-full ${className}`}>
       {(label || showPercentage) && (
-        <div className="flex justify-between items-center mb-2">
-          {label && <span className="text-sm text-mission-control-text">{label}</span>}
-          {showPercentage && <span className="text-sm text-mission-control-text-dim">{clampedProgress}%</span>}
-        </div>
+        <Flex justify="between" align="center" mb="2">
+          {label && <Text size="2">{label}</Text>}
+          {showPercentage && <Text size="2" color="gray">{clampedProgress}%</Text>}
+        </Flex>
       )}
       <div className="w-full h-2 bg-mission-control-border rounded-full overflow-hidden">
         <div
@@ -253,14 +243,14 @@ interface InlineLoaderProps {
 }
 
 export function InlineLoader({ text, size = 'md' }: InlineLoaderProps) {
-  const sizeMap = { sm: 12, md: 16, lg: 20 };
-  const textSizeMap = { sm: 'text-xs', md: 'text-sm', lg: 'text-base' };
+  const radixSize = size === 'sm' ? '1' : size === 'lg' ? '3' : '2';
+  const textSizeMap = { sm: '1' as const, md: '2' as const, lg: '3' as const };
 
   return (
-    <div className="flex items-center gap-2">
-      <Spinner size={sizeMap[size]} />
-      {text && <span className={`text-mission-control-text-dim ${textSizeMap[size]}`}>{text}</span>}
-    </div>
+    <Flex align="center" gap="2">
+      <RadixSpinner size={radixSize as '1' | '2' | '3'} />
+      {text && <Text size={textSizeMap[size]} color="gray">{text}</Text>}
+    </Flex>
   );
 }
 

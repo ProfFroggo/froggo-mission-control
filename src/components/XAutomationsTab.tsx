@@ -22,6 +22,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
+import { Button, IconButton, Badge, Heading, Text, Spinner, TextField, TextArea, Select } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface Automation {
@@ -322,7 +323,7 @@ export default function XAutomationsTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-6 h-6 border-2 border-info border-t-transparent rounded-full animate-spin"></div>
+        <Spinner size="3" />
       </div>
     );
   }
@@ -333,16 +334,13 @@ export default function XAutomationsTab() {
         <div className="max-w-3xl mx-auto p-6 space-y-6">
           {/* Builder Header */}
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-mission-control-text flex items-center gap-2">
+            <Heading size="5" weight="medium" className="flex items-center gap-2">
               <Zap size={20} className="text-mission-control-accent" />
               {editingAutomation ? 'Edit Automation' : 'New Automation'}
-            </h2>
-            <button
-              onClick={closeBuilder}
-              className="text-mission-control-text-dim hover:text-mission-control-text"
-            >
+            </Heading>
+            <Button onClick={closeBuilder} variant="ghost" color="gray" size="2">
               Cancel
-            </button>
+            </Button>
           </div>
 
           {/* Basic Info */}
@@ -351,26 +349,26 @@ export default function XAutomationsTab() {
               <label htmlFor="automation-name" className="block text-sm font-medium mb-2">
                 Automation Name
               </label>
-              <input
+              <TextField.Root
                 id="automation-name"
-                type="text"
                 value={builderName}
                 onChange={e => setBuilderName(e.target.value)}
                 placeholder="e.g., Auto-thank followers"
-                className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                size="2"
               />
             </div>
             <div>
               <label htmlFor="automation-description" className="block text-sm font-medium mb-2">
                 Description (optional)
               </label>
-              <textarea
+              <TextArea
                 id="automation-description"
                 value={builderDescription}
                 onChange={e => setBuilderDescription(e.target.value)}
                 placeholder="What does this automation do?"
                 rows={2}
-                className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none"
+                variant="soft"
+                resize="vertical"
               />
             </div>
           </div>

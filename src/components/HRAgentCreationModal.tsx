@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Send, Loader2, Check, CheckCircle, XCircle, Circle, Sparkles, GraduationCap } from 'lucide-react';
+import { Button, IconButton, TextField, Spinner } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
 import { catalogApi } from '../lib/api';
@@ -514,9 +515,9 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                 : 'Building your next team member'}
             </p>
           </div>
-          <button onClick={handleClose} className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-surface transition-colors">
+          <IconButton onClick={handleClose} variant="ghost" color="gray" size="2">
             <X size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Creating stage */}
@@ -651,18 +652,23 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                   <div>Trust tier: {inferTrustTier(pendingConfig.role)}</div>
                 </div>
                 <div className="flex gap-2 mt-2">
-                  <button
+                  <Button
                     onClick={() => startCreation(pendingConfig)}
-                    className="flex-1 py-2 bg-mission-control-accent text-white text-sm rounded-lg hover:bg-mission-control-accent-dim transition-colors flex items-center justify-center gap-1.5"
+                    variant="solid"
+                    color="grass"
+                    size="2"
+                    className="flex-1"
                   >
                     <Check size={14} /> Create agent
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => { setPendingConfig(null); addUserMessage('wait, let me change something'); askHR('wait, let me change something'); }}
-                    className="px-3 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim text-sm rounded-lg hover:bg-mission-control-border transition-colors"
+                    variant="soft"
+                    color="gray"
+                    size="2"
                   >
                     Edit
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -688,34 +694,35 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
         {/* Input / action bar */}
         <div className="p-3 border-t border-mission-control-border">
           {stage === 'creating' && creationDone ? (
-            <button onClick={handleClose} className="w-full py-2.5 bg-mission-control-accent text-white font-medium rounded-lg hover:bg-mission-control-accent-dim transition-colors flex items-center justify-center gap-2">
+            <Button onClick={handleClose} variant="solid" color="grass" size="2" className="w-full">
               <Check size={16} /> Done — View Agents
-            </button>
+            </Button>
           ) : stage === 'creating' && creationError ? (
             <div className="flex gap-2">
-              <button onClick={() => { setStage('chat'); setCreationSteps([]); setCreationError(null); }} className="flex-1 py-2.5 bg-mission-control-surface border border-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border transition-colors text-sm">Back</button>
-              <button onClick={() => pendingConfig && startCreation(pendingConfig)} className="flex-1 py-2.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm">Retry</button>
+              <Button onClick={() => { setStage('chat'); setCreationSteps([]); setCreationError(null); }} variant="soft" color="gray" size="2" className="flex-1">Back</Button>
+              <Button onClick={() => pendingConfig && startCreation(pendingConfig)} variant="solid" color="grass" size="2" className="flex-1">Retry</Button>
             </div>
           ) : stage === 'creating' ? (
             <div className="flex items-center justify-center gap-2 py-2 text-sm text-mission-control-text-dim">
-              <Loader2 size={14} className="animate-spin text-mission-control-accent" />
+              <Spinner size="1" />
               Launching {pendingConfig?.name}...
             </div>
           ) : pendingConfig ? null : (
             <div className="flex gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={isTyping}
-                placeholder={isTyping ? 'HR is thinking...' : 'Type your response...'}
-                className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 disabled:opacity-50"
-                autoFocus
-              />
-              <button onClick={handleSend} disabled={!input.trim() || isTyping} className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                {isTyping ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-              </button>
+              <TextField.Root size="2" className="flex-1">
+                <TextField.Input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={isTyping}
+                  placeholder={isTyping ? 'HR is thinking...' : 'Type your response...'}
+                  autoFocus
+                />
+              </TextField.Root>
+              <IconButton onClick={handleSend} disabled={!input.trim() || isTyping} variant="solid" color="grass" size="2">
+                {isTyping ? <Spinner size="1" /> : <Send size={18} />}
+              </IconButton>
             </div>
           )}
         </div>

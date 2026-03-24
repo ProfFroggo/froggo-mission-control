@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { Activity, AlertTriangle, CheckCircle, Clock, Users, Zap } from 'lucide-react';
+import { Badge } from '@radix-ui/themes';
 import { useStore, Agent } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
 import { useEventBus } from '../lib/useEventBus';

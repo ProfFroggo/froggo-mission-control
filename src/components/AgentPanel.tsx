@@ -24,6 +24,7 @@ import type { CatalogAgent } from '../types/catalog';
 import { getAgentTheme } from '../utils/agentThemes';
 import { createLogger } from '../utils/logger';
 import { agentApi, analyticsApi } from '../lib/api';
+import { Button, IconButton, Badge, TextField } from '@radix-ui/themes';
 
 const logger = createLogger('AgentPanel');
 const getTheme = getAgentTheme;
@@ -325,22 +326,42 @@ export default function AgentPanel() {
           </div>
           <div className="icon-text gap-2">
             {view === 'active' && (
-              <button type="button" onClick={() => setShowAnalytics(!showAnalytics)}
+              <Button
+                type="button"
+                variant={showAnalytics ? 'soft' : 'surface'}
+                color={showAnalytics ? 'blue' : 'gray'}
+                size="2"
+                onClick={() => setShowAnalytics(!showAnalytics)}
                 aria-expanded={showAnalytics}
                 aria-controls="agent-analytics-panel"
-                className={`icon-text px-3 py-2 border rounded-lg transition-colors text-sm ${showAnalytics ? 'text-info border-info-border bg-info-subtle' : 'border-mission-control-border hover:bg-mission-control-border/50'}`}>
-                <BarChart3 size={15} className="flex-shrink-0" aria-hidden="true" /> Analytics
-              </button>
+              >
+                <BarChart3 size={15} aria-hidden="true" /> Analytics
+              </Button>
             )}
             {view === 'active' && (
-              <button type="button" onClick={handleRefresh} disabled={isRefreshing} className="icon-btn border border-mission-control-border disabled:opacity-50" title="Refresh" aria-label="Refresh agents">
-                <RefreshCw size={15} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
+              <IconButton
+                type="button"
+                variant="surface"
+                color="gray"
+                size="2"
+                disabled={isRefreshing}
+                onClick={handleRefresh}
+                title="Refresh"
+                aria-label="Refresh agents"
+              >
+                <RefreshCw size={15} className={isRefreshing ? 'animate-spin' : ''} />
+              </IconButton>
             )}
             {view === 'active' && (
-              <button type="button" onClick={() => setShowCreateModal(true)} className="icon-text px-3 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm">
-                <Plus size={15} className="flex-shrink-0" /> New Agent
-              </button>
+              <Button
+                type="button"
+                variant="solid"
+                color="grass"
+                size="2"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <Plus size={15} /> New Agent
+              </Button>
             )}
           </div>
         </div>
@@ -446,15 +467,18 @@ export default function AgentPanel() {
 
           {/* Search / filter bar */}
           <div className="relative mb-4">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none" />
-            <input
-              type="search"
+            <TextField.Root
+              size="2"
               value={agentSearch}
-              onChange={e => setAgentSearch(e.target.value)}
+              onChange={(e) => setAgentSearch((e.target as HTMLInputElement).value)}
               placeholder="Search agents by name, role, or capability…"
-              className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-mission-control-border bg-mission-control-surface text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors"
               aria-label="Search agents"
-            />
+              className="w-full"
+            >
+              <TextField.Slot>
+                <Search size={14} className="text-mission-control-text-dim" />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
 
           {mainAgents.length === 0 ? (
@@ -526,14 +550,19 @@ export default function AgentPanel() {
                           <h3 className="font-semibold text-sm leading-normal truncate">{agent.name}</h3>
                           {/* Only show non-idle status badges — idle is conveyed by Available below */}
                           {(agent.status === 'busy' || agent.status === 'disabled' || agent.status === 'suspended' || agent.status === 'archived' || agent.status === 'draft') && (
-                            <span className={`text-xs font-medium uppercase tracking-wider px-1.5 py-0.5 rounded flex-shrink-0 ${theme.bg} ${theme.text}`}>
+                            <Badge
+                              color={agent.status === 'busy' ? 'orange' : agent.status === 'disabled' ? 'red' : agent.status === 'suspended' ? 'red' : agent.status === 'archived' ? 'gray' : 'gray'}
+                              variant="soft"
+                              size="1"
+                              className="flex-shrink-0 uppercase"
+                            >
                               {sc.label}
-                            </span>
+                            </Badge>
                           )}
                           {circuitOpenAgents.has(agent.id) && (
-                            <span className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded font-medium bg-error-subtle text-error border border-error-border flex-shrink-0">
+                            <Badge color="red" variant="soft" size="1" className="flex-shrink-0">
                               <AlertTriangle size={9} /> Circuit open
-                            </span>
+                            </Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -620,8 +649,8 @@ export default function AgentPanel() {
                               <option value={2}>Tier 2 (Worker)</option>
                               <option value={3}>Tier 3 (Full)</option>
                             </select>
-                            <button type="button" aria-label="Save trust tier" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }} className="p-0.5 text-success hover:bg-success-subtle rounded"><Check size={12} /></button>
-                            <button type="button" aria-label="Cancel trust tier edit" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }} className="p-0.5 text-error hover:bg-error-subtle rounded"><AlertTriangle size={12} /></button>
+                            <IconButton type="button" variant="ghost" color="green" size="1" aria-label="Save trust tier" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }}><Check size={12} /></IconButton>
+                            <IconButton type="button" variant="ghost" color="red" size="1" aria-label="Cancel trust tier edit" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }}><AlertTriangle size={12} /></IconButton>
                           </div>
                         ) : (
                           <button
@@ -646,16 +675,14 @@ export default function AgentPanel() {
                     {/* Start/Stop + Soul link — relative z-[2] lifts above cover button */}
                     <div className={`flex items-center gap-1.5 mt-auto pt-2 border-t relative z-[2] ${theme.border}`}>
                       {agent.status === 'idle' && agentTasks.length > 0 && (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}
-                          className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-success text-white rounded-lg hover:brightness-110 transition-colors">
+                        <Button type="button" variant="solid" color="grass" size="1" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}>
                           <Play size={11} /> Start
-                        </button>
+                        </Button>
                       )}
                       {agent.status === 'busy' && agent.sessionKey && (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); updateAgentStatus(agent.id, 'idle'); }}
-                          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors">
+                        <Button type="button" variant="surface" color="red" size="1" onClick={(e) => { e.stopPropagation(); updateAgentStatus(agent.id, 'idle'); }}>
                           <Square size={11} /> Stop
-                        </button>
+                        </Button>
                       )}
                       <div className="flex-1" />
                     </div>
@@ -737,17 +764,13 @@ export default function AgentPanel() {
                     <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
                   </div>
                   {agent.status === 'disabled' ? (
-                    <button type="button" onClick={() => handleAgentStart(agent.id)}
-                      className="px-2 py-1 text-xs text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors"
-                      title="Re-enable agent for dispatcher">
-                      <Play size={12} className="inline mr-1" /> Enable
-                    </button>
+                    <Button type="button" variant="surface" color="grass" size="1" onClick={() => handleAgentStart(agent.id)} title="Re-enable agent for dispatcher">
+                      <Play size={12} /> Enable
+                    </Button>
                   ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
-                    <button type="button" onClick={() => handleAgentStop(agent.id, agent.name)}
-                      className="px-2 py-1 text-xs text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors"
-                      title="Disable agent — dispatcher will stop spawning it">
-                      <StopCircle size={12} className="inline mr-1" /> Disable
-                    </button>
+                    <Button type="button" variant="surface" color="red" size="1" onClick={() => handleAgentStop(agent.id, agent.name)} title="Disable agent — dispatcher will stop spawning it">
+                      <StopCircle size={12} /> Disable
+                    </Button>
                   ) : (
                     <span className="text-xs text-success">
                       <CheckCircle size={14} className="inline mr-1" /> Done

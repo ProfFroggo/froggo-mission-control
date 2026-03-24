@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Clock, X } from 'lucide-react';
+import { Button, IconButton, Badge, Flex, Text, Heading } from '@radix-ui/themes';
 import { Session } from '../store/store';
 import { showToast } from './Toast';
 
@@ -81,19 +82,19 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
     const date = new Date(timestamp);
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
-    
+
     if (isToday) {
       return `Today at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
     }
-    
+
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const isTomorrow = date.toDateString() === tomorrow.toDateString();
-    
+
     if (isTomorrow) {
       return `Tomorrow at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
     }
-    
+
     return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -104,43 +105,49 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
   if (isSnoozed && snoozeUntil) {
     return (
-      <button
+      <Badge
+        color="orange"
+        variant="soft"
+        radius="full"
+        size="1"
+        className="cursor-pointer"
         onClick={handleUnsnooze}
-        className="flex items-center gap-1 px-2 py-1 text-xs bg-warning-subtle text-warning rounded hover:bg-warning-subtle transition-colors"
         title="Click to unsnooze"
       >
         <Clock className="w-3 h-3" />
         Until {formatSnoozeTime(snoozeUntil)}
         <X className="w-3 h-3 ml-1" />
-      </button>
+      </Badge>
     );
   }
 
   return (
     <>
-      <button
+      <Button
+        size="1"
+        variant="soft"
+        color="gray"
         onClick={() => setShowModal(true)}
-        className="flex items-center gap-1 px-2 py-1 text-xs bg-mission-control-surface text-mission-control-text rounded hover:bg-mission-control-border transition-colors"
         title="Snooze conversation"
       >
         <Clock className="w-3 h-3" />
         Snooze
-      </button>
+      </Button>
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-mission-control-surface rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-mission-control-text">
-                Snooze Conversation
-              </h3>
-              <button
+            <Flex align="center" justify="between" mb="4">
+              <Heading size="4">Snooze Conversation</Heading>
+              <IconButton
+                size="1"
+                variant="ghost"
+                color="gray"
                 onClick={() => setShowModal(false)}
-                className="text-mission-control-text-dim hover:text-mission-control-text-dim"
               >
                 <X className="w-5 h-5" />
-              </button>
-            </div>
+              </IconButton>
+            </Flex>
 
             {/* Reason input */}
             <div className="mb-4">
@@ -159,18 +166,18 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             {/* Quick options */}
             <div className="mb-4">
-              <div className="block text-sm font-medium text-mission-control-text mb-2">
-                Quick Snooze
-              </div>
+              <Text size="2" weight="medium" as="div" mb="2">Quick Snooze</Text>
               <div className="grid grid-cols-2 gap-2">
                 {QUICK_OPTIONS.map((option) => (
-                  <button
+                  <Button
                     key={option.label}
+                    size="2"
+                    variant="solid"
+                    color="grass"
                     onClick={() => handleQuickSnooze(option)}
-                    className="px-3 py-2 bg-mission-control-accent hover:bg-mission-control-accent-dim text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     {option.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -196,21 +203,28 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                   className="flex-1 px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
-              <button
-                onClick={handleCustomSnooze}
+              <Button
+                mt="2"
+                size="2"
+                variant="solid"
+                color="grass"
                 disabled={!customDate || !customTime}
-                className="mt-2 w-full px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-mission-control-border disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                onClick={handleCustomSnooze}
+                className="w-full"
               >
                 Snooze Until Custom Time
-              </button>
+              </Button>
             </div>
 
-            <button
+            <Button
+              size="2"
+              variant="surface"
+              color="gray"
               onClick={() => setShowModal(false)}
-              className="w-full px-4 py-2 bg-mission-control-surface text-mission-control-text-dim rounded-lg hover:bg-mission-control-border font-medium transition-colors"
+              className="w-full"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -4,6 +4,7 @@ import {
   X, CheckCheck, Trash2, Bell, CheckSquare, ShieldCheck, ShieldAlert, AlertCircle, Info, AtSign,
 } from 'lucide-react';
 import { useEventBus } from '../lib/useEventBus';
+import { Badge, IconButton } from '@radix-ui/themes';
 
 interface Notification {
   id: string;
@@ -149,31 +150,37 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
             <Bell size={16} className="text-mission-control-text-dim" aria-hidden="true" />
             <span className="text-sm font-semibold text-mission-control-text">Notifications</span>
             {unreadCount > 0 && (
-              <span className="text-[10px] font-bold bg-error text-white rounded-full px-1.5 py-0.5 leading-none tabular-nums">
+              <Badge color="red" variant="solid" className="tabular-nums">
                 {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
+              </Badge>
             )}
           </div>
           <div className="flex items-center gap-1">
             {unreadCount > 0 && (
-              <button
+              <IconButton
                 type="button"
+                variant="ghost"
+                size="1"
+                color="gray"
                 onClick={markAllRead}
                 title="Mark all as read"
-                className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors text-[11px] flex items-center gap-1"
+                aria-label="Mark all as read"
+                className="text-[11px] flex items-center gap-1 px-2"
               >
                 <CheckCheck size={14} aria-hidden="true" />
                 <span>Mark all read</span>
-              </button>
+              </IconButton>
             )}
-            <button
+            <IconButton
               type="button"
+              variant="ghost"
+              size="1"
+              color="gray"
               onClick={onClose}
               aria-label="Close notifications"
-              className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
             >
               <X size={16} aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -243,14 +250,17 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
 
                   {/* Delete on hover */}
                   {hoveredId === n.id && (
-                    <button
+                    <IconButton
                       type="button"
+                      variant="ghost"
+                      size="1"
+                      color="red"
                       onClick={(e) => deleteNotification(n.id, e)}
                       aria-label="Delete notification"
-                      className="flex-shrink-0 p-1 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+                      className="flex-shrink-0"
                     >
                       <Trash2 size={12} aria-hidden="true" />
-                    </button>
+                    </IconButton>
                   )}
                 </li>
               ))}

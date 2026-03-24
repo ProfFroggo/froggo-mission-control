@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Award } from 'lucide-react';
+import { IconButton, Select } from '@radix-ui/themes';
 import { libraryApi } from '../lib/api';
 
 interface AgentSkill {
@@ -98,17 +99,16 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
           <Award size={20} className="text-mission-control-accent" />
           <h2 className="font-bold text-mission-control-text flex-1">Agent Skills & Proficiency</h2>
-          <select
-            value={selectedAgent}
-            onChange={e => setSelectedAgent(e.target.value)}
-            className="text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-mission-control-text"
-          >
-            <option value="all">All Agents</option>
-            {agents.map(a => <option key={a} value={a}>{AGENT_EMOJIS[a] || '🤖'} {a}</option>)}
-          </select>
-          <button onClick={handleClose} className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-surface">
+          <Select.Root value={selectedAgent} onValueChange={setSelectedAgent} size="1">
+            <Select.Trigger />
+            <Select.Content>
+              <Select.Item value="all">All Agents</Select.Item>
+              {agents.map(a => <Select.Item key={a} value={a}>{a}</Select.Item>)}
+            </Select.Content>
+          </Select.Root>
+          <IconButton onClick={handleClose} variant="ghost" color="gray" size="2">
             <X size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Content */}

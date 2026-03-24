@@ -2,6 +2,7 @@
 'use client';
 import { useState } from 'react';
 import { X, ChevronRight, Plus, Layers } from 'lucide-react';
+import { Button, IconButton, Badge, Heading, Text, Spinner } from '@radix-ui/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -219,23 +220,14 @@ function TemplateCard({ template, selected, onSelect }: TemplateCardProps) {
           <Layers size={18} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--mission-control-text)' }}>{template.name}</div>
+          <Text size="2" weight="bold">{template.name}</Text>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                padding: '1px 6px',
-                borderRadius: 4,
-                color,
-                background: `color-mix(in srgb, ${color} 15%, transparent)`,
-              }}
-            >
+            <Badge variant="soft" style={{ background: `color-mix(in srgb, ${color} 15%, transparent)`, color }}>
               {template.category}
-            </span>
-            <span style={{ fontSize: 10, color: 'var(--mission-control-text-dim)' }}>
+            </Badge>
+            <Text size="1" style={{ color: 'var(--mission-control-text-dim)' }}>
               {template.steps.length} step{template.steps.length !== 1 ? 's' : ''}
-            </span>
+            </Text>
           </div>
         </div>
         <ChevronRight size={14} style={{ color: 'var(--mission-control-text-dim)', flexShrink: 0 }} />
@@ -357,27 +349,14 @@ export default function AutomationTemplatesGallery({ onClose, onUseTemplate }: P
           }}
         >
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--mission-control-text)', margin: 0 }}>
-              Automation Templates
-            </h2>
-            <p style={{ fontSize: 13, color: 'var(--mission-control-text-dim)', margin: '2px 0 0' }}>
+            <Heading size="5" weight="bold">Automation Templates</Heading>
+            <Text size="2" style={{ color: 'var(--mission-control-text-dim)', display: 'block', marginTop: 2 }}>
               Pick a template to get started instantly
-            </p>
+            </Text>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--mission-control-text-dim)',
-              display: 'flex',
-              alignItems: 'center',
-              padding: 6,
-            }}
-          >
+          <IconButton variant="ghost" size="2" onClick={onClose}>
             <X size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Category filter */}
@@ -391,25 +370,15 @@ export default function AutomationTemplatesGallery({ onClose, onUseTemplate }: P
           }}
         >
           {(['All', ...ALL_CATEGORIES] as const).map(cat => (
-            <button
+            <Button
               key={cat}
+              variant={activeCategory === cat ? 'solid' : 'outline'}
+              size="1"
               onClick={() => setActiveCategory(cat)}
-              style={{
-                padding: '5px 14px',
-                borderRadius: 999,
-                border: '1px solid',
-                borderColor: activeCategory === cat ? 'var(--mission-control-accent)' : 'var(--mission-control-border)',
-                background: activeCategory === cat ? 'var(--mission-control-accent)' : 'transparent',
-                color: activeCategory === cat ? '#fff' : 'var(--mission-control-text)',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.15s',
-              }}
+              style={{ borderRadius: 999, whiteSpace: 'nowrap' }}
             >
               {cat}
-            </button>
+            </Button>
           ))}
         </div>
 

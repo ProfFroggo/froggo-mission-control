@@ -1,6 +1,6 @@
 /**
  * AccessibilitySettings - User interface for accessibility preferences
- * 
+ *
  * Features:
  * - Reduced motion toggle
  * - High contrast mode
@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { Eye, EyeOff, Volume2, VolumeX, Keyboard, Type, Minus, Plus, Check, Lightbulb } from 'lucide-react';
+import { Button, IconButton, Switch, TextField } from '@radix-ui/themes';
 
 export default function AccessibilitySettings() {
   const { settings, updateSettings, announce } = useAccessibility();
@@ -53,7 +54,7 @@ export default function AccessibilitySettings() {
         <h3 id="visual-settings-heading" className="text-lg font-medium text-mission-control-text mb-4">
           Visual
         </h3>
-        
+
         <div className="space-y-4">
           {/* Reduced Motion */}
           <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
@@ -72,27 +73,16 @@ export default function AccessibilitySettings() {
                 </p>
               </div>
             </div>
-            <button
+            <Switch
               id="reduced-motion"
-              role="switch"
-              aria-checked={settings.reducedMotion}
-              onClick={() => {
-                const newValue = !settings.reducedMotion;
-                updateSettings({ reducedMotion: newValue });
-                announce(newValue ? 'Reduced motion enabled' : 'Reduced motion disabled');
+              size="2"
+              checked={settings.reducedMotion}
+              onCheckedChange={(checked) => {
+                updateSettings({ reducedMotion: checked });
+                announce(checked ? 'Reduced motion enabled' : 'Reduced motion disabled');
               }}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.reducedMotion ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-              }`}
               aria-label="Toggle reduced motion"
-            >
-              <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-mission-control-text rounded-full transition-transform ${
-                  settings.reducedMotion ? 'translate-x-5' : ''
-                }`}
-                aria-hidden="true"
-              />
-            </button>
+            />
           </div>
 
           {/* High Contrast */}
@@ -108,27 +98,16 @@ export default function AccessibilitySettings() {
                 </p>
               </div>
             </div>
-            <button
+            <Switch
               id="high-contrast"
-              role="switch"
-              aria-checked={settings.highContrast}
-              onClick={() => {
-                const newValue = !settings.highContrast;
-                updateSettings({ highContrast: newValue });
-                announce(newValue ? 'High contrast mode enabled' : 'High contrast mode disabled');
+              size="2"
+              checked={settings.highContrast}
+              onCheckedChange={(checked) => {
+                updateSettings({ highContrast: checked });
+                announce(checked ? 'High contrast mode enabled' : 'High contrast mode disabled');
               }}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.highContrast ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-              }`}
               aria-label="Toggle high contrast mode"
-            >
-              <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-mission-control-text rounded-full transition-transform ${
-                  settings.highContrast ? 'translate-x-5' : ''
-                }`}
-                aria-hidden="true"
-              />
-            </button>
+            />
           </div>
 
           {/* Font Size */}
@@ -147,17 +126,19 @@ export default function AccessibilitySettings() {
 
             {/* Font size slider */}
             <div className="flex items-center gap-3">
-              <button
+              <IconButton
+                variant="ghost"
+                size="2"
+                color="gray"
                 onClick={() => handleFontSizeChange(Math.max(75, settings.fontSize - 25))}
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                 disabled={settings.fontSize <= 75}
                 aria-label="Decrease font size"
               >
                 <Minus size={16} aria-hidden="true" />
-              </button>
+              </IconButton>
 
-              <div 
-                role="group" 
+              <div
+                role="group"
                 aria-labelledby="font-size-label"
                 className="flex-1 flex gap-2"
               >
@@ -181,14 +162,16 @@ export default function AccessibilitySettings() {
                 ))}
               </div>
 
-              <button
+              <IconButton
+                variant="ghost"
+                size="2"
+                color="gray"
                 onClick={() => handleFontSizeChange(Math.min(150, settings.fontSize + 25))}
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                 disabled={settings.fontSize >= 150}
                 aria-label="Increase font size"
               >
                 <Plus size={16} aria-hidden="true" />
-              </button>
+              </IconButton>
             </div>
           </div>
         </div>
@@ -197,9 +180,9 @@ export default function AccessibilitySettings() {
       {/* Keyboard & Navigation */}
       <section aria-labelledby="keyboard-settings-heading">
         <h3 id="keyboard-settings-heading" className="text-lg font-medium text-mission-control-text mb-4">
-          Keyboard & Navigation
+          Keyboard &amp; Navigation
         </h3>
-        
+
         <div className="space-y-4">
           {/* Keyboard Navigation Indicators */}
           <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
@@ -214,27 +197,16 @@ export default function AccessibilitySettings() {
                 </p>
               </div>
             </div>
-            <button
+            <Switch
               id="keyboard-nav"
-              role="switch"
-              aria-checked={settings.keyboardNavVisible}
-              onClick={() => {
-                const newValue = !settings.keyboardNavVisible;
-                updateSettings({ keyboardNavVisible: newValue });
-                announce(newValue ? 'Keyboard focus indicators enabled' : 'Keyboard focus indicators disabled');
+              size="2"
+              checked={settings.keyboardNavVisible}
+              onCheckedChange={(checked) => {
+                updateSettings({ keyboardNavVisible: checked });
+                announce(checked ? 'Keyboard focus indicators enabled' : 'Keyboard focus indicators disabled');
               }}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.keyboardNavVisible ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-              }`}
               aria-label="Toggle keyboard focus indicators"
-            >
-              <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-mission-control-text rounded-full transition-transform ${
-                  settings.keyboardNavVisible ? 'translate-x-5' : ''
-                }`}
-                aria-hidden="true"
-              />
-            </button>
+            />
           </div>
         </div>
       </section>
@@ -244,7 +216,7 @@ export default function AccessibilitySettings() {
         <h3 id="screen-reader-heading" className="text-lg font-medium text-mission-control-text mb-4">
           Screen Reader
         </h3>
-        
+
         <div className="space-y-4">
           {/* Enable announcements */}
           <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
@@ -263,27 +235,16 @@ export default function AccessibilitySettings() {
                 </p>
               </div>
             </div>
-            <button
+            <Switch
               id="screen-reader"
-              role="switch"
-              aria-checked={settings.screenReaderEnabled}
-              onClick={() => {
-                const newValue = !settings.screenReaderEnabled;
-                updateSettings({ screenReaderEnabled: newValue });
-                announce(newValue ? 'Screen reader announcements enabled' : 'Screen reader announcements disabled');
+              size="2"
+              checked={settings.screenReaderEnabled}
+              onCheckedChange={(checked) => {
+                updateSettings({ screenReaderEnabled: checked });
+                announce(checked ? 'Screen reader announcements enabled' : 'Screen reader announcements disabled');
               }}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.screenReaderEnabled ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-              }`}
               aria-label="Toggle screen reader announcements"
-            >
-              <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-mission-control-text rounded-full transition-transform ${
-                  settings.screenReaderEnabled ? 'translate-x-5' : ''
-                }`}
-                aria-hidden="true"
-              />
-            </button>
+            />
           </div>
 
           {/* Test announcements */}
@@ -292,25 +253,27 @@ export default function AccessibilitySettings() {
               Test Screen Reader Announcement
             </label>
             <div className="flex gap-2">
-              <input
+              <TextField.Root
                 id="test-announcement"
-                type="text"
+                size="2"
+                className="flex-1"
                 aria-label="Test screen reader announcement input"
                 value={testAnnouncement}
-                onChange={(e) => setTestAnnouncement(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleTestAnnouncement()}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestAnnouncement(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleTestAnnouncement()}
                 placeholder="Enter message to announce..."
-                className="flex-1 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
                 aria-describedby="test-announcement-help"
               />
-              <button
+              <Button
+                variant="solid"
+                color="grass"
+                size="2"
                 onClick={handleTestAnnouncement}
                 disabled={!testAnnouncement.trim()}
-                className="px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 aria-label="Announce test message"
               >
                 Announce
-              </button>
+              </Button>
             </div>
             <p id="test-announcement-help" className="text-xs text-mission-control-text-dim mt-2">
               Test how screen readers will announce messages
@@ -320,7 +283,7 @@ export default function AccessibilitySettings() {
       </section>
 
       {/* Info */}
-      <div 
+      <div
         className="p-4 bg-info-subtle border border-info-border rounded-lg"
         role="status"
         aria-label="Accessibility information"

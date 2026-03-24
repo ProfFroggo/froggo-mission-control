@@ -12,6 +12,7 @@ import AgentCompareModal from './AgentCompareModal';
 import EmptyState from './EmptyState';
 import AgentCapabilityMatrix from './AgentCapabilityMatrix';
 import { getAgentTheme } from '../utils/agentThemes';
+import { Button, IconButton } from '@radix-ui/themes';
 
 const CORE_AGENT_IDS = ['mission-control', 'clara', 'hr', 'coder', 'inbox'];
 

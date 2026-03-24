@@ -10,6 +10,7 @@ import {
   RefreshCw, TrendingUp, TrendingDown, Minus, Users,
   Pencil, GripVertical, X, LayoutGrid, Check
 } from 'lucide-react';
+import { Button, IconButton, Badge, Spinner } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 import AgentDetailModal from './AgentDetailModal';
 import { useStore } from '../store/store';
@@ -81,36 +82,36 @@ function HeaderBar({
       </div>
       <div className="flex items-center gap-2">
         {onRefresh && !editMode && (
-          <button
+          <Button
             onClick={onRefresh}
             disabled={refreshing}
             title="Refresh dashboard"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50 transition-all disabled:opacity-50"
+            variant="outline"
+            size="1"
+            radius="full"
           >
             <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
             <span className="hidden sm:inline">Refresh</span>
-          </button>
+          </Button>
         )}
-        <button
+        <Button
           onClick={onToggleEdit}
           title={editMode ? 'Done editing' : 'Customize dashboard'}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-            editMode
-              ? 'bg-mission-control-accent text-white border-mission-control-accent hover:bg-mission-control-accent-dim'
-              : 'bg-mission-control-surface border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50'
-          }`}
+          variant={editMode ? 'solid' : 'outline'}
+          size="1"
+          radius="full"
         >
           {editMode ? <Check size={12} /> : <Pencil size={12} />}
           <span className="hidden sm:inline">{editMode ? 'Done Editing' : 'Edit Dashboard'}</span>
-        </button>
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
-          connected
-            ? 'bg-success-subtle text-success border border-success-border'
-            : 'bg-error-subtle text-error border border-error-border'
-        }`}>
+        </Button>
+        <Badge
+          color={connected ? 'grass' : 'red'}
+          variant="soft"
+          radius="full"
+        >
           {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
           {connected ? 'Online' : 'Connecting...'}
-        </div>
+        </Badge>
       </div>
     </div>
   );
@@ -159,12 +160,9 @@ function AddWidgetModal({
             <LayoutGrid size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold text-sm">Add Widget</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-all"
-          >
+          <IconButton onClick={onClose} variant="ghost" size="1">
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
 
         <div className="overflow-y-auto max-h-[60vh] p-4 space-y-5">
@@ -192,13 +190,14 @@ function AddWidgetModal({
                           Default: {SIZE_LABELS[widget.defaultSize]}
                         </span>
                       </div>
-                      <button
+                      <Button
                         onClick={() => { onAdd(widget.id); }}
-                        className="ml-3 flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-mission-control-accent text-white text-xs font-medium rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                        size="1"
+                        className="ml-3 flex-shrink-0"
                       >
                         <Plus size={12} />
                         Add
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -272,13 +271,15 @@ function WidgetCard({
               <option key={val} value={val}>{label}</option>
             ))}
           </select>
-          <button
+          <IconButton
             onClick={() => onRemove(slot.id)}
             title="Remove widget"
-            className="p-0.5 rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-error hover:border-error-border transition-colors"
+            variant="outline"
+            size="1"
+            color="red"
           >
             <X size={12} />
-          </button>
+          </IconButton>
         </div>
       )}
       {editMode && (
@@ -410,34 +411,32 @@ function QuickActionsRow({ onNavigate }: { onNavigate?: (view: View) => void }) 
         <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mr-1 hidden sm:block">
           Quick Actions
         </span>
-        <button
-          onClick={() => onNavigate?.('kanban')}
-          className="flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-mission-control-accent text-white text-sm font-medium rounded-lg hover:bg-mission-control-accent/80 transition-colors"
-        >
+        <Button onClick={() => onNavigate?.('kanban')} size="2">
           <Plus size={14} />
           New Task
-        </button>
-        <button
-          onClick={() => onNavigate?.('chat')}
-          className="flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
-        >
+        </Button>
+        <Button onClick={() => onNavigate?.('chat')} variant="outline" size="2">
           <MessageSquare size={14} />
           Chat
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => onNavigate?.('kanban')}
-          className="hidden sm:flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
+          variant="outline"
+          size="2"
+          className="hidden sm:flex"
         >
           <FolderKanban size={14} />
           View Board
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => onNavigate?.('library')}
-          className="hidden md:flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
+          variant="outline"
+          size="2"
+          className="hidden md:flex"
         >
           <BookOpen size={14} />
           Browse Library
-        </button>
+        </Button>
         <div className="ml-auto flex items-center gap-1.5 text-xs text-mission-control-text-dim">
           <Search size={12} />
           <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded text-xs">⌘K</kbd>
@@ -484,18 +483,12 @@ function ApprovalCard({
             <p className="text-xs text-mission-control-text-dim/70 mt-1">To: {item.metadata.to}</p>
           )}
           <div className="flex items-center gap-2 mt-3">
-            <button
-              onClick={() => onApprove(item.id)}
-              className="px-4 py-1.5 bg-success hover:bg-success-hover text-white text-xs font-medium rounded-lg transition-colors"
-            >
+            <Button onClick={() => onApprove(item.id)} size="1" color="grass">
               Approve
-            </button>
-            <button
-              onClick={() => onReject(item.id)}
-              className="px-4 py-1.5 bg-mission-control-bg hover:bg-error-subtle text-mission-control-text-dim hover:text-error text-xs font-medium rounded-lg border border-mission-control-border transition-colors"
-            >
+            </Button>
+            <Button onClick={() => onReject(item.id)} size="1" variant="outline" color="red">
               Reject
-            </button>
+            </Button>
           </div>
         </div>
       </div>

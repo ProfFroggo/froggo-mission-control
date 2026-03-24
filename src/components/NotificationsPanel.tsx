@@ -4,6 +4,7 @@ import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import IconBadge from './IconBadge';
 import { inboxApi, scheduleApi } from '../lib/api';
+import { Button, IconButton, Badge } from '@radix-ui/themes';
 
 interface UnifiedNotification {
   id: string;
@@ -37,7 +38,7 @@ export default function NotificationsPanel() {
     setLoading(true);
     try {
       const items: UnifiedNotification[] = [];
-      
+
       // 1. Load inbox approvals
       const inboxResult = await inboxApi.getAll().catch((err: any) => { console.error('[Notifications] Failed to list inbox:', err); return null; });
       const inboxItems = Array.isArray(inboxResult) ? inboxResult : (inboxResult?.items || []);
@@ -114,7 +115,7 @@ export default function NotificationsPanel() {
   };
 
   const handleDismiss = (notif: UnifiedNotification) => {
-    setNotifications(prev => prev.map(n => 
+    setNotifications(prev => prev.map(n =>
       n.id === notif.id ? { ...n, read: true } : n
     ));
   };
@@ -152,32 +153,32 @@ export default function NotificationsPanel() {
               </p>
             </div>
           </div>
-          <button
+          <Button
+            variant="soft"
+            color="gray"
+            size="2"
             onClick={loadNotifications}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
-          </button>
+          </Button>
         </div>
 
         {/* Filter tabs */}
         <div className="flex gap-2">
           {(['all', 'unread', 'urgent'] as const).map((f) => (
-            <button
+            <Button
               key={f}
+              variant={filter === f ? 'solid' : 'soft'}
+              color={filter === f ? 'blue' : 'gray'}
+              size="2"
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                filter === f
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
             >
               {f === 'all' && `All (${notifications.length})`}
               {f === 'unread' && `Unread (${unreadCount})`}
               {f === 'urgent' && `Urgent (${urgentCount})`}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -185,8 +186,8 @@ export default function NotificationsPanel() {
       {/* Notifications List */}
       <div className="flex-1 overflow-y-auto p-4">
         {filteredNotifications.length === 0 ? (
-          <EmptyState 
-            type="notifications" 
+          <EmptyState
+            type="notifications"
             description={filter !== 'all' ? `No ${filter} notifications` : undefined}
           />
         ) : (
@@ -194,7 +195,7 @@ export default function NotificationsPanel() {
             {filteredNotifications.map((notif) => {
               const config = sourceConfig[notif.source];
               const Icon = config.icon;
-              
+
               return (
                 <div
                   key={notif.id}
@@ -208,14 +209,12 @@ export default function NotificationsPanel() {
                 >
                   <div className="flex items-start gap-3">
                     <IconBadge icon={Icon} size={16} color={config.color} />
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium">{notif.title}</span>
                         {notif.urgent && (
-                          <span className="px-1.5 py-0.5 bg-error-subtle text-error text-xs rounded">
-                            Urgent
-                          </span>
+                          <Badge color="red" variant="soft">Urgent</Badge>
                         )}
                       </div>
                       <p className="text-sm text-mission-control-text-dim truncate">{notif.description}</p>
@@ -231,21 +230,27 @@ export default function NotificationsPanel() {
                     {/* Actions */}
                     <div className="flex gap-1 flex-shrink-0">
                       {notif.actionable && (
-                        <button
+                        <IconButton
+                          variant="soft"
+                          size="2"
+                          color="grass"
                           onClick={() => handleApprove(notif)}
-                          className="p-2 bg-success-subtle text-success rounded-lg hover:bg-success-subtle transition-colors"
                           title="Approve"
+                          aria-label="Approve"
                         >
                           <Check size={16} />
-                        </button>
+                        </IconButton>
                       )}
-                      <button
+                      <IconButton
+                        variant="ghost"
+                        size="2"
+                        color="gray"
                         onClick={() => handleDismiss(notif)}
-                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors text-mission-control-text-dim"
                         title="Dismiss"
+                        aria-label="Dismiss"
                       >
                         <X size={16} />
-                      </button>
+                      </IconButton>
                     </div>
                   </div>
                 </div>

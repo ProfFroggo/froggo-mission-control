@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, AudioLines } from 'lucide-react';
+import { Mic, AudioLines } from 'lucide-react';
+import { IconButton, Badge, Flex, Text } from '@radix-ui/themes';
 
 interface VoiceButtonProps {
   onTranscript: (text: string) => void;
@@ -43,7 +44,6 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
         onTranscript(transcript);
         setListening(false);
         stopAudioAnalysis();
-        // Clear confidence after 3s
         setTimeout(() => setConfidence(null), 3000);
       };
 
@@ -123,18 +123,18 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
   if (!supported) return null;
 
   const confidenceColor =
-    confidence === null ? null
-    : confidence >= 0.8 ? 'bg-green-500'
-    : confidence >= 0.5 ? 'bg-amber-500'
-    : 'bg-red-500';
+    confidence === null ? undefined
+    : confidence >= 0.8 ? 'grass'
+    : confidence >= 0.5 ? 'orange'
+    : 'red';
 
   const confidenceWidth =
     confidence === null ? '0%' : `${Math.round(confidence * 100)}%`;
 
   return (
-    <div className="flex flex-col items-center gap-1.5">
+    <Flex direction="column" align="center" gap="1">
       {/* Waveform + button row */}
-      <div className="flex items-center gap-2">
+      <Flex align="center" gap="2">
         {/* Waveform bars — visible while listening */}
         {listening && (
           <div className="flex items-end gap-[2px]" style={{ height: 20 }}>
@@ -158,57 +158,63 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
           </div>
         )}
 
-        <button
+        <IconButton
           onClick={toggleListening}
           disabled={disabled}
-          className={`p-2 rounded-lg transition-colors ${
-            listening
-              ? 'bg-red-500 text-white'
-              : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-accent hover:text-white'
-          } disabled:opacity-50`}
+          variant={listening ? 'solid' : 'soft'}
+          color={listening ? 'red' : 'gray'}
+          size="2"
           title={listening ? 'Stop listening' : 'Voice input'}
         >
           {listening ? <AudioLines size={16} /> : <Mic size={16} />}
-        </button>
-      </div>
+        </IconButton>
+      </Flex>
 
       {/* Listening label */}
       {listening && (
-        <span className="text-[10px] text-red-400 font-medium animate-pulse select-none">
+        <Text size="1" color="red" className="animate-pulse select-none">
           Listening...
-        </span>
+        </Text>
       )}
 
       {/* Confidence indicator */}
       {confidence !== null && !listening && (
-        <div className="w-16 flex flex-col items-center gap-0.5">
+        <Flex direction="column" align="center" gap="1" style={{ width: 64 }}>
           <div className="w-full h-1 bg-mission-control-border rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-300 ${confidenceColor}`}
+              className={`h-full rounded-full transition-all duration-300 ${
+                confidenceColor === 'grass' ? 'bg-green-500' :
+                confidenceColor === 'orange' ? 'bg-amber-500' :
+                'bg-red-500'
+              }`}
               style={{ width: confidenceWidth }}
             />
           </div>
-          <span className="text-[9px] text-mission-control-text-dim">
+          <Text size="1" color="gray">
             {Math.round((confidence ?? 0) * 100)}% confidence
-          </span>
-        </div>
+          </Text>
+        </Flex>
       )}
 
       {/* Command suggestion chips — shown when idle */}
       {!listening && confidence === null && (
-        <div className="flex flex-wrap gap-1 max-w-[280px] justify-center">
+        <Flex wrap="wrap" gap="1" justify="center" style={{ maxWidth: 280 }}>
           {COMMAND_SUGGESTIONS.map(cmd => (
-            <button
+            <Badge
               key={cmd}
+              color="gray"
+              variant="soft"
+              radius="full"
+              size="1"
+              className="cursor-pointer hover:bg-mission-control-accent/20 transition-colors"
               onClick={() => onTranscript(cmd)}
-              className="px-2 py-0.5 rounded-full text-[10px] bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-accent/20 hover:text-mission-control-accent transition-colors"
             >
               {cmd}
-            </button>
+            </Badge>
           ))}
-        </div>
+        </Flex>
       )}
-    </div>
+    </Flex>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { UserPlus, BookOpen, Users, ChevronRight, Award, Target, CheckCircle, AlertTriangle, FileText, Sparkles } from 'lucide-react';
+import { Button, Badge } from '@radix-ui/themes';
 import HRAgentCreationModal from './HRAgentCreationModal';
 import TrainingLogModal from './TrainingLogModal';
 import AgentSkillsModal from './AgentSkillsModal';
@@ -106,10 +107,10 @@ export default function HRSection() {
   };
 
   const indicatorEl = indicator && (
-    <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border bg-success-subtle text-success border-success-border">
+    <Badge color="grass" variant="soft" className="flex items-center gap-1">
       {indicator === 'new-training' && <><Sparkles size={10} /> New training</>}
       {indicator === 'new-report' && <><Sparkles size={10} /> New report</>}
-    </span>
+    </Badge>
   );
 
   return (
@@ -171,30 +172,37 @@ export default function HRSection() {
 
           {/* Action Buttons */}
           <div className="p-3 flex gap-2">
-            <button
+            <Button
               onClick={() => setShowCreate(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white font-medium rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm"
+              size="2"
+              className="flex-1"
             >
               <UserPlus size={16} /> Create New Agent
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={openReports}
-              className="flex items-center gap-2 px-4 py-2.5 border border-success-border text-teal-400 rounded-lg hover:bg-teal-500/10 transition-colors text-sm"
+              variant="outline"
+              color="grass"
+              size="2"
             >
               <FileText size={16} /> Reports
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={openTrainingLog}
-              className="flex items-center gap-2 px-4 py-2.5 border border-success-border text-teal-400 rounded-lg hover:bg-teal-500/10 transition-colors text-sm"
+              variant="outline"
+              color="grass"
+              size="2"
             >
               <BookOpen size={16} /> Training Log
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setShowSkills(true)}
-              className="flex items-center gap-2 px-4 py-2.5 border border-success-border text-teal-400 rounded-lg hover:bg-teal-500/10 transition-colors text-sm"
+              variant="outline"
+              color="grass"
+              size="2"
             >
               <Award size={16} /> Skills
-            </button>
+            </Button>
           </div>
 
           {/* Skill gaps alert */}
@@ -206,9 +214,9 @@ export default function HRSection() {
                   <strong>{teamHealth.agentsNeedingTraining.join(', ')}</strong>{' '}
                   {teamHealth.agentsNeedingTraining.length === 1 ? 'has' : 'have'} skills below threshold. Training recommended.
                 </span>
-                <button className="ml-auto text-amber-400 hover:text-amber-300 whitespace-nowrap" onClick={openTrainingLog}>
+                <Button variant="ghost" color="amber" size="1" className="ml-auto whitespace-nowrap" onClick={openTrainingLog}>
                   View <ChevronRight size={12} className="inline" />
-                </button>
+                </Button>
               </div>
             </div>
           )}

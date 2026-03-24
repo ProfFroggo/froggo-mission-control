@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import {
   ChevronUp, ChevronDown, Trash2, Plus, ChevronRight, ChevronDown as Expand, X, Save, Users,
 } from 'lucide-react';
+import { Button, IconButton, Heading, Text, Spinner, Select, TextField, TextArea } from '@radix-ui/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -108,59 +109,65 @@ function ConfigEditor({ step, onChange }: ConfigEditorProps) {
     case 'send-message':
       return (
         <>
-          <Field label="To"><input style={inputStyle} value={c.to ?? ''} onChange={e => set('to', e.target.value)} placeholder="Agent ID or room" /></Field>
-          <Field label="Message"><textarea style={textareaStyle} value={c.message ?? ''} onChange={e => set('message', e.target.value)} placeholder="Message content..." /></Field>
+          <Field label="To"><TextField.Root value={c.to ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('to', e.target.value)} placeholder="Agent ID or room" /></Field>
+          <Field label="Message"><TextArea variant="soft" value={c.message ?? ''} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('message', e.target.value)} placeholder="Message content..." /></Field>
         </>
       );
     case 'assign-task':
       return (
         <>
-          <Field label="Task ID"><input style={inputStyle} value={c.taskId ?? ''} onChange={e => set('taskId', e.target.value)} placeholder="task-xxx" /></Field>
-          <Field label="Agent ID"><input style={inputStyle} value={c.agentId ?? ''} onChange={e => set('agentId', e.target.value)} placeholder="agent-xxx" /></Field>
+          <Field label="Task ID"><TextField.Root value={c.taskId ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('taskId', e.target.value)} placeholder="task-xxx" /></Field>
+          <Field label="Agent ID"><TextField.Root value={c.agentId ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('agentId', e.target.value)} placeholder="agent-xxx" /></Field>
         </>
       );
     case 'send-for-approval':
       return (
         <>
-          <Field label="Description"><textarea style={textareaStyle} value={c.description ?? ''} onChange={e => set('description', e.target.value)} placeholder="What needs approval?" /></Field>
-          <Field label="Approvers (comma-separated)"><input style={inputStyle} value={c.approvers ?? ''} onChange={e => set('approvers', e.target.value)} placeholder="user-1, user-2" /></Field>
+          <Field label="Description"><TextArea variant="soft" value={c.description ?? ''} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)} placeholder="What needs approval?" /></Field>
+          <Field label="Approvers (comma-separated)"><TextField.Root value={c.approvers ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('approvers', e.target.value)} placeholder="user-1, user-2" /></Field>
         </>
       );
     case 'wait':
       return (
         <>
           <Field label="Duration">
-            <input style={inputStyle} type="number" min="1" value={c.duration ?? '1'} onChange={e => set('duration', e.target.value)} />
+            <TextField.Root type="number" min="1" value={c.duration ?? '1'} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('duration', e.target.value)} />
           </Field>
           <Field label="Unit">
-            <select className={selectClassName} value={c.unit ?? 'hours'} onChange={e => set('unit', e.target.value)}>
-              <option value="minutes">Minutes</option>
-              <option value="hours">Hours</option>
-              <option value="days">Days</option>
-            </select>
+            <Select.Root value={c.unit ?? 'hours'} onValueChange={val => set('unit', val)}>
+              <Select.Trigger />
+              <Select.Content>
+                <Select.Item value="minutes">Minutes</Select.Item>
+                <Select.Item value="hours">Hours</Select.Item>
+                <Select.Item value="days">Days</Select.Item>
+              </Select.Content>
+            </Select.Root>
           </Field>
         </>
       );
     case 'condition':
       return (
         <>
-          <Field label="Field"><input style={inputStyle} value={c.field ?? ''} onChange={e => set('field', e.target.value)} placeholder="e.g. task.status" /></Field>
+          <Field label="Field"><TextField.Root value={c.field ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('field', e.target.value)} placeholder="e.g. task.status" /></Field>
           <Field label="Operator">
-            <select className={selectClassName} value={c.operator ?? 'equals'} onChange={e => set('operator', e.target.value)}>
-              <option value="equals">Equals</option>
-              <option value="contains">Contains</option>
-              <option value="greater_than">Greater than</option>
-              <option value="less_than">Less than</option>
-            </select>
+            <Select.Root value={c.operator ?? 'equals'} onValueChange={val => set('operator', val)}>
+              <Select.Trigger />
+              <Select.Content>
+                <Select.Item value="equals">Equals</Select.Item>
+                <Select.Item value="contains">Contains</Select.Item>
+                <Select.Item value="greater_than">Greater than</Select.Item>
+                <Select.Item value="less_than">Less than</Select.Item>
+              </Select.Content>
+            </Select.Root>
           </Field>
-          <Field label="Value"><input style={inputStyle} value={c.value ?? ''} onChange={e => set('value', e.target.value)} placeholder="Comparison value" /></Field>
+          <Field label="Value"><TextField.Root value={c.value ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('value', e.target.value)} placeholder="Comparison value" /></Field>
         </>
       );
     case 'notify-agent':
       return (
         <>
-          <Field label="Agent ID"><input style={inputStyle} value={c.agentId ?? ''} onChange={e => set('agentId', e.target.value)} placeholder="agent-xxx" /></Field>
-          <Field label="Message"><textarea style={textareaStyle} value={c.message ?? ''} onChange={e => set('message', e.target.value)} placeholder="Notification message..." /></Field>
+          <Field label="Agent ID"><TextField.Root value={c.agentId ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('agentId', e.target.value)} placeholder="agent-xxx" /></Field>
+          <Field label="Message"><TextArea variant="soft" value={c.message ?? ''} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('message', e.target.value)} placeholder="Notification message..." /></Field>
         </>
       );
     case 'create-task': {
@@ -177,21 +184,24 @@ function ConfigEditor({ step, onChange }: ConfigEditorProps) {
       const removeSubtask = (i: number) => set('subtasks', subtasks.filter((_, j) => j !== i));
       return (
         <>
-          <Field label="Title"><input style={inputStyle} value={c.title ?? ''} onChange={e => set('title', e.target.value)} placeholder="Task title" /></Field>
-          <Field label="Description"><textarea style={textareaStyle} value={c.description ?? ''} onChange={e => set('description', e.target.value)} placeholder="What needs to be done..." /></Field>
-          <Field label="Planning Notes"><textarea style={textareaStyle} value={c.planningNotes ?? ''} onChange={e => set('planningNotes', e.target.value)} placeholder="Step-by-step approach for the agent..." /></Field>
+          <Field label="Title"><TextField.Root value={c.title ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('title', e.target.value)} placeholder="Task title" /></Field>
+          <Field label="Description"><TextArea variant="soft" value={c.description ?? ''} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)} placeholder="What needs to be done..." /></Field>
+          <Field label="Planning Notes"><TextArea variant="soft" value={c.planningNotes ?? ''} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('planningNotes', e.target.value)} placeholder="Step-by-step approach for the agent..." /></Field>
           <Field label="Priority">
-            <select className={selectClassName} value={c.priority ?? 'p2'} onChange={e => set('priority', e.target.value)}>
-              <option value="p0">P0 — Critical</option>
-              <option value="p1">P1 — High</option>
-              <option value="p2">P2 — Medium</option>
-              <option value="p3">P3 — Low</option>
-            </select>
+            <Select.Root value={c.priority ?? 'p2'} onValueChange={val => set('priority', val)}>
+              <Select.Trigger />
+              <Select.Content>
+                <Select.Item value="p0">P0 — Critical</Select.Item>
+                <Select.Item value="p1">P1 — High</Select.Item>
+                <Select.Item value="p2">P2 — Medium</Select.Item>
+                <Select.Item value="p3">P3 — Low</Select.Item>
+              </Select.Content>
+            </Select.Root>
           </Field>
           <Field label="Assign to (Agent ID)">
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Users size={13} style={{ color: 'var(--mission-control-text-dim)', flexShrink: 0 }} />
-              <input style={{ ...inputStyle, flex: 1 }} value={c.assignTo ?? ''} onChange={e => set('assignTo', e.target.value)} placeholder="coder, designer, growth-director..." />
+              <TextField.Root style={{ flex: 1 }} value={c.assignTo ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('assignTo', e.target.value)} placeholder="coder, designer, growth-director..." />
             </div>
           </Field>
           <Field label="Subtasks">
@@ -200,46 +210,37 @@ function ConfigEditor({ step, onChange }: ConfigEditorProps) {
                 <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--mission-control-border)', background: 'var(--mission-control-bg)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--mission-control-text-dim)', width: 16, flexShrink: 0 }}>{i + 1}</span>
-                    <input
-                      style={{ ...inputStyle, flex: 1 }}
+                    <TextField.Root
+                      style={{ flex: 1 }}
                       value={st.title}
-                      onChange={e => updateSubtask(i, 'title', e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSubtask(i, 'title', e.target.value)}
                       placeholder={`Subtask ${i + 1} title`}
                     />
-                    <button
+                    <IconButton
                       type="button"
+                      variant="ghost"
+                      color="red"
+                      size="1"
                       onClick={() => removeSubtask(i)}
-                      style={{ ...btnIcon, color: 'var(--status-error, #ef4444)', flexShrink: 0 }}
                       title="Remove subtask"
+                      style={{ flexShrink: 0 }}
                     >
                       <Trash2 size={13} />
-                    </button>
+                    </IconButton>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 20 }}>
                     <Users size={11} style={{ color: 'var(--mission-control-text-dim)', flexShrink: 0 }} />
-                    <input
-                      style={{ ...inputStyle, fontSize: 11 }}
+                    <TextField.Root
                       value={st.assignedTo}
-                      onChange={e => updateSubtask(i, 'assignedTo', e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSubtask(i, 'assignedTo', e.target.value)}
                       placeholder="Assign to agent (optional)"
                     />
                   </div>
                 </div>
               ))}
-              <button
-                type="button"
-                onClick={addSubtask}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  padding: '6px 10px', borderRadius: 6, fontSize: 12,
-                  border: '1px dashed var(--mission-control-border)',
-                  background: 'transparent',
-                  color: 'var(--mission-control-accent)',
-                  cursor: 'pointer',
-                }}
-              >
+              <Button type="button" variant="outline" size="1" onClick={addSubtask}>
                 <Plus size={12} /> Add subtask
-              </button>
+              </Button>
             </div>
           </Field>
         </>
@@ -248,23 +249,26 @@ function ConfigEditor({ step, onChange }: ConfigEditorProps) {
     case 'update-task-status':
       return (
         <>
-          <Field label="Task ID"><input style={inputStyle} value={c.taskId ?? ''} onChange={e => set('taskId', e.target.value)} placeholder="task-xxx" /></Field>
+          <Field label="Task ID"><TextField.Root value={c.taskId ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('taskId', e.target.value)} placeholder="task-xxx" /></Field>
           <Field label="New Status">
-            <select className={selectClassName} value={c.status ?? 'in-progress'} onChange={e => set('status', e.target.value)}>
-              <option value="todo">Todo</option>
-              <option value="in-progress">In Progress</option>
-              <option value="review">Review</option>
-              <option value="done">Done</option>
-            </select>
+            <Select.Root value={c.status ?? 'in-progress'} onValueChange={val => set('status', val)}>
+              <Select.Trigger />
+              <Select.Content>
+                <Select.Item value="todo">Todo</Select.Item>
+                <Select.Item value="in-progress">In Progress</Select.Item>
+                <Select.Item value="review">Review</Select.Item>
+                <Select.Item value="done">Done</Select.Item>
+              </Select.Content>
+            </Select.Root>
           </Field>
         </>
       );
     case 'send-email':
       return (
         <>
-          <Field label="To"><input style={inputStyle} value={c.to ?? ''} onChange={e => set('to', e.target.value)} placeholder="recipient@example.com" /></Field>
-          <Field label="Subject"><input style={inputStyle} value={c.subject ?? ''} onChange={e => set('subject', e.target.value)} placeholder="Email subject" /></Field>
-          <Field label="Body"><textarea style={textareaStyle} value={c.body ?? ''} onChange={e => set('body', e.target.value)} placeholder="Email body..." /></Field>
+          <Field label="To"><TextField.Root value={c.to ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('to', e.target.value)} placeholder="recipient@example.com" /></Field>
+          <Field label="Subject"><TextField.Root value={c.subject ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('subject', e.target.value)} placeholder="Email subject" /></Field>
+          <Field label="Body"><TextArea variant="soft" value={c.body ?? ''} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('body', e.target.value)} placeholder="Email body..." /></Field>
         </>
       );
     default:
@@ -326,41 +330,43 @@ function StepRow({ step, index, total, onMove, onDelete, onChangeType, onChangeC
           {index + 1}
         </span>
 
-        <select
-          value={step.type}
-          onClick={e => e.stopPropagation()}
-          onChange={e => { e.stopPropagation(); onChangeType(step.id, e.target.value as StepType); }}
-          className={`${selectClassName} flex-1 max-w-[220px]`}
-        >
-          {STEP_TYPES.map(t => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </select>
+        <div style={{ flex: 1, maxWidth: 220 }} onClick={e => e.stopPropagation()}>
+          <Select.Root value={step.type} onValueChange={val => { onChangeType(step.id, val as StepType); }}>
+            <Select.Trigger />
+            <Select.Content>
+              {STEP_TYPES.map(t => (
+                <Select.Item key={t.value} value={t.value}>{t.label}</Select.Item>
+              ))}
+            </Select.Content>
+          </Select.Root>
+        </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button
+          <IconButton
+            variant="ghost" size="1"
             onClick={e => { e.stopPropagation(); onMove(index, -1); }}
             disabled={index === 0}
             title="Move up"
-            style={{ ...btnIcon, opacity: index === 0 ? 0.3 : 1 }}
+            style={{ opacity: index === 0 ? 0.3 : 1 }}
           >
             <ChevronUp size={14} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            variant="ghost" size="1"
             onClick={e => { e.stopPropagation(); onMove(index, 1); }}
             disabled={index === total - 1}
             title="Move down"
-            style={{ ...btnIcon, opacity: index === total - 1 ? 0.3 : 1 }}
+            style={{ opacity: index === total - 1 ? 0.3 : 1 }}
           >
             <ChevronDown size={14} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            variant="ghost" color="red" size="1"
             onClick={e => { e.stopPropagation(); onDelete(step.id); }}
             title="Delete step"
-            style={{ ...btnIcon, color: 'var(--status-error, #ef4444)' }}
           >
             <Trash2 size={14} />
-          </button>
+          </IconButton>
           {expanded ? <Expand size={14} style={{ color: 'var(--mission-control-text-dim)' }} /> : <ChevronRight size={14} style={{ color: 'var(--mission-control-text-dim)' }} />}
         </div>
       </div>
@@ -403,26 +409,14 @@ function JsonPreview({ steps }: { steps: AutomationStepDef[] }) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ border: '1px solid var(--mission-control-border)', borderRadius: 8, overflow: 'hidden' }}>
-      <button
+      <Button
+        variant="ghost"
         onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '8px 14px',
-          background: 'var(--mission-control-surface)',
-          border: 'none',
-          color: 'var(--mission-control-text-dim)',
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: 'pointer',
-          textAlign: 'left',
-        }}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--mission-control-surface)', justifyContent: 'flex-start', height: 'auto' }}
       >
         {open ? <Expand size={12} /> : <ChevronRight size={12} />}
         Preview JSON
-      </button>
+      </Button>
       {open && (
         <pre
           style={{
@@ -540,12 +534,12 @@ export default function AutomationStepBuilder({ automationId, initialSteps = [],
           }}
         >
           <div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--mission-control-text)', margin: 0 }}>Step Builder</h2>
-            <p style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', margin: '2px 0 0' }}>
+            <Heading size="4" weight="medium">Step Builder</Heading>
+            <Text size="1" style={{ color: 'var(--mission-control-text-dim)' }}>
               {steps.length} step{steps.length !== 1 ? 's' : ''}
-            </p>
+            </Text>
           </div>
-          <button onClick={onClose} style={btnIcon}><X size={18} /></button>
+          <IconButton variant="ghost" size="2" onClick={onClose}><X size={18} /></IconButton>
         </div>
 
         {/* Steps */}
@@ -578,28 +572,13 @@ export default function AutomationStepBuilder({ automationId, initialSteps = [],
             />
           ))}
 
-          <button
+          <Button
+            variant="outline"
             onClick={addStep}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              padding: '10px',
-              borderRadius: 8,
-              border: '2px dashed var(--mission-control-border)',
-              background: 'transparent',
-              color: 'var(--mission-control-text-dim)',
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'border-color 0.15s, color 0.15s',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--mission-control-accent)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--mission-control-accent)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--mission-control-border)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--mission-control-text-dim)'; }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', width: '100%', height: 'auto' }}
           >
             <Plus size={16} /> Add step
-          </button>
+          </Button>
 
           <JsonPreview steps={steps} />
         </div>
@@ -621,44 +600,13 @@ export default function AutomationStepBuilder({ automationId, initialSteps = [],
             <p style={{ fontSize: 12, color: 'var(--status-error, #ef4444)', margin: 0 }}>{error}</p>
           )}
           <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={onClose}
-              style={{
-                flex: 1,
-                padding: '9px',
-                borderRadius: 8,
-                border: '1px solid var(--mission-control-border)',
-                background: 'transparent',
-                color: 'var(--mission-control-text)',
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
+            <Button variant="outline" onClick={onClose} style={{ flex: 1 }}>
               Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              style={{
-                flex: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                padding: '9px',
-                borderRadius: 8,
-                border: 'none',
-                background: saving ? 'var(--mission-control-border)' : 'var(--mission-control-accent)',
-                color: '#fff',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: saving ? 'not-allowed' : 'pointer',
-              }}
-            >
-              <Save size={14} />
+            </Button>
+            <Button variant="solid" onClick={handleSave} disabled={saving} style={{ flex: 2 }}>
+              {saving ? <Spinner size="1" /> : <Save size={14} />}
               {saving ? 'Saving...' : 'Save steps'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
