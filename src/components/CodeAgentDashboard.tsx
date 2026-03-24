@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle, AlertCircle, Loader2, Info, Monitor, Bug, Clock } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import CronTab from './CronTab';
 import DebugTab from './DebugTab';
 import EmptyState from './EmptyState';
@@ -149,7 +149,7 @@ export default function CodeAgentDashboard() {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* Read-only notice */}
       <div className="flex items-center gap-2 px-4 py-2 bg-info-subtle border-b border-mission-control-border text-info text-xs">
         <Info size={13} />
@@ -181,18 +181,25 @@ export default function CodeAgentDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mt-2">
-          {(['dashboard', 'cron', 'debug'] as const).map((tab) => (
-            <Button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              size="2"
-              variant={activeTab === tab ? 'solid' : 'ghost'}
+        <div className="flex gap-1 border-b border-mission-control-border mt-2">
+          {([
+            { id: 'dashboard', label: 'Dashboard', icon: Monitor },
+            { id: 'cron',      label: 'Cron Jobs', icon: Clock },
+            { id: 'debug',     label: 'Debug',     icon: Bug },
+          ] as const).map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center gap-1.5 px-4 py-3 border-b-2 -mb-px text-sm font-medium transition-colors ${
+                activeTab === id
+                  ? 'border-mission-control-accent text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
-              {tab === 'dashboard' && <span className="flex items-center gap-1.5"><Monitor size={14} /> Dashboard</span>}
-              {tab === 'cron' && <span className="flex items-center gap-1.5"><Clock size={14} /> Cron Jobs</span>}
-              {tab === 'debug' && <span className="flex items-center gap-1.5"><Bug size={14} /> Debug</span>}
-            </Button>
+              <Icon size={14} />
+              {label}
+            </button>
           ))}
         </div>
       </div>
@@ -345,6 +352,6 @@ export default function CodeAgentDashboard() {
         </div>
       </div>
       </>}
-    </div>
+    </Flex>
   );
 }

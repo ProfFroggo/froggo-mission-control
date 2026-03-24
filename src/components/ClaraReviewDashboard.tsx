@@ -21,7 +21,7 @@ import {
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { useEventBus } from '../lib/useEventBus';
-import { Button, IconButton, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextArea, Flex } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -214,7 +214,7 @@ function ReviewCard({
           onClick={() => setExpanded(e => !e)}
           variant="ghost"
           size="2"
-          radius="medium"
+         
           aria-label={expanded ? 'Collapse' : 'Expand'}
         >
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -423,7 +423,7 @@ export default function ClaraReviewDashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-6 h-full overflow-auto p-4">
+    <Flex direction="column" gap="5" height="100%" p="4" className="overflow-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -504,6 +504,6 @@ export default function ClaraReviewDashboard() {
           </div>
         </div>
       )}
-    </div>
+    </Flex>
   );
 }

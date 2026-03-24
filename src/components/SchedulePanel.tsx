@@ -5,10 +5,12 @@ import TaskScheduler from './TaskScheduler';
 import ContentScheduler from './ContentScheduler';
 import CronTab from './CronTab';
 import { Spinner } from './LoadingStates';
+import { Flex } from '@radix-ui/themes';
 import EmptyState from './EmptyState';
 import ErrorDisplay from './ErrorDisplay';
 import { ErrorBoundary } from './ErrorBoundary';
 import TabNav, { type TabNavItem } from './TabNav';
+import PanelHeader from './PanelHeader';
 
 type ScheduleTab = 'calendar' | 'tasks' | 'scheduler' | 'crons';
 
@@ -72,9 +74,15 @@ export default function SchedulePanel() {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Tab Header */}
+    <Flex direction="column" height="100%">
+      {/* Header + Tabs */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
+        <PanelHeader
+          icon={Calendar}
+          title="Schedule"
+          subtitle="Manage calendar events, tasks, and cron jobs"
+          border={false}
+        />
         <TabNav
           tabs={SCHEDULE_TABS}
           activeTab={activeTab}
@@ -92,6 +100,6 @@ export default function SchedulePanel() {
           {activeTab === 'crons' && <CronTab />}
         </ErrorBoundary>
       </div>
-    </div>
+    </Flex>
   );
 }

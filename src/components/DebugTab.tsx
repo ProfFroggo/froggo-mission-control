@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Wifi, WifiOff, RefreshCw, Terminal, Activity, AlertCircle } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Box } from '@radix-ui/themes';
 import { gateway, reconnectGateway } from '../lib/gateway';
 import type { ConnectionState } from '../lib/gateway';
 import { showToast } from './Toast';
@@ -76,7 +76,7 @@ export default function DebugTab() {
   };
 
   return (
-    <div className="flex-1 overflow-auto p-6 space-y-6">
+    <Box p="5" className="flex-1 overflow-auto space-y-6">
       {/* Gateway Connection */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
         <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
@@ -84,7 +84,7 @@ export default function DebugTab() {
             <Activity size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Gateway Connection</h2>
           </div>
-          <Button onClick={handleReconnect} size="2" variant="soft" radius="medium">
+          <Button onClick={handleReconnect} size="2" variant="soft">
             <RefreshCw size={14} /> Reconnect
           </Button>
         </div>
@@ -106,7 +106,7 @@ export default function DebugTab() {
             <Terminal size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Active Sessions ({sessions.length})</h2>
           </div>
-          <IconButton onClick={loadData} disabled={loading} size="2" variant="ghost" radius="medium" aria-label="Refresh sessions">
+          <IconButton onClick={loadData} disabled={loading} size="2" variant="ghost" aria-label="Refresh sessions">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </IconButton>
         </div>
@@ -135,7 +135,7 @@ export default function DebugTab() {
             <AlertCircle size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Recent Logs</h2>
           </div>
-          <Button onClick={refreshLogs} size="2" variant="soft" radius="medium">
+          <Button onClick={refreshLogs} size="2" variant="soft">
             <RefreshCw size={14} /> Load More
           </Button>
         </div>
@@ -153,6 +153,6 @@ export default function DebugTab() {
           })}
         </div>
       </div>
-    </div>
+    </Box>
   );
 }

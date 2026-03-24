@@ -12,7 +12,7 @@ import {
   ChevronDown, ChevronRight, Volume2, VolumeX, ExternalLink,
   MessageSquare, Calendar
 } from 'lucide-react';
-import { Button, IconButton, Select, Checkbox, Switch } from '@radix-ui/themes';
+import { Button, IconButton, Select, Checkbox, Switch, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import IconBadge from './IconBadge';
@@ -180,7 +180,7 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
         <IconButton
           size="2"
           variant="ghost"
-          radius="medium"
+         
           onClick={(e) => navigateTo('kanban', e)}
           title="View task"
         >
@@ -191,7 +191,7 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
         <IconButton
           size="2"
           variant="ghost"
-          radius="medium"
+         
           onClick={(e) => navigateTo('approvals', e)}
           title="Review"
         >
@@ -202,7 +202,7 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
         <IconButton
           size="2"
           variant="ghost"
-          radius="medium"
+         
           onClick={(e) => navigateTo('agents', e)}
           title="View agent"
         >
@@ -215,7 +215,7 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
         <IconButton
           size="2"
           variant="ghost"
-          radius="medium"
+         
           onClick={(e) => { e.stopPropagation(); onMarkRead(notif.id); }}
           title="Mark as read"
         >
@@ -227,7 +227,7 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
       <IconButton
         size="2"
         variant="ghost"
-        radius="medium"
+       
         onClick={(e) => { e.stopPropagation(); onDismiss(notif.id); }}
         title="Dismiss"
       >
@@ -430,7 +430,7 @@ export default function NotificationsPanelV2() {
             <IconButton
               size="2"
               variant="ghost"
-              radius="medium"
+             
               onClick={() => setShowSettings(false)}
             >
               <X size={20} />
@@ -565,7 +565,7 @@ export default function NotificationsPanelV2() {
   // ── Main view ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* Header */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
@@ -592,7 +592,7 @@ export default function NotificationsPanelV2() {
             <IconButton
               size="2"
               variant={soundEnabled ? 'soft' : 'ghost'}
-              radius="medium"
+             
               onClick={() => saveSoundPref(!soundEnabled)}
               title={soundEnabled ? 'Mute notification sounds' : 'Enable notification sounds'}
             >
@@ -603,7 +603,7 @@ export default function NotificationsPanelV2() {
             <IconButton
               size="2"
               variant={pushEnabled && pushPermission === 'granted' ? 'soft' : 'ghost'}
-              radius="medium"
+             
               onClick={pushEnabled ? handleDisablePush : handleRequestPush}
               title={pushEnabled && pushPermission === 'granted' ? 'Disable browser notifications' : 'Enable browser notifications'}
             >
@@ -650,7 +650,7 @@ export default function NotificationsPanelV2() {
             <IconButton
               size="2"
               variant="ghost"
-              radius="medium"
+             
               onClick={() => setShowSettings(true)}
               title="Settings"
             >
@@ -928,6 +928,6 @@ export default function NotificationsPanelV2() {
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

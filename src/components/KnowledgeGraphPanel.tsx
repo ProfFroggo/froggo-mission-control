@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Network } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
+import { IconButton, Flex } from '@radix-ui/themes';
 
 interface Article {
   id: string;
@@ -192,7 +192,7 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
   for (const n of displayNodes) nodeMap[n.id] = n;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <Flex align="center" justify="center" className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
         className="relative w-full max-w-4xl mx-4 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-2xl flex flex-col"
         style={{ height: '80vh' }}
@@ -210,7 +210,7 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
               </span>
             ))}
           </div>
-          <IconButton onClick={onClose} size="2" variant="ghost" radius="medium" aria-label="Close">
+          <IconButton onClick={onClose} size="2" variant="ghost" aria-label="Close">
             <X size={14} />
           </IconButton>
         </div>
@@ -280,6 +280,6 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
           </p>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

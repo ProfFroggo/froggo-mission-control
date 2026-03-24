@@ -6,7 +6,7 @@ import {
   RefreshCw, FileText, MessageSquare, Archive, Layers, List, History,
   Users, BarChart2,
 } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Switch, Flex } from '@radix-ui/themes';
 import TabNav, { type TabNavItem } from './TabNav';
 import AutomationBuilderModal from './AutomationBuilderModal';
 import AutomationStepBuilder, { type AutomationStepDef } from './AutomationStepBuilder';
@@ -181,16 +181,7 @@ function StatusBadge({ status }: { status: AutomationStatus }) {
   const { label, className } = map[status];
   return (
     <span className={className}>
-      <span
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: '50%',
-          background: 'currentColor',
-          display: 'inline-block',
-          flexShrink: 0,
-        }}
-      />
+      <span className="w-1.5 h-1.5 rounded-full bg-current inline-block flex-shrink-0" />
       {label}
     </span>
   );
@@ -206,7 +197,7 @@ function TriggerIcon({ type }: { type: TriggerType }) {
   };
   const Icon = icons[type];
   return (
-    <span title={type} style={{ color: 'var(--mission-control-text-dim)' }}>
+    <span title={type} className="text-mission-control-text-dim">
       <Icon size={14} />
     </span>
   );
@@ -234,104 +225,67 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
   const isActive = automation.status === 'active';
 
   return (
-    <div
-      style={{
-        background: 'var(--mission-control-surface)',
-        border: '1px solid var(--mission-control-border)',
-        borderRadius: 12,
-        padding: '16px 20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-      }}
-    >
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl px-5 py-4 flex flex-col gap-3">
       {/* Top row: name + status + toggle */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <TriggerIcon type={automation.trigger_type} />
-            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--mission-control-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span className="font-semibold text-sm text-mission-control-text overflow-hidden text-ellipsis whitespace-nowrap">
               {automation.name}
             </span>
             <StatusBadge status={automation.status} />
           </div>
           {automation.description && (
-            <p style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', marginTop: 4, lineHeight: 1.5 }}>
+            <p className="text-xs text-mission-control-text-dim mt-1 leading-relaxed">
               {automation.description}
             </p>
           )}
         </div>
-        {/* Toggle switch */}
-        <button
-          type="button"
-          role="switch"
-          aria-checked={isActive}
-          onClick={() => onToggle(automation.id, automation.status)}
+        <Switch
+          checked={isActive}
+          onCheckedChange={() => onToggle(automation.id, automation.status)}
           title={isActive ? 'Pause automation' : 'Activate automation'}
           aria-label={isActive ? 'Pause automation' : 'Activate automation'}
-          style={{
-            flexShrink: 0,
-            width: 36,
-            height: 20,
-            borderRadius: 10,
-            background: isActive ? 'var(--accent-9)' : 'var(--gray-6)',
-            border: 'none',
-            cursor: 'pointer',
-            position: 'relative',
-            transition: 'background 0.2s',
-          }}
-        >
-          <span
-            style={{
-              position: 'absolute',
-              top: 2,
-              left: isActive ? 18 : 2,
-              width: 16,
-              height: 16,
-              borderRadius: '50%',
-              background: 'white',
-              transition: 'left 0.2s',
-            }}
-          />
-        </button>
+        />
       </div>
 
       {/* Meta row: last run, next run */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', fontVariantNumeric: 'tabular-nums' }}>
+      <div className="flex gap-4 flex-wrap">
+        <span className="text-xs text-mission-control-text-dim tabular-nums">
           Last run: {formatTime(automation.lastRun)}
         </span>
-        <span style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', fontVariantNumeric: 'tabular-nums' }}>
+        <span className="text-xs text-mission-control-text-dim tabular-nums">
           Next run: {formatTime(automation.nextRun)}
         </span>
-        <span style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', fontVariantNumeric: 'tabular-nums' }}>
+        <span className="text-xs text-mission-control-text-dim tabular-nums">
           {automation.steps.length} step{automation.steps.length !== 1 ? 's' : ''}
         </span>
       </div>
 
       {/* Action row */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="flex gap-2 flex-wrap items-center">
         <Button size="1" variant="solid" onClick={() => onRunNow(automation.id)}>
           <Play size={12} /> Run now
         </Button>
-        <Button size="1" variant="ghost" onClick={() => onEdit(automation)}>
+        <Button size="1" variant="ghost" color="gray" onClick={() => onEdit(automation)}>
           <Edit2 size={12} /> Edit
         </Button>
-        <Button size="1" variant="ghost" onClick={() => onOpenStepBuilder(automation)}>
+        <Button size="1" variant="ghost" color="gray" onClick={() => onOpenStepBuilder(automation)}>
           <List size={12} /> Steps
         </Button>
-        <Button size="1" variant="ghost" onClick={() => onOpenRunLog(automation)}>
+        <Button size="1" variant="ghost" color="gray" onClick={() => onOpenRunLog(automation)}>
           <History size={12} /> History
         </Button>
         <IconButton
           size="1"
           variant="ghost"
           color="red"
-          radius="medium"
+         
           onClick={() => onDelete(automation.id)}
           title="Delete automation"
           aria-label="Delete automation"
-          style={{ marginLeft: 'auto' }}
+          className="ml-auto"
         >
           <Trash2 size={12} />
         </IconButton>
@@ -359,57 +313,35 @@ function TemplateCard({ template, onUse }: TemplateCardProps) {
   const Icon: ComponentType<any> = template.icon; // eslint-disable-line @typescript-eslint/no-explicit-any
   const color = CATEGORY_COLORS[template.category];
   return (
-    <div
-      style={{
-        background: 'var(--mission-control-surface)',
-        border: '1px solid var(--mission-control-border)',
-        borderRadius: 12,
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-      }}
-    >
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5 flex flex-col gap-3">
       {/* Icon */}
       <div
-        style={{
-          width: 48, height: 48, borderRadius: 12,
-          background: `color-mix(in srgb, ${color} 15%, transparent)`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color,
-        }}
+        className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
       >
         <Icon size={24} />
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--mission-control-text)' }}>
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className="font-semibold text-sm text-mission-control-text">
             {template.name}
           </span>
           <span
-            style={{
-              fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-              background: `color-mix(in srgb, ${color} 15%, transparent)`, color,
-            }}
+            className="text-[11px] font-bold px-1.5 py-0.5 rounded"
+            style={{ backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
           >
             {template.category}
           </span>
         </div>
-        <p style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', lineHeight: 1.5 }}>
+        <p className="text-xs text-mission-control-text-dim leading-relaxed">
           {template.description}
         </p>
       </div>
 
       {/* CTA */}
-      <Button
-        onClick={() => onUse(template)}
-        size="2"
-        variant="soft"
-        radius="medium"
-        style={{ width: '100%', justifyContent: 'center' }}
-      >
+      <Button onClick={() => onUse(template)} size="2" variant="soft" className="w-full justify-center">
         Use template <ChevronRight size={14} />
       </Button>
     </div>
@@ -420,35 +352,21 @@ function TemplateCard({ template, onUse }: TemplateCardProps) {
 
 function EmptyState({ onNew, onBrowseTemplates }: { onNew: () => void; onBrowseTemplates: () => void }) {
   return (
-    <div
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '80px 20px', gap: 16, textAlign: 'center', minHeight: 300,
-      }}
-    >
-      <div
-        style={{
-          width: 64, height: 64, borderRadius: 16,
-          background: 'color-mix(in srgb, var(--mission-control-accent) 15%, transparent)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--mission-control-accent)',
-        }}
-      >
+    <div className="flex flex-col items-center justify-center py-20 px-5 gap-4 text-center min-h-[300px]">
+      <div className="w-16 h-16 rounded-2xl bg-mission-control-accent/15 flex items-center justify-center text-mission-control-accent">
         <Zap size={32} />
       </div>
       <div>
-        <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--mission-control-text)', marginBottom: 6 }}>
-          No automations yet
-        </h3>
-        <p style={{ fontSize: 14, color: 'var(--mission-control-text-dim)', maxWidth: 360 }}>
+        <h3 className="text-lg font-bold text-mission-control-text mb-1.5">No automations yet</h3>
+        <p className="text-sm text-mission-control-text-dim max-w-sm">
           Build your first automation below or pick a template to get started in seconds.
         </p>
       </div>
-      <div style={{ display: 'flex', gap: 10 }}>
-        <Button onClick={onNew} size="2" variant="solid" radius="medium">
+      <div className="flex gap-2.5">
+        <Button onClick={onNew} size="2" variant="solid">
           <Plus size={16} /> New Automation
         </Button>
-        <Button onClick={onBrowseTemplates} size="2" variant="soft" radius="medium">
+        <Button onClick={onBrowseTemplates} size="2" variant="soft">
           Browse templates
         </Button>
       </div>
@@ -608,80 +526,70 @@ export default function AutomationsPanel() {
   );
 
   return (
-    <div
-      style={{
-        height: '100%',
-        overflow: 'auto',
-        background: 'var(--mission-control-bg)',
-        padding: '28px 32px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 24,
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--mission-control-text)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Zap size={22} style={{ color: 'var(--mission-control-accent)' }} />
-            Automations
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--mission-control-text-dim)' }}>
-            Describe what you want in plain English — the agent builds it for you.
-          </p>
+    <Flex direction="column" gap="5" height="100%" className="overflow-auto bg-mission-control-bg">
+      {/* Header + Tabs */}
+      <div className="border-b border-mission-control-border bg-mission-control-surface">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+              <Zap size={24} className="text-mission-control-accent" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-mission-control-text">Automations</h1>
+              <p className="text-sm text-mission-control-text-dim">
+                Describe what you want in plain English — the agent builds it for you.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => setTemplatesGalleryOpen(true)} size="2" variant="soft">
+              <Layers size={16} /> From Template
+            </Button>
+            <Button onClick={handleNewAutomation} size="2" variant="solid">
+              <Plus size={16} /> New Automation
+            </Button>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button onClick={() => setTemplatesGalleryOpen(true)} size="2" variant="soft" radius="medium">
-            <Layers size={16} /> From Template
-          </Button>
-          <Button onClick={handleNewAutomation} size="2" variant="solid" radius="medium">
-            <Plus size={16} /> New Automation
-          </Button>
+
+        {/* Tabs */}
+        <div className="border-t border-mission-control-border">
+          <TabNav
+            tabs={AUTOMATION_TABS}
+            activeTab={activeTab}
+            onTabChange={(id) => setActiveTab(id as ActiveTab)}
+            paddingX="px-6"
+          />
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-mission-control-border">
-        <TabNav
-          tabs={AUTOMATION_TABS}
-          activeTab={activeTab}
-          onTabChange={(id) => setActiveTab(id as ActiveTab)}
-          paddingX="px-0"
-        />
-      </div>
-
+      {/* My Automations tab content */}
+      <div className="px-8 flex flex-col gap-6">
       {/* My Automations tab */}
       {activeTab === 'my-automations' && (
         <>
           {/* Search + filter bar */}
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: 1, maxWidth: 380 }}>
-              <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-9)', pointerEvents: 'none', zIndex: 1 }} />
+          <div className="flex gap-2.5 items-center">
+            <div className="relative flex-1 max-w-sm">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none z-[1]" />
               <TextField.Root
                 placeholder="Search automations..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 size="2"
-                style={{ paddingLeft: 32 }}
+                className="pl-8"
               />
             </div>
-            <IconButton
-              onClick={fetchAutomations}
-              title="Refresh"
-              aria-label="Refresh automations"
-              size="2"
-              variant="ghost"
-              radius="medium"
-            >
+            <IconButton onClick={fetchAutomations} title="Refresh" aria-label="Refresh automations" size="2" variant="ghost">
               <RefreshCw size={14} />
             </IconButton>
           </div>
 
           {/* Automation list or empty state */}
           {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: 'var(--mission-control-text-dim)', gap: 10 }}>
-              <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: 14 }}>Loading automations...</span>
+            <div className="flex items-center justify-center py-16 text-mission-control-text-dim gap-2.5">
+              <RefreshCw size={18} className="animate-spin" />
+              <span className="text-sm">Loading automations...</span>
             </div>
           ) : filtered.length === 0 ? (
             <EmptyState
@@ -689,7 +597,7 @@ export default function AutomationsPanel() {
               onBrowseTemplates={() => setActiveTab('templates')}
             />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="flex flex-col gap-3">
               {filtered.map(automation => (
                 <AutomationCard
                   key={automation.id}
@@ -769,6 +677,7 @@ export default function AutomationsPanel() {
 
       {/* Spin keyframe */}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+      </div>
+    </Flex>
   );
 }

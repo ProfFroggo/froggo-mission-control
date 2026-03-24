@@ -4,7 +4,7 @@ import {
   Search, CheckSquare, Bot, BookOpen, Library, Megaphone, Zap,
   Download, X, ArrowUpDown, Calendar,
 } from 'lucide-react';
-import { Button, IconButton, TextField, Checkbox } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Checkbox, Flex } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type SortMode = 'relevance' | 'date' | 'name';
@@ -178,7 +178,7 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
   const totalResults = processedGroups.reduce((s, g) => s + g.total, 0);
 
   return (
-    <div className="flex flex-col h-full">
+    <Flex direction="column" height="100%">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
         <form onSubmit={handleSubmit} className="flex items-center gap-3 flex-1">
@@ -224,7 +224,7 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
             variant="ghost"
             color="gray"
             size="2"
-            radius="medium"
+           
             className="flex-shrink-0"
           >
             <X size={20} />
@@ -399,6 +399,6 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
           ))}
         </main>
       </div>
-    </div>
+    </Flex>
   );
 }

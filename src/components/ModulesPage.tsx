@@ -59,7 +59,7 @@ import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { Skeleton } from './LoadingStates';
 import ModuleLibraryPanel from './ModuleLibraryPanel';
 import type { CatalogModule } from '../types/catalog';
-import { Button, IconButton, Switch } from '@radix-ui/themes';
+import { Button, IconButton, Switch, Box } from '@radix-ui/themes';
 
 // ─── Activity log helpers ──────────────────────────────────────────────────────
 
@@ -374,7 +374,7 @@ function ModuleCard({
               size="2"
               variant="ghost"
               color="gray"
-              radius="medium"
+             
             >
               <Settings size={14} />
             </IconButton>
@@ -672,7 +672,7 @@ export default function ModulesPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full overflow-y-auto">
+    <Box className="h-full overflow-y-auto">
       {/* Header */}
       <div className="px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center gap-3">
@@ -802,6 +802,6 @@ export default function ModulesPage() {
         type={confirmConfig.type}
       />
       </div>
-    </div>
+    </Box>
   );
 }

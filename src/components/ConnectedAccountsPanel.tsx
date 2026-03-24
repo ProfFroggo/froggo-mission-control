@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, RefreshCw, Mail, Calendar, HardDrive, MessageSquare } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Box } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface GoogleAuthStatus {
@@ -71,7 +71,7 @@ export default function ConnectedAccountsPanel() {
   }
 
   return (
-    <div className="space-y-6">
+    <Box className="space-y-6">
       {/* Status card */}
       <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-5">
         <div className="flex items-start justify-between">
@@ -120,7 +120,7 @@ export default function ConnectedAccountsPanel() {
                 onClick={loadStatus}
                 size="2"
                 variant="soft"
-                radius="medium"
+               
               >
                 <RefreshCw size={14} /> Refresh
               </Button>
@@ -130,7 +130,7 @@ export default function ConnectedAccountsPanel() {
                 size="2"
                 variant="soft"
                 color="red"
-                radius="medium"
+               
               >
                 {revoking ? <RefreshCw size={14} className="animate-spin" /> : <XCircle size={14} />}
                 Disconnect
@@ -141,7 +141,7 @@ export default function ConnectedAccountsPanel() {
               onClick={handleConnect}
               size="2"
               variant="solid"
-              radius="medium"
+             
             >
               Connect Google Workspace
             </Button>
@@ -166,6 +166,6 @@ export default function ConnectedAccountsPanel() {
       </div>
 
       {/* No setup needed — click Connect above to authenticate */}
-    </div>
+    </Box>
   );
 }

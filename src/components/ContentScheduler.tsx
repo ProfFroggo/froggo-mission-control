@@ -10,7 +10,7 @@ const XIcon = ({ size = 16 }: any) => (
   </svg>
 );
 
-import { Button, IconButton, TextArea, TextField, Heading } from '@radix-ui/themes';
+import { Button, IconButton, TextArea, TextField, Heading, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { scheduleApi } from '../lib/api';
 
@@ -682,7 +682,7 @@ export default function ContentScheduler() {
 
   // ── Main render ───────────────────────────────────────────────────────────
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
 
       {/* ── Header ── */}
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface shrink-0">
@@ -710,28 +710,32 @@ export default function ContentScheduler() {
           <div className="flex gap-2 items-center">
             {/* List / Week toggle */}
             <div className="flex rounded-lg border border-mission-control-border overflow-hidden">
-              <IconButton
+              <button
+                type="button"
                 onClick={() => setViewMode('list')}
-                variant={viewMode === 'list' ? 'solid' : 'ghost'}
-                color={viewMode === 'list' ? 'violet' : 'gray'}
-                size="2"
-                radius="none"
                 title="List view"
                 aria-label="List view"
+                className={`p-2 transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+                }`}
               >
                 <List size={14} />
-              </IconButton>
-              <IconButton
+              </button>
+              <button
+                type="button"
                 onClick={() => setViewMode('week')}
-                variant={viewMode === 'week' ? 'solid' : 'ghost'}
-                color={viewMode === 'week' ? 'violet' : 'gray'}
-                size="2"
-                radius="none"
                 title="Week view"
                 aria-label="Week view"
+                className={`p-2 transition-colors ${
+                  viewMode === 'week'
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+                }`}
               >
                 <LayoutGrid size={14} />
-              </IconButton>
+              </button>
             </div>
 
             <Button
@@ -999,6 +1003,6 @@ export default function ContentScheduler() {
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }
