@@ -161,3 +161,135 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
 | 21. Session Architecture | 5/5 | Complete | 2026-03-17 |
+
+---
+
+## Milestones
+
+- ✅ **v1.0 Migration** — Phases 0–14 (shipped 2026-03-04)
+- ✅ **v2.0 Froggo Platform** — Phases 15–22 (shipped 2026-03-05)
+- ✅ **v3.0 Autonomous Core** — Phases 23–30 (shipped 2026-03-06)
+- ✅ **v4.0 Agent & Module Library** — Phases 31–39 (shipped 2026-03-06)
+- ✅ **v6.0 Security Hardening** — Phases 50–57 (shipped 2026-03-07)
+- 🚧 **v7.0 Design Consistency** — Phases 51–60 (in progress)
+
+---
+
+### 🚧 v7.0 Design Consistency (In Progress)
+
+**Milestone Goal:** One design bible across every panel, component, and state — consistent headers, tab navigation, cards, controls, and theming with zero hardcoded exceptions.
+
+#### Phase 51: Design System Primitives
+
+**Goal**: Create reusable `PanelHeader` and `TabNav` shared components. Establish the canonical patterns for all panels to consume — every header and tab row will import these instead of rolling their own.
+**Depends on**: Previous milestone complete
+**Research**: Unlikely (internal patterns, Library panel is the reference implementation)
+**Plans**: TBD
+
+Plans:
+- [ ] 51-01: TBD (run /gsd:plan-phase 51 to break down)
+
+#### Phase 52: Sidebar & Navigation
+
+**Goal**: Fix the sidebar so only the active nav item gets accent color. Inactive items render in muted gray. Search button, Settings, and bottom icons consistent with ghost/gray treatment.
+**Depends on**: Phase 51
+**Research**: Unlikely (Radix Button color prop, internal)
+**Plans**: TBD
+
+Plans:
+- [ ] 52-01: TBD
+
+#### Phase 53: Panel Headers Standardization
+
+**Goal**: Apply the canonical `PanelHeader` to every panel that currently has an inconsistent header — icon-in-tinted-box, bold title, dimmed subtitle, `border-b border-mission-control-border bg-mission-control-surface` wrapper. Panels: Modules, Projects, Analytics, Approvals, Automations, Meetings, Notifications, Agents, Schedule, Kanban, and others.
+**Depends on**: Phase 51 (PanelHeader component ready)
+**Research**: Unlikely (mechanical substitution)
+**Plans**: TBD
+
+Plans:
+- [ ] 53-01: TBD
+
+#### Phase 54: Tab Navigation Standardization
+
+**Goal**: Apply the canonical `TabNav` to every panel with tabs — `border-b-2` underline style, icon+label inline, accent-colored when active, muted gray when inactive. Panels: Modules, Projects, Analytics, Approvals, Automations, Meetings, Notifications, Social (XTwitterPage), AgentDetailModal, and others.
+**Depends on**: Phase 51 (TabNav component ready)
+**Research**: Unlikely (mechanical substitution across panels)
+**Plans**: TBD
+
+Plans:
+- [ ] 54-01: TBD
+
+#### Phase 55: Card & Agent Components
+
+**Goal**: Remove random per-agent colored borders from agent cards — use `border-mission-control-border` with a subtle hover. Standardize all card patterns (agent cards, leaderboard cards, search result cards) to use the same border/surface/shadow tokens.
+**Depends on**: Phase 51
+**Research**: Unlikely (internal token substitution)
+**Plans**: TBD
+
+Plans:
+- [ ] 55-01: TBD
+
+#### Phase 56: Form Controls & Selectors
+
+**Goal**: Fix all custom/hardcoded form controls: (1) trust tier selector — replace sliding-div with Radix `SegmentedControl` or `Tabs`; (2) model selector — replace sliding pill with Radix component; (3) search bars — unify all to the same Radix `TextField.Root` with consistent sizing; (4) investigate and fix any remaining square/non-pill toggles.
+**Depends on**: Phase 51
+**Research**: Unlikely (Radix components already in use)
+**Plans**: TBD
+
+Plans:
+- [ ] 56-01: TBD
+
+#### Phase 57: Kanban & Board UI
+
+**Goal**: Fix Kanban column inconsistencies: remove dashed border from Ideas column, remove accent-colored border from Pre-review column — all columns use the same `border-mission-control-border` style. Fix any other board-level visual regressions.
+**Depends on**: Phase 55
+**Research**: Unlikely (Kanban.tsx targeted changes)
+**Plans**: TBD
+
+Plans:
+- [ ] 57-01: TBD
+
+#### Phase 58: Knowledge & Content Panels
+
+**Goal**: Fix Brand Assets panel — render like Knowledge Base (card per .md asset/folder, not photo grid). Fix Skill Library in AgentDetailModal — replace dense checkbox grid with clean card-based layout consistent with the rest of the agent detail.
+**Depends on**: Phase 54
+**Research**: Unlikely (internal — copy KB card pattern)
+**Plans**: TBD
+
+Plans:
+- [ ] 58-01: TBD
+
+#### Phase 59: Light Mode QA
+
+**Goal**: Full dark/light mode audit. Every surface, text, icon, border, and control must render correctly in both modes. Fix any remaining hardcoded hex values, `bg-white`, `text-black`, or dark-only colors that break light mode.
+**Depends on**: Phases 52–58 complete
+**Research**: Unlikely (visual audit + token replacement)
+**Plans**: TBD
+
+Plans:
+- [ ] 59-01: TBD
+
+#### Phase 60: Final Audit & Publish
+
+**Goal**: End-to-end visual pass across all panels. TypeScript build clean (`npm run build:verify`). Spacing/padding consistency audit. Ship v7.0 on npm.
+**Depends on**: Phase 59
+**Research**: Unlikely (verification and publish)
+**Plans**: TBD
+
+Plans:
+- [ ] 60-01: TBD
+
+### v7.0 Progress
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 51. Design System Primitives | v7.0 | 0/? | Not started | - |
+| 52. Sidebar & Navigation | v7.0 | 0/? | Not started | - |
+| 53. Panel Headers Standardization | v7.0 | 0/? | Not started | - |
+| 54. Tab Navigation Standardization | v7.0 | 0/? | Not started | - |
+| 55. Card & Agent Components | v7.0 | 0/? | Not started | - |
+| 56. Form Controls & Selectors | v7.0 | 0/? | Not started | - |
+| 57. Kanban & Board UI | v7.0 | 0/? | Not started | - |
+| 58. Knowledge & Content Panels | v7.0 | 0/? | Not started | - |
+| 59. Light Mode QA | v7.0 | 0/? | Not started | - |
+| 60. Final Audit & Publish | v7.0 | 0/? | Not started | - |
