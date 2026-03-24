@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { History, X, Clock, RotateCcw } from 'lucide-react';
-import { IconButton, Button } from '@radix-ui/themes';
+import { IconButton, Button, Flex } from '@radix-ui/themes';
 
 interface KBVersion {
   id: number;
@@ -104,7 +104,7 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
   const diffLines = selected ? computeDiff(selected.content, currentContent) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <Flex align="center" justify="center" className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
         className="relative w-full max-w-4xl mx-4 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-2xl flex flex-col"
         style={{ maxHeight: '90vh' }}
@@ -254,6 +254,6 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

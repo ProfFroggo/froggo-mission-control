@@ -3,7 +3,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState } from 'react';
 import { X, Bot, Send, AlertTriangle, Megaphone } from 'lucide-react';
-import { Button, IconButton, TextField, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
 import { campaignsApi } from '../../lib/api';
 import type { Campaign, CampaignMember } from '../../types/campaigns';
 import AgentAvatar from '../AgentAvatar';
@@ -53,7 +53,7 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
   const canDispatch = agentId && title.trim().length >= 3 && !dispatching;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <Flex align="center" justify="center" p="4" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-md bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden">
 
         {/* Header */}
@@ -188,6 +188,6 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
           </Button>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

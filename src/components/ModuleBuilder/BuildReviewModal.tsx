@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState } from 'react';
 import { X, ChevronDown, ChevronRight, User, LayoutGrid, CheckCircle2 } from 'lucide-react';
-import { Button, IconButton, Select } from '@radix-ui/themes';
+import { Button, IconButton, Select, Flex } from '@radix-ui/themes';
 import type { ModuleSpec } from './types';
 import { generateTasksForModule, type GeneratedTask } from './TaskGenerator';
 
@@ -42,8 +42,10 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
   const agentOptions = ['coder', 'senior-coder', 'designer', 'writer', 'clara', 'researcher'];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+    <Flex
+      align="center"
+      justify="center"
+      className="fixed inset-0 z-50"
       style={{ background: 'var(--black-a7)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
@@ -148,6 +150,6 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
           </Button>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

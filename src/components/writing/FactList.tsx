@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pencil, Trash2, Plus, Link2 } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import { useMemoryStore } from '../../store/memoryStore';
 import { useWritingStore } from '../../store/writingStore';
 import { useResearchStore } from '../../store/researchStore';
@@ -54,7 +54,7 @@ export default function FactList() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <Flex direction="column" height="100%">
       <div className="flex-1 overflow-y-auto space-y-1 p-2">
         {facts.length === 0 && editingId !== 'new-fact' && (
           <p className="text-[11px] text-mission-control-text-dim text-center py-4">No facts yet</p>
@@ -153,6 +153,6 @@ export default function FactList() {
         }}
         {...deleteDialog.config}
       />
-    </div>
+    </Flex>
   );
 }

@@ -20,7 +20,7 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import { Button, IconButton, TextField, Select, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
 
 export default function WizardReview() {
   const { plan, updatePlan, setStep, cancelWizard, sessionId } = useWizardStore();
@@ -142,7 +142,7 @@ export default function WizardReview() {
   const sectionClass = 'space-y-3 pb-5 border-b border-mission-control-border';
 
   return (
-    <div className="h-full flex flex-col bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -475,6 +475,6 @@ export default function WizardReview() {
           )}
         </Button>
       </div>
-    </div>
+    </Flex>
   );
 }

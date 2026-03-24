@@ -11,7 +11,7 @@ import {
   Minus,
   RefreshCw,
 } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import {
   LineChart,
   Line,
@@ -207,7 +207,7 @@ export default function PerformanceBenchmarks() {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto">
+    <Flex direction="column" height="100%" className="overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -468,6 +468,6 @@ export default function PerformanceBenchmarks() {
           })}
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

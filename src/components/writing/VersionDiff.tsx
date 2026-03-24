@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
+import { IconButton, Flex } from '@radix-ui/themes';
 
 interface DiffChange {
   value: string;
@@ -15,7 +15,7 @@ interface VersionDiffProps {
 
 export default function VersionDiff({ changes, versionLabel, onClose }: VersionDiffProps) {
   return (
-    <div className="border-t border-mission-control-border bg-mission-control-bg p-3 flex flex-col max-h-[60vh]">
+    <Flex direction="column" p="3" className="border-t border-mission-control-border bg-mission-control-bg max-h-[60vh]">
       <div className="flex items-center justify-between mb-2 flex-shrink-0">
         <div className="text-xs font-medium text-mission-control-text truncate pr-2">
           Comparing: <span className="text-mission-control-accent">{versionLabel}</span> vs Current
@@ -57,6 +57,6 @@ export default function VersionDiff({ changes, versionLabel, onClose }: VersionD
           </span>
         ))}
       </div>
-    </div>
+    </Flex>
   );
 }

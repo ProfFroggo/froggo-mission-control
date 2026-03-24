@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Users, MessageSquarePlus } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 import { getAgentTheme } from '../utils/agentThemes';
 import { useStore } from '../store/store';
@@ -42,7 +42,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <Flex align="center" justify="center" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm">
       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-mission-control-border">
@@ -152,6 +152,6 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

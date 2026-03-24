@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Check, X, Zap, Info, ChevronDown, Save, TestTube } from 'lucide-react';
-import { Button, IconButton, TextField, Select, TextArea, Switch } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Select, TextArea, Switch, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import {
   RuleConditionType,
@@ -206,7 +206,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
   }
 
   return (
-    <div className="h-full flex flex-col bg-mission-control-surface">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-3">
@@ -544,6 +544,6 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

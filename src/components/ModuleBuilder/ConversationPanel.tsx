@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Play } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import type { ConversationMessage, SectionProgress, SectionId } from './types';
 import { SECTION_ORDER, SECTION_LABELS } from './types';
 
@@ -49,7 +49,7 @@ export default function ConversationPanel({
   const totalSections = SECTION_ORDER.length;
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg border-r border-mission-control-border">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg border-r border-mission-control-border">
       {/* Progress bar */}
       <div className="px-4 py-3 border-b border-mission-control-border">
         <div className="flex items-center justify-between mb-2">
@@ -161,6 +161,6 @@ export default function ConversationPanel({
           </div>
         </form>
       )}
-    </div>
+    </Flex>
   );
 }

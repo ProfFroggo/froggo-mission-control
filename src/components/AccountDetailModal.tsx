@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, RefreshCw, CheckCircle, AlertTriangle, Shield, Key, Clock, ExternalLink, Mail, Calendar, HardDrive, Users, ListTodo, BarChart2, Lock, type LucideIcon } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import { ConnectedAccount, DataType } from '../types/accounts';
 
 interface Props {
@@ -103,10 +103,13 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
   };
 
   return (
-    <div 
-      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className={`fixed inset-0 modal-backdrop backdrop-blur-md z-50 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
-      }`} 
+      }`}
       onClick={handleBackdropClick}
       role="button"
       tabIndex={0}
@@ -512,6 +515,6 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
           </Button>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }
