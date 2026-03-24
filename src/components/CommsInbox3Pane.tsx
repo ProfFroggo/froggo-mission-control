@@ -775,7 +775,7 @@ function CenterPane({
                       )}
                       {conv.unread_count && conv.unread_count > 0 && (
                         <span
-                          className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-xs font-bold tabular-nums bg-warning text-white rounded-full flex-shrink-0"
+                          className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-xs font-bold tabular-nums bg-[--accent-9] text-[--accent-contrast] rounded-full flex-shrink-0"
                           title={`${conv.unread_count} unread`}
                         >
                           {conv.unread_count > 99 ? '99+' : conv.unread_count}
