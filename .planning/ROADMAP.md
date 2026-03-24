@@ -605,3 +605,138 @@ Plans:
 | 74. Empty States, Skeletons & Loading | v7.0 | 2/2 | ✅ Complete | 2026-03-24 |
 | 75. Light Mode Full QA | v7.0 | 3/3 | ✅ Complete | 2026-03-24 |
 | 76. Final Audit & v7.0 Publish | v7.0 | 2/2 | ✅ Complete | 2026-03-24 |
+
+---
+
+## Milestones
+
+- ✅ **v1.0 Migration** — Phases 0–14 (shipped 2026-03-04)
+- ✅ **v2.0 Froggo Platform** — Phases 15–22 (shipped 2026-03-05)
+- ✅ **v3.0 Autonomous Core** — Phases 23–30 (shipped 2026-03-06)
+- ✅ **v4.0 Agent & Module Library** — Phases 31–39 (shipped 2026-03-06)
+- ✅ **v6.0 Security Hardening** — Phases 50–57 (shipped 2026-03-07)
+- ✅ **v7.0 Design Consistency** — Phases 51–76 (shipped 2026-03-24)
+- 🚧 **v8.0 Tailwind → Radix UI** — Phases 77–86 (in progress)
+
+---
+
+### 🚧 v8.0 Tailwind → Radix UI Complete Migration (In Progress)
+
+**Milestone Goal:** Eliminate Tailwind entirely. Every layout utility (`flex`, `gap-*`, `p-*`, `grid`, `text-sm`, etc.) replaced with Radix Themes layout primitives (`<Flex>`, `<Box>`, `<Grid>`, `<Text>`, `<Heading>`). One unified system: Radix Themes + design-tokens.css.
+
+#### Phase 77: Audit & Migration Map
+
+**Goal**: Catalog every unique Tailwind utility pattern across all 185+ components. Build a mapping table (Tailwind → Radix equivalent). Create migration conventions and code snippets the batch phases will follow.
+**Depends on**: Phase 76 (v7.0 complete)
+**Research**: Unlikely (known patterns — Tailwind docs + Radix Themes layout docs already understood)
+**Plans**: TBD
+
+Plans:
+- [ ] 77-01: TBD
+
+#### Phase 78: Core Layout Infrastructure
+
+**Goal**: Migrate App.tsx, ErrorBoundary, LoadingStates, DependencyGate, and all shared wrappers to Radix layout primitives. Establish the `<Flex>`, `<Box>`, `<Grid>` patterns the rest of the migration will follow.
+**Depends on**: Phase 77
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 78-01: TBD
+
+#### Phase 79: Sidebar & Navigation
+
+**Goal**: Migrate Sidebar, all navigation items, and top-level layout shells to Radix layout primitives.
+**Depends on**: Phase 78
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 79-01: TBD
+
+#### Phase 80: Agent Components
+
+**Goal**: Migrate AgentPanel, AgentDetailModal, AgentHealthDashboard, AgentLeaderboard, AgentCoachingCard, AgentConfigPanel, AgentLibraryPanel, and all remaining agent-related components.
+**Depends on**: Phase 79
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 80-01: TBD
+
+#### Phase 81: Chat & Communications
+
+**Goal**: Migrate ChatPanel, CommsInbox, FolderTabs, ThreadView, InboxPanel, TaskChatTab, and all messaging surfaces.
+**Depends on**: Phase 80
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 81-01: TBD
+
+#### Phase 82: Social Module
+
+**Goal**: Migrate all 30 X*.tsx social components to Radix layout primitives.
+**Depends on**: Phase 81
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 82-01: TBD
+
+#### Phase 83: Projects, Finance & HR
+
+**Goal**: Migrate ProjectsPanel, ProjectWorkspace, ProjectKanban, FinancePanel, HRSection, BudgetPanel, and related components.
+**Depends on**: Phase 82
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 83-01: TBD
+
+#### Phase 84: Settings, Config & Modals
+
+**Goal**: Migrate SettingsPanel, EnhancedSettingsPanel, ConfigTab, and all modal/dialog/overlay components.
+**Depends on**: Phase 83
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 84-01: TBD
+
+#### Phase 85: Remaining Components Sweep
+
+**Goal**: Migrate all remaining components not covered in Phases 78–84. Full grep verification — zero Tailwind layout utilities remain.
+**Depends on**: Phase 84
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 85-01: TBD
+
+#### Phase 86: Tailwind Removal & Build Clean
+
+**Goal**: Uninstall Tailwind. Remove tailwind.config.js and @tailwind directives from index.css. Run `npm run build:verify`. Full visual QA pass. Ship v8.0.
+**Depends on**: Phase 85
+**Research**: Unlikely (removal + verification)
+**Plans**: TBD
+
+Plans:
+- [ ] 86-01: TBD
+
+---
+
+### v8.0 Progress
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 77. Audit & Migration Map | v8.0 | 0/? | Not started | - |
+| 78. Core Layout Infrastructure | v8.0 | 0/? | Not started | - |
+| 79. Sidebar & Navigation | v8.0 | 0/? | Not started | - |
+| 80. Agent Components | v8.0 | 0/? | Not started | - |
+| 81. Chat & Communications | v8.0 | 0/? | Not started | - |
+| 82. Social Module | v8.0 | 0/? | Not started | - |
+| 83. Projects, Finance & HR | v8.0 | 0/? | Not started | - |
+| 84. Settings, Config & Modals | v8.0 | 0/? | Not started | - |
+| 85. Remaining Components Sweep | v8.0 | 0/? | Not started | - |
+| 86. Tailwind Removal & Build Clean | v8.0 | 0/? | Not started | - |
