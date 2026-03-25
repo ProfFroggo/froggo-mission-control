@@ -135,30 +135,30 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
               >
                 {/* Agent name + status dot */}
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
+                  <Flex align="center" gap="2">
                     <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                       row.agent.status === 'busy' ? 'bg-mission-control-accent animate-pulse' :
                       row.agent.status === 'active' || row.agent.status === 'idle' ? 'bg-success' :
                       'bg-mission-control-text-dim/40'
                     }`} />
                     <span className="font-medium text-mission-control-text">{row.agent.name}</span>
-                  </div>
+                  </Flex>
                 </td>
 
                 {/* Last active */}
                 <td className="px-4 py-3 text-mission-control-text-dim hidden sm:table-cell">
-                  <div className="flex items-center gap-1">
+                  <Flex align="center" gap="1">
                     <Clock size={11} />
                     {formatLastActive(row.agent.lastActivity)}
-                  </div>
+                  </Flex>
                 </td>
 
                 {/* Tasks done today */}
                 <td className="px-4 py-3 hidden md:table-cell">
-                  <div className="flex items-center gap-1 text-success">
+                  <Flex align="center" gap="1" className="text-success">
                     <CheckCircle size={11} />
                     {row.tasksToday}
-                  </div>
+                  </Flex>
                 </td>
 
                 {/* Circuit status */}

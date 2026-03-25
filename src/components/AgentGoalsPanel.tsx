@@ -75,10 +75,10 @@ function GoalProgressBar({ current, target, status }: { current: string; target:
 
     return (
       <div className="space-y-1">
-        <div className="flex items-center justify-between text-xs text-mission-control-text-dim">
+        <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim">
           <span>{current} / {target}</span>
           <span style={{ color }}>{pct}%</span>
-        </div>
+        </Flex>
         <div
           className="h-1.5 rounded-full overflow-hidden"
           style={{ background: 'var(--mission-control-border)' }}
@@ -297,7 +297,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
               />
             </div>
           </div>
-          <div className="flex items-center gap-2 pt-1">
+          <Flex align="center" gap="2" className="pt-1">
             <Button
               type="submit"
               size="2"
@@ -315,7 +315,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
             >
               Cancel
             </Button>
-          </div>
+          </Flex>
         </form>
       )}
 
@@ -341,7 +341,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
               key={goal.id}
               className="rounded-lg border border-mission-control-border bg-mission-control-bg p-4 space-y-2"
             >
-              <div className="flex items-start justify-between gap-2">
+              <Flex align="start" justify="between" gap="2">
                 <span className="text-sm font-medium text-mission-control-text leading-snug flex-1">{goal.title}</span>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {goal.status !== 'completed' && (
@@ -371,11 +371,11 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
                     <Trash2 size={13} />
                   </IconButton>
                 </div>
-              </div>
+              </Flex>
 
               <GoalProgressBar current={goal.current} target={goal.target} status={goal.status} />
 
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 {goal.deadline && <DeadlineBadge deadline={goal.deadline} />}
                 <Button
                   type="button"
@@ -390,10 +390,10 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
                   Update progress
                   <ChevronRight size={10} />
                 </Button>
-              </div>
+              </Flex>
 
               {editingGoalId === goal.id && (
-                <div className="flex items-center gap-2 pt-1">
+                <Flex align="center" gap="2" className="pt-1">
                   <TextField.Root
                     value={editCurrent}
                     onChange={e => setEditCurrent(e.target.value)}
@@ -422,7 +422,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
                   >
                     Cancel
                   </Button>
-                </div>
+                </Flex>
               )}
             </div>
           ))}
