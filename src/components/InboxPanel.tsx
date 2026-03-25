@@ -1306,7 +1306,7 @@ export default function InboxPanel() {
                     if (!warning) return null;
                     const style = riskStyles[warning.risk] || riskStyles.high;
                     return (
-                      <div className={`${style.bg} ${style.text} px-4 py-2 flex items-center gap-2 border-b ${style.border}`}>
+                      <Flex align="center" gap="2" className={`${style.bg} ${style.text} px-4 py-2 border-b ${style.border}`}>
                         <ShieldAlert size={20} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="icon-text flex-wrap">
@@ -1320,7 +1320,7 @@ export default function InboxPanel() {
                           </p>
                         </div>
                         <AlertTriangle size={20} className="flex-shrink-0 animate-pulse" />
-                      </div>
+                      </Flex>
                     );
                   })()}
                   
