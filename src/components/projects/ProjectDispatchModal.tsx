@@ -56,25 +56,25 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
       <div className="w-full max-w-md bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="px-5 py-4 border-b border-mission-control-border">
+          <Flex align="center" gap="2">
             <Bot size={16} className="text-mission-control-accent" />
             <span className="font-semibold text-mission-control-text text-sm">Dispatch Agent</span>
-          </div>
+          </Flex>
           <IconButton
             size="1"
             variant="ghost"
-           
+
             onClick={onClose}
           >
             <X size={15} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Body */}
         <div className="p-5 space-y-4">
           {/* Project context badge */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <Flex align="center" gap="2" className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
             {(() => { const DispIcon = getProjectIcon(project.emoji); return <DispIcon size={16} style={{ color: project.color }} />; })()}
             <div className="min-w-0">
               <p className="text-xs font-medium text-mission-control-text truncate">{project.name}</p>
@@ -84,13 +84,13 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
                 </p>
               )}
             </div>
-          </div>
+          </Flex>
 
           {error && (
-            <div className="flex items-start gap-2 px-3 py-2 bg-error-subtle border border-error/30 rounded-lg text-error text-xs">
+            <Flex align="start" gap="2" className="px-3 py-2 bg-error-subtle border border-error/30 rounded-lg text-error text-xs">
               <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
               {error}
-            </div>
+            </Flex>
           )}
 
           {/* Agent selector */}

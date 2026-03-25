@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { Filter, Loader2, Download, Copy, Check } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 
 interface StatusCount {
   status: string;
@@ -112,12 +112,12 @@ export default function FunnelChart() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Filter size={16} className="text-mission-control-accent" />
           <span className="font-medium">Task Funnel</span>
           <span className="text-xs text-mission-control-text-dim">current pipeline counts</span>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <Button
             onClick={handleExportCsv}
             size="1"
@@ -136,7 +136,7 @@ export default function FunnelChart() {
             {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
           </Button>
-        </div>
+        </Flex>
       </div>
 
       {/* Horizontal funnel */}
@@ -148,12 +148,12 @@ export default function FunnelChart() {
 
           return (
             <div key={stage.status} className="space-y-1">
-              <div className="flex items-center justify-between text-sm mb-1">
+              <Flex align="center" justify="between" className="text-sm mb-1">
                 <span className="font-medium" style={{ color: stage.color }}>
                   {stage.label}
                 </span>
                 <span className="text-mission-control-text-dim tabular-nums">{count}</span>
-              </div>
+              </Flex>
 
               {/* Bar */}
               <div className="h-10 bg-mission-control-bg rounded-lg overflow-hidden relative">

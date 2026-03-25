@@ -529,7 +529,7 @@ export default function AgentPanel() {
                   <div className="p-4 flex flex-col flex-1">
 
                     {/* Header: avatar + name + status dot */}
-                    <div className="flex items-start gap-3 mb-3">
+                    <Flex align="start" gap="3" className="mb-3">
                       {/* Avatar */}
                       <AvatarWithFallback agentId={agent.id} agentName={agent.name} themeRing={theme.ring} themeBg={theme.bg} themeText={theme.text} themeColor={theme.color}>
                         {showDot && <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-mission-control-bg ${sc.color} ${sc.pulse ? 'animate-pulse' : ''}`} />}
@@ -575,7 +575,7 @@ export default function AgentPanel() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </Flex>
 
                     {/* Metrics — always full opacity, separated */}
                     <div className="border-t border-mission-control-border/40 pt-3 mb-3">

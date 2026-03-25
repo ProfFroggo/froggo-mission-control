@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Command as CommandPrimitive } from 'cmdk';
 import { Search } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import { cn } from '@/lib/cn';
 
 export const Command = React.forwardRef<
@@ -24,7 +25,7 @@ export const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, ref) => (
-  <div className="flex items-center gap-3 border-b border-glass-border px-4 py-3">
+  <Flex align="center" gap="3" className="border-b border-glass-border px-4 py-3">
     <Search size={16} className="text-mission-control-text-dim/60 flex-shrink-0" />
     <CommandPrimitive.Input
       ref={ref}
@@ -34,7 +35,7 @@ export const CommandInput = React.forwardRef<
       )}
       {...props}
     />
-  </div>
+  </Flex>
 ));
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 

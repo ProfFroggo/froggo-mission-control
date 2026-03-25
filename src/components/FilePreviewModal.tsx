@@ -95,7 +95,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
           }`}
         >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-mission-control-border bg-mission-control-bg/50">
+        <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border bg-mission-control-bg/50">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div>
               <h3 id="file-preview-title" className="font-semibold truncate">{file.name}</h3>
@@ -127,7 +127,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
               <X size={16} />
             </IconButton>
           </Flex>
-        </div>
+        </Flex>
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-4">
