@@ -230,21 +230,22 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                   {account.dataTypes.map((type) => {
                     const DtIcon = DATA_TYPE_ICONS[type] ?? ListTodo;
                     return (
-                    <div
+                    <Flex
                       key={type}
-                      className="flex items-center gap-3 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border"
+                      align="center" gap="3"
+                      className="p-3 bg-mission-control-bg rounded-lg border border-mission-control-border"
                     >
                       <DtIcon size={20} className="text-mission-control-text-dim flex-shrink-0" />
                       <div className="flex-1">
                         <div className="font-medium capitalize">{type}</div>
                         <div className="text-xs text-mission-control-text-dim">
-                          {account.metadata?.[`${type}sCount`] ? 
-                            `${account.metadata[`${type}sCount`]} items` : 
+                          {account.metadata?.[`${type}sCount`] ?
+                            `${account.metadata[`${type}sCount`]} items` :
                             'Active'}
                         </div>
                       </div>
                       <CheckCircle size={16} className="text-success" />
-                    </div>
+                    </Flex>
                     );
                   })}
                 </div>
@@ -402,28 +403,28 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                 <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Security Status</h3>
                 <div className="space-y-2 text-sm">
                   <Flex align="center" justify="between" className="p-3 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       <Key size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">Token Storage</span>
-                    </div>
+                    </Flex>
                     <span className="font-medium text-success flex items-center gap-1">
                       <CheckCircle size={14} /> Encrypted
                     </span>
                   </Flex>
                   <Flex align="center" justify="between" className="p-3 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       <Shield size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">OAuth Protocol</span>
-                    </div>
+                    </Flex>
                     <span className="font-medium text-success flex items-center gap-1">
                       <CheckCircle size={14} /> Secure
                     </span>
                   </Flex>
                   <Flex align="center" justify="between" className="p-3 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       <Clock size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">Token Refresh</span>
-                    </div>
+                    </Flex>
                     <span className="font-medium text-success flex items-center gap-1">
                       <CheckCircle size={14} /> Automatic
                     </span>
