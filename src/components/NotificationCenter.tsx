@@ -151,7 +151,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
             <span className="text-sm font-semibold text-mission-control-text">Notifications</span>
             {unreadCount > 0 && (
               <Badge color="red" variant="solid" className="tabular-nums">
-                {unreadCount > 99 ? '99+' : unreadCount}
+                {unreadCount > 999 ? `${unreadCount}+` : unreadCount}
               </Badge>
             )}
           </div>

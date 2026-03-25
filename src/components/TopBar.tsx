@@ -172,7 +172,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
             <Bell size={16} aria-hidden="true" />
             {unreadNotifCount > 0 && (
               <span className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center text-[9px] font-bold bg-error text-error rounded-full leading-none tabular-nums">
-                {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+                {unreadNotifCount > 999 ? `${unreadNotifCount}+` : unreadNotifCount}
               </span>
             )}
           </button>

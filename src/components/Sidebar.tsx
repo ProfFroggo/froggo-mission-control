@@ -270,7 +270,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                     {badge > 0 && (
                       <NumberBadge
                         count={badge}
-                        maxCount={99}
+                        maxCount={999}
                         position="inline"
                         variant={isActive ? 'secondary' : 'primary'}
                         size="sm"
@@ -283,7 +283,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                 {!expanded && badge > 0 && (
                   <NumberBadge
                     count={badge}
-                    maxCount={99}
+                    maxCount={999}
                     position="absolute-top-right"
                     variant="primary"
                     size="sm"

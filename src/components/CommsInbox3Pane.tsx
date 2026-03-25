@@ -762,7 +762,14 @@ function CenterPane({
                       <span className={`text-sm truncate flex-1 min-w-0 ${!conv.is_read ? 'font-bold' : 'font-medium'}`}>
                         {conv.name || conv.from || 'Unknown'}
                       </span>
-                      <span className="text-xs tabular-nums text-mission-control-text-dim flex-shrink-0">{conv.relativeTime}</span>
+                      <span className={`text-xs tabular-nums flex-shrink-0 inline-flex items-center gap-0.5 ${
+                        Date.now() - new Date(conv.timestamp).getTime() > 3 * 24 * 60 * 60 * 1000
+                          ? 'text-warning'
+                          : 'text-mission-control-text-dim'
+                      }`}>
+                        {Date.now() - new Date(conv.timestamp).getTime() > 3 * 24 * 60 * 60 * 1000 && <Clock size={9} />}
+                        {conv.relativeTime}
+                      </span>
                     </div>
                     {conv.subject && (
                       <div className={`text-sm truncate ${!conv.is_read ? 'font-semibold' : 'text-mission-control-text/80'}`}>
@@ -790,7 +797,7 @@ function CenterPane({
                           className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-xs font-bold tabular-nums bg-[--accent-9] text-[--accent-contrast] rounded-full flex-shrink-0"
                           title={`${conv.unread_count} unread`}
                         >
-                          {conv.unread_count > 99 ? '99+' : conv.unread_count}
+                          {conv.unread_count > 999 ? '999+' : conv.unread_count}
                         </span>
                       )}
                       {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
@@ -1940,7 +1947,15 @@ export default function CommsInbox3Pane() {
       } catch { /* X mentions non-critical */ }
 
       if (isMounted.current) {
-        const msgs = (chats as unknown as ConversationItem[]).map(m => {
+        // Deduplicate by id — prevents double-rendering when sources overlap
+        const seen = new Set<string>();
+        const unique = (chats as unknown as ConversationItem[]).filter(m => {
+          const k = String(m.id);
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+        const msgs = unique.map(m => {
           if (!m.timestamp) return m;
           const diffMs = Date.now() - new Date(m.timestamp).getTime();
           const diffMins = Math.floor(diffMs / 60000);
