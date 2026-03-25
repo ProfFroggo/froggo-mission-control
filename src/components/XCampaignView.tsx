@@ -297,18 +297,18 @@ export default function XCampaignView() {
 
     return (
       <div className="flex flex-col h-full bg-mission-control-bg">
-        <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+          <Flex align="center" gap="2">
             <Rocket className="w-5 h-5 text-info" />
             <h3 className="text-lg font-semibold text-mission-control-text">
               {editingCampaign.status === 'draft' && !campaigns.find(c => c.id === editingCampaign.id) ? 'New Campaign' : 'Edit Campaign'}
             </h3>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <Button onClick={() => setEditingCampaign(null)} variant="ghost" color="gray" size="2">Cancel</Button>
             <Button onClick={saveCampaign} variant="solid" color="blue" size="2">Save Draft</Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           <div className="space-y-4">
@@ -333,7 +333,7 @@ export default function XCampaignView() {
                 size="2"
               />
             </div>
-            <div className="flex gap-4">
+            <Flex gap="4">
               <div className="flex-1">
                 <label htmlFor="campaign-start-date" className="block text-sm font-medium text-mission-control-text mb-2">
                   <Calendar className="w-4 h-4 inline mr-1" />
@@ -353,11 +353,11 @@ export default function XCampaignView() {
                   {editingCampaign.stages.length} tweets over {Math.max(...editingCampaign.stages.map(s => s.dayOffset), 0) + 1} days
                 </div>
               </div>
-            </div>
+            </Flex>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <Flex align="center" justify="between" className="mb-3">
               <h4 className="text-sm font-semibold text-mission-control-text">Campaign Timeline</h4>
               <Button
                 onClick={addStage}
@@ -367,7 +367,7 @@ export default function XCampaignView() {
                 <Plus className="w-4 h-4" />
                 Add Stage
               </Button>
-            </div>
+            </Flex>
 
             <div className="space-y-3">
               {sortedStages.map((stage, idx) => {
@@ -384,13 +384,13 @@ export default function XCampaignView() {
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <Flex align="center" gap="2">
                           <span className="text-sm font-medium text-mission-control-text">Day {stage.dayOffset + 1}</span>
                           <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                             <Clock className="w-3 h-3" />{stage.time}
                           </span>
                           <Badge color="blue" variant="soft" radius="full">{stage.type}</Badge>
-                        </div>
+                        </Flex>
                         {!isExpanded && stage.content && (
                           <p className="text-xs text-mission-control-text-dim truncate mt-1">{stage.content.slice(0, 80)}...</p>
                         )}
@@ -400,7 +400,7 @@ export default function XCampaignView() {
 
                     {isExpanded && (
                       <div className="p-4 pt-0 space-y-3 border-t border-mission-control-border">
-                        <div className="flex gap-3 pt-3">
+                        <Flex gap="3" className="pt-3">
                           <div className="w-24">
                             <label htmlFor={`stage-day-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Day</label>
                             <TextField.Root
@@ -437,7 +437,7 @@ export default function XCampaignView() {
                               </Select.Content>
                             </Select.Root>
                           </div>
-                        </div>
+                        </Flex>
 
                         <div>
                           <label htmlFor={`stage-content-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Tweet Content</label>
@@ -485,13 +485,13 @@ export default function XCampaignView() {
           </div>
         </div>
 
-        <div className="p-4 border-t border-mission-control-border flex gap-3">
+        <Flex gap="3" className="p-4 border-t border-mission-control-border">
           <Button onClick={saveCampaign} variant="soft" color="gray" size="3" className="flex-1">Save Draft</Button>
           <Button onClick={scheduleCampaign} disabled={!editingCampaign.start_date} variant="solid" color="grass" size="3" className="flex-1">
             <Send className="w-4 h-4" />
             Schedule Campaign
           </Button>
-        </div>
+        </Flex>
       </div>
     );
   }
@@ -499,21 +499,21 @@ export default function XCampaignView() {
   // Campaign list + AI proposal banner
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="2">
           <Rocket className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Campaigns</h3>
-        </div>
+        </Flex>
         <Button onClick={createNewCampaign} variant="solid" color="blue" size="2">
           <Plus className="w-4 h-4" />
           Manual
         </Button>
-      </div>
+      </Flex>
 
       {/* AI Proposal Banner */}
       {aiProposal && (
         <div className="mx-4 mt-4 p-4 bg-mission-control-accent/10 border-2 border-mission-control-accent/40 rounded-lg animate-in fade-in">
-          <div className="flex items-start gap-3">
+          <Flex align="start" gap="3">
             <Sparkles className="w-5 h-5 text-mission-control-accent flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-semibold text-mission-control-text mb-1">Agent Proposed a Campaign</h4>
@@ -524,7 +524,7 @@ export default function XCampaignView() {
               <p className="text-xs text-mission-control-text-dim mt-1">
                 {aiProposal.stages.length} stages over {Math.max(...aiProposal.stages.map(s => s.dayOffset), 0) + 1} days
               </p>
-              <div className="flex gap-2 mt-3">
+              <Flex gap="2" className="mt-3">
                 <Button onClick={acceptProposal} variant="solid" color="grass" size="2">
                   <Sparkles className="w-4 h-4" />
                   Review &amp; Edit
@@ -537,9 +537,9 @@ export default function XCampaignView() {
                 >
                   Dismiss
                 </Button>
-              </div>
+              </Flex>
             </div>
-          </div>
+          </Flex>
         </div>
       )}
 
@@ -594,16 +594,16 @@ export default function XCampaignView() {
                 onClick={() => { setEditingCampaign(campaign); setExpandedStages(new Set()); }}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setEditingCampaign(campaign); setExpandedStages(new Set()); } }}
               >
-                <div className="flex items-start justify-between mb-2">
+                <Flex align="start" justify="between" className="mb-2">
                   <h4 className="text-sm font-bold text-mission-control-text">{campaign.title || 'Untitled Campaign'}</h4>
                   <span className={statusColors[campaign.status] || statusColors.draft}>
                     {campaign.status}
                   </span>
-                </div>
+                </Flex>
                 {campaign.subject && (
                   <p className="text-xs text-mission-control-text-dim mb-2 line-clamp-2">{campaign.subject}</p>
                 )}
-                <div className="flex items-center gap-3 text-xs text-mission-control-text-dim tabular-nums">
+                <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim tabular-nums">
                   <span>{stageCount} stage{stageCount !== 1 ? 's' : ''}</span>
                   <span>{daySpan} day{daySpan !== 1 ? 's' : ''}</span>
                   <span>{new Date(campaign.created_at).toLocaleDateString()}</span>
@@ -617,7 +617,7 @@ export default function XCampaignView() {
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </IconButton>
-                </div>
+                </Flex>
               </div>
             );
           })}
