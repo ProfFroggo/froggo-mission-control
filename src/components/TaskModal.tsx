@@ -896,10 +896,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     })}
                 </div>
                 {assignedTo && agents.find(a => a.id === assignedTo)?.status === 'disabled' && (
-                  <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-warning-subtle border border-warning-border text-warning text-xs">
+                  <Flex align="center" gap="2" className="mt-2 p-2 rounded-lg bg-warning-subtle border border-warning-border text-warning text-xs">
                     <AlertTriangle size={12} className="flex-shrink-0" />
                     This agent is disabled. Task will queue but won&apos;t execute until re-enabled.
-                  </div>
+                  </Flex>
                 )}
               </div>
 
