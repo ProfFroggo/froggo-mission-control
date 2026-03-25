@@ -7,24 +7,31 @@ export interface ExtractedArtifact {
   metadata?: ArtifactMetadata;
 }
 
+// Library path pattern — matches paths inside the mission-control library directory
+const LIBRARY_PATH_RE = /(?:~|\/Users\/[^/\s]+)\/mission-control\/library\/\S+\.(?:html|htm|svg|pdf|png|jpg|jpeg|webp|gif)/gi;
+
 /**
  * Check if a message contains any extractable artifacts
  */
 export function containsArtifacts(content: string): boolean {
   // Check for code blocks
   if (/```[\s\S]*?```/.test(content)) return true;
-  
+
   // Check for image URLs or data URLs
   if (/!\[.*?\]\(.*?\)/.test(content)) return true;
   if (/https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i.test(content)) return true;
   if (/\/api\/library\?action=raw&id=[A-Za-z0-9_-]+/.test(content)) return true;
-  
+
   // Check for mermaid diagrams
   if (/```mermaid[\s\S]*?```/.test(content)) return true;
-  
+
   // Check for JSON data blocks
   if (/```json[\s\S]*?```/.test(content)) return true;
-  
+
+  // Check for library file paths (agent output files)
+  LIBRARY_PATH_RE.lastIndex = 0;
+  if (LIBRARY_PATH_RE.test(content)) return true;
+
   return false;
 }
 
@@ -132,6 +139,43 @@ export function extractAllArtifacts(content: string): ExtractedArtifact[] {
         metadata: { filename: 'image' },
       });
       seenUrls.add(url);
+    }
+  }
+
+  // Extract library file paths (agent output files: HTML, SVG, images, PDFs)
+  const seenPaths = new Set<string>();
+  LIBRARY_PATH_RE.lastIndex = 0;
+  while ((match = LIBRARY_PATH_RE.exec(content)) !== null) {
+    const filePath = match[0];
+    if (seenPaths.has(filePath)) continue;
+    seenPaths.add(filePath);
+
+    const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+    const filename = filePath.split('/').pop() ?? filePath;
+    const isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext);
+    const isSvg = ext === 'svg';
+    const isPdf = ext === 'pdf';
+
+    if (isImage) {
+      artifacts.push({
+        type: 'image',
+        content: filePath,
+        metadata: { filename, filePath },
+      });
+    } else if (isSvg || ext === 'html' || ext === 'htm') {
+      // HTML/SVG files — mark as 'code' type so they get preview rendering
+      // content is the path; useArtifactExtraction will fetch the file content
+      artifacts.push({
+        type: 'file',
+        content: filePath,
+        metadata: { filename, filePath, language: isSvg ? 'svg' : 'html' },
+      });
+    } else if (isPdf) {
+      artifacts.push({
+        type: 'file',
+        content: filePath,
+        metadata: { filename, filePath, language: 'pdf' },
+      });
     }
   }
 

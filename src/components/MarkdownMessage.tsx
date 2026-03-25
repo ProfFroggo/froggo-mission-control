@@ -5,6 +5,8 @@ import { Copy, Check, ExternalLink, FileCode, GitBranch, FileJson, FileText as F
 import { Button } from '@radix-ui/themes';
 import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
+import { ToolUIRenderer } from './tool-ui/ToolUIRenderer';
+import { detectToolUIType } from './tool-ui/schemas';
 
 interface MentionData {
   ids: string[];
@@ -80,6 +82,16 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
             if (isBlock) {
               const lang = match?.[1] || '';
               const code = String(children).replace(/\n$/, '');
+
+              // Tool-UI: render JSON blocks with @type field as interactive components
+              if (!streaming && lang.toLowerCase() === 'json') {
+                try {
+                  const parsed = JSON.parse(code);
+                  if (detectToolUIType(parsed)) {
+                    return <ToolUIRenderer jsonString={code} />;
+                  }
+                } catch { /* not valid JSON — fall through */ }
+              }
 
               if (!streaming && onArtifactOpen && PREVIEWABLE_LANGS.has(lang.toLowerCase())) {
                 return <ArtifactCard lang={lang} code={code} onOpen={onArtifactOpen} />;

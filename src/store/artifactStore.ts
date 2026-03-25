@@ -96,15 +96,18 @@ export const useArtifactStore = create<ArtifactState>()(
       };
 
       const isImage = artifact.type === 'image';
-      set((state) => ({
-        artifacts: [...state.artifacts, newArtifact].slice(-MAX_ARTIFACTS),
-        // Always auto-select images; otherwise auto-select only if panel is open
-        selectedArtifactId: state.artifacts.length === 0 || !state.isCollapsed || isImage
-          ? id
-          : state.selectedArtifactId,
-        // Auto-open the panel when an image arrives
-        isCollapsed: isImage ? false : state.isCollapsed,
-      }));
+      set((state) => {
+        // Only auto-select/auto-open if this artifact belongs to the currently viewed session.
+        // This prevents background agents from hijacking the panel in a different chat.
+        const isCurrentSession = !state.filterBySession || artifact.sessionId === state.filterBySession;
+        const shouldAutoSelect = isCurrentSession && (!state.isCollapsed || isImage || state.artifacts.length === 0);
+        return {
+          artifacts: [...state.artifacts, newArtifact].slice(-MAX_ARTIFACTS),
+          selectedArtifactId: shouldAutoSelect ? id : state.selectedArtifactId,
+          // Only auto-open panel for images in the current session
+          isCollapsed: isImage && isCurrentSession ? false : state.isCollapsed,
+        };
+      });
     },
 
     updateArtifact: (id, updates) => {

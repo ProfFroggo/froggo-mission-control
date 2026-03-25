@@ -53,6 +53,23 @@ function isPreviewable(artifact: Artifact): boolean {
   return lang === 'html' || lang === 'htm' || lang === 'svg';
 }
 
+/** True when the artifact content is a library file path (not actual file content) */
+function isFilePath(content: string): boolean {
+  return (
+    (content.startsWith('/') || content.startsWith('~')) &&
+    /\/mission-control\/library\//.test(content) &&
+    /\.(html|htm|svg|pdf|png|jpg|jpeg|webp|gif)$/i.test(content)
+  );
+}
+
+/** Returns the preview iframe src — either API serve URL (for file paths) or undefined (for srcDoc) */
+function getPreviewSrc(artifact: Artifact): string | undefined {
+  if (artifact.type === 'file' && isFilePath(artifact.content)) {
+    return `/api/library/serve?path=${encodeURIComponent(artifact.content)}`;
+  }
+  return undefined;
+}
+
 export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelProps) {
   const {
     artifacts,
@@ -114,7 +131,8 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
   // Reset viewTab when selected artifact changes
   useEffect(() => {
     const artifact = artifacts.find(a => a.id === selectedArtifactId);
-    if (artifact && isPreviewable(artifact)) {
+    const canPreview = artifact && (isPreviewable(artifact) || (artifact.type === 'file' && isFilePath(artifact.content)));
+    if (canPreview) {
       setViewTab('preview');
     } else {
       setViewTab('code');
@@ -407,8 +425,8 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
             </div>
           )}
 
-          {/* Tab Bar — only for previewable artifacts */}
-          {isPreviewable(selectedArtifact) && (
+          {/* Tab Bar — only for previewable artifacts (including library file paths) */}
+          {(isPreviewable(selectedArtifact) || (selectedArtifact.type === 'file' && isFilePath(selectedArtifact.content))) && (
             <Flex align="center" className="border-b border-mission-control-border bg-mission-control-surface px-4">
               <div className="flex flex-1">
                 {(['preview', 'code', 'port'] as const).map(tab => {
@@ -459,18 +477,32 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
           )}
 
           {/* Artifact Content */}
-          {isPreviewable(selectedArtifact) && viewTab === 'preview' ? (
+          {(isPreviewable(selectedArtifact) || (selectedArtifact.type === 'file' && isFilePath(selectedArtifact.content))) && viewTab === 'preview' ? (
             <div className="flex-1 overflow-hidden" style={{ minHeight: '400px' }}>
-              <iframe
-                key={`preview-${selectedArtifact.id}-${reloadKey}`}
-                srcDoc={selectedArtifact.content}
-                sandbox="allow-scripts allow-forms allow-popups"
-                className="w-full h-full border-0 rounded-b-lg bg-mission-control-surface"
-                title={selectedArtifact.title}
-                style={{ minHeight: '400px' }}
-              />
+              {(() => {
+                const src = getPreviewSrc(selectedArtifact);
+                return src ? (
+                  <iframe
+                    key={`preview-${selectedArtifact.id}-${reloadKey}`}
+                    src={src}
+                    sandbox="allow-scripts allow-forms allow-popups allow-same-origin"
+                    className="w-full h-full border-0 rounded-b-lg bg-mission-control-surface"
+                    title={selectedArtifact.title}
+                    style={{ minHeight: '400px' }}
+                  />
+                ) : (
+                  <iframe
+                    key={`preview-${selectedArtifact.id}-${reloadKey}`}
+                    srcDoc={selectedArtifact.content}
+                    sandbox="allow-scripts allow-forms allow-popups"
+                    className="w-full h-full border-0 rounded-b-lg bg-mission-control-surface"
+                    title={selectedArtifact.title}
+                    style={{ minHeight: '400px' }}
+                  />
+                );
+              })()}
             </div>
-          ) : isPreviewable(selectedArtifact) && viewTab === 'port' ? (
+          ) : (isPreviewable(selectedArtifact) || (selectedArtifact.type === 'file' && isFilePath(selectedArtifact.content))) && viewTab === 'port' ? (
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="p-4 border-b border-mission-control-border space-y-2">
                 <label className="block text-xs font-medium text-mission-control-text">

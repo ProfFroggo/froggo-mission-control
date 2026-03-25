@@ -1065,7 +1065,16 @@ export default function ChatPanel() {
       let buffer = '';
       let accumulated = '';
       let structuredContent: ContentBlock[] | null = null;
-      let thinkingContent = ''; // Extended thinking blocks from Claude
+      let thinkingChunks: string[] = []; // Each unique thinking block accumulated as separate chunk
+
+      // Build structured content from current thinking + text for live rendering
+      const buildStructuredMsg = (thinking: string[], text: string): ContentBlock[] | string => {
+        if (thinking.length === 0) return text;
+        const blocks: ContentBlock[] = [];
+        if (thinking.length > 0) blocks.push({ type: 'thinking', thinking: thinking.join('\n\n') } as ContentBlock);
+        if (text) blocks.push({ type: 'text', text } as ContentBlock);
+        return blocks;
+      };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1087,14 +1096,22 @@ export default function ChatPanel() {
               // Heartbeat — agent is alive; don't alter message content, let loading state speak
             } else if (evt.type === 'tool_use' || evt.type === 'tool_result') {
               // Tool lifecycle — no visual indicator needed
-            } else if (evt.type === 'thinking_block') {
-              // Thinking content — not shown in UI
+            } else if (evt.type === 'thinking_block' && typeof evt.thinking === 'string' && evt.thinking.trim()) {
+              // Accumulate thinking as a chain — each event replaces the last chunk (backend sends cumulative)
+              // Split by double-newline to detect individual thoughts
+              const incomingChunks = evt.thinking.split(/\n\n+/).filter((c: string) => c.trim());
+              thinkingChunks = incomingChunks;
+              const liveContent = buildStructuredMsg(thinkingChunks, accumulated);
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, content: liveContent as string | ContentBlock[] } : m
+              ));
             } else if (evt.type === 'text_delta' && typeof evt.text === 'string') {
               // Text streaming in
               accumulated += evt.text;
               structuredContent = null;
+              const liveTextContent = buildStructuredMsg(thinkingChunks, accumulated);
               setMessages(prev => prev.map(m =>
-                m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
+                m.id === assistantId ? { ...m, content: liveTextContent as string | ContentBlock[], status: undefined } : m
               ));
               // Re-enable input once text starts arriving
               setLoading(false);
@@ -1122,7 +1139,11 @@ export default function ChatPanel() {
       }
 
       // Finalize — if stream completed with no content, show error instead of disappearing
-      if (!accumulated) {
+      const finalContent = thinkingChunks.length > 0
+        ? buildStructuredMsg(thinkingChunks, accumulated)
+        : (accumulated || null);
+
+      if (!accumulated && thinkingChunks.length === 0) {
         setMessages(prev => prev.map(m =>
           m.id === assistantId
             ? { ...m, content: 'No response received. Please try again.', streaming: false }
@@ -1130,18 +1151,21 @@ export default function ChatPanel() {
         ));
       } else {
         setMessages(prev => prev.map(m =>
-          m.id === assistantId ? { ...m, streaming: false } : m
+          m.id === assistantId ? { ...m, content: finalContent as string | ContentBlock[] ?? m.content, streaming: false } : m
         ));
       }
       setLoading(false);
       setCurrentTool(null);
       currentMsgIdRef.current = '';
       currentResponseRef.current = accumulated;
-      currentContentRef.current = structuredContent ?? accumulated;
+      currentContentRef.current = structuredContent ?? (finalContent as ContentBlock[] | null) ?? accumulated;
 
-      // Persist the assistant response to the DB so history survives page reload
-      if (accumulated) {
-        saveMessageToDb('assistant', accumulated);
+      // Persist the assistant response to the DB — save full structured content if we have thinking
+      const contentToSave = thinkingChunks.length > 0 && finalContent
+        ? (typeof finalContent === 'string' ? finalContent : JSON.stringify(finalContent))
+        : accumulated;
+      if (contentToSave) {
+        saveMessageToDb('assistant', contentToSave);
       }
 
       if (speakResponses) speak(accumulated);

@@ -235,8 +235,8 @@ function ensureCSS() {
     /* Thinking block */
     .aui-thinking-block {
       font-size: 12px; border-radius: 8px; overflow: hidden;
-      border: 1px solid color-mix(in srgb, var(--color-info) 25%, transparent);
-      background: color-mix(in srgb, var(--color-info) 4%, transparent);
+      border: 1px solid color-mix(in srgb, #a78bfa 18%, transparent);
+      background: color-mix(in srgb, #a78bfa 5%, transparent);
       margin: 4px 0;
       animation: aui-fade-in 0.15s ease both;
     }
@@ -247,11 +247,12 @@ function ensureCSS() {
     }
     .aui-thinking-body {
       padding: 8px 12px;
-      border-top: 1px solid color-mix(in srgb, var(--color-info) 20%, transparent);
+      border-top: 1px solid color-mix(in srgb, #a78bfa 12%, transparent);
       font-size: 12px; line-height: 1.6;
-      color: color-mix(in srgb, var(--mission-control-text) 70%, transparent);
+      color: color-mix(in srgb, var(--mission-control-text) 75%, transparent);
       font-style: italic;
-      max-height: 200px; overflow-y: auto;
+      max-height: 300px; overflow-y: auto;
+      white-space: pre-wrap;
     }
     /* Char count */
     .aui-char-count { font-size: 10px; tabular-nums; color: var(--mission-control-text-dim); opacity: 0.5; }
@@ -381,6 +382,9 @@ function ThinkingBlock({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   if (!text?.trim()) return null;
 
+  // Split into individual thought chunks (separated by double newlines)
+  const chunks = text.split(/\n\n+/).filter(c => c.trim());
+
   return (
     <div className="aui-thinking-block">
       <div
@@ -389,19 +393,37 @@ function ThinkingBlock({ text }: { text: string }) {
         role="button"
         aria-expanded={open}
       >
-        <Brain size={12} className="text-[var(--color-info)] flex-shrink-0" />
-        <span className="text-[11px] font-medium text-[var(--color-info)]">Thinking</span>
-        <span className="text-[10px] text-[var(--color-info)]/60 ml-1">
-          {text.length > 0 ? `${text.length} chars` : ''}
+        <Brain size={12} style={{ color: '#a78bfa' }} className="flex-shrink-0" />
+        <span className="text-[11px] font-medium" style={{ color: '#a78bfa' }}>Thinking</span>
+        <span className="text-[10px] ml-1" style={{ color: 'color-mix(in srgb, #a78bfa 55%, transparent)' }}>
+          {chunks.length > 1 ? `${chunks.length} thoughts` : `${text.length} chars`}
         </span>
         <CollapseChevron
           size={11}
-          className="text-[var(--color-info)]/60 ml-auto flex-shrink-0 transition-[transform] duration-150"
-          style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          style={{ color: 'color-mix(in srgb, #a78bfa 55%, transparent)', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          className="ml-auto flex-shrink-0 transition-[transform] duration-150"
         />
       </div>
       {open && (
-        <div className="aui-thinking-body">{text}</div>
+        <div className="aui-thinking-body">
+          {chunks.length > 1 ? (
+            <div className="flex flex-col gap-3">
+              {chunks.map((chunk, i) => (
+                <div key={i} className="flex gap-2">
+                  <span
+                    className="text-[10px] font-mono flex-shrink-0 mt-0.5 w-4 text-right"
+                    style={{ color: 'color-mix(in srgb, #a78bfa 45%, transparent)' }}
+                  >
+                    {i + 1}.
+                  </span>
+                  <span>{chunk.trim()}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            text
+          )}
+        </div>
       )}
     </div>
   );
