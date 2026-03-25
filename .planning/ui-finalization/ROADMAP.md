@@ -48,17 +48,21 @@ zero glassmorphism, and zero hardcoded colors.
 ## Phase Details
 
 ### Phase 1: Design Token Foundation
-**Goal**: Fix the CSS token layer that everything else inherits from. Four targeted surgical fixes
-that cascade across the entire app — font size, glow shadows, placeholder contrast, and easing.
+**Goal**: Fix the CSS foundation everything builds on. Two parallel token systems loaded
+simultaneously with conflicting values is a P0 — one must be the canonical source. 28 hardcoded
+green rgba values across 7 CSS files must be replaced with accent-aware tokens. Font size, placeholder
+contrast, easing, and button CSS system consolidation complete the foundation layer.
 **Depends on**: Nothing (must go first — downstream phases depend on correct tokens)
-**Research**: Unlikely (known files, known lines)
-**Plans**: 4 plans
+**Research**: Unlikely (known files, known lines — confirmed by 3 debate agents)
+**Plans**: 6 plans
 
 Plans:
-- [ ] 01-01: Fix base font size — `design-tokens.css:72` `14px` → `1rem` (WCAG minimum)
-- [ ] 01-02: Fix hardcoded green glow — `design-tokens.css:178-179` `rgba(34,197,94,0.3)` → `color-mix(in srgb, var(--mission-control-accent) 30%, transparent)`
-- [ ] 01-03: Fix placeholder contrast — `forms.css:107-110` remove stacked `opacity: 0.6` on already-dim color
-- [ ] 01-04: Remove bounce easing + consolidate 3 competing button CSS systems (`index.css`, `component-patterns.css`, `forms.css`)
+- [ ] 01-01: Confirm which token file is canonical — audit `src/design-tokens.css` vs `src/design-system/tokens.css` for all conflicting values (`--radius-sm`, `--z-dropdown`, `--shadow-*`, `--ease-*`); migrate unique values from `design-system/tokens.css` into `design-tokens.css`; delete `design-system/tokens.css`; verify imports in `index.css`
+- [ ] 01-02: Fix base font size — `design-tokens.css:72` `14px` → `1rem`; also update min-bound on font-size slider in `EnhancedSettingsPanel.tsx:227` so users cannot set it below 14px via settings
+- [ ] 01-03: Fix all 28 hardcoded `rgba(34, 197, 94, ...)` — replace with `color-mix(in srgb, var(--mission-control-accent) N%, transparent)` across 7 files: `design-tokens.css`, `design-system/tokens.css` (before deletion), `component-patterns.css`, `glass-theme.css`, `dashboard-redesign.css`, `index.css`, `writing-editor.css`; **critical**: `glass-theme.css:222-226` uses `!important` on input focus ring — remove the `!important` and convert to accent token
+- [ ] 01-04: Consolidate `glass-card` triple-definition — exists in `index.css:128`, `dashboard-redesign.css:63`, `glass-theme.css:95`; the `glass-theme.css` version wins via `!important`; merge into single definition in `component-patterns.css`, remove other two; eliminate other duplicate classes (`.modern-scrollbar`, `.skeleton`, `.truncate-2`/`.truncate-3`)
+- [ ] 01-05: Fix placeholder contrast — `forms.css:107-110` remove stacked `opacity: 0.6` on `var(--mission-control-text-dim)`; raise `--leading-normal` to `1.55` in token file for dark-mode body text legibility
+- [ ] 01-06: Remove `--ease-bounce` + consolidate button CSS systems — delete `--ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55)` from token file, replace with `--ease-quint-out: cubic-bezier(0.22, 1, 0.36, 1)`; consolidate 3 competing button systems (`.btn` in `index.css`, `.btn-base` in `component-patterns.css`, `.mission-control-btn-*` in `forms.css`) into single canonical system in `component-patterns.css`
 
 ### Phase 2: Anti-Pattern Elimination
 **Goal**: Purge every AI-slop tell: glassmorphism cards, gradient text on headings/metrics, and
@@ -71,7 +75,7 @@ the UI read as AI-generated at first glance.
 Plans:
 - [ ] 02-01: Remove glassmorphism from `DashboardRedesigned.tsx` — `StatCard` (line 324), `Quick Actions` (415), `ApprovalsQueue` (519): `backdrop-blur-xl` → `bg-mission-control-surface`
 - [ ] 02-02: Remove gradient text — `Dashboard.tsx:78` and `DashboardRedesigned.tsx` ×5 (lines 140, 239, 274, 312, 344): `bg-clip-text text-transparent` → solid `text-mission-control-text`
-- [ ] 02-03: Fix hardcoded palette colors in `DashboardRedesigned.tsx` (lines 340, 410-411) — replace with token classes; audit `tailwind.config.js` for any other stray palette values bleeding through
+- [ ] 02-03: Fix hardcoded palette colors in `DashboardRedesigned.tsx` (lines 340, 410-411) `shadow-green-400/50`/`shadow-purple-400/50`/`shadow-blue-400/50` → token classes; remove `animate-gradient-x` usage (lines 134, 226) — it is not defined in `tailwind.config.js` and produces no animation; fix `AgentPanel.tsx` inline style `style={{ backgroundColor: themeColor + '22' }}` → CSS variable with token-based opacity
 
 ### Phase 3: Navigation & Information Architecture
 **Goal**: Fix the structural problems that make the app feel overwhelming regardless of visual polish.
@@ -86,6 +90,7 @@ Plans:
 - [ ] 03-02: Campaign detail tab audit — 11 tabs is too many; remove Comments tab (duplicates Chat exactly); consider merging Performance/ROI; final target ≤8 tabs
 - [ ] 03-03: Empty state differentiation — 15 identical empty states all use `icon + "No X yet" + subtitle`; create at least 3 distinct tiers: global empty (no campaigns ever), local empty (no tasks in this project), error empty (failed to load)
 - [ ] 03-04: Remove "2 Issues" debug badge — either fix the 2 underlying issues and remove the badge, or move it to Settings > System Health; it appears on ~30% of screens as if it's a feature
+- [ ] 03-05: KnowledgeBase triple-filter consolidation — three simultaneous filter mechanisms (sidebar categories + header pills + search box) create cognitive overload; remove header pills (keep sidebar + search); dashboard metric cards double-report: `DashboardRedesigned.tsx` Pending Approvals shows same count as `text-5xl` AND `animate-pulse` badge simultaneously — remove the badge, trust the big number
 
 ### Phase 4: Radix Component Normalization
 **Goal**: Enforce 100% Radix Themes 3 patterns. Every segment control and filter pill that
@@ -177,9 +182,9 @@ Plans:
 
 | Phase | Plans | Status | Completed |
 |-------|-------|--------|-----------|
-| 1. Design Token Foundation | 0/4 | Not started | - |
+| 1. Design Token Foundation | 0/6 | Not started | - |
 | 2. Anti-Pattern Elimination | 0/3 | Not started | - |
-| 3. Navigation & IA Architecture | 0/4 | Not started | - |
+| 3. Navigation & IA Architecture | 0/5 | Not started | - |
 | 4. Radix Component Normalization | 0/5 | Not started | - |
 | 5. Icon, Media & Copy Accuracy | 0/4 | Not started | - |
 | 6. Content & Data Accuracy | 0/5 | Not started | - |
@@ -187,7 +192,7 @@ Plans:
 | 8. Accessibility Hardening | 0/4 | Not started | - |
 | 9. Final Verification | 0/3 | Not started | - |
 
-**Total: 0/37 plans complete**
+**Total: 0/40 plans complete**
 
 ---
 
