@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
-import { Button, Checkbox, IconButton, Select, TextField } from '@radix-ui/themes';
+import { Button, Checkbox, Flex, IconButton, Select, TextField } from '@radix-ui/themes';
 import { useEventBus } from '../lib/useEventBus';
 import { createPortal } from 'react-dom';
 import {
@@ -899,7 +899,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           <div>
             <h1 className="text-heading-2 icon-text">
               Task Board
@@ -907,7 +907,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 Press <kbd className="px-1.5 py-0.5 bg-mission-control-bg rounded text-xs">?</kbd> for shortcuts
               </span>
             </h1>
-            <div className="flex items-center gap-4 text-secondary mt-1">
+            <Flex align="center" gap="4" className="text-secondary mt-1">
               <span>{filteredTasks.length} tasks</span>
               {stats.inProgress > 0 && (
                 <span className="icon-text-tight text-warning">
@@ -929,10 +929,10 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                   <User size={14} className="flex-shrink-0" /> {stats.unassigned} unassigned
                 </span>
               )}
-            </div>
+            </Flex>
           </div>
-          
-          <div className="flex items-center gap-2">
+
+          <Flex align="center" gap="2">
             {/* Group 1: Search + Filters + Sort */}
             <TextField.Root
               size="1"
@@ -1129,8 +1129,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               New Task
               <kbd className="px-1.5 py-0.5 bg-mission-control-text/20 rounded text-xs">N</kbd>
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Filter Panel */}
         {showFilters && (
@@ -1271,14 +1271,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
           <div className="flex items-center gap-2 flex-wrap pt-2">
             <span className="text-xs text-mission-control-text-dim font-medium">Saved views:</span>
             {savedViews.map(view => (
-              <div key={view.name} className="flex items-center gap-0.5">
+              <Flex key={view.name} align="center" gap="1">
                 <Button variant="ghost" size="1" onClick={() => applySavedView(view)}>
                   {view.name}
                 </Button>
                 <IconButton variant="ghost" size="1" onClick={() => deleteSavedView(view.name)} title="Delete saved view">
                   <X size={10} />
                 </IconButton>
-              </div>
+              </Flex>
             ))}
           </div>
         )}
@@ -1302,7 +1302,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       )}
       {/* Mobile column navigator */}
       {isMobile && !(!loading.tasks && filteredTasks.length === 0) && (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
           <IconButton
             variant="ghost"
             size="1"
@@ -1316,13 +1316,13 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <span className="text-sm font-medium text-mission-control-text">
               {columns[mobileColumnIndex]?.title ?? ''}
             </span>
-            <div className="flex items-center gap-1">
+            <Flex align="center" gap="1">
               {columns.map((_, i) => (
                 <IconButton key={i} variant={i === mobileColumnIndex ? 'solid' : 'ghost'} size="1" onClick={() => setMobileColumnIndex(i)} aria-label={`Go to column ${columns[i].title}`}>
                   <span className={`block rounded-full ${i === mobileColumnIndex ? 'w-4 h-2' : 'w-2 h-2'}`} />
                 </IconButton>
               ))}
-            </div>
+            </Flex>
           </div>
           <IconButton
             variant="ghost"
@@ -1333,7 +1333,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
           >
             <ChevronRight size={20} aria-hidden="true" />
           </IconButton>
-        </div>
+        </Flex>
       )}
 
       <div
@@ -1396,7 +1396,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 </div>
 
                 {/* Filter and Sort Controls */}
-                {!isCollapsed && <div className="flex items-center gap-1">
+                {!isCollapsed && <Flex align="center" gap="1">
                   {/* Sort Dropdown */}
                   <div className="relative">
                     <IconButton variant={settings.sortBy !== 'newest' ? 'soft' : 'ghost'} size="1" onClick={() => toggleColumnDropdown(column.id, 'sort')} title="Sort">
@@ -1458,7 +1458,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       </div>
                     )}
                   </div>
-                </div>}
+                </Flex>}
               </div>
 
               {/* Tasks */}
@@ -1544,10 +1544,10 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         />
         <BaseModalBody>
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between"><span>New task</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">N</kbd></div>
-            <div className="flex justify-between"><span>Search</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">Cmd+F</kbd></div>
-            <div className="flex justify-between"><span>Close panel</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">Esc</kbd></div>
-            <div className="flex justify-between"><span>This help</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">?</kbd></div>
+            <Flex justify="between"><span>New task</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">N</kbd></Flex>
+            <Flex justify="between"><span>Search</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">Cmd+F</kbd></Flex>
+            <Flex justify="between"><span>Close panel</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">Esc</kbd></Flex>
+            <Flex justify="between"><span>This help</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">?</kbd></Flex>
           </div>
         </BaseModalBody>
       </BaseModal>
@@ -1887,7 +1887,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       title={activityIndicator?.description}
     >
       {/* Top row: Checkbox + Priority + Title + Menu */}
-      <div className="flex items-start gap-1.5 mb-2">
+      <Flex align="start" gap="2" mb="2">
         {/* Selection checkbox — visible on hover or when any task is selected */}
         {onToggleSelect && (
           <IconButton
@@ -2095,40 +2095,40 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
             document.body
           )}
         </div>
-      </div>
-      
+      </Flex>
+
       {/* Agent status updates are shown in the Activities tab of the task detail panel, not here */}
 
       {/* Due date urgency badges — only show for incomplete tasks */}
       {task.dueDate && task.status !== 'done' && dueInfo && (() => {
         if (dueInfo.isOverdue) {
           return (
-            <div className="flex items-center gap-1 mb-1.5">
+            <Flex align="center" gap="1" mb="2">
               <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-error bg-error-subtle border-error-border">
                 <AlertTriangle size={10} />
                 {dueInfo.text}
               </span>
-            </div>
+            </Flex>
           );
         }
         if (dueInfo.isDueSoon) {
           return (
-            <div className="flex items-center gap-1 mb-1.5">
+            <Flex align="center" gap="1" mb="2">
               <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-warning bg-warning-subtle border-warning-border">
                 <Clock size={10} />
                 Due in {dueInfo.text}
               </span>
-            </div>
+            </Flex>
           );
         }
         if (dueInfo.isDueThisWeek) {
           return (
-            <div className="flex items-center gap-1 mb-1.5">
+            <Flex align="center" gap="1" mb="2">
               <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-warning bg-warning-subtle/50 border-warning-border/50">
                 <Calendar size={10} />
                 Due in {dueInfo.text}
               </span>
-            </div>
+            </Flex>
           );
         }
         return null;
