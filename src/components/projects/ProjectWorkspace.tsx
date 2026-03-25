@@ -693,7 +693,7 @@ function AutomationsTab({ project }: { project: Project }) {
         ) : (
           <div className="divide-y divide-mission-control-border">
             {items.map(item => (
-              <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+              <Flex key={item.id} align="center" gap="3" className="px-4 py-3">
                 <Zap size={14} className="text-mission-control-text-dim flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-mission-control-text truncate">{item.content}</p>
@@ -708,7 +708,7 @@ function AutomationsTab({ project }: { project: Project }) {
                 }`}>
                   {item.status}
                 </span>
-              </div>
+              </Flex>
             ))}
           </div>
         )}

@@ -785,7 +785,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             {discoveryRefs.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {discoveryRefs.map((ref, i) => (
-                  <div key={i} className="flex items-center gap-1 px-2 py-1 bg-mission-control-surface border border-mission-control-border rounded-lg text-xs group">
+                  <Flex key={i} align="center" gap="1" className="px-2 py-1 bg-mission-control-surface border border-mission-control-border rounded-lg text-xs group">
                     {ref.type === 'url'
                       ? <ExternalLink size={11} className="text-mission-control-accent flex-shrink-0" />
                       : ref.file?.type.startsWith('image/')
@@ -795,7 +795,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                     <IconButton variant="ghost" size="1" onClick={() => setDiscoveryRefs(prev => prev.filter((_, j) => j !== i))}>
                       <X size={10} />
                     </IconButton>
-                  </div>
+                  </Flex>
                 ))}
               </div>
             )}
@@ -911,13 +911,13 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             {stagedFiles.length > 0 && (
               <div className="space-y-1.5">
                 {stagedFiles.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
+                  <Flex key={i} align="center" gap="2" className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
                     <span className="flex-1 text-sm text-mission-control-text truncate">{f.name}</span>
                     <span className="text-xs text-mission-control-text-dim">{(f.size / 1024).toFixed(0)}KB</span>
                     <IconButton variant="ghost" size="1" onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))}>
                       <Trash2 size={12} />
                     </IconButton>
-                  </div>
+                  </Flex>
                 ))}
               </div>
             )}

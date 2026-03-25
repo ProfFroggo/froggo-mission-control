@@ -106,13 +106,13 @@ export function WidgetListSkeleton({ count = 3, className = '' }: { count?: numb
   return (
     <div className={`space-y-2 p-4 ${className}`}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 py-2">
+        <Flex key={i} align="center" gap="3" className="py-2">
           <Skeleton className="w-8 h-8 rounded-lg flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <Skeleton className="h-4 w-3/4 mb-1" />
             <Skeleton className="h-3 w-1/2" />
           </div>
-        </div>
+        </Flex>
       ))}
     </div>
   );
@@ -143,14 +143,14 @@ export function WidgetStatsSkeleton({ items = 4, className = '' }: { items?: num
   return (
     <div className={`p-4 space-y-4 ${className}`}>
       {Array.from({ length: items }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3">
+        <Flex key={i} align="center" gap="3">
           <Skeleton className="w-8 h-8 rounded-lg" />
           <div className="flex-1">
             <Skeleton className="h-4 w-24 mb-1" />
             <Skeleton className="h-3 w-16" />
           </div>
           <Skeleton className="h-6 w-12 rounded-lg" />
-        </div>
+        </Flex>
       ))}
     </div>
   );

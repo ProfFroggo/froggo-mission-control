@@ -1035,7 +1035,7 @@ function LinkAutomationModal({ campaignId, onClose }: { campaignId: string; onCl
                 {linked.map(l => {
                   const auto = allAutomations.find(a => a.id === l.automationId);
                   return (
-                    <div key={l.automationId} className="flex items-center justify-between bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2">
+                    <Flex key={l.automationId} align="center" justify="between" className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2">
                       <div>
                         <p className="text-xs font-medium text-mission-control-text">{auto?.name ?? l.automationId}</p>
                         <p className="text-[10px] text-mission-control-text-dim capitalize">{l.campaignTriggerType.replace(/-/g, ' ')}</p>
@@ -1043,7 +1043,7 @@ function LinkAutomationModal({ campaignId, onClose }: { campaignId: string; onCl
                       <IconButton variant="ghost" size="1" color="red" onClick={() => handleUnlink(l.automationId)}>
                         <X size={12} />
                       </IconButton>
-                    </div>
+                    </Flex>
                   );
                 })}
               </div>

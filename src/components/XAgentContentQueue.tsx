@@ -758,7 +758,7 @@ export function XAgentContentQueue() {
           <div className="text-sm font-medium text-mission-control-text mb-3">Activity Log</div>
           <div className="space-y-0">
             {activity.map((entry) => (
-              <div key={entry.id} className="flex items-center gap-3 py-2 text-sm border-b border-mission-control-border last:border-b-0">
+              <Flex key={entry.id} align="center" gap="3" className="py-2 text-sm border-b border-mission-control-border last:border-b-0">
                 <span
                   className="text-xs font-medium flex-shrink-0 w-16 text-right"
                   style={{ color: actionColor(entry.action) }}
@@ -767,7 +767,7 @@ export function XAgentContentQueue() {
                 </span>
                 <span className="text-mission-control-text flex-1 leading-relaxed truncate">{entry.summary}</span>
                 <span className="text-xs text-mission-control-text-dim flex-shrink-0 w-14 text-right tabular-nums">{relativeTime(entry.timestamp)}</span>
-              </div>
+              </Flex>
             ))}
           </div>
         </div>
