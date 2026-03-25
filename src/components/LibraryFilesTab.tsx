@@ -815,10 +815,10 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         </div>
       )}
       {askLoading && (
-        <div className="mx-4 mt-2 p-3 bg-mission-control-accent/5 border border-mission-control-accent/20 rounded-lg text-sm text-mission-control-text-dim flex items-center gap-2">
+        <Flex align="center" gap="2" className="mx-4 mt-2 p-3 bg-mission-control-accent/5 border border-mission-control-accent/20 rounded-lg text-sm text-mission-control-text-dim">
           <RefreshCw size={14} className="animate-spin text-mission-control-accent" />
           Asking library agent...
-        </div>
+        </Flex>
       )}
 
       {/* ── Body: sidebar + main + detail ───────────────────────────────────── */}
@@ -1116,9 +1116,9 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       >
                         <Star size={12} className={isStarred ? 'text-warning fill-warning' : ''} />
                       </IconButton>
-                      <div className={`p-2.5 rounded-lg ${catConf.color} mb-2 flex items-center justify-center`}>
+                      <Flex align="center" justify="center" className={`p-2.5 rounded-lg ${catConf.color} mb-2`}>
                         <FileIcon size={20} />
-                      </div>
+                      </Flex>
                       <div className="text-xs font-medium truncate leading-tight">{file.name}</div>
                       <div className="text-xs text-mission-control-text-dim mt-0.5">{formatSize(file.size)}</div>
                     </div>
@@ -1340,10 +1340,10 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       </div>
                     ))}
                     {miniChatLoading && (
-                      <div className="text-xs p-2 rounded-lg bg-mission-control-bg text-mission-control-text-dim mr-4 flex items-center gap-1">
+                      <Flex align="center" gap="1" className="text-xs p-2 rounded-lg bg-mission-control-bg text-mission-control-text-dim mr-4">
                         <RefreshCw size={10} className="animate-spin" />
                         Thinking...
-                      </div>
+                      </Flex>
                     )}
                     <div ref={miniChatEndRef} />
                   </div>
