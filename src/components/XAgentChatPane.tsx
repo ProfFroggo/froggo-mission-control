@@ -401,12 +401,12 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="mb-2">
+          <Flex align="center" gap="2">
             <Users className="w-5 h-5 text-info" />
             <h3 className="text-sm font-semibold text-mission-control-text">Agent Chat</h3>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <Button
               onClick={handleNewSession}
               title="New session"
@@ -417,14 +417,14 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
               <RotateCcw className="w-3 h-3" />
               New session
             </Button>
-            <div className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full ${
+            <Flex align="center" gap="1" className={`px-2 py-1 text-xs rounded-full ${
               isConnected ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-success' : 'bg-error'}`} />
               {isConnected ? 'Connected' : 'Disconnected'}
-            </div>
-          </div>
-        </div>
+            </Flex>
+          </Flex>
+        </Flex>
         <div className="flex flex-wrap gap-2">
           <span className="px-2 py-1 text-xs bg-info-subtle text-info rounded-full">
             {safeDisplayName}
@@ -485,11 +485,11 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {!historyLoaded ? (
           <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
-            <div className="flex gap-1 mb-2">
+            <Flex gap="1" className="mb-2">
               <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
               <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
               <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
-            </div>
+            </Flex>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-mission-control-text-dim">
@@ -502,9 +502,9 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         ) : (
           <>
             {messages.map((msg) => (
-              <div
+              <Flex
                 key={msg.id}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                justify={msg.role === 'user' ? 'end' : 'start'}
               >
                 <div
                   className={`max-w-[90%] px-4 py-3 rounded-2xl ${
@@ -547,7 +547,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                     })}
                   </div>
                 </div>
-              </div>
+              </Flex>
             ))}
             <div ref={messagesEndRef} />
           </>
@@ -580,7 +580,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
 
       {/* Input */}
       <div className="px-4 pb-4 pt-2 bg-mission-control-surface">
-        <div className="flex gap-2">
+        <Flex gap="2">
           <TextField.Root
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -600,7 +600,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </IconButton>
-        </div>
+        </Flex>
         <p className="text-xs text-mission-control-text-dim mt-2">
           Press Enter to send • Shift+Enter for new line
         </p>
