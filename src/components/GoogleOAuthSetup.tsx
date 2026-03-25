@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Mail, AlertCircle, Loader } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 
 interface Props {
   onAuthenticated: (email: string) => void;
@@ -78,10 +78,10 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-error text-xs bg-error border border-error rounded-lg px-3 py-2 w-full">
+        <Flex align="center" gap="2" className="text-error text-xs bg-error border border-error rounded-lg px-3 py-2 w-full">
           <AlertCircle size={14} className="flex-shrink-0" />
           <span>{error}</span>
-        </div>
+        </Flex>
       )}
 
       <Button

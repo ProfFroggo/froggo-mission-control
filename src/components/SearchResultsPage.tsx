@@ -180,7 +180,7 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
   return (
     <Flex direction="column" height="100%">
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+      <Flex align="center" gap="3" className="p-4 border-b border-mission-control-border">
         <form onSubmit={handleSubmit} className="flex items-center gap-3 flex-1">
           <Search size={20} className="text-mission-control-text-dim flex-shrink-0" aria-hidden="true" />
           <TextField.Root
@@ -230,7 +230,7 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
             <X size={20} />
           </IconButton>
         )}
-      </div>
+      </Flex>
 
       {/* Body: sidebar + results */}
       <div className="flex flex-1 overflow-hidden">

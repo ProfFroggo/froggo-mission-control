@@ -80,10 +80,10 @@ export default function XResearchIdeaEditor() {
   return (
     <Flex direction="column" height="100%" p="5" className="bg-mission-control-bg">
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
+        <Flex align="center" gap="2" className="mb-2">
           <FileText className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Propose Research Idea</h3>
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text-dim">
           Create a new research idea with citations. It will be submitted for approval.
         </p>

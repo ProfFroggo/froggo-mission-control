@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, Flex, IconButton } from '@radix-ui/themes';
 
 export interface TourStep {
   target: string; // CSS selector for element to highlight
@@ -252,11 +252,11 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
           >
             Skip Tour
           </Button>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <IconButton
               size="2"
               variant="ghost"
-             
+
               disabled={currentStep === 0}
               onClick={handlePrevious}
               aria-label="Previous step"
@@ -280,7 +280,7 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
                 </>
               )}
             </Button>
-          </div>
+          </Flex>
         </div>
       </div>
     </div>

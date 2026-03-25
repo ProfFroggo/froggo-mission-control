@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { AlertTriangle, Trash2, X, Info } from 'lucide-react';
-import { TextField } from '@radix-ui/themes';
+import { Flex, TextField } from '@radix-ui/themes';
 import { LoadingButton } from './LoadingStates';
 import BaseModal, { BaseModalBody, BaseModalFooter } from './BaseModal';
 
@@ -105,7 +105,7 @@ export default function ConfirmDialog({
       preventBackdropClose={isProcessing}
     >
       {/* Header */}
-      <div className="flex items-start gap-4 p-6 border-b border-mission-control-border">
+      <Flex align="start" gap="4" className="p-6 border-b border-mission-control-border">
         <div className={`w-12 h-12 rounded-full ${iconBg} flex items-center justify-center flex-shrink-0`}>
           <Icon size={24} className={iconColor} />
         </div>
@@ -122,7 +122,7 @@ export default function ConfirmDialog({
         >
           <X size={20} className="text-mission-control-text-dim" />
         </button>
-      </div>
+      </Flex>
 
       {/* Content */}
       <BaseModalBody>

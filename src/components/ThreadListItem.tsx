@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MessageCircle, Star, ChevronRight, User, Mail, Reply } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
+import { Flex, IconButton } from '@radix-ui/themes';
 import ThreadView from './ThreadView';
 
 interface ThreadMetadata {
@@ -91,7 +91,7 @@ export default function ThreadListItem({
         }`}
       >
         {/* Header row */}
-        <div className="flex items-start justify-between mb-2">
+        <Flex align="start" justify="between" className="mb-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {/* Unread indicator */}
             {hasUnread && <div className="w-2 h-2 bg-mission-control-accent rounded-full flex-shrink-0 mt-1" />}
@@ -150,7 +150,7 @@ export default function ThreadListItem({
             {/* Expand arrow */}
             <ChevronRight size={14} className="text-mission-control-text-dim" />
           </div>
-        </div>
+        </Flex>
 
         {/* Subject/preview line */}
         <div className="flex flex-col gap-1">

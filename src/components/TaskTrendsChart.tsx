@@ -18,6 +18,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { TrendingUp, BarChart2, Activity } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import { getTaskCompletionTrends, TaskCompletionTrend } from '../services/analyticsService';
 import {
   CHART_COLORS,
@@ -143,7 +144,7 @@ export default function TaskTrendsChart({ days = 30 }: { days?: number }) {
   return (
     <div className="h-full flex flex-col gap-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2">
             <TrendingUp size={16} className="text-mission-control-accent" />
@@ -172,7 +173,7 @@ export default function TaskTrendsChart({ days = 30 }: { days?: number }) {
             </button>
           ))}
         </div>
-      </div>
+      </Flex>
 
       {/* KPI cards */}
       <div className="grid grid-cols-3 gap-3">

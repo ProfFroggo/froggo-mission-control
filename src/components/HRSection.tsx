@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { UserPlus, BookOpen, Users, ChevronRight, Award, Target, CheckCircle, AlertTriangle, FileText, Sparkles } from 'lucide-react';
-import { Button, Badge } from '@radix-ui/themes';
+import { Button, Badge, Flex } from '@radix-ui/themes';
 import HRAgentCreationModal from './HRAgentCreationModal';
 import TrainingLogModal from './TrainingLogModal';
 import AgentSkillsModal from './AgentSkillsModal';
@@ -208,7 +208,7 @@ export default function HRSection() {
           {/* Skill gaps alert */}
           {teamHealth && teamHealth.agentsNeedingTraining.length > 0 && (
             <div className="px-4 pb-3">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning-subtle border border-warning-border text-xs text-warning">
+              <Flex align="center" gap="2" className="px-3 py-2 rounded-lg bg-warning-subtle border border-warning-border text-xs text-warning">
                 <AlertTriangle size={12} className="flex-shrink-0" />
                 <span>
                   <strong>{teamHealth.agentsNeedingTraining.join(', ')}</strong>{' '}
@@ -217,7 +217,7 @@ export default function HRSection() {
                 <Button variant="ghost" color="amber" size="1" className="ml-auto whitespace-nowrap" onClick={openTrainingLog}>
                   View <ChevronRight size={12} className="inline" />
                 </Button>
-              </div>
+              </Flex>
             </div>
           )}
         </div>

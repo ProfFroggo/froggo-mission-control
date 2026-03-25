@@ -37,7 +37,7 @@ export default function XComposeModal({ open, onClose }: XComposeModalProps) {
       {/* Drawer */}
       <div className="relative w-full max-w-2xl h-full bg-mission-control-bg border-l border-mission-control-border shadow-2xl flex flex-col animate-slide-in-right">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
           <h2 className="text-sm font-semibold text-mission-control-text">New Post</h2>
           <IconButton
             onClick={onClose}
@@ -47,7 +47,7 @@ export default function XComposeModal({ open, onClose }: XComposeModalProps) {
           >
             <X size={18} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Composer */}
         <div className="flex-1 overflow-y-auto">

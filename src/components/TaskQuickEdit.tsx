@@ -11,7 +11,7 @@ import type { Task, TaskPriority } from '../store/store';
 import { taskApi } from '../lib/api';
 import { showToast } from './Toast';
 // eslint-disable-next-line import/order
-import { Button, Spinner, Select, TextField } from '@radix-ui/themes';
+import { Button, Flex, Spinner, Select, TextField } from '@radix-ui/themes';
 
 interface QuickEditAgent {
   id: string;
@@ -155,7 +155,7 @@ export default function TaskQuickEdit({ task, agents, anchorRect, onClose, onSav
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 pt-0.5">
+        <Flex align="center" gap="2" className="pt-0.5">
           <Button
             onClick={handleSave}
             disabled={saving || !title.trim()}
@@ -173,7 +173,7 @@ export default function TaskQuickEdit({ task, agents, anchorRect, onClose, onSav
             <X size={13} className="flex-shrink-0" />
             Cancel
           </Button>
-        </div>
+        </Flex>
       </div>
     </div>,
     document.body

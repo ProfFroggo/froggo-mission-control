@@ -2,7 +2,7 @@ import { memo, useState, type ComponentPropsWithoutRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Copy, Check, ExternalLink, FileCode, GitBranch, FileJson, FileText as FileTextIcon } from 'lucide-react';
-import { IconButton, Button } from '@radix-ui/themes';
+import { Flex, IconButton, Button } from '@radix-ui/themes';
 import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
 
@@ -199,19 +199,19 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
 
   return (
     <div className="relative my-3 rounded-lg overflow-hidden bg-mission-control-bg border border-mission-control-border shadow-sm">
-      <div className="flex items-center justify-between px-3 py-2 bg-mission-control-surface/50 border-b border-mission-control-border/50">
+      <Flex align="center" justify="between" className="px-3 py-2 bg-mission-control-surface/50 border-b border-mission-control-border/50">
         <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">{language || 'code'}</span>
         <Button
           onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
           size="1"
           variant="ghost"
-         
+
           title="Copy code"
         >
           {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
           <span>{copied ? 'Copied!' : 'Copy'}</span>
         </Button>
-      </div>
+      </Flex>
       <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
         <code className="font-mono text-mission-control-text break-words whitespace-pre-wrap">{code}</code>
       </pre>

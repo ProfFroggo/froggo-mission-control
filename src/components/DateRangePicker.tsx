@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Calendar, X } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
 
 export interface DateRange {
   start: Date;
@@ -98,7 +98,7 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
 
           {/* Dropdown */}
           <div className="absolute right-0 top-full mt-2 w-96 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl z-50 p-4" role="listbox" aria-label="Date range options">
-            <div className="flex items-center justify-between mb-4">
+            <Flex align="center" justify="between" className="mb-4">
               <h3 className="font-semibold">Select Date Range</h3>
               <IconButton
                 onClick={() => setIsOpen(false)}
@@ -106,11 +106,11 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
                 variant="ghost"
                 color="gray"
                 size="2"
-               
+
               >
                 <X size={16} />
               </IconButton>
-            </div>
+            </Flex>
 
             {presets && (
               <div className="mb-4">

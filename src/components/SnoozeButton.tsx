@@ -187,7 +187,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
               <label htmlFor="snooze-date" className="block text-sm font-medium text-mission-control-text mb-2">
                 Custom Time
               </label>
-              <div className="flex gap-2">
+              <Flex gap="2">
                 <input
                   id="snooze-date"
                   type="date"
@@ -202,7 +202,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                   onChange={(e) => setCustomTime(e.target.value)}
                   className="flex-1 px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
-              </div>
+              </Flex>
               <Button
                 mt="2"
                 size="2"

@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Clock, Calendar, Moon, Sunrise, Coffee, AlertCircle, Trash2 } from 'lucide-react';
-import { Button, TextField } from '@radix-ui/themes';
+import { Button, Flex, TextField } from '@radix-ui/themes';
 import BaseModal, { BaseModalHeader, BaseModalBody, BaseModalFooter } from './BaseModal';
 
 interface SnoozeModalProps {
@@ -225,7 +225,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                   ? 'bg-error-subtle border-error-border' 
                   : 'bg-warning-subtle border-warning-border'
               }`}>
-                <div className="flex items-start gap-2">
+                <Flex align="start" gap="2">
                   <AlertCircle size={16} className={isExpired ? 'text-error mt-0.5' : 'text-warning mt-0.5'} />
                   <div className="flex-1">
                     <p className={`font-medium ${isExpired ? 'text-error' : 'text-warning'}`}>
@@ -251,7 +251,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                     <Trash2 size={14} />
                     Remove
                   </Button>
-                </div>
+                </Flex>
               </div>
             )}
 
