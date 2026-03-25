@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Mail, RefreshCw, AlertCircle, Inbox, Star, Tag, Briefcase, Diamond } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, Flex, IconButton } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { useUserSettings } from '../store/userSettings';
 import WidgetLoading from './WidgetLoading';
@@ -70,8 +70,8 @@ export default function EmailWidget() {
 
   return (
     <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
-      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="2">
           <Mail size={16} className="text-success" />
           <h2 className="font-semibold">Email</h2>
           {totalUnread > 0 && (
@@ -84,18 +84,18 @@ export default function EmailWidget() {
               {totalAction} action
             </span>
           )}
-        </div>
+        </Flex>
         <IconButton
           size="2"
           variant="ghost"
-         
+
           onClick={fetchEmail}
           disabled={loading}
           title="Refresh"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
         </IconButton>
-      </div>
+      </Flex>
 
       <div className="divide-y divide-mission-control-border">
         {loading && accounts.length === 0 ? (
@@ -133,7 +133,7 @@ export default function EmailWidget() {
               aria-label={`Quick check ${account.label} account`}
             >
               <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <span className={`text-lg ${ACCOUNTS.find(a => a.email === account.email)?.color}`}>
                     {account.label === 'Bitso' ? <Briefcase size={18} /> : account.label === 'Carbium' ? <Diamond size={18} /> : <Mail size={18} />}
                   </span>
@@ -141,8 +141,8 @@ export default function EmailWidget() {
                     <div className="font-medium text-sm">{account.label}</div>
                     <div className="text-xs text-mission-control-text-dim truncate">{account.email}</div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   {account.action > 0 && (
                     <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-error-subtle text-error rounded-full">
                       <Tag size={10} />
@@ -160,7 +160,7 @@ export default function EmailWidget() {
                       {account.unread}
                     </span>
                   )}
-                </div>
+                </Flex>
               </div>
             </Button>
           ))
