@@ -6,7 +6,7 @@ description: >-
   campaign planning, metrics analysis, A/B testing strategy, user acquisition,
   and retention planning.
 model: claude-sonnet-4-6
-permissionMode: default
+permissionMode: bypassPermissions
 maxTurns: 30
 memory: user
 tools:

@@ -189,7 +189,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'task_update',
-      description: 'Update a task status or fields',
+      description: 'Update a task\'s status, planning notes, or assignee. Key rules: (1) Never set status="internal-review" — the system sets it automatically when you assign a task. (2) Never set status="done" — only Clara can approve done via review. (3) Use task_add_activity to log progress notes, not this tool. (4) Use status="review" when your work is complete and ready for Clara to verify. (5) Use status="human-review" for external-action approvals or genuine blockers.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -255,7 +255,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'approval_check',
-      description: 'Check status of pending approvals',
+      description: 'Check status of one or all pending approvals. Pass id to poll a specific approval; omit id to list all pending. Poll this after approval_create to detect human decisions. Returns approved/rejected status and any notes left by the reviewer.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -265,7 +265,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'inbox_list',
-      description: 'List inbox items',
+      description: 'List inbox notifications for the current agent — task assignments, review requests, approval results, and human messages. Use unreadOnly=true at session start to catch up on what happened while you were offline. Inbox items are marked read after retrieval.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -276,7 +276,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'agent_status',
-      description: 'Get or update agent status',
+      description: 'Read the current status of any agent by ID. Omit status to read-only (returns current status, currentTask, lastSeen). To update your own status, prefer agent_status_set which also broadcasts to the dashboard. This tool is primarily for reading another agent\'s availability before sending them a chat or delegating work.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -314,7 +314,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'chat_rooms_list',
-      description: 'List all available chat rooms',
+      description: 'List all available chat rooms with their IDs and recent activity. Use before chat_post to confirm the correct roomId. Fixed rooms: "mission-control" (human operator), "general" (team), "code-review", "planning", "incidents". Per-agent 1-1 rooms are created automatically using the agent\'s ID as roomId.',
       inputSchema: { type: 'object', properties: {} },
     },
     {
@@ -333,7 +333,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'subtask_update',
-      description: 'Mark a subtask complete or update it',
+      description: 'Mark a subtask complete or update its title. Use the subtask ID returned by subtask_create (format: sub-{timestamp}-{random}). Call this immediately after finishing each subtask — it updates the parent task\'s progress counter. Always complete subtasks in sequence before moving the parent task to review.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -365,7 +365,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'schedule_list',
-      description: 'List scheduled jobs',
+      description: 'List all scheduled jobs created by schedule_create. Filter enabled=true for active jobs only. Returns each job\'s name, kind (once/interval/cron), next run time, sessionTarget (agent), and last execution result. Use to audit what automation is running and to find job IDs before cancelling.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -637,6 +637,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 
 // ── Tool handlers ─────────────────────────────────────────────────────────────
 
+/**
+ * Main MCP tool dispatcher. Routes incoming tool calls to their implementations.
+ *
+ * All handlers share a single SQLite connection (WAL mode). Side-effects that
+ * require the Next.js app (dashboard updates, dispatch events) are fired via
+ * firePost / firePatch / awaitPatch to localhost:3000.
+ *
+ * Error handling: unrecognised tool names fall through to the default case which
+ * throws, causing the MCP SDK to return a structured error to the caller.
+ */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const db = getDb(); // singleton — never closed here
   const { name, arguments: args } = request.params;
@@ -645,6 +655,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
 
       // ── task_get ────────────────────────────────────────────────────────────
+      /**
+       * Full task hydration: joins subtasks (ordered), last 5 activity entries,
+       * attachments, assigned agent name, and a workContext summary string.
+       * Extracts acceptance criteria from planningNotes "## Acceptance Criteria" section.
+       * Surfaces planningNotes and incompleteSubtasks at the top of the response so
+       * the agent sees them before any other fields.
+       */
       case 'task_get': {
         const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(args?.id) as Record<string, any> | undefined;
         if (!task) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Task not found', recovery: 'Use task_list to see your assigned tasks. Verify you have the correct task ID.' }) }] };
@@ -711,6 +728,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── task_list ───────────────────────────────────────────────────────────
+      /**
+       * Returns tasks with filters for status, assignee, and project. Max 50 per call.
+       * Each row includes a planningNotesSummary (first 100 chars) and subtask counts
+       * so callers can decide which tasks need task_get for full details.
+       * assignedToMe=true is a convenience shortcut for assignedTo=<your agentId>.
+       */
       case 'task_list': {
         const rawLimit = Number(args?.limit) || 20;
         const limit = Math.min(rawLimit, 50);
@@ -760,6 +783,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── task_create ─────────────────────────────────────────────────────────
+      /**
+       * Creates a task and immediately fires a dispatch POST to the Next.js app.
+       * Hard rules enforced here (not in the schema): planningNotes must be ≥ 20 chars,
+       * reviewerId always defaults to "clara". Status starts as "todo" unless overridden.
+       * Side-effect: firePost('/api/tasks/dispatch', { taskId }) triggers auto-dispatch.
+       */
       case 'task_create': {
         // HARD RULES — enforced at creation:
         // 1. planningNotes is REQUIRED — must contain the full plan/approach
@@ -803,6 +832,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── task_update ─────────────────────────────────────────────────────────
+      /**
+       * Updates task fields and runs the state machine transition guard.
+       * Status changes are validated by evaluateTransition() — invalid moves are rejected.
+       * When status moves to "internal-review", fires firePatch() which triggers Clara's
+       * pre-review gate on the Next.js side. When planningNotes changes with a reviewer
+       * assigned, auto-queues for re-review.
+       */
       case 'task_update': {
         const now = Date.now();
         const taskId = args?.id as string;
@@ -916,6 +952,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── task_add_activity ───────────────────────────────────────────────────
+      /**
+       * Appends an immutable audit entry to task_activity. The last 5 entries
+       * are surfaced in task_get as recentActivity and workContext summary.
+       * Minimum call frequency: once per subtask completed. Use action="started",
+       * "completed", "file_created", "decision", or "blocked" to make logs scannable.
+       */
       case 'task_add_activity': {
         db.prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)').run(
           args?.taskId, args?.agentId || null, args?.action || 'update', args?.message, Date.now()
@@ -924,6 +966,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── task_add_attachment ─────────────────────────────────────────────────
+      /**
+       * Attaches a file reference to a task and auto-logs a "file_created" activity.
+       * Idempotent: duplicate (taskId, filePath) pairs are silently skipped.
+       * fileName defaults to the basename of filePath when omitted.
+       */
       case 'task_add_attachment': {
         const now = Date.now();
         const fileName = args?.fileName || (args?.filePath as string)?.split('/').pop() || String(args?.filePath);
@@ -947,6 +994,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── approval_create ─────────────────────────────────────────────────────
+      /**
+       * Creates an approval request in the approvals table and fires a POST to
+       * /api/approvals/notify so the Next.js app can surface it in the UI.
+       * Returns the approval ID — poll with approval_check(id) to detect decisions.
+       * Always move task to status="human-review" before calling this so the
+       * pipeline reflects the blocked state.
+       */
       case 'approval_create': {
         const id = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const now = Date.now();
@@ -959,6 +1013,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── approval_check ──────────────────────────────────────────────────────
+      /**
+       * Reads one approval by ID, or all pending approvals (no id given).
+       * Metadata field is parsed from JSON string to object before returning.
+       * Poll this after approval_create to detect human decisions.
+       */
       case 'approval_check': {
         const parseMetadata = (row: any) => {
           if (!row) return row;
@@ -975,6 +1034,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── inbox_list ──────────────────────────────────────────────────────────
+      /**
+       * Returns inbox rows ordered newest-first. Supports unreadOnly filter.
+       * Note: does NOT auto-mark items as read — the UI/Next.js layer handles that.
+       */
       case 'inbox_list': {
         const limit = (args?.limit as number) || 20;
         let query = 'SELECT * FROM inbox WHERE 1=1';
@@ -987,6 +1050,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── agent_status ────────────────────────────────────────────────────────
+      /**
+       * Dual-mode: read (no status arg) returns id/name/status/model/lastActivity.
+       * Write mode (status provided) updates agents table only — does NOT push to
+       * the dashboard websocket. Use agent_status_set for full broadcast.
+       */
       case 'agent_status': {
         if (args?.status) {
           db.prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?').run(args.status, Date.now(), args?.agentId);
@@ -997,6 +1065,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── chat_post ───────────────────────────────────────────────────────────
+      /**
+       * Inserts a message into chat_room_messages. Validates content is non-empty
+       * and ≤ 20,000 chars. If roomId matches an agent ID, adds a delivery hint in
+       * the response confirming the agent's name. Does NOT send push notifications —
+       * the Next.js app polls /api/chat for new messages.
+       */
       case 'chat_post': {
         const content = String(args?.content ?? '').trim();
         if (!content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content is required', recovery: 'Provide a non-empty content string to the chat_post call.' }) }], isError: true };
@@ -1020,6 +1094,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── chat_read ───────────────────────────────────────────────────────────
+      /**
+       * Returns the last N messages in chronological order (oldest first) using a
+       * DESC+subquery pattern. Use `since` (Unix ms) to fetch only new messages
+       * since last read — efficient for polling loops.
+       */
       case 'chat_read': {
         const limit = (args?.limit as number) || 20;
         // Use ASC directly instead of DESC + reverse
@@ -1034,12 +1113,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── chat_rooms_list ─────────────────────────────────────────────────────
+      /** Returns all rows from chat_rooms ordered alphabetically by name. */
       case 'chat_rooms_list': {
         const rooms = db.prepare('SELECT * FROM chat_rooms ORDER BY name').all();
         return { content: [{ type: 'text', text: JSON.stringify(rooms) }] };
       }
 
       // ── subtask_create ──────────────────────────────────────────────────────
+      /**
+       * Appends a subtask to the parent task's ordered checklist. Subtasks are
+       * positioned by insertion order. Returns the new subtask ID (format:
+       * sub-{timestamp}-{random}) — save this ID to call subtask_update later.
+       * Requirement: every task must have ≥ 2 subtasks before Clara approves it.
+       */
       case 'subtask_create': {
         const id = `sub-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const now = Date.now();
@@ -1050,6 +1136,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── subtask_update ──────────────────────────────────────────────────────
+      /**
+       * Updates completed flag and/or title. Setting completed=true also stamps
+       * completedAt with the current timestamp. Returns error if no fields provided.
+       */
       case 'subtask_update': {
         const now = Date.now();
         const sets: string[] = [];
@@ -1067,6 +1157,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── schedule_create ─────────────────────────────────────────────────────
+      /**
+       * Writes a new job entry to ~/mission-control/data/schedule.json.
+       * The cron daemon (tools/cron-mcp) reads this file on each tick.
+       * kind=once fires at atMs; kind=interval repeats every everyMs ms;
+       * kind=cron uses a 5-field cron expression (expr).
+       */
       case 'schedule_create': {
         const schedulePath = path.join(process.env.HOME || '/tmp', 'mission-control', 'data', 'schedule.json');
         let jobs: any[] = [];
@@ -1104,6 +1200,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── schedule_list ───────────────────────────────────────────────────────
+      /**
+       * Reads schedule.json and returns all jobs, optionally filtered by enabled status.
+       * Returns an empty array if the file doesn't exist yet.
+       */
       case 'schedule_list': {
         const schedulePath = path.join(process.env.HOME || '/tmp', 'mission-control', 'data', 'schedule.json');
         let jobs: any[] = [];
@@ -1140,6 +1240,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify(res) }] };
       }
 
+      /**
+       * Proxies GET /api/projects/{projectId}/phases. Returns ordered phase list
+       * with status, assignedTo, and description for each phase.
+       */
       case 'project_phase_list': {
         const projectId = String(args?.projectId ?? '');
         if (!projectId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'projectId is required' }) }], isError: true };
@@ -1148,6 +1252,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── project_phase_create ────────────────────────────────────────────────
+      /**
+       * Proxies POST /api/projects/{projectId}/phases with title, description,
+       * and optional assignedTo. Phases default to status "planned".
+       */
       case 'project_phase_create': {
         const projectId = String(args?.projectId ?? '');
         if (!projectId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'projectId is required' }) }], isError: true };
@@ -1160,6 +1268,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── project_phase_update ────────────────────────────────────────────────
+      /**
+       * Proxies PATCH /api/projects/{projectId}/phases?phaseId={phaseId}.
+       * Valid status values: planned | in-progress | complete.
+       */
       case 'project_phase_update': {
         const projectId = String(args?.projectId ?? '');
         const phaseId = String(args?.phaseId ?? '');
@@ -1173,6 +1285,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── image_generate ──────────────────────────────────────────────────────
+      /**
+       * Proxies to POST /api/images/generate on the Next.js app which calls Gemini.
+       * Returns { markdown, filePath, removeBackgroundPath }. Pass removeBackgroundPath
+       * directly to image_remove_background.inputPath for immediate background removal.
+       * Images are saved to ~/mission-control/library/design/images/ (or project subfolder).
+       */
       case 'image_generate': {
         const prompt = String(args?.prompt ?? '').trim();
         if (!prompt) return { content: [{ type: 'text', text: JSON.stringify({ error: 'prompt is required' }) }], isError: true };
@@ -1254,6 +1372,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── image_remove_background ─────────────────────────────────────────────
+      /**
+       * Proxies to POST /api/remove-background on the Next.js app which runs rembg.
+       * Default model: birefnet-hd (best edge quality). Faster alternative: birefnet-general.
+       * Output PNG is saved alongside the source file with "-nobg" suffix.
+       * Returns { markdown, outputPath } for inline display and chaining.
+       */
       case 'image_remove_background': {
         const inputPath = String(args?.inputPath ?? '').trim();
         if (!inputPath) return { content: [{ type: 'text', text: JSON.stringify({ error: 'inputPath is required', recovery: 'Use the removeBackgroundPath field from the image_generate response. Example: image_remove_background({ inputPath: result.removeBackgroundPath, agentId: yourId })' }) }], isError: true };
@@ -1320,6 +1444,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── project_context ─────────────────────────────────────────────────────
+      /**
+       * Single project mode (projectId given): returns full project row plus
+       * assigned agents, open task count by status, and active phases.
+       * List mode (no projectId): returns all active projects with key metrics.
+       * Call this at the start of every work session before touching any task.
+       */
       case 'project_context': {
         const projectId = args?.projectId as string | undefined;
         if (projectId) {
@@ -1389,6 +1519,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── agent_status_set ─────────────────────────────────────────────────────
+      /**
+       * Updates the agent row AND calls awaitPatch('/api/agents/{id}') to broadcast
+       * the change to the Next.js dashboard websocket (SSE push).
+       * Call with status=busy when starting a task; status=idle when done.
+       * currentTask (optional) shows in the team dashboard as the agent's focus.
+       */
       case 'agent_status_set': {
         const agentId = args?.agentId as string;
         const status = args?.status as string;
@@ -1407,6 +1543,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── campaign_context ─────────────────────────────────────────────────────
+      /**
+       * Queries the campaigns table and returns campaigns with channels, goals,
+       * status, budget, and KPIs. Filter by status (e.g. "active") to narrow results.
+       * Returns a friendly message when no campaigns table or data exists yet.
+       */
       case 'campaign_context': {
         const statusFilter = args?.status as string | undefined;
         let query = `SELECT id, name, description, type, goal, status, channels, budget, budgetSpent,
@@ -1443,6 +1584,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── knowledge_search ────────────────────────────────────────────────────
+      /**
+       * Full-text search over the knowledge_base table using SQLite FTS5.
+       * FTS5 special characters are sanitized before the MATCH query.
+       * Optional category filter narrows to: brand | guidelines | reference |
+       * onboarding | assets | tone | technical. Returns articles with full content.
+       */
       case 'knowledge_search': {
         const query = String(args?.query ?? '').trim();
         if (!query) return { content: [{ type: 'text', text: JSON.stringify({ error: 'query required' }) }], isError: true };
@@ -1518,6 +1665,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── knowledge_read ──────────────────────────────────────────────────────
+      /**
+       * Returns the full article content plus any associated links.
+       * Use after knowledge_search to get complete content beyond the 800-char preview.
+       */
       case 'knowledge_read': {
         const article = db.prepare('SELECT * FROM knowledge_base WHERE id = ?').get(args?.id) as Record<string, unknown> | undefined;
         if (!article) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Article not found. Use knowledge_search to find available articles.' }) }], isError: true };
@@ -1537,6 +1688,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── knowledge_write ─────────────────────────────────────────────────────
+      /**
+       * Inserts a new article into knowledge_base at version 1. The article is
+       * immediately searchable via knowledge_search. Tags are stored as a JSON array.
+       * scope defaults to "all"; pinned defaults to false.
+       */
       case 'knowledge_write': {
         const title = String(args?.title ?? '').trim();
         const content = String(args?.content ?? '').trim();
@@ -1556,6 +1712,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── knowledge_update ────────────────────────────────────────────────────
+      /**
+       * Replaces content/title/category/tags of an existing article and increments
+       * the version counter. Fields omitted from args keep their existing values.
+       * Always fetch the current id via knowledge_search before calling this.
+       */
       case 'knowledge_update': {
         const id = String(args?.id ?? '').trim();
         if (!id) return { content: [{ type: 'text', text: JSON.stringify({ error: 'id required' }) }], isError: true };
@@ -1589,6 +1750,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── context_files_get ───────────────────────────────────────────────────
+      /**
+       * Returns processed markdown content from files the human attached to a
+       * project or campaign as context for agents. Gracefully returns empty when
+       * the context_files table doesn't exist (older DB schema).
+       * entityType: "project" | "campaign".
+       */
       case 'context_files_get': {
         const entityType = String(args?.entityType ?? '');
         const entityId = String(args?.entityId ?? '');
@@ -1631,6 +1798,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── project_context ─────────────────────────────────────────────────────
+      /** @note Duplicate case — unreachable at runtime; the earlier project_context case handles all calls. */
       case 'project_context': {
         if (args?.projectId) {
           const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(args.projectId) as Record<string, any> | undefined;
@@ -1697,6 +1865,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── agent_status_set ─────────────────────────────────────────────────────
+      /**
+       * @note Duplicate case — unreachable at runtime; the earlier agent_status_set handles all calls.
+       * This implementation validates status values (active|idle|busy) and does a direct DB update
+       * with firePost side-effect vs. awaitPatch in the primary. Merge the stricter validation
+       * into the primary handler and remove this block.
+       */
       case 'agent_status_set': {
         const agentId = String(args?.agentId ?? '').trim();
         const status = String(args?.status ?? '').trim();
@@ -1731,6 +1905,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── campaign_context ─────────────────────────────────────────────────────
+      /**
+       * @note Duplicate case — unreachable at runtime; the earlier campaign_context handles all calls.
+       * This implementation explicitly checks if the campaigns table exists before querying,
+       * which is more defensive. Merge the table-existence check into the primary handler.
+       */
       case 'campaign_context': {
         // Check if campaigns table exists
         const hasTable = db.prepare(
@@ -1787,7 +1966,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── Social Media Module Handlers ──────────────────────────────────────
+      // All X handlers read/write x_mentions, x_posts, x_campaigns, and
+      // x_analytics_snapshots. x_post_create and x_reply_queue auto-create
+      // approval rows (tier 3 = human review) so nothing posts without sign-off.
 
+      /** Returns x_mentions rows with JSON fields parsed (ai_replies, safety flags). */
       case 'x_mentions_list': {
         const a = (args || {}) as Record<string, any>;
         const conditions: string[] = [];
@@ -1809,6 +1992,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ mentions: parsed, total: parsed.length }, null, 2) }] };
       }
 
+      /** Updates reply_status, notes, or is_spam on a mention. Only allowed fields are mutated. */
       case 'x_mention_update': {
         const a = (args || {}) as Record<string, any>;
         const allowed = ['reply_status', 'notes', 'is_spam'];
@@ -1822,6 +2006,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ ok: true, id: a.id }) }] };
       }
 
+      /**
+       * Inserts a draft post into x_posts (status="draft") and immediately creates
+       * a tier-3 approval in the approvals table. Returns both post_id and approval_id.
+       * The post is NOT sent to X until the approval is approved by a human.
+       */
       case 'x_post_create': {
         const a = (args || {}) as Record<string, any>;
         const id = `xp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -1842,6 +2031,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ ok: true, post_id: id, approval_id: apId, status: 'draft — queued for approval' }) }] };
       }
 
+      /** Lists x_posts ordered by created_at desc. Filter status: draft|pending|approved|scheduled|published. */
       case 'x_posts_list': {
         const a = (args || {}) as Record<string, any>;
         const where = a.status ? 'WHERE status = ?' : '';
@@ -1851,6 +2041,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ posts: rows, total: (rows as any[]).length }, null, 2) }] };
       }
 
+      /** Creates an X campaign with stages array. Status defaults to "draft". Stages are stored as JSON. */
       case 'x_campaign_create': {
         const a = (args || {}) as Record<string, any>;
         const id = `xc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -1862,6 +2053,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ ok: true, campaign_id: id, stages: (stages as any[]).length }) }] };
       }
 
+      /**
+       * Returns the latest analytics snapshot from x_analytics_snapshots plus recent
+       * published posts. Also attempts a live GET /api/x/analytics fetch (non-blocking).
+       */
       case 'x_analytics': {
         const a = (args || {}) as Record<string, any>;
         const snapshot = db.prepare('SELECT * FROM x_analytics_snapshots ORDER BY snapshot_date DESC LIMIT 1').get() as any;
@@ -1881,6 +2076,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ snapshot: snapshot || null, recentPosts, liveAnalytics: liveData, period: a.period || 'week' }, null, 2) }] };
       }
 
+      /** Proxies GET /api/x/search?q=&max= to the Next.js app. 15-second timeout. */
       case 'x_search': {
         const a = (args || {}) as Record<string, any>;
         const result = await new Promise<any>((resolve) => {
@@ -1896,6 +2092,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
 
+      /**
+       * Creates a tier-3 approval for a reply to a specific mention. The reply is NOT
+       * posted until human approval. Returns approval_id for polling with approval_check.
+       */
       case 'x_reply_queue': {
         const a = (args || {}) as Record<string, any>;
         const mention = db.prepare('SELECT * FROM x_mentions WHERE id = ?').get(a.mention_id) as any;
