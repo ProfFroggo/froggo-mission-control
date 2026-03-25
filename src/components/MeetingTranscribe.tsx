@@ -241,21 +241,21 @@ export default function MeetingTranscribe() {
     <Flex direction="column" height="100%" className="bg-mission-control-bg text-white">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between">
+          <Flex align="center" gap="3">
             <FileText className="w-5 h-5 text-review" />
             <h2 className="text-lg font-semibold">Meeting Transcription</h2>
             <span className="text-xs text-mission-control-text-dim px-2 py-0.5 bg-mission-control-surface rounded-full border border-mission-control-border">
               Web Speech API
             </span>
-          </div>
+          </Flex>
           {activeMeeting && (
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <span className="w-2 h-2 bg-error rounded-full animate-pulse" />
               <span className="text-sm text-error font-medium">Recording</span>
-            </div>
+            </Flex>
           )}
-        </div>
+        </Flex>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -325,26 +325,26 @@ export default function MeetingTranscribe() {
                     <div key={meeting.id}
                       className={`rounded-lg border transition-colors ${selectedMeeting?.id === meeting.id ? 'bg-review-subtle border-review-border' : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-border/80'}`}>
                       <button type="button" onClick={() => viewMeeting(meeting)} className="w-full p-3 text-left">
-                        <div className="flex items-start justify-between">
+                        <Flex align="start" justify="between">
                           <div className="flex-1 min-w-0 mr-2">
                             <p className="font-medium text-sm truncate">{meeting.title}</p>
-                            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim mt-1">
+                            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mt-1">
                               <Calendar className="w-3 h-3" />
                               <span>{new Date(meeting.started_at).toLocaleDateString()}</span>
                               <Clock className="w-3 h-3" />
                               <span>{formatDuration(duration)}</span>
-                            </div>
+                            </Flex>
                           </div>
                           <IconButton variant="ghost" size="1" onClick={e => { e.stopPropagation(); toggleExpanded(meeting.id); }}>
                             {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                           </IconButton>
-                        </div>
+                        </Flex>
                         {meeting.status === 'active' && (
                           <span className="inline-block mt-1 text-xs px-1.5 py-0.5 bg-error-subtle text-error rounded-full">Live</span>
                         )}
                       </button>
                       {isExpanded && (
-                        <div className="px-3 pb-3 flex gap-2 border-t border-mission-control-border pt-2">
+                        <Flex gap="2" className="px-3 pb-3 border-t border-mission-control-border pt-2">
                           <Button variant="ghost" size="1" onClick={e => { e.stopPropagation(); downloadTranscript(meeting.id); }} style={{ flex: 1, justifyContent: 'center' }}>
                             <Download className="w-3 h-3" /> Export
                           </Button>
@@ -353,7 +353,7 @@ export default function MeetingTranscribe() {
                               <Trash2 className="w-3 h-3" /> Delete
                             </Button>
                           )}
-                        </div>
+                        </Flex>
                       )}
                     </div>
                   );
@@ -368,14 +368,14 @@ export default function MeetingTranscribe() {
           {selectedMeeting ? (
             <>
               {/* Meeting header */}
-              <div className="p-4 border-b border-mission-control-border flex items-start justify-between">
+              <Flex align="start" justify="between" className="p-4 border-b border-mission-control-border">
                 <div>
                   <h3 className="font-semibold text-base">{selectedMeeting.title}</h3>
-                  <div className="flex items-center gap-4 text-xs text-mission-control-text-dim mt-1">
+                  <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim mt-1">
                     <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(selectedMeeting.started_at).toLocaleString()}</span>
                     {selectedMeeting.ended_at && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatDuration(selectedMeeting.ended_at - selectedMeeting.started_at)}</span>}
                     {selectedMeeting.participants.length > 0 && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{selectedMeeting.participants.join(', ')}</span>}
-                  </div>
+                  </Flex>
                 </div>
                 {selectedMeeting.status === 'active' && (
                   <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isRecording ? 'bg-error-subtle text-error' : 'bg-mission-control-border text-mission-control-text-dim'}`}>
@@ -383,20 +383,20 @@ export default function MeetingTranscribe() {
                     {isRecording ? 'Listening' : 'Paused'}
                   </div>
                 )}
-              </div>
+              </Flex>
 
               {/* AI Summary (shown after meeting ends) */}
               {summarising && (
-                <div className="mx-4 mt-4 p-4 rounded-lg bg-review-subtle border border-review-border flex items-center gap-3 text-sm text-review">
+                <Flex align="center" gap="3" className="mx-4 mt-4 p-4 rounded-lg bg-review-subtle border border-review-border text-sm text-review">
                   <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
                   Generating meeting notes with Gemini…
-                </div>
+                </Flex>
               )}
               {summary && !summarising && (
                 <div className="mx-4 mt-4 p-4 rounded-lg bg-review-subtle border border-review-border space-y-3">
-                  <div className="flex items-center gap-2 text-review font-semibold text-sm">
+                  <Flex align="center" gap="2" className="text-review font-semibold text-sm">
                     <Sparkles className="w-4 h-4" /> Meeting Notes
-                  </div>
+                  </Flex>
                   <p className="text-sm text-mission-control-text">{summary.summary}</p>
                   {summary.actionItems.length > 0 && (
                     <div>
@@ -436,25 +436,25 @@ export default function MeetingTranscribe() {
                 ) : (
                   <div className="space-y-3">
                     {transcripts.map((t, idx) => (
-                      <div key={t.id ?? idx} className="flex gap-3">
+                      <Flex key={t.id ?? idx} gap="3">
                         <div className="flex-shrink-0 w-7 h-7 rounded-full bg-review-subtle flex items-center justify-center">
                           <Users className="w-3.5 h-3.5 text-review" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 text-xs text-mission-control-text-dim mb-1">
+                          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-1">
                             <span className="font-medium">{t.speaker}</span>
                             <span>·</span>
                             <span>{new Date(t.timestamp).toLocaleTimeString()}</span>
-                          </div>
+                          </Flex>
                           <div className="bg-mission-control-surface rounded-lg px-3 py-2 text-sm">
                             <MarkdownMessage content={t.text} />
                           </div>
                         </div>
-                      </div>
+                      </Flex>
                     ))}
                     {/* Interim typing indicator */}
                     {interimText && (
-                      <div className="flex gap-3 opacity-50">
+                      <Flex gap="3" className="opacity-50">
                         <div className="flex-shrink-0 w-7 h-7 rounded-full bg-review-subtle flex items-center justify-center">
                           <Mic className="w-3.5 h-3.5 text-review animate-pulse" />
                         </div>
@@ -464,7 +464,7 @@ export default function MeetingTranscribe() {
                             {interimText}
                           </div>
                         </div>
-                      </div>
+                      </Flex>
                     )}
                     <div ref={transcriptsEndRef} />
                   </div>
