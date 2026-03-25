@@ -11,7 +11,7 @@ import KnowledgeGraphPanel from './KnowledgeGraphPanel';
 import BrandAssetsPanel from './BrandAssetsPanel';
 import MarkdownMessage from './MarkdownMessage';
 // eslint-disable-next-line import/order
-import { Button, IconButton, TextField, Select, TextArea, Checkbox } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField, Select, TextArea, Checkbox } from '@radix-ui/themes';
 
 const SCOPE_OPTIONS = [
   { value: 'all', label: 'Public' },
@@ -852,7 +852,7 @@ export default function KnowledgeBase() {
 
         {/* Reader */}
         <div className="flex flex-col flex-1 min-w-0 h-full">
-          <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+          <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
             <IconButton
               onClick={() => setViewing(null)}
               variant="ghost"
@@ -913,7 +913,7 @@ export default function KnowledgeBase() {
             >
               <Edit2 size={14} />
             </IconButton>
-          </div>
+          </Flex>
 
           <div className="flex-1 overflow-y-auto p-5">
             <div className="max-w-2xl prose-sm">
@@ -1000,7 +1000,7 @@ export default function KnowledgeBase() {
   if (editing !== null) {
     return (
       <div className="flex flex-col h-full">
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
           <span className="font-semibold text-mission-control-text flex-1">
             {editing.id ? 'Edit Article' : 'New Article'}
           </span>
@@ -1020,7 +1020,7 @@ export default function KnowledgeBase() {
             <Check size={13} />
             Save
           </Button>
-        </div>
+        </Flex>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <TextField.Root
             value={editing.title || ''}
@@ -1028,7 +1028,7 @@ export default function KnowledgeBase() {
             placeholder="Article title..."
             size="2"
           />
-          <div className="flex gap-2">
+          <Flex gap="2">
             <Select.Root
               value={editing.category || 'reference'}
               onValueChange={v => setEditing(prev => ({ ...prev, category: v }))}
@@ -1061,7 +1061,7 @@ export default function KnowledgeBase() {
               />
               Always inject
             </label>
-          </div>
+          </Flex>
           <TextField.Root
             value={typeof editing.tags === 'string' ? editing.tags : (editing.tags || []).join(', ')}
             onChange={e => setEditing(v => ({ ...v, tags: e.target.value }))}
@@ -1124,14 +1124,14 @@ export default function KnowledgeBase() {
       {/* Ingest progress */}
       {(ingesting || ingestError) && !ingestResult && (
         <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-mission-control-border rounded-xl px-5 py-4 shadow-xl w-80">
-          <div className="flex items-center gap-2 mb-3">
+          <Flex align="center" gap="2" mb="3">
             {ingestError ? (
               <XCircle size={16} className="text-error shrink-0" />
             ) : (
               <RefreshCw size={16} className="text-mission-control-accent animate-spin shrink-0" />
             )}
             <span className="text-sm font-medium text-mission-control-text truncate">{ingestFileName}</span>
-          </div>
+          </Flex>
 
           {ingestError ? (
             <p className="text-xs text-error">{ingestError}</p>
@@ -1171,7 +1171,7 @@ export default function KnowledgeBase() {
       {/* Ingest result toast */}
       {ingestResult && (
         <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-success-border rounded-lg px-4 py-3 shadow-lg max-w-sm">
-          <div className="flex items-start gap-2">
+          <Flex align="start" gap="2">
             <CheckCircle size={16} className="text-success mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-mission-control-text">{ingestResult.title}</p>
@@ -1185,7 +1185,7 @@ export default function KnowledgeBase() {
             <IconButton onClick={() => setIngestResult(null)} variant="ghost" color="gray" size="1" className="flex-shrink-0">
               <X size={14} />
             </IconButton>
-          </div>
+          </Flex>
         </div>
       )}
 
@@ -1202,7 +1202,7 @@ export default function KnowledgeBase() {
       {/* Main content */}
       <div className="flex flex-col flex-1 min-w-0 h-full">
         <div className="p-4 border-b border-mission-control-border space-y-3">
-          <div className="flex items-center justify-between gap-2">
+          <Flex align="center" justify="between" gap="2">
             <div className="flex items-center gap-3 shrink-0">
               <div className="p-1.5 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
                 <BookOpen size={16} className="text-mission-control-accent" />
@@ -1262,7 +1262,7 @@ export default function KnowledgeBase() {
                 New Article
               </Button>
             </div>
-          </div>
+          </Flex>
 
           <div className="relative">
             <TextField.Root
@@ -1546,13 +1546,13 @@ function ArticleCard({
       }`}
       onClick={onView}
     >
-      <div className="flex items-start justify-between gap-2 mb-1.5">
-        <div className="flex items-center gap-2 min-w-0">
+      <Flex align="start" justify="between" gap="2" className="mb-1.5">
+        <Flex align="center" gap="2" className="min-w-0">
           {article.pinned && <Pin size={11} className="text-warning shrink-0" />}
           <span className="font-medium text-mission-control-text text-sm truncate">
             {highlightText(article.title, searchTerm)}
           </span>
-        </div>
+        </Flex>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <IconButton
             size="1"
@@ -1607,7 +1607,7 @@ function ArticleCard({
             <Trash2 size={12} />
           </IconButton>
         </div>
-      </div>
+      </Flex>
       <p className="text-xs text-mission-control-text-dim line-clamp-2 mb-2">
         {highlightText(excerpt, searchTerm)}
       </p>
@@ -1682,7 +1682,7 @@ function QuickCreateModal({
         style={{ maxHeight: '90vh' }}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
           <BookOpen size={16} className="text-mission-control-text-dim" />
           <span className="font-semibold text-mission-control-text flex-1 text-sm">New Article</span>
           <IconButton
@@ -1694,7 +1694,7 @@ function QuickCreateModal({
           >
             <X size={14} />
           </IconButton>
-        </div>
+        </Flex>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <TextField.Root
@@ -1705,7 +1705,7 @@ function QuickCreateModal({
             size="2"
           />
 
-          <div className="flex gap-2">
+          <Flex gap="2">
             <div className="flex-1">
               <Select.Root
                 value={category}
@@ -1743,10 +1743,10 @@ function QuickCreateModal({
                 ))}
               </Select.Content>
             </Select.Root>
-          </div>
+          </Flex>
 
           {/* Template / AI generation row */}
-          <div className="flex gap-2">
+          <Flex gap="2">
             <div className="relative flex-1">
               <Button
                 variant="outline"
@@ -1790,7 +1790,7 @@ function QuickCreateModal({
               <Wand2 size={12} />
               {generating ? 'Generating...' : 'Generate with AI'}
             </Button>
-          </div>
+          </Flex>
 
           <TextArea
             value={content}
@@ -1801,7 +1801,7 @@ function QuickCreateModal({
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 p-4 border-t border-mission-control-border">
+        <Flex align="center" justify="end" gap="2" p="4" className="border-t border-mission-control-border">
           <Button
             onClick={onClose}
             variant="ghost"
@@ -1818,7 +1818,7 @@ function QuickCreateModal({
             <Check size={13} />
             {saving ? 'Saving...' : 'Save Article'}
           </Button>
-        </div>
+        </Flex>
       </div>
     </div>
   );
@@ -1841,7 +1841,7 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
 
   return (
     <div className="w-80 shrink-0 border-l border-mission-control-border flex flex-col h-full bg-mission-control-surface">
-      <div className="flex items-center gap-2 p-3 border-b border-mission-control-border">
+      <Flex align="center" gap="2" p="3" className="border-b border-mission-control-border">
         <History size={14} className="text-mission-control-text-dim" />
         <span className="text-sm font-medium text-mission-control-text flex-1">Version History</span>
         <IconButton
@@ -1853,12 +1853,12 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
         >
           <X size={13} />
         </IconButton>
-      </div>
+      </Flex>
 
       {/* Content preview pane */}
       {previewVersion && (
         <div className="border-b border-mission-control-border bg-mission-control-border/20 p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
+          <Flex align="center" justify="between" gap="2">
             <span className="text-xs text-mission-control-text-dim">
               Preview — {new Date(previewVersion.editedAt).toLocaleString()}
             </span>
@@ -1870,7 +1870,7 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
             >
               Close preview
             </Button>
-          </div>
+          </Flex>
           <div className="max-h-48 overflow-y-auto rounded bg-mission-control-surface border border-mission-control-border p-2 text-xs font-mono text-mission-control-text whitespace-pre-wrap">
             {displayContent.slice(0, 600)}{displayContent.length > 600 ? '...' : ''}
           </div>
@@ -1909,20 +1909,20 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
                 size="1"
                 className="w-full justify-start"
               >
-                <div className="flex items-center justify-between gap-2">
+                <Flex align="center" justify="between" gap="2">
                   <span className="text-xs font-medium text-mission-control-text">
                     {new Date(v.editedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                   <span className="text-xs text-mission-control-text-dim">
                     {new Date(v.editedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
+                </Flex>
+                <Flex align="center" gap="2" className="mt-0.5">
                   <span className="text-xs text-mission-control-text-dim capitalize">{v.editedBy}</span>
                   {v.versionNote && (
                     <span className="text-xs text-mission-control-text-dim truncate opacity-70">· {v.versionNote}</span>
                   )}
-                </div>
+                </Flex>
               </Button>
             ))}
           </div>
