@@ -42,7 +42,7 @@ import {
   ShieldCheck,
   Bot,
 } from 'lucide-react';
-import { Button, IconButton, Spinner, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Spinner, TextField } from '@radix-ui/themes';
 import { Skeleton } from './LoadingStates';
 import AgentInstallModal from './AgentInstallModal';
 import { marketplaceApi } from '../lib/api';
@@ -125,19 +125,19 @@ interface UpdateInfo {
 function MarketplaceCardSkeleton() {
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4 space-y-3">
-      <div className="flex items-start gap-3">
+      <Flex align="start" gap="3">
         <Skeleton width="w-10" height="h-10" rounded="lg" />
         <div className="flex-1 space-y-1.5">
           <Skeleton width="w-28" height="h-4" />
           <Skeleton width="w-20" height="h-3" />
         </div>
-      </div>
+      </Flex>
       <Skeleton width="w-full" height="h-3" />
       <Skeleton width="w-4/5" height="h-3" />
-      <div className="flex items-center gap-2 pt-1">
+      <Flex align="center" gap="2" className="pt-1">
         <Skeleton width="w-16" height="h-5" rounded="full" />
         <Skeleton width="w-24" height="h-7" rounded="lg" />
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -194,7 +194,7 @@ function ModuleCard({
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4 transition-all hover:border-mission-control-text-dim/30 flex flex-col gap-3">
       {/* Header */}
-      <div className="flex items-start gap-3">
+      <Flex align="start" gap="3">
         <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
           <IconComponent size={20} className="text-mission-control-accent" />
         </div>
@@ -221,7 +221,7 @@ function ModuleCard({
             {mod.author && ` · ${mod.author}`}
           </span>
         </div>
-      </div>
+      </Flex>
 
       {/* Description */}
       {mod.description && (
@@ -242,7 +242,7 @@ function ModuleCard({
         )}
 
         {/* Action buttons */}
-        <div className="ml-auto flex items-center gap-2">
+        <Flex align="center" gap="2" className="ml-auto">
           {isInstalling ? (
             <span className="flex items-center gap-1.5 text-xs text-mission-control-text-dim px-3 py-1.5">
               <Spinner size="1" />
@@ -305,7 +305,7 @@ function ModuleCard({
               </IconButton>
             </>
           )}
-        </div>
+        </Flex>
       </div>
     </div>
   );
@@ -456,26 +456,26 @@ export default function MarketplaceBrowse() {
     <div className="h-full overflow-y-auto p-6 space-y-5">
       {/* Restart banner */}
       {restartBanner && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-warning-subtle border border-warning-border text-warning text-sm">
+        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-warning-subtle border border-warning-border text-warning text-sm">
           <AlertCircle size={15} className="flex-shrink-0" />
           Please restart Mission Control.app to apply changes.
-        </div>
+        </Flex>
       )}
 
       {/* Error banner */}
       {error && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-error border border-error text-error text-sm">
+        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-error border border-error text-error text-sm">
           <AlertCircle size={15} className="flex-shrink-0" />
           {error}
-        </div>
+        </Flex>
       )}
 
       {/* Header */}
       <div>
-        <div className="flex items-center gap-2.5 mb-1">
+        <Flex align="center" gap="3" className="mb-1">
           <Store size={22} className="text-mission-control-accent flex-shrink-0" />
           <h1 className="text-xl font-semibold text-mission-control-text">Marketplace</h1>
-        </div>
+        </Flex>
         <p className="text-mission-control-text-dim text-sm">Browse and install modules to extend your dashboard</p>
       </div>
 

@@ -194,10 +194,10 @@ export default function PerformanceBenchmarks() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="flex items-center gap-2 text-mission-control-text-dim">
+        <Flex align="center" gap="2" className="text-mission-control-text-dim">
           <RefreshCw size={20} className="animate-spin" />
           Loading benchmarks...
-        </div>
+        </Flex>
       </div>
     );
   }
@@ -209,7 +209,7 @@ export default function PerformanceBenchmarks() {
   return (
     <Flex direction="column" height="100%" className="overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <Flex align="center" justify="between" className="mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <TrendingUp className="text-mission-control-accent" size={20} />
@@ -220,7 +220,7 @@ export default function PerformanceBenchmarks() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
             {(['wow', 'mom', 'yoy'] as const).map((mode) => (
               <button
@@ -248,8 +248,8 @@ export default function PerformanceBenchmarks() {
           >
             <RefreshCw size={16} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Comparison Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -259,13 +259,13 @@ export default function PerformanceBenchmarks() {
             className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4"
           >
             <div className="text-sm text-mission-control-text-dim mb-1">{metric.label}</div>
-            <div className="flex items-baseline gap-2 mb-2">
+            <Flex align="baseline" gap="2" className="mb-2">
               <span className="text-2xl font-bold tabular-nums">
                 {metric.current.toLocaleString()}
               </span>
               <span className="text-sm text-mission-control-text-dim">{metric.unit}</span>
-            </div>
-            <div className="flex items-center gap-2">
+            </Flex>
+            <Flex align="center" gap="2">
               {getTrendIcon(metric.trend, metric.positive)}
               <span
                 className={`text-sm font-medium ${
@@ -284,7 +284,7 @@ export default function PerformanceBenchmarks() {
                 {metric.change.toLocaleString()} ({metric.changePercent > 0 ? '+' : ''}
                 {metric.changePercent.toFixed(1)}%)</span>
               </span>
-            </div>
+            </Flex>
             <div className="text-xs text-mission-control-text-dim mt-1">
               vs previous period
             </div>
@@ -441,9 +441,9 @@ export default function PerformanceBenchmarks() {
                     : 'bg-mission-control-bg border border-mission-control-border'
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <Flex align="center" justify="between">
                   <span className="font-medium">{metric.label}</span>
-                  <div className="flex items-center gap-2">
+                  <Flex align="center" gap="2">
                     {getTrendIcon(metric.trend, metric.positive)}
                     <span
                       className={
@@ -461,8 +461,8 @@ export default function PerformanceBenchmarks() {
                         : 'Stable'}{' '}
                       by <span className="tabular-nums">{Math.abs(metric.changePercent).toFixed(1)}%</span>
                     </span>
-                  </div>
-                </div>
+                  </Flex>
+                </Flex>
               </div>
             );
           })}
