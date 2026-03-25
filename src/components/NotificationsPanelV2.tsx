@@ -660,7 +660,7 @@ export default function NotificationsPanelV2() {
         </Flex>
 
         {/* Filter tabs */}
-        <div className="flex items-center border-b border-mission-control-border -mb-px">
+        <Flex align="center" className="border-b border-mission-control-border -mb-px">
           {(['all', 'unread', 'urgent', 'actionable'] as const).map((f) => {
             const count = f === 'all' ? stats.total
               : f === 'unread' ? stats.unread
@@ -689,7 +689,7 @@ export default function NotificationsPanelV2() {
               </button>
             );
           })}
-        </div>
+        </Flex>
       </div>
 
       {/* Notifications list */}

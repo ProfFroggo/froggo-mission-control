@@ -186,7 +186,7 @@ interface ModuleCardData {
 function ModuleCardSkeleton() {
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-3">
-      <div className="flex items-start justify-between gap-2">
+      <Flex align="start" justify="between" gap="2">
         <Flex align="center" gap="3">
           <Skeleton width="w-10" height="h-10" rounded="lg" />
           <div className="space-y-1.5">
@@ -195,7 +195,7 @@ function ModuleCardSkeleton() {
           </div>
         </Flex>
         <Skeleton width="w-10" height="h-5" rounded="full" />
-      </div>
+      </Flex>
       <Skeleton width="w-full" height="h-3" />
       <Skeleton width="w-4/5" height="h-3" />
       <Flex align="center" gap="2" className="pt-1">
@@ -329,7 +329,7 @@ function ModuleCard({
       className={`bg-mission-control-surface border border-mission-control-border rounded-lg p-4 transition-all hover:border-mission-control-text-dim/30 flex flex-col ${cardClass}`}
     >
       {/* Header row */}
-      <div className="flex items-start justify-between gap-2 mb-3">
+      <Flex align="start" justify="between" gap="2" className="mb-3">
         <Flex align="center" gap="3" className="min-w-0">
           {/* Icon */}
           <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
@@ -403,7 +403,7 @@ function ModuleCard({
             />
           )}
         </div>
-      </div>
+      </Flex>
 
       {/* Description */}
       {manifest.description && (
@@ -686,7 +686,7 @@ export default function ModulesPage() {
         </Flex>
       </div>
       {/* View tabs */}
-      <div className="flex border-b border-mission-control-border px-6">
+      <Flex className="border-b border-mission-control-border px-6">
         <Button
           type="button"
           onClick={() => setView('installed')}
@@ -709,7 +709,7 @@ export default function ModulesPage() {
         >
           <Library size={15} /> Library
         </Button>
-      </div>
+      </Flex>
       <div className="p-6 space-y-6">
 
       {/* Library view */}
