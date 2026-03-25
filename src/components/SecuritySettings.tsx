@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Shield, Key, Lock, AlertTriangle, CheckCircle, RefreshCw, Filter, Eye, EyeOff, Trash2, Plus, Ban } from 'lucide-react';
-import { Button, IconButton, Badge, Select, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Badge, Select, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { settingsApi } from '../lib/api';
 
@@ -374,10 +374,10 @@ export default function SecuritySettings() {
 
           {auditProgress && (
             <div className="mt-4 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border">
-              <div className="flex items-center gap-2 text-sm">
+              <Flex align="center" gap="2" className="text-sm">
                 <RefreshCw size={14} className="animate-spin text-mission-control-accent" />
                 <span className="text-mission-control-text-dim">{auditProgress}</span>
-              </div>
+              </Flex>
             </div>
           )}
         </div>
@@ -385,7 +385,7 @@ export default function SecuritySettings() {
 
       {/* API Keys Management */}
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <Flex align="center" justify="between" className="mb-4">
           <h2 className="text-lg font-medium flex items-center gap-2">
             <Key size={16} />
             API Keys
@@ -399,7 +399,7 @@ export default function SecuritySettings() {
             <Plus size={14} />
             Add Key
           </Button>
-        </div>
+        </Flex>
 
         <div className="bg-mission-control-surface rounded-lg border border-mission-control-border divide-y divide-mission-control-border">
           {apiKeys.length === 0 ? (
@@ -410,11 +410,11 @@ export default function SecuritySettings() {
           ) : (
             apiKeys.map((key) => (
               <div key={key.id} className="p-4">
-                <div className="flex items-start justify-between gap-4">
+                <Flex align="start" justify="between" gap="4">
                   <div className="flex-1 min-w-0">
                     <div className="font-medium">{key.name}</div>
                     <div className="text-xs text-mission-control-text-dim mt-1">{key.service}</div>
-                    <div className="mt-2 flex items-center gap-2">
+                    <Flex align="center" gap="2" className="mt-2">
                       <code className="px-2 py-1 bg-mission-control-bg rounded text-xs font-mono">
                         {showKeyValues[key.id] ? key.key : '••••••••••••••••'}
                       </code>
@@ -428,7 +428,7 @@ export default function SecuritySettings() {
                       >
                         {showKeyValues[key.id] ? <EyeOff size={14} /> : <Eye size={14} />}
                       </IconButton>
-                    </div>
+                    </Flex>
                     {key.lastUsed && (
                       <div className="text-xs text-mission-control-text-dim mt-2">
                         Last used: {new Date(key.lastUsed).toLocaleString()}
@@ -445,7 +445,7 @@ export default function SecuritySettings() {
                   >
                     <Trash2 size={16} />
                   </IconButton>
-                </div>
+                </Flex>
               </div>
             ))
           )}
@@ -454,7 +454,7 @@ export default function SecuritySettings() {
 
       {/* Blocked Commands */}
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <Flex align="center" justify="between" className="mb-4">
           <h2 className="text-lg font-medium flex items-center gap-2">
             <Ban size={16} />
             Blocked Commands
@@ -466,13 +466,13 @@ export default function SecuritySettings() {
           >
             Restore defaults
           </Button>
-        </div>
+        </Flex>
         <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
           <div className="p-3 border-b border-mission-control-border bg-mission-control-bg0/30">
             <p className="text-xs text-mission-control-text-dim mb-2">
               These patterns are blocked for all agents via <code className="font-mono bg-mission-control-bg px-1 rounded">--disallowedTools</code>. Supports Claude tool patterns like <code className="font-mono bg-mission-control-bg px-1 rounded">Bash(rm -rf *)</code>.
             </p>
-            <div className="flex gap-2">
+            <Flex gap="2">
               <TextField.Root
                 size="2"
                 className="flex-1 font-mono text-xs"
@@ -489,14 +489,14 @@ export default function SecuritySettings() {
               >
                 <Plus size={12} /> Block
               </Button>
-            </div>
+            </Flex>
           </div>
           <div className="divide-y divide-mission-control-border max-h-64 overflow-y-auto">
             {disallowedTools.length === 0 ? (
               <div className="p-6 text-center text-mission-control-text-dim text-sm">No commands blocked</div>
             ) : (
               disallowedTools.map(tool => (
-                <div key={tool} className="flex items-center justify-between px-3 py-2">
+                <Flex key={tool} align="center" justify="between" className="px-3 py-2">
                   <code className="text-xs font-mono text-mission-control-text">{tool}</code>
                   <IconButton
                     variant="ghost"
@@ -508,7 +508,7 @@ export default function SecuritySettings() {
                   >
                     <Ban size={14} />
                   </IconButton>
-                </div>
+                </Flex>
               ))
             )}
           </div>
@@ -517,12 +517,12 @@ export default function SecuritySettings() {
 
       {/* Audit Log Viewer */}
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <Flex align="center" justify="between" className="mb-4">
           <h2 className="text-lg font-medium flex items-center gap-2">
             <Lock size={16} />
             Audit Log
           </h2>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Filter size={14} className="text-mission-control-text-dim" />
             <Select.Root value={severityFilter} onValueChange={setSeverityFilter}>
               <Select.Trigger />
@@ -535,8 +535,8 @@ export default function SecuritySettings() {
                 <Select.Item value="info">Info</Select.Item>
               </Select.Content>
             </Select.Root>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         <div className="bg-mission-control-surface rounded-lg border border-mission-control-border divide-y divide-mission-control-border max-h-96 overflow-y-auto">
           {filteredLogs.length === 0 ? (
@@ -551,9 +551,9 @@ export default function SecuritySettings() {
           ) : (
             filteredLogs.map((log) => (
               <div key={log.id} className="p-4">
-                <div className="flex items-start gap-3">
+                <Flex align="start" gap="3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
+                    <Flex align="center" gap="2" className="mb-2">
                       <Badge color={getSeverityBadgeColor(log.severity)} variant="soft">
                         {log.severity.toUpperCase()}
                       </Badge>
@@ -561,7 +561,7 @@ export default function SecuritySettings() {
                       <Badge color={getStatusBadgeColor(log.status)} variant="soft">
                         {log.status}
                       </Badge>
-                    </div>
+                    </Flex>
                     <div className="font-medium mb-1">{log.finding}</div>
                     <div className="text-sm text-mission-control-text-dim mb-2">{log.details}</div>
                     {log.recommendation && (
@@ -575,7 +575,7 @@ export default function SecuritySettings() {
                     </div>
                   </div>
                   {log.status === 'open' && (
-                    <div className="flex gap-1">
+                    <Flex gap="1">
                       <Button
                         variant="soft"
                         color="gray"
@@ -592,9 +592,9 @@ export default function SecuritySettings() {
                       >
                         Resolve
                       </Button>
-                    </div>
+                    </Flex>
                   )}
-                </div>
+                </Flex>
               </div>
             ))
           )}
@@ -663,7 +663,7 @@ export default function SecuritySettings() {
                 />
               </div>
             </div>
-            <div className="flex gap-2 mt-6">
+            <Flex gap="2" className="mt-6">
               <Button
                 variant="solid"
                 color="grass"
@@ -681,7 +681,7 @@ export default function SecuritySettings() {
               >
                 Cancel
               </Button>
-            </div>
+            </Flex>
           </div>
         </div>
       )}
