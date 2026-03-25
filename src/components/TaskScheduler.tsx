@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { formatDueDate } from '../utils/formatting';
 import { ListTodo, Clock, Plus, Trash2, Edit2, RefreshCw, X, Check, User, Repeat, CalendarDays, AlertTriangle } from 'lucide-react';
-import { Button, Badge, Select, Switch, TextArea, TextField } from '@radix-ui/themes';
+import { Button, Badge, Select, Switch, TextArea, TextField, Flex } from '@radix-ui/themes';
 import { useStore, type Task, type TaskStatus, type TaskPriority, type TaskRecurrence } from '../store/store';
 import { taskApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -220,8 +220,8 @@ export default function TaskScheduler() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" className="mb-4">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg">
               <ListTodo size={24} className="text-mission-control-accent" />
             </div>
@@ -231,9 +231,9 @@ export default function TaskScheduler() {
                 {scheduledCount} scheduled • {activeCount} active
               </p>
             </div>
-          </div>
+          </Flex>
 
-          <div className="flex gap-2">
+          <Flex gap="2">
             <Button
               onClick={refresh}
               disabled={loading}
@@ -251,11 +251,11 @@ export default function TaskScheduler() {
               <Plus size={16} />
               Schedule Task
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Filters */}
-        <div className="flex gap-2">
+        <Flex gap="2">
           {(['active', 'done', 'all'] as const).map((f) => (
             <Button
               key={f}
@@ -269,23 +269,23 @@ export default function TaskScheduler() {
               {f === 'all'    && `All (${tasks.length})`}
             </Button>
           ))}
-        </div>
+        </Flex>
       </div>
 
       {/* Form */}
       {showForm && (
         <div className="p-6 border-b border-mission-control-border bg-mission-control-bg">
-          <div className="flex items-center justify-between mb-4">
+          <Flex align="center" justify="between" className="mb-4">
             <h3 className="font-medium">{editingId ? 'Edit Task' : 'Schedule Task'}</h3>
             <Button onClick={resetForm} variant="ghost" color="gray" size="1">
               <X size={16} />
             </Button>
-          </div>
+          </Flex>
 
           <div className="space-y-4">
             {/* Mode toggle (new only) */}
             {!editingId && (
-              <div className="flex gap-2">
+              <Flex gap="2">
                 {(['new', 'existing'] as const).map((m) => (
                   <Button
                     key={m}
@@ -297,7 +297,7 @@ export default function TaskScheduler() {
                     {m === 'new' ? 'New Task' : 'Existing Task'}
                   </Button>
                 ))}
-              </div>
+              </Flex>
             )}
 
             {mode === 'existing' && !editingId ? (
@@ -394,17 +394,17 @@ export default function TaskScheduler() {
                       : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <Flex align="center" gap="2">
                     <Repeat size={15} />
                     <span className="text-sm font-medium">Recurring task</span>
-                  </div>
+                  </Flex>
                   <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
                 </Button>
 
                 {isRecurring && (
                   <div className="px-4 py-3 bg-mission-control-bg border-t border-mission-control-border space-y-2.5">
                     {/* Row 1: Every [n] [freq] */}
-                    <div className="flex items-center gap-2 text-sm">
+                    <Flex align="center" gap="2" className="text-sm">
                       <span className="text-mission-control-text-dim shrink-0">Every</span>
                       <TextField.Root
                         type="number"
@@ -424,7 +424,7 @@ export default function TaskScheduler() {
                           <Select.Item value="yearly">{recurInterval === 1 ? 'Year' : 'Years'}</Select.Item>
                         </Select.Content>
                       </Select.Root>
-                    </div>
+                    </Flex>
 
                     {/* Row 2: Ends — all inline */}
                     <div className="flex items-center gap-3 text-sm flex-wrap">
@@ -466,7 +466,7 @@ export default function TaskScheduler() {
             )}
 
             {/* Actions */}
-            <div className="flex justify-end gap-2">
+            <Flex justify="end" gap="2">
               <Button
                 onClick={resetForm}
                 variant="outline"
@@ -485,7 +485,7 @@ export default function TaskScheduler() {
                 <Check size={16} />
                 {editingId ? 'Update' : 'Schedule'}
               </Button>
-            </div>
+            </Flex>
           </div>
         </div>
       )}
@@ -523,7 +523,7 @@ export default function TaskScheduler() {
                       : 'border-mission-control-border hover:border-mission-control-accent/30'
                   }`}
                 >
-                  <div className="flex items-start gap-4">
+                  <Flex align="start" gap="4">
                     <IconBadge
                       icon={ListTodo}
                       size={16}
@@ -594,7 +594,7 @@ export default function TaskScheduler() {
                         )}
                       </div>
                     )}
-                  </div>
+                  </Flex>
                 </div>
               );
             })}
@@ -644,7 +644,7 @@ export default function TaskScheduler() {
                       : 'border-mission-control-border hover:border-mission-control-accent/30'
                   }`}
                 >
-                  <div className="flex items-start gap-1.5">
+                  <Flex align="start" gap="2">
                     {isDueToday && (
                       <AlertTriangle size={11} className="text-warning mt-0.5 shrink-0" />
                     )}
@@ -652,7 +652,7 @@ export default function TaskScheduler() {
                       <p className="text-xs font-medium truncate" title={task.title}>
                         {task.title.length > 24 ? task.title.slice(0, 24) + '…' : task.title}
                       </p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
+                      <Flex align="center" gap="2" className="mt-0.5">
                         <span className={`text-xs ${statusColor}`}>
                           {STATUS_CONFIG[task.status]?.label ?? task.status}
                         </span>
@@ -663,9 +663,9 @@ export default function TaskScheduler() {
                             {due.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               );
             })}
