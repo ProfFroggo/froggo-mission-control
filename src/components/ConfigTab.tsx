@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Save, RefreshCw, AlertTriangle, RotateCcw, Code, ChevronDown, ChevronRight } from 'lucide-react';
-import { Button, IconButton, TextField, TextArea } from '@radix-ui/themes';
+import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 
@@ -147,9 +147,9 @@ export default function ConfigTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 text-mission-control-text-dim">
+      <Flex align="center" justify="center" className="py-12 text-mission-control-text-dim">
         <RefreshCw size={24} className="animate-spin mr-3" /> Loading configuration...
-      </div>
+      </Flex>
     );
   }
 
@@ -158,10 +158,10 @@ export default function ConfigTab() {
       {/* Issues Banner */}
       {issues.length > 0 && (
         <div className="p-4 bg-warning-subtle border border-warning-border rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
+          <Flex align="center" gap="2" className="mb-2">
             <AlertTriangle size={16} className="text-warning" />
             <span className="font-medium text-warning">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
-          </div>
+          </Flex>
           {issues.map((issue, i) => (
             <div key={i} className="text-sm text-warning">{issue.path}: {issue.message}</div>
           ))}
@@ -169,7 +169,7 @@ export default function ConfigTab() {
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-3">
+      <Flex align="center" gap="3">
         <Button onClick={() => handleSave(false)} disabled={saving || !dirty} variant="solid" size="2">
           <Save size={16} /> {saving ? 'Saving...' : 'Save'}
         </Button>
@@ -188,7 +188,7 @@ export default function ConfigTab() {
           <Code size={16} /> Raw JSON
         </Button>
         {dirty && <span className="text-xs text-warning">• Unsaved changes</span>}
-      </div>
+      </Flex>
 
       {showRaw ? (
         <TextArea
@@ -212,17 +212,17 @@ export default function ConfigTab() {
                   className="w-full p-4 flex items-center justify-between hover:bg-mission-control-bg/50 transition-colors"
                 >
                   <h3 className="font-medium">{section.label}</h3>
-                  <div className="flex items-center gap-2">
+                  <Flex align="center" gap="2">
                     <span className="text-xs text-mission-control-text-dim">{section.fields.length} fields</span>
                     {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                  </div>
+                  </Flex>
                 </button>
                 {!isCollapsed && (
                   <div className="px-4 pb-4 space-y-3 border-t border-mission-control-border pt-3">
                     {section.fields.map(field => (
                       <div key={field.path}>
                         {field.type === 'boolean' ? (
-                          <div className="flex items-center justify-between">
+                          <Flex align="center" justify="between">
                             <div>
                               <div className="text-sm font-medium">{field.label}</div>
                               <div className="text-xs text-mission-control-text-dim">{field.path}</div>
@@ -235,7 +235,7 @@ export default function ConfigTab() {
                             >
                               <div className={`w-4 h-4 rounded-full bg-[var(--mission-control-text)] shadow transition-transform ${field.value ? 'translate-x-5' : 'translate-x-0.5'}`} />
                             </button>
-                          </div>
+                          </Flex>
                         ) : field.type === 'number' ? (
                           <div>
                             <label htmlFor={`config-${field.path}`} className="block text-sm font-medium mb-1">{field.label}</label>

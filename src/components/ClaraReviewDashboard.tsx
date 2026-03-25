@@ -494,12 +494,12 @@ export default function ClaraReviewDashboard() {
           <h3 className="text-sm font-medium text-mission-control-text mb-3">Top rejection reasons (last 30d)</h3>
           <div className="space-y-2">
             {insights.topRejectionReasons.map((r, i) => (
-              <div key={i} className="flex items-start gap-3 text-xs">
+              <Flex key={i} align="start" gap="3" className="text-xs">
                 <span className="flex-shrink-0 w-5 h-5 rounded-full bg-error/20 text-error font-bold flex items-center justify-center">
                   {r.count}
                 </span>
                 <span className="text-mission-control-text-dim leading-snug">{r.reason}</span>
-              </div>
+              </Flex>
             ))}
           </div>
         </div>

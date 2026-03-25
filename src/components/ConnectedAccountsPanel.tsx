@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, RefreshCw, Mail, Calendar, HardDrive, MessageSquare } from 'lucide-react';
-import { Button, Box } from '@radix-ui/themes';
+import { Button, Box, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface GoogleAuthStatus {
@@ -64,9 +64,9 @@ export default function ConnectedAccountsPanel() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-mission-control-text-dim">
+      <Flex align="center" justify="center" className="py-16 text-mission-control-text-dim">
         <RefreshCw size={20} className="animate-spin mr-2" /> Checking Google Workspace…
-      </div>
+      </Flex>
     );
   }
 
@@ -74,8 +74,8 @@ export default function ConnectedAccountsPanel() {
     <Box className="space-y-6">
       {/* Status card */}
       <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-5">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
+        <Flex align="start" justify="between">
+          <Flex align="center" gap="3">
             {/* Google icon */}
             <svg className="w-8 h-8 flex-shrink-0" viewBox="0 0 24 24" aria-label="Google">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -91,7 +91,7 @@ export default function ConnectedAccountsPanel() {
                 <div className="text-sm text-mission-control-text-dim">Sign in to connect Gmail, Calendar & more</div>
               )}
             </div>
-          </div>
+          </Flex>
 
           {/* Status badge */}
           {status?.authenticated ? (
@@ -103,7 +103,7 @@ export default function ConnectedAccountsPanel() {
               <XCircle size={14} /> Not connected
             </span>
           )}
-        </div>
+        </Flex>
 
         {/* Error / setup message */}
         {status?.error && (
@@ -154,13 +154,13 @@ export default function ConnectedAccountsPanel() {
         <h3 className="font-medium mb-3 text-sm text-mission-control-text-dim uppercase tracking-wide">Services enabled</h3>
         <div className="grid grid-cols-2 gap-3">
           {GOOGLE_SERVICES.map(({ icon: Icon, label, description }) => (
-            <div key={label} className={`flex items-start gap-3 p-3 rounded-lg border ${status?.authenticated ? 'border-success-border bg-success-subtle' : 'border-mission-control-border bg-mission-control-bg opacity-50'}`}>
+            <Flex key={label} align="start" gap="3" className={`p-3 rounded-lg border ${status?.authenticated ? 'border-success-border bg-success-subtle' : 'border-mission-control-border bg-mission-control-bg opacity-50'}`}>
               <Icon size={18} className={status?.authenticated ? 'text-success mt-0.5' : 'text-mission-control-text-dim mt-0.5'} />
               <div>
                 <div className="text-sm font-medium">{label}</div>
                 <div className="text-xs text-mission-control-text-dim">{description}</div>
               </div>
-            </div>
+            </Flex>
           ))}
         </div>
       </div>

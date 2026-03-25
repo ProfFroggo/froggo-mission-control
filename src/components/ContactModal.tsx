@@ -533,9 +533,9 @@ Be thorough but only include real people, not generic references.`;
             <div className="flex flex-col h-full">
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {chatMessages.map((msg) => (
-                  <div
+                  <Flex
                     key={msg.id}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={msg.role === 'user' ? 'justify-end' : 'justify-start'}
                   >
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-3 ${
@@ -549,7 +549,7 @@ Be thorough but only include real people, not generic references.`;
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
-                  </div>
+                  </Flex>
                 ))}
 
                 {isStreaming && streamingContent && (

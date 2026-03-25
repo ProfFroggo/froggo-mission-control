@@ -181,7 +181,7 @@ export default function CodeAgentDashboard() {
         </Flex>
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-mission-control-border mt-2">
+        <Flex gap="1" className="border-b border-mission-control-border mt-2">
           {([
             { id: 'dashboard', label: 'Dashboard', icon: Monitor },
             { id: 'cron',      label: 'Cron Jobs', icon: Clock },
@@ -201,7 +201,7 @@ export default function CodeAgentDashboard() {
               {label}
             </button>
           ))}
-        </div>
+        </Flex>
       </div>
 
       {activeTab === 'cron' && <CronTab />}
