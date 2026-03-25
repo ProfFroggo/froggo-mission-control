@@ -253,7 +253,7 @@ function PlatformUpdateTab() {
 
           {/* Status banner */}
           {versionInfo && !checking && (
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm mt-1 ${
+            <Flex align="center" gap="2" className={`px-3 py-2 rounded-lg text-sm mt-1 ${
               versionInfo.error
                 ? 'bg-warning-subtle text-warning border border-warning/20'
                 : versionInfo.updateAvailable
@@ -267,7 +267,7 @@ function PlatformUpdateTab() {
               ) : (
                 <><Check size={14} /> Up to date</>
               )}
-            </div>
+            </Flex>
           )}
         </div>
       </section>
@@ -979,14 +979,14 @@ export default function SettingsPanel() {
                 {/* External Actions kill switch */}
                 <Flex align="center" justify="between">
                   <div>
-                    <div className="font-medium flex items-center gap-2">
+                    <Flex align="center" gap="2" className="font-medium">
                       External Actions
                       {settings.externalActionsEnabled ? (
                         <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded">LIVE</span>
                       ) : (
                         <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded">BLOCKED</span>
                       )}
-                    </div>
+                    </Flex>
                     <div className="text-sm text-mission-control-text-dim">
                       {settings.externalActionsEnabled
                         ? 'Approved agent actions (emails, posts) will execute'
@@ -1002,9 +1002,9 @@ export default function SettingsPanel() {
 
                 {/* Info */}
                 <div className="p-4 bg-info-subtle border border-info-border rounded-lg text-sm text-info space-y-2">
-                  <div className="font-medium flex items-center gap-2">
+                  <Flex align="center" gap="2" className="font-medium">
                     <Shield size={14} /> Approval Gate
-                  </div>
+                  </Flex>
                   <p>Agents call <code className="text-xs bg-black/20 px-1 rounded">approval_create</code> before any external action. The Approvals panel lets you review and approve or reject each one before it executes.</p>
                 </div>
               </div>
