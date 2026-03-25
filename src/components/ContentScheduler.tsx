@@ -404,7 +404,7 @@ export default function ContentScheduler() {
           size="2"
           className="mb-2"
         />
-        <div className="flex gap-2 justify-end">
+        <Flex gap="2" justify="end">
           <Button
             onClick={() => setRescheduleId(null)}
             variant="outline"
@@ -420,7 +420,7 @@ export default function ContentScheduler() {
           >
             Save
           </Button>
-        </div>
+        </Flex>
       </div>
     );
   };
@@ -439,7 +439,7 @@ export default function ContentScheduler() {
           isPending ? 'hover:border-mission-control-accent/30' : 'opacity-70'
         } transition-colors`}
       >
-        <div className="flex items-start gap-3">
+        <Flex align="start" gap="3">
           {/* Type icon badge */}
           <div className={`p-2 rounded-lg shrink-0 ${iconColor}`}>
             <Icon size={14} />
@@ -475,10 +475,10 @@ export default function ContentScheduler() {
             )}
 
             {item.metadata?.mediaPath && (
-              <div className="flex items-center gap-1 text-xs text-mission-control-accent mt-1">
+              <Flex align="center" gap="1" className="text-xs text-mission-control-accent mt-1">
                 {item.metadata.mediaType === 'image' ? <ImageIcon size={10} /> : <Video size={10} />}
                 <span>{item.metadata.mediaFileName}</span>
-              </div>
+              </Flex>
             )}
           </div>
 
@@ -530,7 +530,7 @@ export default function ContentScheduler() {
               </IconButton>
             </div>
           )}
-        </div>
+        </Flex>
       </div>
     );
   };
@@ -565,7 +565,7 @@ export default function ContentScheduler() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </IconButton>
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <span className="text-sm font-medium tabular-nums">{weekRangeLabel}</span>
           {!isCurrentWeek && (
             <Button
@@ -577,7 +577,7 @@ export default function ContentScheduler() {
               This week
             </Button>
           )}
-        </div>
+        </Flex>
         <IconButton
           onClick={goToNextWeek}
           variant="ghost"
@@ -686,13 +686,13 @@ export default function ContentScheduler() {
 
       {/* ── Header ── */}
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" className="mb-3">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg">
               <Calendar size={20} className="text-mission-control-accent" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <Flex align="center" gap="2">
                 <h1 className="text-lg font-semibold">Schedule Queue</h1>
                 {/* Items-this-week badge */}
                 {thisWeekItems.length > 0 && (
@@ -700,14 +700,14 @@ export default function ContentScheduler() {
                     {thisWeekItems.length} this week
                   </span>
                 )}
-              </div>
+              </Flex>
               <p className="text-xs text-mission-control-text-dim tabular-nums">
                 {pendingCount} pending • {sentCount} sent
               </p>
             </div>
-          </div>
+          </Flex>
 
-          <div className="flex gap-2 items-center">
+          <Flex gap="2" align="center">
             {/* List / Week toggle */}
             <div className="flex rounded-lg border border-mission-control-border overflow-hidden">
               <button
@@ -755,12 +755,12 @@ export default function ContentScheduler() {
               <Plus size={14} />
               Schedule New
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Filter pills — only in list view */}
         {viewMode === 'list' && (
-          <div className="flex gap-2">
+          <Flex gap="2">
             {(['pending', 'sent', 'all'] as const).map((f) => (
               <Button
                 key={f}
@@ -776,23 +776,23 @@ export default function ContentScheduler() {
                 </span>
               </Button>
             ))}
-          </div>
+          </Flex>
         )}
       </div>
 
       {/* ── Create / Edit form ── */}
       {showForm && (
         <div className="p-4 border-b border-mission-control-border bg-mission-control-bg shrink-0">
-          <div className="flex items-center justify-between mb-3">
+          <Flex align="center" justify="between" className="mb-3">
             <Heading size="2" weight="medium">{editingId ? 'Edit Scheduled Item' : 'Schedule New Item'}</Heading>
             <IconButton onClick={resetForm} variant="ghost" color="gray" size="1" aria-label="Close form">
               <X size={14} />
             </IconButton>
-          </div>
+          </Flex>
 
           <div className="space-y-3">
             {/* Type selector */}
-            <div className="flex gap-2">
+            <Flex gap="2">
               {(['tweet', 'email'] as const).map((t) => {
                 const Icon  = getTypeIcon(t);
                 const label = t === 'tweet' ? 'Post' : 'Email';
@@ -809,7 +809,7 @@ export default function ContentScheduler() {
                   </Button>
                 );
               })}
-            </div>
+            </Flex>
 
             {formType === 'email' && (
               <div className="grid grid-cols-2 gap-3">
@@ -847,7 +847,7 @@ export default function ContentScheduler() {
 
             {/* Media */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <Flex align="center" gap="2">
                 <span className="text-xs text-mission-control-text-dim">Media (optional)</span>
                 <Button
                   type="button"
@@ -859,7 +859,7 @@ export default function ContentScheduler() {
                   <Paperclip size={10} />
                   {mediaFile ? 'Change' : 'Attach'}
                 </Button>
-              </div>
+              </Flex>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -886,7 +886,7 @@ export default function ContentScheduler() {
                 </div>
               )}
               {mediaFile && (
-                <div className="flex items-center gap-3 border border-mission-control-border rounded-lg p-2 bg-mission-control-surface">
+                <Flex align="center" gap="3" className="border border-mission-control-border rounded-lg p-2 bg-mission-control-surface">
                   <div className="shrink-0">
                     {mediaFile.type === 'image' && mediaPreview ? (
                       <img src={mediaPreview} alt="Preview" className="w-10 h-10 object-cover rounded" />
@@ -902,7 +902,7 @@ export default function ContentScheduler() {
                   <IconButton type="button" onClick={handleRemoveMedia} variant="ghost" color="red" size="1" title="Remove" aria-label="Remove media">
                     <X size={12} />
                   </IconButton>
-                </div>
+                </Flex>
               )}
               {uploadError && <div className="text-xs text-error bg-error-subtle px-2 py-1 rounded">{uploadError}</div>}
             </div>
@@ -933,7 +933,7 @@ export default function ContentScheduler() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2">
+            <Flex justify="end" gap="2">
               <Button
                 onClick={resetForm}
                 variant="outline"
@@ -950,7 +950,7 @@ export default function ContentScheduler() {
                 <Check size={14} />
                 {editingId ? 'Update' : 'Schedule'}
               </Button>
-            </div>
+            </Flex>
           </div>
         </div>
       )}
@@ -973,10 +973,10 @@ export default function ContentScheduler() {
                       {/* Today section — highlighted */}
                       {todayItems.length > 0 && (
                         <section className="mb-4">
-                          <div className="flex items-center gap-2 mb-2 px-1">
+                          <Flex align="center" gap="2" className="mb-2 px-1">
                             <span className="text-xs font-semibold text-info uppercase tracking-wide">Today</span>
                             <span className="flex-1 h-px bg-info/20" />
-                          </div>
+                          </Flex>
                           <div className="rounded-lg p-3 bg-info/5 border border-info/20 space-y-2">
                             {todayItems.map((item) => renderItemCard(item))}
                           </div>
@@ -987,10 +987,10 @@ export default function ContentScheduler() {
                       {upcomingItems.length > 0 && (
                         <section className="space-y-2">
                           {todayItems.length > 0 && (
-                            <div className="flex items-center gap-2 mb-2 px-1">
+                            <Flex align="center" gap="2" className="mb-2 px-1">
                               <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Upcoming</span>
                               <span className="flex-1 h-px bg-mission-control-border" />
-                            </div>
+                            </Flex>
                           )}
                           {upcomingItems.map((item) => renderItemCard(item))}
                         </section>
