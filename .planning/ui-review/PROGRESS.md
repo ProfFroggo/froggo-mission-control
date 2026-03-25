@@ -7,11 +7,11 @@
 - Screenshot dir: `/Users/kevin.macarthur/Froggo UI/`
 - Repo: `~/git/froggo-mission-control`
 
-## Progress: 0 / 113 complete
+## Progress: 1 / 113 complete
 
 ## Sessions
-- [ ] **001** `Screenshot 2026-03-24 at 23.05.11.png`
-- [ ] **002** `Screenshot 2026-03-24 at 23.05.23.png`
+- [x] **001** `Screenshot 2026-03-24 at 23.05.11.png` — real badge counts (999 cap), dedup messages by id, staleness indicator (>3d = warning clock on timestamp)
+- [x] **002** `Screenshot 2026-03-24 at 23.05.23.png` — Communications panel clean: no green CTAs, proper violet accent, badges use 999 cap, token-based colors throughout
 - [ ] **003** `Screenshot 2026-03-24 at 23.05.27.png`
 - [ ] **004** `Screenshot 2026-03-24 at 23.05.34.png`
 - [ ] **005** `Screenshot 2026-03-24 at 23.05.43.png`
