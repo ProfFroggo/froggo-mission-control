@@ -164,7 +164,7 @@ function OverviewTab({
   return (
     <div className="flex-1 overflow-y-auto p-5 space-y-5">
       {/* Goal + Ring */}
-      <div className="flex items-start gap-5 p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
+      <Flex align="start" gap="5" p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
         <div className="flex flex-col items-center gap-1">
           <div className="relative">
             <ProgressRing percent={progress} size={72} stroke={6} color={project.color} />
@@ -178,10 +178,10 @@ function OverviewTab({
           <span className="text-xs text-mission-control-text-dim tabular-nums">{doneTasks}/{totalTasks}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <Flex align="center" gap="2" className="mb-1">
             <Target size={13} className="text-mission-control-text-dim flex-shrink-0" />
             <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Goal</span>
-          </div>
+          </Flex>
           <p className="text-sm text-mission-control-text leading-relaxed">
             {project.goal || <span className="text-mission-control-text-dim italic">No goal set — add one in settings.</span>}
           </p>
@@ -194,7 +194,7 @@ function OverviewTab({
             <Bot size={12} /> Dispatch Agent
           </Button>
         </div>
-      </div>
+      </Flex>
 
       {/* Team */}
       {members.length > 0 && (
@@ -222,7 +222,7 @@ function OverviewTab({
       <div>
         <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Recent Activity</h3>
         {activityLoading ? (
-          <div className="flex items-center justify-center py-6"><Spinner size={14} /></div>
+          <Flex align="center" justify="center" className="py-6"><Spinner size={14} /></Flex>
         ) : activity.length === 0 ? (
           <p className="text-xs text-mission-control-text-dim py-4 text-center">No activity yet — dispatch an agent to get started.</p>
         ) : (
@@ -312,7 +312,7 @@ function MilestonesSection({ project }: { project: Project }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <Flex align="center" justify="between" className="mb-2">
         <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Milestones</h3>
         <Button
           onClick={() => setAdding(v => !v)}
@@ -321,7 +321,7 @@ function MilestonesSection({ project }: { project: Project }) {
         >
           <Plus size={11} /> Add
         </Button>
-      </div>
+      </Flex>
 
       {adding && (
         <div className="mb-3 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-2">
@@ -361,7 +361,7 @@ function MilestonesSection({ project }: { project: Project }) {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-4"><Spinner size={12} /></div>
+        <Flex align="center" justify="center" className="py-4"><Spinner size={12} /></Flex>
       ) : milestones.length === 0 ? (
         <p className="text-xs text-mission-control-text-dim py-2">No milestones yet.</p>
       ) : (
@@ -474,17 +474,17 @@ function ContextEditor({ project }: { project: Project }) {
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">CONTEXT.md</h3>
         <span className="text-xs text-mission-control-text-dim">
           {saving ? 'Saving...' : lastSaved ? `Saved ${formatTimeAgo(lastSaved)}` : ''}
         </span>
-      </div>
+      </Flex>
       <p className="text-xs text-mission-control-text-dim">
         This file is injected into every agent working on this project.
       </p>
       {loading ? (
-        <div className="flex items-center justify-center py-6"><Spinner size={14} /></div>
+        <Flex align="center" justify="center" className="py-6"><Spinner size={14} /></Flex>
       ) : (
         <TextArea
           value={content}
@@ -546,9 +546,9 @@ function ChatTab({ project }: { project: Project }) {
 
   if (!room) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <Flex align="center" justify="center" className="h-full">
         <Spinner size={24} />
-      </div>
+      </Flex>
     );
   }
 
@@ -627,7 +627,7 @@ function AutomationsTab({ project }: { project: Project }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
+      <Flex align="center" justify="between" px="4" py="3" className="border-b border-mission-control-border">
         <span className="text-xs text-mission-control-text-dim">{items.length} automation{items.length !== 1 ? 's' : ''}</span>
         <Button
           onClick={() => setShowForm(v => !v)}
@@ -636,7 +636,7 @@ function AutomationsTab({ project }: { project: Project }) {
         >
           <Plus size={12} /> Add Automation
         </Button>
-      </div>
+      </Flex>
       {showForm && (
         <div className="max-w-2xl mx-auto w-full px-4 py-3 bg-mission-control-surface/50 border-b border-mission-control-border space-y-2">
           <Select.Root value={newType} onValueChange={setNewType} size="1">
@@ -683,7 +683,7 @@ function AutomationsTab({ project }: { project: Project }) {
       )}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-full"><Spinner size={16} /></div>
+          <Flex align="center" justify="center" className="h-full"><Spinner size={16} /></Flex>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-2">
             <Zap size={28} className="text-mission-control-text-dim" />
@@ -770,9 +770,9 @@ function ApprovalsTab({ project }: { project: Project }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-mission-control-text-dim gap-2 text-sm">
+      <Flex align="center" justify="center" gap="2" className="h-full text-mission-control-text-dim text-sm">
         <Spinner size={16} /> Loading approvals...
-      </div>
+      </Flex>
     );
   }
 
@@ -794,16 +794,16 @@ function ApprovalsTab({ project }: { project: Project }) {
         const taskTitle = tasks.find((t: { id: string; title?: string } & { id: string }) => t.id === (a.metadata?.taskId as string | undefined))?.['title'] as string | undefined;
         return (
           <div key={a.id} className="px-5 py-4 space-y-3 border-l-2 border-warning/40">
-            <div className="flex items-start gap-2">
+            <Flex align="start" gap="2">
               <Zap size={13} className="text-warning mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium">{a.title}</div>
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-mission-control-text-dim">
+                <Flex align="center" gap="2" className="mt-0.5 text-xs text-mission-control-text-dim">
                   {a.requester && <span>{a.requester}</span>}
                   {taskTitle && <><span>·</span><span className="truncate">{taskTitle}</span></>}
-                </div>
+                </Flex>
               </div>
-            </div>
+            </Flex>
             <div className="text-xs text-mission-control-text bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2.5 whitespace-pre-wrap leading-relaxed">
               {a.content}
             </div>
@@ -936,7 +936,7 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
   const isMd = (name: string) => /\.(md|txt)$/i.test(name);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-full"><Spinner size={16} /></div>;
+    return <Flex align="center" justify="center" className="h-full"><Spinner size={16} /></Flex>;
   }
 
   if (files.length === 0) {
@@ -994,7 +994,7 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
       {selectedFile && (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border shrink-0">
+          <Flex align="center" justify="between" px="4" py="3" className="border-b border-mission-control-border shrink-0">
             <div className="min-w-0">
               <p className="text-sm font-medium text-mission-control-text truncate">{selectedFile.name}</p>
               <p className="text-xs text-mission-control-text-dim">{formatBytes(selectedFile.size)} · {selectedFile.type}</p>
@@ -1003,16 +1003,15 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
               onClick={() => setSelectedFile(null)}
               size="1"
               variant="ghost"
-             
             >
               <X size={14} />
             </IconButton>
-          </div>
+          </Flex>
 
           {/* Preview */}
           <div className="flex-1 overflow-auto p-4">
             {previewLoading ? (
-              <div className="flex items-center justify-center h-full"><Spinner size={16} /></div>
+              <Flex align="center" justify="center" className="h-full"><Spinner size={16} /></Flex>
             ) : previewContent?.startsWith('__IMAGE__') ? (
               <img src={previewContent.slice(9)} alt={selectedFile.name} className="max-w-full max-h-full mx-auto rounded-lg" />
             ) : isHtml(selectedFile.name) ? (
@@ -1120,7 +1119,7 @@ function FilesTab({ project }: { project: Project }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex gap-1 px-4 border-b border-mission-control-border">
+      <Flex gap="1" px="4" className="border-b border-mission-control-border">
         <button
           type="button"
           onClick={() => setActiveSection('files')}

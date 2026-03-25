@@ -383,7 +383,7 @@ export default function CronTab() {
               <div>
                 <label htmlFor="cron-schedule-kind" className="block text-sm text-mission-control-text-dim mb-1">Schedule</label>
                 <div className="flex gap-2">
-                  <Select.Root value={newJob.scheduleKind} onValueChange={(val) => setNewJob(p => ({ ...p, scheduleKind: val }))}>
+                  <Select.Root value={newJob.scheduleKind || 'cron'} onValueChange={(val) => setNewJob(p => ({ ...p, scheduleKind: val }))}>
                     <Select.Trigger id="cron-schedule-kind" aria-label="Schedule type" />
                     <Select.Content>
                       <Select.Item value="cron">Cron</Select.Item>
@@ -456,7 +456,7 @@ export default function CronTab() {
                     </div>
                     <div>
                       <label htmlFor="cron-task-priority" className="block text-sm text-mission-control-text-dim mb-1">Priority</label>
-                      <Select.Root value={newJob.taskPriority} onValueChange={(val) => setNewJob(p => ({ ...p, taskPriority: val }))}>
+                      <Select.Root value={newJob.taskPriority || 'p2'} onValueChange={(val) => setNewJob(p => ({ ...p, taskPriority: val }))}>
                         <Select.Trigger id="cron-task-priority" style={{ width: '100%' }} />
                         <Select.Content>
                           <Select.Item value="p0">P0 — Critical</Select.Item>
@@ -482,7 +482,7 @@ export default function CronTab() {
                   </div>
                   <div>
                     <label htmlFor="cron-session-target" className="block text-sm text-mission-control-text-dim mb-1">Session Target</label>
-                    <Select.Root value={newJob.sessionTarget} onValueChange={(val) => setNewJob(p => ({ ...p, sessionTarget: val }))}>
+                    <Select.Root value={newJob.sessionTarget || 'isolated'} onValueChange={(val) => setNewJob(p => ({ ...p, sessionTarget: val }))}>
                       <Select.Trigger id="cron-session-target" style={{ width: '100%' }} />
                       <Select.Content>
                         <Select.Item value="isolated">Isolated (new session)</Select.Item>

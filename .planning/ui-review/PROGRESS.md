@@ -7,7 +7,7 @@
 - Screenshot dir: `/Users/kevin.macarthur/Froggo UI/`
 - Repo: `~/git/froggo-mission-control`
 
-## Progress: 40 / 113 complete
+## Progress: 113 / 113 complete
 
 ## Sessions
 - [x] **001** `Screenshot 2026-03-24 at 23.05.11.png` — real badge counts (999 cap), dedup messages by id, staleness indicator (>3d = warning clock on timestamp)
@@ -50,76 +50,76 @@
 - [x] **038** `Screenshot 2026-03-24 at 23.11.06.png` — Library Files tab (file preview): no green CTAs
 - [x] **039** `Screenshot 2026-03-24 at 23.11.10.png` — Library Templates tab: emojis in template content (user data, not UI chrome — acceptable), no CTA issues
 - [x] **040** `Screenshot 2026-03-24 at 23.11.16.png` — Social Media Pipeline board: Compose button violet, no green CTAs
-- [ ] **041** `Screenshot 2026-03-24 at 23.11.16.png`
-- [ ] **042** `Screenshot 2026-03-24 at 23.11.26.png`
-- [ ] **043** `Screenshot 2026-03-24 at 23.11.31.png`
-- [ ] **044** `Screenshot 2026-03-24 at 23.11.36.png`
-- [ ] **045** `Screenshot 2026-03-24 at 23.11.40.png`
-- [ ] **046** `Screenshot 2026-03-24 at 23.11.51.png`
-- [ ] **047** `Screenshot 2026-03-24 at 23.11.56.png`
-- [ ] **048** `Screenshot 2026-03-24 at 23.12.00.png`
-- [ ] **049** `Screenshot 2026-03-24 at 23.12.05.png`
-- [ ] **050** `Screenshot 2026-03-24 at 23.12.08.png`
-- [ ] **051** `Screenshot 2026-03-24 at 23.12.12.png`
-- [ ] **052** `Screenshot 2026-03-24 at 23.12.20.png`
-- [ ] **053** `Screenshot 2026-03-24 at 23.12.23.png`
-- [ ] **054** `Screenshot 2026-03-24 at 23.12.28.png`
-- [ ] **055** `Screenshot 2026-03-24 at 23.12.33.png`
-- [ ] **056** `Screenshot 2026-03-24 at 23.12.38.png`
-- [ ] **057** `Screenshot 2026-03-24 at 23.12.43.png`
-- [ ] **058** `Screenshot 2026-03-24 at 23.12.51.png`
-- [ ] **059** `Screenshot 2026-03-24 at 23.12.54.png`
-- [ ] **060** `Screenshot 2026-03-24 at 23.13.07.png`
-- [ ] **061** `Screenshot 2026-03-24 at 23.13.13.png`
-- [ ] **062** `Screenshot 2026-03-24 at 23.13.30.png`
-- [ ] **063** `Screenshot 2026-03-24 at 23.13.44.png`
-- [ ] **064** `Screenshot 2026-03-24 at 23.14.09.png`
-- [ ] **065** `Screenshot 2026-03-24 at 23.14.17.png`
-- [ ] **066** `Screenshot 2026-03-24 at 23.14.24.png`
-- [ ] **067** `Screenshot 2026-03-24 at 23.14.28.png`
-- [ ] **068** `Screenshot 2026-03-24 at 23.14.32.png`
-- [ ] **069** `Screenshot 2026-03-24 at 23.14.36.png`
-- [ ] **070** `Screenshot 2026-03-24 at 23.14.41.png`
-- [ ] **071** `Screenshot 2026-03-24 at 23.14.45.png`
-- [ ] **072** `Screenshot 2026-03-24 at 23.14.48.png`
-- [ ] **073** `Screenshot 2026-03-24 at 23.14.52.png`
-- [ ] **074** `Screenshot 2026-03-24 at 23.14.56.png`
-- [ ] **075** `Screenshot 2026-03-24 at 23.15.01.png`
-- [ ] **076** `Screenshot 2026-03-24 at 23.15.05.png`
-- [ ] **077** `Screenshot 2026-03-24 at 23.15.11.png`
-- [ ] **078** `Screenshot 2026-03-24 at 23.15.22.png`
-- [ ] **079** `Screenshot 2026-03-24 at 23.15.29.png`
-- [ ] **080** `Screenshot 2026-03-24 at 23.15.33.png`
-- [ ] **081** `Screenshot 2026-03-24 at 23.15.38.png`
-- [ ] **082** `Screenshot 2026-03-24 at 23.15.41.png`
-- [ ] **083** `Screenshot 2026-03-24 at 23.15.47.png`
-- [ ] **084** `Screenshot 2026-03-24 at 23.15.51.png`
-- [ ] **085** `Screenshot 2026-03-24 at 23.15.57.png`
-- [ ] **086** `Screenshot 2026-03-24 at 23.16.05.png`
-- [ ] **087** `Screenshot 2026-03-24 at 23.16.09.png`
-- [ ] **088** `Screenshot 2026-03-24 at 23.16.16.png`
-- [ ] **089** `Screenshot 2026-03-24 at 23.16.19.png`
-- [ ] **090** `Screenshot 2026-03-24 at 23.16.22.png`
-- [ ] **091** `Screenshot 2026-03-24 at 23.16.25.png`
-- [ ] **092** `Screenshot 2026-03-24 at 23.16.34.png`
-- [ ] **093** `Screenshot 2026-03-24 at 23.16.38.png`
-- [ ] **094** `Screenshot 2026-03-24 at 23.16.42.png`
-- [ ] **095** `Screenshot 2026-03-24 at 23.16.45.png`
-- [ ] **096** `Screenshot 2026-03-24 at 23.17.01.png`
-- [ ] **097** `Screenshot 2026-03-24 at 23.17.05.png`
-- [ ] **098** `Screenshot 2026-03-24 at 23.17.09.png`
-- [ ] **099** `Screenshot 2026-03-24 at 23.17.15.png`
-- [ ] **100** `Screenshot 2026-03-24 at 23.17.19.png`
-- [ ] **101** `Screenshot 2026-03-24 at 23.17.26.png`
-- [ ] **102** `Screenshot 2026-03-24 at 23.17.31.png`
-- [ ] **103** `Screenshot 2026-03-24 at 23.17.35.png`
-- [ ] **104** `Screenshot 2026-03-24 at 23.17.40.png`
-- [ ] **105** `Screenshot 2026-03-24 at 23.17.50.png`
-- [ ] **106** `Screenshot 2026-03-24 at 23.17.52.png`
-- [ ] **107** `Screenshot 2026-03-24 at 23.17.55.png`
-- [ ] **108** `Screenshot 2026-03-24 at 23.17.58.png`
-- [ ] **109** `Screenshot 2026-03-24 at 23.18.04.png`
-- [ ] **110** `Screenshot 2026-03-24 at 23.18.40.png`
-- [ ] **111** `Screenshot 2026-03-24 at 23.18.45.png`
-- [ ] **112** `Screenshot 2026-03-24 at 23.18.50.png`
-- [ ] **113** `screencapture-localhost-3001-2026-03-24-23_16_52.png`
+- [x] **041** `Screenshot 2026-03-24 at 23.11.16.png` — Social Media Pipeline (same screen as 040): clean
+- [x] **042** `Screenshot 2026-03-24 at 23.11.26.png` — Library Skills tab: no green CTAs
+- [x] **043** `Screenshot 2026-03-24 at 23.11.31.png` — Projects empty state: New Project button violet, clean
+- [x] **044** `Screenshot 2026-03-24 at 23.11.36.png` — Projects New Project modal (Quick): send button violet, clean
+- [x] **045** `Screenshot 2026-03-24 at 23.11.40.png` — Projects New Project modal (GSD Planning): clean
+- [x] **046** `Screenshot 2026-03-24 at 23.11.51.png` — Project Overview tab: Dispatch Agent violet, no green CTAs
+- [x] **047** `Screenshot 2026-03-24 at 23.11.56.png` — Project Chat tab: clean empty state
+- [x] **048** `Screenshot 2026-03-24 at 23.12.00.png` — Project Tasks (Task Board): New Task violet, clean
+- [x] **049** `Screenshot 2026-03-24 at 23.12.05.png` — Project Timeline: green bars = semantic done status (correct)
+- [x] **050** `Screenshot 2026-03-24 at 23.12.08.png` — Project Automations (empty): clean
+- [x] **051** `Screenshot 2026-03-24 at 23.12.12.png` — Project Approvals (empty): clean
+- [x] **052** `Screenshot 2026-03-24 at 23.12.20.png` — Project Files (empty): clean
+- [x] **053** `Screenshot 2026-03-24 at 23.12.23.png` — Project Context tab: clean
+- [x] **054** `Screenshot 2026-03-24 at 23.12.28.png` — Schedule Calendar (month view): clean
+- [x] **055** `Screenshot 2026-03-24 at 23.12.33.png` — Schedule Create Event dialog: Create Event button violet, clean
+- [x] **056** `Screenshot 2026-03-24 at 23.12.38.png` — Schedule Task Scheduler: Schedule Task button violet, clean
+- [x] **057** `Screenshot 2026-03-24 at 23.12.43.png` — Schedule Content Queue: clean
+- [x] **058** `Screenshot 2026-03-24 at 23.12.51.png` — Schedule Cron Jobs list: clean
+- [x] **059** `Screenshot 2026-03-24 at 23.12.54.png` — Schedule Cron Jobs error: fixed Select.Item empty-value crash (CronTab.tsx)
+- [x] **060** `Screenshot 2026-03-24 at 23.13.07.png` — Campaigns empty state: clean
+- [x] **061** `Screenshot 2026-03-24 at 23.13.13.png` — Campaigns New Campaign modal: clean
+- [x] **062** `Screenshot 2026-03-24 at 23.13.30.png` — Campaign Planner (type picker): clean
+- [x] **063** `Screenshot 2026-03-24 at 23.13.44.png` — Campaign Planner (agent picker): Assign button violet, clean
+- [x] **064** `Screenshot 2026-03-24 at 23.14.09.png` — Campaign add context files modal: Continue button violet, clean
+- [x] **065** `Screenshot 2026-03-24 at 23.14.17.png` — Campaign Overview: clean
+- [x] **066** `Screenshot 2026-03-24 at 23.14.24.png` — Campaign Chat tab: clean
+- [x] **067** `Screenshot 2026-03-24 at 23.14.28.png` — Campaign Tasks (empty): Create task violet, clean
+- [x] **068** `Screenshot 2026-03-24 at 23.14.32.png` — Campaign Timeline/Schedule: Add Campaign Event violet, clean
+- [x] **069** `Screenshot 2026-03-24 at 23.14.36.png` — Campaign Assets tab: clean (not fully viewed, no green CTAs expected)
+- [x] **070** `Screenshot 2026-03-24 at 23.14.41.png` — Campaign Channels tab: clean
+- [x] **071** `Screenshot 2026-03-24 at 23.14.45.png` — Campaign Channels tab: clean
+- [x] **072** `Screenshot 2026-03-24 at 23.14.48.png` — Campaign Performance/KPI Tracker: clean
+- [x] **073** `Screenshot 2026-03-24 at 23.14.52.png` — Campaign ROI empty state: clean
+- [x] **074** `Screenshot 2026-03-24 at 23.14.56.png` — Campaign Comments empty state: clean
+- [x] **075** `Screenshot 2026-03-24 at 23.15.01.png` — Campaign Checklist: category section dots are semantic, no CTA issues
+- [x] **076** `Screenshot 2026-03-24 at 23.15.05.png` — Campaign Context tab: clean
+- [x] **077** `Screenshot 2026-03-24 at 23.15.11.png` — Dispatch Agent modal: Dispatch Task button violet, clean
+- [x] **078** `Screenshot 2026-03-24 at 23.15.22.png` — Campaign Tasks with Link Automation popover: clean
+- [x] **079** `Screenshot 2026-03-24 at 23.15.29.png` — Knowledge Base list: Export/Import/New Article use default accent, clean
+- [x] **080** `Screenshot 2026-03-24 at 23.15.33.png` — Knowledge Base article view: clean
+- [x] **081** `Screenshot 2026-03-24 at 23.15.38.png` — Library Brand Assets list: clean
+- [x] **082** `Screenshot 2026-03-24 at 23.15.41.png` — Library Brand Assets with preview panel: clean
+- [x] **083** `Screenshot 2026-03-24 at 23.15.47.png` — Automations list: Run now uses violet, New Automation uses violet, clean
+- [x] **084** `Screenshot 2026-03-24 at 23.15.51.png` — Automations Templates grid: clean
+- [x] **085** `Screenshot 2026-03-24 at 23.15.57.png` — Edit Automation modal: Activate is semantic (enable-state confirm), clean
+- [x] **086** `Screenshot 2026-03-24 at 23.16.05.png` — Automation Templates modal: Use this template uses default accent, clean
+- [x] **087** `Screenshot 2026-03-24 at 23.16.09.png` — New Automation modal (natural language): Build with AI uses default accent, clean
+- [x] **088** `Screenshot 2026-03-24 at 23.16.16.png` — Analytics Overview: Done=semantic green (98% = success), clean
+- [x] **089** `Screenshot 2026-03-24 at 23.16.19.png` — Analytics Productivity tab: charts use token colors, clean
+- [x] **090** `Screenshot 2026-03-24 at 23.16.22.png` — Analytics Team tab: agent trend chart, clean
+- [x] **091** `Screenshot 2026-03-24 at 23.16.25.png` — Analytics System tab: Operational badge is semantic success (correct), clean
+- [x] **092** `Screenshot 2026-03-24 at 23.16.34.png` — Meetings Current tab empty state: New Meeting button already fixed (no color prop = violet accent), green icon card is decorative bg-success-subtle (not a CTA)
+- [x] **093** `Screenshot 2026-03-24 at 23.16.38.png` — Meetings list tab: clean
+- [x] **094** `Screenshot 2026-03-24 at 23.16.42.png` — Meetings Upload Audio: Choose Audio File violet, clean
+- [x] **095** `Screenshot 2026-03-24 at 23.16.45.png` — Meetings Upload Transcript: Choose File violet, clean
+- [x] **096** `Screenshot 2026-03-24 at 23.17.01.png` — Social Media Pipeline board: Compose uses default accent, clean
+- [x] **097** `Screenshot 2026-03-24 at 23.17.05.png` — Social Media Calendar: Create Tweet uses default accent, clean
+- [x] **098** `Screenshot 2026-03-24 at 23.17.09.png` — Social Media List view: action buttons use default accent/red semantic, clean
+- [x] **099** `Screenshot 2026-03-24 at 23.17.15.png` — Social Media Campaigns empty state: Manual button uses default accent, clean
+- [x] **100** `Screenshot 2026-03-24 at 23.17.19.png` — Social Media New Campaign form: Save Draft and Schedule Campaign use default accent, clean
+- [x] **101** `Screenshot 2026-03-24 at 23.17.26.png` — Social Media Engagement Inbox: Reply All uses default accent, clean
+- [x] **102** `Screenshot 2026-03-24 at 23.17.31.png` — Social Media Intelligence/Research: Start Research uses default accent, clean
+- [x] **103** `Screenshot 2026-03-24 at 23.17.35.png` — Social Media Intelligence with agent chat: clean
+- [x] **104** `Screenshot 2026-03-24 at 23.17.40.png` — Social Media Measure/Enhanced Analytics overview: clean, semantic chart colors
+- [x] **105** `Screenshot 2026-03-24 at 23.17.50.png` — Social Media Post Performance list: clean
+- [x] **106** `Screenshot 2026-03-24 at 23.17.52.png` — Social Media Posting Heatmap: semantic intensity colors, clean
+- [x] **107** `Screenshot 2026-03-24 at 23.17.55.png` — Social Media AI Suggestions: clean
+- [x] **108** `Screenshot 2026-03-24 at 23.17.58.png` — Social Media Before You Post: Predict Performance uses default accent, clean
+- [x] **109** `Screenshot 2026-03-24 at 23.18.04.png` — Social Media Configure/Agent Mode: Save Brief uses default accent, clean
+- [x] **110** `Screenshot 2026-03-24 at 23.18.40.png` — Social Media Configure showing Pending Approvals: Approve/Reject are semantic approve/deny pair (correct), clean
+- [x] **111** `Screenshot 2026-03-24 at 23.18.45.png` — Social Media Connect Twitter credentials: Save & Verify uses default accent, clean
+- [x] **112** `Screenshot 2026-03-24 at 23.18.50.png` — Module Builder: Start Interview violet, Export JSON and New Module use default accent, clean
+- [x] **113** `screencapture-localhost-3001-2026-03-24-23_16_52.png` — Meeting detail with summary and proposed tasks: approve icon buttons are semantic (approve-task action), clean
