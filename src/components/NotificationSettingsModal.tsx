@@ -9,7 +9,7 @@ import {
   Hash, AlertCircle, X, Settings, Save, Trash2,
   ZapOff, MessageSquare
 } from 'lucide-react';
-import { Button, IconButton, TextField, Select, TextArea, Checkbox, Switch } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField, Select, TextArea, Checkbox, Switch } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { settingsApi } from '../lib/api';
 
@@ -393,7 +393,7 @@ export default function NotificationSettingsModal({
                 <span>Enable quiet hours</span>
               </label>
               {quietHoursEnabled && (
-                <div className="flex gap-3 items-center ml-7">
+                <Flex gap="3" align="center" className="ml-7">
                   <TextField.Root
                     type="time"
                     value={quietStart}
@@ -407,7 +407,7 @@ export default function NotificationSettingsModal({
                     onChange={(e) => setQuietEnd(e.target.value)}
                     size="2"
                   />
-                </div>
+                </Flex>
               )}
             </div>
           </div>
@@ -419,7 +419,7 @@ export default function NotificationSettingsModal({
               Keyword Alerts
             </span>
             <div className="space-y-2">
-              <div className="flex gap-2">
+              <Flex gap="2">
                 <TextField.Root
                   value={keywordInput}
                   onChange={(e) => setKeywordInput(e.target.value)}
@@ -431,7 +431,7 @@ export default function NotificationSettingsModal({
                 <Button size="2" variant="solid" onClick={addKeyword}>
                   Add
                 </Button>
-              </div>
+              </Flex>
               {keywordAlerts.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {keywordAlerts.map((keyword) => (
@@ -541,7 +541,7 @@ export default function NotificationSettingsModal({
               </Button>
             )}
           </div>
-          <div className="flex gap-3">
+          <Flex gap="3">
             <Button
               size="2"
               variant="ghost"
@@ -565,7 +565,7 @@ export default function NotificationSettingsModal({
                 </>
               )}
             </Button>
-          </div>
+          </Flex>
         </div>
       </div>
     </div>

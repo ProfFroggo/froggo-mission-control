@@ -1125,7 +1125,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
         <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1 mb-4">
           {installItems.map(item => (
-            <div key={`${item.kind}-${item.id}`} className="flex items-center gap-3 p-2.5 rounded-lg bg-mission-control-bg border border-mission-control-border">
+            <Flex key={`${item.kind}-${item.id}`} align="center" gap="3" className="p-2.5 rounded-lg bg-mission-control-bg border border-mission-control-border">
               <div className="w-5 flex-shrink-0 flex items-center justify-center">
                 {item.status === 'pending' && (
                   <div className="w-3 h-3 rounded-full border-2 border-mission-control-border" />
@@ -1145,7 +1145,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
               {item.status === 'error' && item.error && (
                 <span className="text-xs text-error truncate max-w-24">{item.error}</span>
               )}
-            </div>
+            </Flex>
           ))}
         </div>
 
@@ -1197,16 +1197,18 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
       <div className="space-y-1.5 mb-5">
         {TOUR_STOPS.map((stop, i) => (
-          <div
+          <Flex
             key={stop.label}
-            className="flex items-start gap-3 p-2.5 rounded-lg bg-mission-control-bg border border-mission-control-border"
+            align="start"
+            gap="3"
+            className="p-2.5 rounded-lg bg-mission-control-bg border border-mission-control-border"
           >
             <span className="text-xs font-mono text-mission-control-accent mt-0.5 w-4 flex-shrink-0">{i + 1}</span>
             <div className="min-w-0">
               <span className="text-sm font-medium text-mission-control-text">{stop.label}</span>
               <p className="text-xs text-mission-control-text-dim">{stop.desc}</p>
             </div>
-          </div>
+          </Flex>
         ))}
       </div>
 
