@@ -236,9 +236,9 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
       {/* Mic settings panel */}
       {showSettings && (
         <div className="mb-3 p-2 bg-mission-control-bg border border-mission-control-border rounded-lg">
-          <div className="text-xs text-mission-control-text-dim uppercase tracking-wider mb-1.5 flex items-center gap-1">
+          <Flex align="center" gap="1" className="text-xs text-mission-control-text-dim uppercase tracking-wider mb-1.5">
             <Mic size={10} /> Microphone Input
-          </div>
+          </Flex>
           {micDevices.length === 0 ? (
             <p className="text-xs text-mission-control-text-dim">No microphone devices found</p>
           ) : (
