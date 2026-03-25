@@ -211,12 +211,12 @@ function StatsStrip({ projects }: StatsStripProps) {
         );
       })}
       {topAgentId && (
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-mission-control-surface border border-mission-control-border text-xs whitespace-nowrap">
+        <Flex align="center" gap="2" className="px-3 py-1 rounded-full bg-mission-control-surface border border-mission-control-border text-xs whitespace-nowrap">
           <Users size={11} className="text-mission-control-accent" />
           <span className="text-mission-control-text-dim">Top agent</span>
           <AgentAvatar agentId={topAgentId} size="xs" />
           <span className="font-semibold text-mission-control-accent">{agentDone[topAgentId]} tasks</span>
-        </div>
+        </Flex>
       )}
     </div>
   );
@@ -292,7 +292,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
         style={{ width: '100%', textAlign: 'left', padding: '1.25rem', borderRadius: '0.5rem', display: 'block', height: 'auto' }}
       >
         {/* Header */}
-        <div className="flex items-start gap-3 mb-3 pr-14">
+        <Flex align="start" gap="3" className="mb-3 pr-14">
           <div
             className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
             style={{ backgroundColor: `${project.color}20`, border: `1px solid ${project.color}40` }}
@@ -300,32 +300,32 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
             {(() => { const ProjIcon = getProjectIcon(project.emoji); return <ProjIcon size={18} style={{ color: project.color }} />; })()}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <h3 className="font-semibold text-mission-control-text truncate group-hover:text-mission-control-accent transition-colors">
                 {project.name}
               </h3>
-            </div>
+            </Flex>
             {project.description && (
               <p className="text-xs text-mission-control-text-dim truncate mt-0.5">{project.description}</p>
             )}
           </div>
-        </div>
+        </Flex>
 
         {/* Status badge */}
-        <div className="flex items-center gap-2 mb-3">
+        <Flex align="center" gap="2" className="mb-3">
           <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${sc.bg} ${sc.color}`}>
             <StatusIcon size={10} />
             {sc.label}
           </span>
-        </div>
+        </Flex>
 
         {/* Progress bar */}
         {totalTasks > 0 && (
           <div className="mb-3">
-            <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1 tabular-nums">
+            <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim mb-1 tabular-nums">
               <span>{doneTasks}/{totalTasks} tasks</span>
               <span>{progress}%</span>
-            </div>
+            </Flex>
             <div className="h-1.5 bg-mission-control-bg0 rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
@@ -336,7 +336,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           {/* Agent avatars (max 3 + overflow) */}
           <div className="flex items-center -space-x-1.5">
             {displayedMembers.map(m => (
@@ -361,7 +361,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
             {inProgressTasks > 0 && (
               <span className="flex items-center gap-1 text-warning">
                 <Zap size={11} /> {inProgressTasks} active
@@ -370,8 +370,8 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
             <span className="flex items-center gap-1">
               <Clock size={11} /> {formatTimeAgo(lastActivity)}
             </span>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       </Button>
     </div>
   );
@@ -494,8 +494,8 @@ export default function ProjectsPanel() {
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg0">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" gap="3">
           <div className="p-2 bg-mission-control-accent/20 rounded-lg">
             <FolderKanban size={24} className="text-mission-control-accent" />
           </div>
@@ -503,8 +503,8 @@ export default function ProjectsPanel() {
             <h1 className="text-xl font-semibold text-mission-control-text">Projects</h1>
             <p className="text-sm text-mission-control-text-dim">{nonArchivedProjects.filter(p => p.status === 'active').length} active</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <IconButton
             onClick={() => load(false)}
             disabled={refreshing}
@@ -545,12 +545,12 @@ export default function ProjectsPanel() {
           <Button onClick={() => setShowCreateWizard(true)} size="2" variant="solid">
             <Plus size={15} /> New Project
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
 
       {/* Tab strip */}
-      <div className="flex gap-1 px-6 border-b border-mission-control-border">
+      <Flex gap="1" className="px-6 border-b border-mission-control-border">
         <button
           type="button"
           onClick={() => setTabView('active')}
@@ -574,11 +574,11 @@ export default function ProjectsPanel() {
           <Archive size={13} />
           Archived ({archivedProjects.length})
         </button>
-      </div>
+      </Flex>
 
       {/* Filters (only for active tab) */}
       {tabView === 'active' && (
-        <div className="flex items-center gap-3 px-6 py-3 border-b border-mission-control-border">
+        <Flex align="center" gap="3" className="px-6 py-3 border-b border-mission-control-border">
           <div className="flex-1 max-w-xs">
             <TextField.Root
               aria-label="Search projects"
@@ -608,12 +608,12 @@ export default function ProjectsPanel() {
               </button>
             ))}
           </div>
-        </div>
+        </Flex>
       )}
 
       {/* Archived search */}
       {tabView === 'archived' && (
-        <div className="flex items-center gap-3 px-6 py-3 border-b border-mission-control-border">
+        <Flex align="center" gap="3" className="px-6 py-3 border-b border-mission-control-border">
           <div className="flex-1 max-w-xs">
             <TextField.Root
               aria-label="Search archived projects"
@@ -627,22 +627,22 @@ export default function ProjectsPanel() {
               </TextField.Slot>
             </TextField.Root>
           </div>
-        </div>
+        </Flex>
       )}
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
         {loading && (
-          <div className="flex items-center justify-center py-16">
+          <Flex align="center" justify="center" className="py-16">
             <Spinner size={24} />
-          </div>
+          </Flex>
         )}
 
         {error && !loading && (
-          <div className="flex items-center gap-2 px-4 py-3 bg-error-subtle border border-error/30 rounded-lg text-error text-sm">
+          <Flex align="center" gap="2" className="px-4 py-3 bg-error-subtle border border-error/30 rounded-lg text-error text-sm">
             <AlertCircle size={15} />
             {error}
-          </div>
+          </Flex>
         )}
 
         {!loading && !error && visibleProjects.length === 0 && (

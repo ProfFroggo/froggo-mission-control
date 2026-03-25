@@ -133,7 +133,7 @@ function ExportButtons({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <Flex align="center" gap="2">
       <Button
         onClick={() => handleExport('csv')}
         disabled={!!busy}
@@ -154,7 +154,7 @@ function ExportButtons({
         <Download size={12} />
         {busy === 'json' ? 'Exporting…' : 'JSON'}
       </Button>
-    </div>
+    </Flex>
   );
 }
 
@@ -215,62 +215,62 @@ function ExecutiveSummaryCard({
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between">
+        <Flex align="center" gap="2">
           <BarChart3 size={18} className="text-mission-control-accent" />
           <h3 className="font-semibold">Executive Summary</h3>
           <span className="text-xs text-mission-control-text-dim">
             ({summary.period.days}d period)
           </span>
-        </div>
+        </Flex>
         <IconButton
           onClick={load}
           variant="ghost"
           size="2"
-         
+
           title="Refresh summary"
         >
           <RefreshCw size={14} />
         </IconButton>
-      </div>
+      </Flex>
 
       {/* KPI grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 bg-mission-control-bg rounded-lg">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-2">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <CheckSquare size={12} />
             Tasks Completed
-          </div>
+          </Flex>
           <div className="text-2xl font-bold text-success">{summary.tasks.completed}</div>
           <div className="text-xs text-mission-control-text-dim mt-1">
             {summary.tasks.velocity}/day velocity
           </div>
         </div>
         <div className="p-4 bg-mission-control-bg rounded-lg">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-2">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <Users size={12} />
             Active Agents
-          </div>
+          </Flex>
           <div className="text-2xl font-bold text-info">{summary.agents.active}</div>
           <div className="text-xs text-mission-control-text-dim mt-1">
             {summary.agents.avgSuccessRate}% avg success rate
           </div>
         </div>
         <div className="p-4 bg-mission-control-bg rounded-lg">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-2">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <Award size={12} />
             Approvals
-          </div>
+          </Flex>
           <div className="text-2xl font-bold text-warning">{summary.approvals.total}</div>
           <div className="text-xs text-mission-control-text-dim mt-1">
             {summary.approvals.approved} approved
           </div>
         </div>
         <div className="p-4 bg-mission-control-bg rounded-lg">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-2">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <Zap size={12} />
             Token Cost
-          </div>
+          </Flex>
           <div className="text-2xl font-bold text-review">${summary.tokens.cost.toFixed(4)}</div>
           <div className="text-xs text-mission-control-text-dim mt-1">
             {formatNumber(summary.tokens.total)} tokens
@@ -286,13 +286,15 @@ function ExecutiveSummaryCard({
           </div>
           <div className="space-y-1.5">
             {summary.highlights.map((h, i) => (
-              <div
+              <Flex
                 key={i}
-                className="flex items-start gap-2 text-sm p-3 bg-mission-control-bg rounded-lg"
+                align="start"
+                gap="2"
+                className="text-sm p-3 bg-mission-control-bg rounded-lg"
               >
                 <TrendingUp size={14} className="text-mission-control-accent mt-0.5 shrink-0" />
                 {h}
-              </div>
+              </Flex>
             ))}
           </div>
         </div>
@@ -324,7 +326,7 @@ function ReportSection({
 }: ReportSectionProps) {
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
+      <Flex align="center" justify="between" className="mb-4">
         <div>
           <h3 className="font-semibold flex items-center gap-2">
             <Icon size={16} className="text-mission-control-accent" />
@@ -333,7 +335,7 @@ function ReportSection({
           <p className="text-xs text-mission-control-text-dim mt-0.5">{subtitle}</p>
         </div>
         <ExportButtons type={exportType} from={from} to={to} />
-      </div>
+      </Flex>
       {children}
     </div>
   );
@@ -431,7 +433,7 @@ export default function ReportsPanel() {
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Date range quick selectors */}
-          <div className="flex bg-mission-control-border rounded-lg p-1 gap-0.5">
+          <Flex className="bg-mission-control-border rounded-lg p-1" gap="1">
             {QUICK_RANGES.map((r) => (
               <Button
                 key={r.value}
@@ -443,10 +445,10 @@ export default function ReportsPanel() {
                 {r.label}
               </Button>
             ))}
-          </div>
+          </Flex>
 
           {/* Custom date inputs — native date pickers kept as-is for functionality */}
-          <div className="flex items-center gap-1.5">
+          <Flex align="center" gap="2">
             <Calendar size={14} className="text-mission-control-text-dim" />
             <input
               type="date"
@@ -463,10 +465,10 @@ export default function ReportsPanel() {
               style={{ fontSize: '0.75rem', padding: '0.375rem 0.5rem', background: 'var(--mission-control-surface)', border: '1px solid var(--mission-control-border)', borderRadius: '0.5rem', color: 'inherit' }}
               title="To date"
             />
-          </div>
+          </Flex>
 
           {/* Report type selector */}
-          <div className="flex bg-mission-control-border rounded-lg p-1">
+          <Flex className="bg-mission-control-border rounded-lg p-1">
             {(['weekly', 'monthly'] as const).map((type) => (
               <Button
                 key={type}
@@ -479,7 +481,7 @@ export default function ReportsPanel() {
                 {type}
               </Button>
             ))}
-          </div>
+          </Flex>
 
           {/* Schedule stub */}
           <Button
@@ -557,10 +559,10 @@ export default function ReportsPanel() {
         {reportType === 'weekly' && weeklyReport && (
           <div className="space-y-6">
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <div className="flex items-center gap-2 text-mission-control-accent mb-2">
+              <Flex align="center" gap="2" className="text-mission-control-accent mb-2">
                 <Calendar size={20} />
                 <span className="font-medium">Week of {weeklyReport.weekStart}</span>
-              </div>
+              </Flex>
               <p className="text-sm text-mission-control-text-dim">
                 {weeklyReport.weekStart} to {weeklyReport.weekEnd}
               </p>
@@ -609,12 +611,12 @@ export default function ReportsPanel() {
         {reportType === 'monthly' && monthlyReport && (
           <div className="space-y-6">
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <div className="flex items-center gap-2 text-mission-control-accent mb-2">
+              <Flex align="center" gap="2" className="text-mission-control-accent mb-2">
                 <Calendar size={20} />
                 <span className="font-medium">
                   {monthlyReport.month} {monthlyReport.year}
                 </span>
-              </div>
+              </Flex>
               <p className="text-sm text-mission-control-text-dim">Monthly Performance Report</p>
             </div>
 
@@ -633,12 +635,12 @@ export default function ReportsPanel() {
               <div className="space-y-3">
                 {monthlyReport.agentPerformance.map((agent) => (
                   <div key={agent.agentId} className="p-4 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
+                    <Flex align="center" justify="between" className="mb-3">
                       <span className="font-medium">{agent.agentName}</span>
                       <span className="text-sm text-mission-control-text-dim">
                         {agent.tasksCompleted} completed
                       </span>
-                    </div>
+                    </Flex>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-mission-control-text-dim">Completion Rate</div>
@@ -670,12 +672,12 @@ export default function ReportsPanel() {
               <div className="space-y-3">
                 {monthlyReport.projectBreakdown.map((project) => (
                   <div key={project.project} className="p-4 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
+                    <Flex align="center" justify="between" className="mb-3">
                       <span className="font-medium">{project.project}</span>
                       <span className="text-sm text-mission-control-text-dim">
                         {project.totalTasks} tasks
                       </span>
-                    </div>
+                    </Flex>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-mission-control-text-dim">Completed</div>
