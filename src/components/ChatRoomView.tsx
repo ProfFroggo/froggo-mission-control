@@ -696,7 +696,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         >
           <ArrowLeft size={18} />
         </IconButton>
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           {isTeamMeeting ? (
             <div className="w-10 h-10 rounded-full bg-warning flex items-center justify-center shadow-md">
               <UsersRound size={20} className="text-white" />
@@ -719,7 +719,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               }
             </p>
           </div>
-        </div>
+        </Flex>
 
         {/* Agent presence indicators for team meetings */}
         {isTeamMeeting && (
@@ -1042,7 +1042,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     }`}
                   >
                     {msg.streaming && !msg.content ? (
-                      <div className="flex items-start gap-2 py-1 max-w-xs">
+                      <Flex align="start" gap="2" className="py-1 max-w-xs">
                         <div className="flex gap-1 mt-1 shrink-0">
                           <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
                           <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1053,7 +1053,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                             ? streamingStatus[msg.id]
                             : 'thinking...'}
                         </span>
-                      </div>
+                      </Flex>
                     ) : !isUser ? (
                       <MarkdownMessage
                         content={msg.content}
@@ -1132,14 +1132,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
         {/* Typing indicators for agents */}
         {typingAgents.size > 0 && !room.messages.some(m => m.streaming) && (
-          <div className="flex items-center gap-2 text-sm text-mission-control-text-dim pl-12">
-            <div className="flex gap-1">
+          <Flex align="center" gap="2" className="text-sm text-mission-control-text-dim pl-12">
+            <Flex gap="1">
               <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" />
               <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
               <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
-            </div>
+            </Flex>
             {[...typingAgents].map(id => agentName(id)).join(', ')} typing...
-          </div>
+          </Flex>
         )}
 
         {/* Agent background task status — shows what dispatched agents are working on */}
@@ -1200,11 +1200,11 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       <img src={att.dataUrl} alt={att.name} className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg">
+                    <Flex align="center" gap="2" className="px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg">
                       <Icon size={16} className="text-mission-control-accent" />
                       <span className="text-sm truncate max-w-32">{att.name}</span>
                       <span className="text-xs text-mission-control-text-dim">{(att.size / 1024).toFixed(1)}KB</span>
-                    </div>
+                    </Flex>
                   )}
                   <IconButton
                     onClick={() => removeAttachment(att.id)}
@@ -1281,7 +1281,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           </div>
         )}
 
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <IconButton
             onClick={() => fileInputRef.current?.click()}
             size="3"
@@ -1323,7 +1323,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           >
             <Send size={20} />
           </IconButton>
-        </div>
+        </Flex>
       </div>
       </>
       )}
