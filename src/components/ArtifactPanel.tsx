@@ -185,13 +185,13 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       case 'code':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
               <Icon size={14} />
               <span className="font-mono">{artifact.metadata?.language || 'code'}</span>
               {artifact.metadata?.filename && (
                 <span className="ml-auto text-mission-control-text-dim">{artifact.metadata.filename}</span>
               )}
-            </div>
+            </Flex>
             <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4 overflow-x-auto">
               <pre className="text-sm font-mono whitespace-pre-wrap break-words">
                 <code>{artifact.content}</code>
@@ -203,10 +203,10 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       case 'image':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
               <Icon size={14} />
               <span>Image</span>
-            </div>
+            </Flex>
             <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
               <img
                 src={artifact.content}
@@ -220,10 +220,10 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       case 'diagram':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
               <Icon size={14} />
               <span>Diagram (Mermaid)</span>
-            </div>
+            </Flex>
             <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
               <MarkdownMessage content={`\`\`\`mermaid\n${artifact.content}\n\`\`\``} />
             </div>
@@ -233,10 +233,10 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       case 'data':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
               <Icon size={14} />
               <span>Data</span>
-            </div>
+            </Flex>
             <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4 overflow-x-auto">
               <pre className="text-sm font-mono whitespace-pre-wrap break-words">
                 <code>{artifact.content}</code>
@@ -250,10 +250,10 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       default:
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
               <Icon size={14} />
               <span>{artifact.type}</span>
-            </div>
+            </Flex>
             <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
               <MarkdownMessage content={artifact.content} />
             </div>
@@ -307,7 +307,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       </div>
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <FileText size={18} className="text-mission-control-accent" />
           <h3 className="font-semibold text-sm">Artifacts</h3>
           {displayArtifacts.length > 0 && (
@@ -315,7 +315,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
               {displayArtifacts.length}
             </span>
           )}
-        </div>
+        </Flex>
         <IconButton
           onClick={toggleCollapse}
           size="2"
@@ -332,7 +332,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       {selectedArtifact ? (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Artifact Header — single compact row */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-mission-control-border">
+          <Flex align="center" gap="2" className="px-3 py-2 border-b border-mission-control-border">
             <IconButton
               onClick={() => selectArtifact(null)}
               size="1"
@@ -392,7 +392,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 <Trash2 size={13} />
               </IconButton>
             </div>
-          </div>
+          </Flex>
 
           {/* Version History */}
           {showVersionHistory && (
@@ -408,7 +408,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                         : 'bg-mission-control-bg'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    <Flex align="center" justify="between">
                       <span className="font-medium">v{v.version}</span>
                       <span className="text-mission-control-text-dim">
                         {new Date(v.timestamp).toLocaleTimeString([], {
@@ -416,7 +416,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                           minute: '2-digit',
                         })}
                       </span>
-                    </div>
+                    </Flex>
                     {v.changeDescription && (
                       <p className="text-mission-control-text-dim mt-0.5">{v.changeDescription}</p>
                     )}
@@ -428,7 +428,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
 
           {/* Tab Bar — only for previewable artifacts */}
           {isPreviewable(selectedArtifact) && (
-            <div className="flex items-center border-b border-mission-control-border bg-mission-control-surface px-4">
+            <Flex align="center" className="border-b border-mission-control-border bg-mission-control-surface px-4">
               <div className="flex flex-1">
                 {(['preview', 'code', 'port'] as const).map(tab => {
                   const TabIcon = tab === 'preview' ? Monitor : tab === 'code' ? Code2 : Globe;
@@ -451,7 +451,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                   );
                 })}
               </div>
-              <div className="flex items-center gap-1 ml-2">
+              <Flex align="center" gap="1" className="ml-2">
                 <IconButton
                   onClick={() => setReloadKey(k => k + 1)}
                   size="1"
@@ -477,8 +477,8 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                     <Expand size={14} />
                   </IconButton>
                 )}
-              </div>
-            </div>
+              </Flex>
+            </Flex>
           )}
 
           {/* Artifact Content */}
@@ -499,7 +499,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 <label className="block text-xs font-medium text-mission-control-text">
                   Local Dev Server URL
                 </label>
-                <div className="flex gap-2">
+                <Flex gap="2">
                   <TextField.Root
                     value={portUrl}
                     onChange={e => setPortUrl(e.target.value)}
@@ -515,7 +515,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                   >
                     Load
                   </Button>
-                </div>
+                </Flex>
                 <p className="text-xs text-mission-control-text-dim">
                   Only works if a local dev server is running on that port
                 </p>
@@ -579,13 +579,13 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                     className="w-full text-left p-3 rounded-lg transition-colors"
                     style={{ background: 'var(--mission-control-bg)', border: '1px solid var(--mission-control-border)' }}
                   >
-                    <div className="flex items-start gap-2">
+                    <Flex align="start" gap="2">
                       <div className={`p-2 rounded border ${colorClass} flex-shrink-0`}>
                         <Icon size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h5 className="font-medium text-sm truncate">{artifact.title}</h5>
-                        <div className="flex items-center gap-2 mt-1">
+                        <Flex align="center" gap="2" className="mt-1">
                           <span className="text-xs text-mission-control-text-dim">
                             v{artifact.currentVersion}
                           </span>
@@ -595,14 +595,14 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                               minute: '2-digit',
                             })}
                           </span>
-                        </div>
+                        </Flex>
                         {artifact.metadata?.language && (
                           <span className="text-xs text-mission-control-text-dim font-mono">
                             {artifact.metadata.language}
                           </span>
                         )}
                       </div>
-                    </div>
+                    </Flex>
                   </button>
                 );
               })}
