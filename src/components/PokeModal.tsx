@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Loader2, MessageCircle, Activity, AlertTriangle } from 'lucide-react';
-import { IconButton, TextField } from '@radix-ui/themes';
+import { Flex, IconButton, TextField } from '@radix-ui/themes';
 import BaseModal from './BaseModal';
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
@@ -338,14 +338,14 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
   return (
     <BaseModal isOpen={true} onClose={onClose} size="lg" className="flex flex-col">
       {/* Header with task context */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border bg-mission-control-bg-alt/50">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border bg-mission-control-bg-alt/50">
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-2xl">🫵</span>
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-mission-control-text truncate">
               Poke: {taskTitle}
             </h2>
-            <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
               {task && (
                 <>
                   <span className={`flex items-center gap-1 ${getStatusColor(task.status)}`}>
@@ -366,7 +366,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                   )}
                 </>
               )}
-            </div>
+            </Flex>
           </div>
         </div>
         <IconButton
@@ -378,7 +378,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         >
           <X size={18} />
         </IconButton>
-      </div>
+      </Flex>
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[500px]">
@@ -390,9 +390,9 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
           </div>
         )}
         {historyLoaded && messages.map((msg) => (
-          <div
+          <Flex
             key={`${msg.role}-${msg.timestamp}`}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            justify={msg.role === 'user' ? 'end' : 'start'}
           >
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
@@ -409,25 +409,25 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                 msg.content
               )}
             </div>
-          </div>
+          </Flex>
         ))}
 
         {/* Streaming content */}
         {streamingContent && (
-          <div className="flex justify-start">
+          <Flex justify="start">
             <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm bg-mission-control-bg-alt text-mission-control-text">
               <MarkdownMessage content={streamingContent} />
             </div>
-          </div>
+          </Flex>
         )}
 
         {/* Loading indicator */}
         {(loading || sending) && !streamingContent && (
-          <div className="flex justify-start">
+          <Flex justify="start">
             <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-mission-control-bg-alt">
               <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
             </div>
-          </div>
+          </Flex>
         )}
 
         <div ref={messagesEndRef} />
@@ -435,7 +435,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
 
       {/* Input area */}
       <div className="p-3 border-t border-mission-control-border bg-mission-control-bg">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <TextField.Root
             ref={inputRef}
             type="text"
@@ -456,7 +456,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
           >
             <Send size={16} />
           </IconButton>
-        </div>
+        </Flex>
         <p className="text-[10px] text-mission-control-text-dim/40 mt-1.5 text-center">
           Task-scoped conversation • Responses have personality 🐸
         </p>
