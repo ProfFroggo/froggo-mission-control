@@ -14,6 +14,9 @@
 /* Import design system tokens */
 @import './design-tokens.css';
 
+/* Import glass theme layer (scrollbars, modal/dropdown surfaces, card base styles) */
+@import './glass-theme.css';
+
 /* Import component patterns */
 @import './component-patterns.css';
 
@@ -125,12 +128,6 @@ body {
   border: 1px solid color-mix(in srgb, var(--mission-control-border) 50%, transparent);
 }
 
-.glass-card {
-  background: color-mix(in srgb, var(--mission-control-surface) 70%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in srgb, var(--mission-control-border) 50%, transparent);
-}
 
 /* Dark theme modal */
 :root:not(.light) .glass-modal {
@@ -290,59 +287,6 @@ body {
     background: color-mix(in srgb, var(--mission-control-accent) 20%, transparent);
   }
   
-  /* ============================================
-     BUTTON SYSTEM - Consistent sizing & spacing
-     ============================================ */
-  
-  /* Base button with standard padding */
-  .btn {
-    @apply inline-flex items-center justify-center;
-    @apply gap-2 px-4 py-2; /* Standard spacing: gap-2, padding 16px/8px */
-    @apply transition-all duration-150;
-    @apply active:scale-95;
-    @apply rounded-lg;
-    @apply font-medium;
-  }
-
-  .btn-sm {
-    @apply inline-flex items-center justify-center;
-    @apply gap-1.5 px-3 py-1.5; /* Compact spacing */
-    @apply transition-all duration-150;
-    @apply active:scale-95;
-    @apply rounded-lg;
-    @apply text-sm font-medium;
-  }
-
-  .btn-lg {
-    @apply inline-flex items-center justify-center;
-    @apply gap-3 px-6 py-3; /* Generous spacing */
-    @apply transition-all duration-150;
-    @apply active:scale-95;
-    @apply rounded-lg;
-    @apply text-base font-medium;
-  }
-
-  .btn-primary {
-    @apply bg-mission-control-accent text-white rounded-lg;
-    @apply hover:bg-mission-control-accent-dim hover:shadow-glow;
-    @apply active:scale-95 transition-all duration-150;
-    @apply px-4 py-2 gap-2; /* Standard button spacing */
-  }
-
-  .btn-secondary {
-    @apply bg-mission-control-border text-mission-control-text rounded-lg;
-    @apply hover:brightness-125;
-    @apply active:scale-95 transition-all duration-150;
-    @apply px-4 py-2 gap-2; /* Standard button spacing */
-  }
-
-  .btn-ghost {
-    @apply bg-transparent text-mission-control-text-dim rounded-lg;
-    @apply hover:bg-mission-control-surface hover:text-mission-control-text;
-    @apply active:scale-95 transition-all duration-150;
-    @apply px-4 py-2 gap-2;
-  }
-
   /* Semantic badge variants — status/severity */
   .badge-success {
     @apply bg-success-subtle text-success border border-success-border;
@@ -642,8 +586,8 @@ mark {
 
 /* react-grid-layout dark mode overrides */
 .react-grid-item.react-grid-placeholder {
-  background: rgba(34, 197, 94, 0.1) !important;
-  border: 2px dashed rgba(34, 197, 94, 0.4) !important;
+  background: color-mix(in srgb, var(--mission-control-accent) 10%, transparent) !important;
+  border: 2px dashed color-mix(in srgb, var(--mission-control-accent) 40%, transparent) !important;
   border-radius: 1rem;
   opacity: 0.8;
 }

@@ -47,7 +47,7 @@
   
   /* Line heights */
   --leading-tight: 1.25;
-  --leading-normal: 1.5;
+  --leading-normal: 1.55;
   --leading-relaxed: 1.75;
   
   /* Font weights */
@@ -69,7 +69,7 @@
 
   /* Typography defaults (not theme-sensitive) */
   --mission-control-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mission-control-font-size: 14px;
+  --mission-control-font-size: 1rem;
   
   /* ============================================
      COLOR TOKENS - INTERACTIVE STATES
@@ -97,8 +97,8 @@
   
   /* Success */
   --color-success: #22c55e;
-  --color-success-bg: rgba(34, 197, 94, 0.1);
-  --color-success-border: rgba(34, 197, 94, 0.3);
+  --color-success-bg: color-mix(in srgb, var(--color-success) 10%, transparent);
+  --color-success-border: color-mix(in srgb, var(--color-success) 30%, transparent);
   --color-success-hover: #16a34a;
   
   /* Error */
@@ -175,8 +175,8 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
   --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(34, 197, 94, 0.3);
-  --shadow-glow-lg: 0 0 40px rgba(34, 197, 94, 0.4);
+  --shadow-glow: 0 0 20px color-mix(in srgb, var(--mission-control-accent) 30%, transparent);
+  --shadow-glow-lg: 0 0 40px color-mix(in srgb, var(--mission-control-accent) 40%, transparent);
   
   /* ============================================
      COMPONENT SIZE TOKENS
@@ -218,6 +218,7 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-quint-out: cubic-bezier(0.22, 1, 0.36, 1);   /* Premium deceleration (Stripe/Linear) */
   
   /* ============================================
      Z-INDEX SCALE

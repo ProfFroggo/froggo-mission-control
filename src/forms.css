@@ -106,7 +106,6 @@ select.success:not(.unstyled) {
 input:not(.unstyled)::placeholder,
 textarea:not(.unstyled)::placeholder {
   color: var(--mission-control-text-dim);
-  opacity: 0.6;
 }
 
 /* ==================== BUTTON STYLES ==================== */

@@ -60,18 +60,6 @@
    GLASSMORPHISM EFFECTS
    ========================================== */
 
-.glass-card {
-  background: rgba(20, 20, 20, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--mission-control-border-glass);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-:root.light .glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
-}
 
 .glass-card-light {
   background: rgba(255, 255, 255, 0.7);
@@ -86,7 +74,7 @@
    ========================================== */
 
 .glow-green {
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-success) 30%, transparent);
 }
 
 .glow-blue {
@@ -107,7 +95,7 @@
 
 /* Hover glow enhancement */
 .hover-glow-green:hover {
-  box-shadow: 0 0 30px rgba(34, 197, 94, 0.5), 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--color-success) 50%, transparent), 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .hover-glow-blue:hover {
@@ -324,35 +312,6 @@
   background-clip: text;
 }
 
-/* ==========================================
-   SCROLLBAR STYLING (Modern)
-   ========================================== */
-
-.modern-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.modern-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.modern-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-}
-
-.modern-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-:root.light .modern-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-}
-
-:root.light .modern-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
-}
 
 /* ==========================================
    BORDER ANIMATIONS
@@ -360,10 +319,10 @@
 
 @keyframes border-pulse {
   0%, 100% {
-    border-color: rgba(34, 197, 94, 0.3);
+    border-color: color-mix(in srgb, var(--color-success) 30%, transparent);
   }
   50% {
-    border-color: rgba(34, 197, 94, 0.8);
+    border-color: color-mix(in srgb, var(--color-success) 80%, transparent);
   }
 }
 

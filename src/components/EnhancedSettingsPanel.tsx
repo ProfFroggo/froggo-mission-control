@@ -135,7 +135,7 @@ const defaultSettings: AppSettings = {
   theme: 'dark',
   accentColor: '#22c55e',
   fontFamily: 'system',
-  fontSize: 14,
+  fontSize: 16,
   autoRefresh: true,
   refreshInterval: 30,
   defaultPanel: 'dashboard',
@@ -1995,7 +1995,7 @@ export default function EnhancedSettingsPanel() {
                     />
                     <Flex justify="between" className="text-xs text-mission-control-text-dim mt-1">
                       <span>Small (12px)</span>
-                      <span>Medium (14px)</span>
+                      <span>Default (16px)</span>
                       <span>Large (18px)</span>
                     </Flex>
                   </div>
