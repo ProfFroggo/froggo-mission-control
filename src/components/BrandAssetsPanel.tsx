@@ -5,7 +5,7 @@ import {
   Plus, Search, X, Trash2, Edit, ExternalLink,
 } from 'lucide-react';
 // eslint-disable-next-line import/order
-import { Button, IconButton, Select, TextArea, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Select, TextArea, TextField } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -242,7 +242,7 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
+        <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border">
           <span className="font-semibold text-mission-control-text text-sm">
             {initial ? 'Edit Asset' : 'Add Brand Asset'}
           </span>
@@ -255,7 +255,7 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
           >
             <X size={14} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Body */}
         <div className="p-4 space-y-3 overflow-y-auto max-h-[70vh]">
@@ -270,7 +270,7 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
             style={{ width: '100%' }}
           />
 
-          <div className="flex gap-2">
+          <Flex gap="2">
             <Select.Root value={form.category} onValueChange={(val) => set('category', val)}>
               <Select.Trigger style={{ flex: 1 }} />
               <Select.Content>
@@ -297,7 +297,7 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
                 ))}
               </Select.Content>
             </Select.Root>
-          </div>
+          </Flex>
 
           <TextField.Root
             value={form.url}
@@ -330,7 +330,7 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 px-4 py-3 border-t border-mission-control-border">
+        <Flex justify="end" gap="2" className="px-4 py-3 border-t border-mission-control-border">
           <Button
             onClick={onClose}
             variant="ghost"
@@ -346,7 +346,7 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
           >
             {saving ? 'Saving...' : initial ? 'Save Changes' : 'Add Asset'}
           </Button>
-        </div>
+        </Flex>
       </div>
     </div>
   );
@@ -374,7 +374,7 @@ function AssetDrawer({ asset, onClose, onEdit, onDelete }: AssetDrawerProps) {
   return (
     <div className="w-80 shrink-0 border-l border-mission-control-border flex flex-col h-full bg-mission-control-surface overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
+      <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border">
         <span className="font-semibold text-mission-control-text text-sm truncate">{asset.name}</span>
         <IconButton
           onClick={onClose}
@@ -386,7 +386,7 @@ function AssetDrawer({ asset, onClose, onEdit, onDelete }: AssetDrawerProps) {
         >
           <X size={14} />
         </IconButton>
-      </div>
+      </Flex>
 
       {/* Preview */}
       <div className="w-full h-44 flex items-center justify-center bg-mission-control-bg border-b border-mission-control-border overflow-hidden">
@@ -462,7 +462,7 @@ function AssetDrawer({ asset, onClose, onEdit, onDelete }: AssetDrawerProps) {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 p-4 border-t border-mission-control-border">
+      <Flex align="center" gap="2" className="p-4 border-t border-mission-control-border">
         <Button
           onClick={onEdit}
           variant="outline"
@@ -481,7 +481,7 @@ function AssetDrawer({ asset, onClose, onEdit, onDelete }: AssetDrawerProps) {
           <Trash2 size={12} />
           Delete
         </Button>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -585,7 +585,7 @@ export default function BrandAssetsPanel() {
         {/* Main content */}
         <div className="flex flex-col flex-1 min-w-0 h-full">
           {/* Toolbar */}
-          <div className="flex items-center gap-2 p-4 border-b border-mission-control-border">
+          <Flex align="center" gap="2" className="p-4 border-b border-mission-control-border">
             <div className="flex-1">
               <TextField.Root
                 value={search}
@@ -618,7 +618,7 @@ export default function BrandAssetsPanel() {
               <Plus size={12} />
               Add Asset
             </Button>
-          </div>
+          </Flex>
 
           {/* Grid + drawer */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -658,7 +658,7 @@ export default function BrandAssetsPanel() {
                           isSelected ? 'border-mission-control-accent/60' : 'border-mission-control-border'
                         }`}
                       >
-                        <div className="flex items-start gap-3">
+                        <Flex align="start" gap="3">
                           <div className="p-2 bg-mission-control-accent/20 rounded-lg shrink-0">
                             <FileIcon size={18} className="text-mission-control-accent" />
                           </div>
@@ -681,7 +681,7 @@ export default function BrandAssetsPanel() {
                               )}
                             </div>
                           </div>
-                        </div>
+                        </Flex>
                       </div>
                     );
                   })}
