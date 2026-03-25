@@ -915,10 +915,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </>
           ) : null}
           {/* dates pushed right */}
-          <div className="flex items-center gap-2 text-xs text-mission-control-text-dim ml-auto flex-shrink-0">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim ml-auto flex-shrink-0">
             <span className="flex items-center gap-1"><Calendar size={11} />{formatTime(task.createdAt)}</span>
             <span className="flex items-center gap-1"><Clock size={11} />{formatTime(task.updatedAt)}</span>
-          </div>
+          </Flex>
         </Flex>
 
         {/* Row 6: agents — compact single row */}
@@ -1657,16 +1657,18 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             {/* Attachments List */}
             <div className="space-y-2">
               {attachments.map((attachment) => (
-                <div
+                <Flex
                   key={attachment.id}
-                  className="group flex items-center gap-3 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border hover:border-mission-control-accent/50 transition-all"
+                  align="center"
+                  gap="3"
+                  className="group p-3 bg-mission-control-bg rounded-lg border border-mission-control-border hover:border-mission-control-accent/50 transition-all"
                 >
                   <div className="text-mission-control-text-dim flex-shrink-0">
                     {getFileIcon(null)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{attachment.fileName ?? attachment.filePath.split('/').pop()}</div>
-                    <div className="flex items-center gap-2 text-xs text-mission-control-text-dim mt-0.5">
+                    <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mt-0.5">
                       {attachment.category && (
                         <>
                           <span className="px-1.5 py-0.5 bg-mission-control-border rounded text-xs">
@@ -1684,12 +1686,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                           </span>
                         </>
                       )}
-                    </div>
+                    </Flex>
                     <div className="text-xs text-mission-control-text-dim/50 mt-0.5 truncate" title={attachment.filePath}>
                       {attachment.filePath}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Flex align="center" gap="1" className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <IconButton
                       onClick={() => handleOpenFile(attachment.filePath)}
                       variant="ghost"
@@ -1710,22 +1712,22 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     >
                       <Trash2 size={16} />
                     </IconButton>
-                  </div>
-                </div>
+                  </Flex>
+                </Flex>
               ))}
             </div>
 
             {/* Stats Summary */}
             {attachments.length > 0 && (
               <div className="mt-4 p-3 bg-mission-control-bg/50 rounded-lg border border-mission-control-border">
-                <div className="flex items-center justify-between text-xs text-mission-control-text-dim">
+                <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim">
                   <span>
                     {attachments.length} file{attachments.length !== 1 ? 's' : ''} attached
                   </span>
                   <span>
                     Total: {attachments.length} file{attachments.length !== 1 ? 's' : ''}
                   </span>
-                </div>
+                </Flex>
               </div>
             )}
           </div>
@@ -1745,27 +1747,27 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             {/* Definition of Ready Checklist - show for internal-review status */}
             {task.status === 'internal-review' && (
               <div className="mb-4 p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                <div className="flex items-center gap-2 mb-3">
+                <Flex align="center" gap="2" className="mb-3">
                   <CheckCircle size={16} className="text-mission-control-accent" />
                   <span className="font-medium">Definition of Ready</span>
-                </div>
+                </Flex>
                 <div className="space-y-2 text-sm">
-                  <div className={`flex items-center gap-2 ${(task.subtasks?.length || 0) >= 2 ? 'text-success' : 'text-error'}`}>
+                  <Flex align="center" gap="2" className={(task.subtasks?.length || 0) >= 2 ? 'text-success' : 'text-error'}>
                     {(task.subtasks?.length || 0) >= 2 ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
                     Subtasks: {task.subtasks?.length || 0}/2 (minimum 2)
-                  </div>
-                  <div className={`flex items-center gap-2 ${task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? 'text-success' : 'text-error'}`}>
+                  </Flex>
+                  <Flex align="center" gap="2" className={task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? 'text-success' : 'text-error'}>
                     {task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
                     Priority: {task.priority || 'Not set'}
-                  </div>
-                  <div className={`flex items-center gap-2 ${task.assignedTo && !isProtectedAgent(task.assignedTo) ? 'text-success' : 'text-error'}`}>
+                  </Flex>
+                  <Flex align="center" gap="2" className={task.assignedTo && !isProtectedAgent(task.assignedTo) ? 'text-success' : 'text-error'}>
                     {task.assignedTo && !isProtectedAgent(task.assignedTo) ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
                     Assigned: {task.assignedTo || 'Not assigned'}
-                  </div>
-                  <div className={`flex items-center gap-2 ${(task.description?.length || 0) >= 20 ? 'text-success' : 'text-warning'}`}>
+                  </Flex>
+                  <Flex align="center" gap="2" className={(task.description?.length || 0) >= 20 ? 'text-success' : 'text-warning'}>
                     {(task.description?.length || 0) >= 20 ? <CheckCircle size={14} className="text-success inline" /> : <AlertTriangle size={14} className="text-warning inline" />}
                     Description: {(task.description?.length || 0)} chars (min 20)
-                  </div>
+                  </Flex>
                 </div>
               </div>
             )}
@@ -1773,11 +1775,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             {/* Quick Approve/Reject Actions (when in review status) */}
             {task.status === 'review' && task.reviewStatus !== 'approved' && (
               <div className="mb-4 p-4 bg-warning-subtle border border-warning-border rounded-lg">
-                <div className="flex items-center gap-2 mb-3">
+                <Flex align="center" gap="2" className="mb-3">
                   <AlertCircle size={16} className="text-warning" />
                   <span className="font-medium text-warning">Awaiting Review</span>
-                </div>
-                <div className="flex gap-2">
+                </Flex>
+                <Flex gap="2">
                   <Button
                     onClick={() => {
                       // ATOMIC UPDATE: Change both reviewStatus AND status in one call
@@ -1809,17 +1811,17 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     <XCircle size={16} />
                     Request Changes
                   </Button>
-                </div>
+                </Flex>
               </div>
             )}
 
             {/* Approved Notice */}
             {task.reviewStatus === 'approved' && (
               <div className="mb-4 p-4 bg-success-subtle border border-success-border rounded-lg">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <CheckCircle size={16} className="text-success" />
                   <span className="font-medium text-success">Review Approved</span>
-                </div>
+                </Flex>
                 <p className="mt-2 text-sm text-mission-control-text-dim">
                   This task has been approved and can now be marked as done.
                 </p>
@@ -1830,10 +1832,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <div className="space-y-4">
                 {/* Review Status */}
                 <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                  <div className="flex items-center gap-2 mb-3">
+                  <Flex align="center" gap="2" className="mb-3">
                     <Eye size={16} className="text-mission-control-accent" />
                     <span className="font-medium">Review Status</span>
-                  </div>
+                  </Flex>
                   <div className="grid grid-cols-2 gap-2">
                     {(['pending', 'in-review', 'needs-changes', 'approved'] as const).map((status) => {
                       const isActive = task.reviewStatus === status;
@@ -1857,10 +1859,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
                 {/* Review Notes */}
                 <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                  <div className="flex items-center gap-2 mb-3">
+                  <Flex align="center" gap="2" className="mb-3">
                     <FileText size={16} className="text-mission-control-accent" />
                     <span className="font-medium">Review Notes</span>
-                  </div>
+                  </Flex>
                   <TextArea
                     value={task.reviewNotes || ''}
                     onChange={(e) => updateTask(task.id, { reviewNotes: e.target.value })}
@@ -1874,27 +1876,27 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
                 {/* Pre-approval Checklist */}
                 <div className="p-4 bg-warning-subtle border border-warning-border rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
+                  <Flex align="center" gap="2" className="mb-2">
                     <AlertCircle size={16} className="text-warning" />
                     <span className="font-medium text-warning">Pre-Approval Checklist</span>
-                  </div>
+                  </Flex>
                   <div className="text-sm text-mission-control-text-dim space-y-1">
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       <Checkbox size="1" />
                       <span>Code reviewed for bugs</span>
-                    </div>
-                    <div className="flex items-center gap-2">
+                    </Flex>
+                    <Flex align="center" gap="2">
                       <Checkbox size="1" />
                       <span>Matches task requirements</span>
-                    </div>
-                    <div className="flex items-center gap-2">
+                    </Flex>
+                    <Flex align="center" gap="2">
                       <Checkbox size="1" />
                       <span>No security issues</span>
-                    </div>
-                    <div className="flex items-center gap-2">
+                    </Flex>
+                    <Flex align="center" gap="2">
                       <Checkbox size="1" />
                       <span>Ready for human approval</span>
-                    </div>
+                    </Flex>
                   </div>
                 </div>
               </div>
@@ -1912,7 +1914,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       {/* Quick Actions — only shown when there are actions to display */}
       {((task.status as string) === 'done' || task.parentTaskId) && (
       <div className="p-6 border-t border-mission-control-border bg-mission-control-bg rounded-b-2xl flex-shrink-0">
-        <div className="flex gap-2">
+        <Flex gap="2">
           {task.status === 'done' && (
             <>
               <Button
@@ -1945,7 +1947,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               Fork
             </Button>
           )}
-        </div>
+        </Flex>
       </div>
       )}
 
@@ -2018,13 +2020,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setShowAgentActiveModal(false); setActiveAgentInfo(null); } }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
-              <div className="flex items-center gap-3">
+            <Flex align="center" justify="between" className="p-6 border-b border-mission-control-border">
+              <Flex align="center" gap="3">
                 <div className="p-2 bg-warning-subtle rounded-lg">
                   <AlertCircle size={24} className="text-warning" />
                 </div>
                 <h3 id="agent-active-title" className="text-lg font-semibold">Agent Still Active</h3>
-              </div>
+              </Flex>
               <IconButton
                 onClick={() => {
                   setShowAgentActiveModal(false);
@@ -2037,7 +2039,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               >
                 <X size={16} />
               </IconButton>
-            </div>
+            </Flex>
 
             {/* Content */}
             <div className="p-6">
@@ -2065,7 +2067,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 p-6 border-t border-mission-control-border">
+            <Flex gap="3" className="p-6 border-t border-mission-control-border">
               <Button
                 onClick={() => {
                   setShowAgentActiveModal(false);
@@ -2120,7 +2122,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   </>
                 )}
               </Button>
-            </div>
+            </Flex>
           </div>
         </div>
       )}
@@ -2236,13 +2238,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         maxHeight="85vh"
         showCloseButton={false}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="2">
             <FileText size={16} className="text-mission-control-accent" />
             <span id="file-viewer-title" className="text-sm font-medium">{fileViewer?.name}</span>
             <span className="text-xs text-mission-control-text-dim px-1.5 py-0.5 bg-mission-control-border rounded">.{fileViewer?.ext}</span>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <Button
               onClick={() => { if (fileViewer) { navigator.clipboard.writeText(fileViewer.content); showToast('success', 'Copied to clipboard'); } }}
               variant="outline"
@@ -2254,8 +2256,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <IconButton onClick={() => setFileViewer(null)} aria-label="Close file viewer" variant="ghost" color="gray" size="2">
               <X size={16} />
             </IconButton>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
         <pre className="flex-1 overflow-auto p-4 text-xs font-mono text-mission-control-text whitespace-pre-wrap break-words">
           {fileViewer?.content}
         </pre>
