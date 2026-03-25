@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Brain, Edit3, Lightbulb, MessageSquare, Send, CheckCircle, Code, Search } from 'lucide-react';
-import { Button, IconButton, Spinner, TextArea, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Spinner, TextArea, TextField } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 
@@ -550,11 +550,11 @@ ${skillData.instructions}
       >
         {/* Header */}
         <div className="p-6 border-b border-mission-control-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+          <Flex align="center" justify="between" className="mb-4">
+            <Flex align="center" gap="3">
               <Brain className="text-[--accent-11]" size={24} />
               <h2 className="text-xl font-semibold">Add New Skill</h2>
-            </div>
+            </Flex>
             <IconButton
               onClick={handleClose}
               aria-label="Close modal"
@@ -565,10 +565,10 @@ ${skillData.instructions}
             >
               <X size={16} />
             </IconButton>
-          </div>
+          </Flex>
 
           {/* Mode Selector */}
-          <div className="flex gap-2">
+          <Flex gap="2">
             <Button
               onClick={() => setMode('suggest')}
               variant={mode === 'suggest' ? 'solid' : 'outline'}
@@ -600,7 +600,7 @@ ${skillData.instructions}
               <Edit3 size={16} />
               <span className="font-medium">Manual</span>
             </Button>
-          </div>
+          </Flex>
         </div>
 
         {/* Content */}
@@ -609,7 +609,7 @@ ${skillData.instructions}
             // Suggest Mode
             <div className="p-6 space-y-4 overflow-y-auto h-full">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 mb-4">
-                <div className="flex items-start gap-3">
+                <Flex align="start" gap="3">
                   <Search className="text-[--accent-11] mt-1" size={20} />
                   <div>
                     <h3 className="font-semibold mb-1">Analyzing your workflow...</h3>
@@ -617,14 +617,14 @@ ${skillData.instructions}
                       Based on your recent tasks, here are some skills that could boost your productivity.
                     </p>
                   </div>
-                </div>
+                </Flex>
               </div>
 
               {loadingSuggestions ? (
-                <div className="flex items-center justify-center py-12">
+                <Flex align="center" justify="center" className="py-12">
                   <Spinner size="3" />
                   <span className="ml-3 text-mission-control-text-dim">Analyzing patterns...</span>
-                </div>
+                </Flex>
               ) : suggestions.length > 0 ? (
                 <div className="space-y-3">
                   {suggestions.map((suggestion, idx) => (
@@ -636,9 +636,9 @@ ${skillData.instructions}
                       role="button"
                       tabIndex={0}
                     >
-                      <div className="flex items-start justify-between">
+                      <Flex align="start" justify="between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
+                          <Flex align="center" gap="2" className="mb-2">
                             {suggestion.skillType === 'code' && <Code size={16} className="text-info" />}
                             {suggestion.skillType === 'research' && <Search size={16} className="text-review" />}
                             {suggestion.skillType === 'content' && <Edit3 size={16} className="text-success" />}
@@ -646,14 +646,14 @@ ${skillData.instructions}
                             <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border text-mission-control-text-dim">
                               {suggestion.category}
                             </span>
-                          </div>
+                          </Flex>
                           <p className="text-sm text-mission-control-text-dim">{suggestion.reason}</p>
                         </div>
-                        <Sparkles 
-                          size={20} 
-                          className="text-[--accent-11] opacity-0 group-hover:opacity-100 transition-opacity ml-3 mt-1" 
+                        <Sparkles
+                          size={20}
+                          className="text-[--accent-11] opacity-0 group-hover:opacity-100 transition-opacity ml-3 mt-1"
                         />
-                      </div>
+                      </Flex>
                     </div>
                   ))}
                 </div>
@@ -664,7 +664,7 @@ ${skillData.instructions}
                 </div>
               )}
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-mission-control-border">
+              <Flex justify="end" gap="3" className="pt-4 border-t border-mission-control-border">
                 <Button
                   onClick={handleClose}
                   variant="soft"
@@ -683,7 +683,7 @@ ${skillData.instructions}
                   {loadingSuggestions ? <Spinner /> : <Sparkles size={16} />}
                   Refresh Suggestions
                 </Button>
-              </div>
+              </Flex>
             </div>
           ) : mode === 'dialogue' ? (
             // Dialogue Mode
@@ -712,27 +712,27 @@ ${skillData.instructions}
 
                 {/* Streaming message */}
                 {isStreaming && streamingContent && (
-                  <div className="flex justify-start">
+                  <Flex justify="start">
                     <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
-                      <div className="flex items-center gap-2 mt-2">
+                      <Flex align="center" gap="2" className="mt-2">
                         <Spinner size="1" />
                         <span className="text-xs text-mission-control-text-dim">Mission Control is typing...</span>
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 )}
 
                 {/* Loading indicator */}
                 {isStreaming && !streamingContent && (
-                  <div className="flex justify-start">
+                  <Flex justify="start">
                     <div className="rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <Spinner size="2" />
                         <span className="text-sm text-mission-control-text-dim">Mission Control is thinking...</span>
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 )}
 
                 <div ref={chatEndRef} />
@@ -742,10 +742,10 @@ ${skillData.instructions}
               {conversationComplete && extractedData.name && (
                 <div className="px-6 pb-4">
                   <div className="bg-[--accent-3] border border-[--accent-6] rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
+                    <Flex align="center" gap="2" className="mb-2">
                       <CheckCircle size={16} className="text-[--accent-11]" />
                       <span className="font-semibold text-sm">Skill Ready!</span>
-                    </div>
+                    </Flex>
                     <div className="space-y-1 text-sm">
                       <div><strong>Name:</strong> {extractedData.name}</div>
                       <div><strong>Category:</strong> {extractedData.category}</div>
@@ -767,7 +767,7 @@ ${skillData.instructions}
 
               {/* Chat Input */}
               <div className="p-6 border-t border-mission-control-border">
-                <div className="flex gap-3">
+                <Flex gap="3">
                   <TextArea
                     ref={inputRef}
                     value={chatInput}
@@ -793,7 +793,7 @@ ${skillData.instructions}
                   >
                     {isStreaming ? <Spinner /> : <Send size={16} />}
                   </IconButton>
-                </div>
+                </Flex>
                 <div className="text-xs text-mission-control-text-dim mt-2">
                   Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Shift+Enter</kbd> for new line
                 </div>
@@ -859,7 +859,7 @@ ${skillData.instructions}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-mission-control-border">
+              <Flex justify="end" gap="3" className="pt-4 border-t border-mission-control-border">
                 <Button
                   type="button"
                   onClick={handleClose}
@@ -879,7 +879,7 @@ ${skillData.instructions}
                   <CheckCircle size={16} />
                   Create Skill & Task
                 </Button>
-              </div>
+              </Flex>
             </form>
           )}
         </div>
