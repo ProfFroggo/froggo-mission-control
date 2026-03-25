@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, FolderPlus, CheckSquare, Square, Loader2 } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, Flex, IconButton } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { createLogger } from '../utils/logger';
 
@@ -81,11 +81,11 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
   return (
     <div className="w-full max-w-md bg-mission-control-surface rounded-lg shadow-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="2">
           <FolderPlus size={20} className="text-mission-control-accent" />
           <h3 className="font-semibold">Bulk Folder Assignment</h3>
-        </div>
+        </Flex>
         <IconButton
           onClick={onClose}
           aria-label="Close"
@@ -96,7 +96,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
         >
           <X size={16} />
         </IconButton>
-      </div>
+      </Flex>
 
       {/* Info */}
       <div className="p-4 bg-info-subtle border-b border-mission-control-border">
@@ -108,9 +108,9 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
       {/* Folder List */}
       <div className="p-4 max-h-96 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center py-8">
+          <Flex align="center" justify="center" className="py-8">
             <Loader2 size={24} className="animate-spin text-mission-control-text-dim" />
-          </div>
+          </Flex>
         ) : folders.length === 0 ? (
           <div className="text-center py-8 text-mission-control-text-dim">
             <p className="mb-2">No folders available</p>
@@ -162,11 +162,11 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between gap-3 p-4 border-t border-mission-control-border bg-mission-control-bg">
+      <Flex align="center" justify="between" gap="3" className="p-4 border-t border-mission-control-border bg-mission-control-bg">
         <div className="text-sm text-mission-control-text-dim">
           {selectedFolders.size} folder{selectedFolders.size !== 1 ? 's' : ''} selected
         </div>
-        <div className="flex gap-2">
+        <Flex gap="2">
           <Button
             onClick={onClose}
             variant="ghost"
@@ -194,8 +194,8 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
               </>
             )}
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
     </div>
   );
 }

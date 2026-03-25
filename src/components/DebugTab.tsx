@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Wifi, WifiOff, RefreshCw, Terminal, Activity, AlertCircle } from 'lucide-react';
-import { Button, IconButton, Box } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Box } from '@radix-ui/themes';
 import { gateway, reconnectGateway } from '../lib/gateway';
 import type { ConnectionState } from '../lib/gateway';
 import { showToast } from './Toast';
@@ -80,32 +80,32 @@ export default function DebugTab() {
       {/* Gateway Connection */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
         <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Activity size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Gateway Connection</h2>
-          </div>
+          </Flex>
           <Button onClick={handleReconnect} size="2" variant="soft">
             <RefreshCw size={14} /> Reconnect
           </Button>
         </div>
         <div className="p-4">
-          <div className="flex items-center gap-3 mb-3">
+          <Flex align="center" gap="3" className="mb-3">
             <StateIcon size={24} className={stateColor[gwState]} />
             <div>
               <div className={`font-medium ${stateColor[gwState]}`}>{gwState.charAt(0).toUpperCase() + gwState.slice(1)}</div>
               <div className="text-sm text-mission-control-text-dim">Session: {gateway.getSessionKey()}</div>
             </div>
-          </div>
+          </Flex>
         </div>
       </div>
 
       {/* Active Sessions */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
         <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Terminal size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Active Sessions ({sessions.length})</h2>
-          </div>
+          </Flex>
           <IconButton onClick={loadData} disabled={loading} size="2" variant="ghost" aria-label="Refresh sessions">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </IconButton>
@@ -131,10 +131,10 @@ export default function DebugTab() {
       {/* Recent Logs */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
         <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <AlertCircle size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Recent Logs</h2>
-          </div>
+          </Flex>
           <Button onClick={refreshLogs} size="2" variant="soft">
             <RefreshCw size={14} /> Load More
           </Button>

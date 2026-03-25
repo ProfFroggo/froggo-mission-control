@@ -160,14 +160,14 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
                             : 'hover:bg-mission-control-border border border-transparent'
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-1">
+                        <Flex align="center" justify="between" gap="1">
                           <span className="text-xs font-medium text-mission-control-text">
                             v{versions.length - idx}
                           </span>
                           <span className={`text-xs font-mono tabular-nums ${diff > 0 ? 'text-success' : diff < 0 ? 'text-error' : 'text-mission-control-text-dim'}`}>
                             {diff > 0 ? `+${diff}` : diff === 0 ? '±0' : String(diff)}w
                           </span>
-                        </div>
+                        </Flex>
                         <div className="text-xs text-mission-control-text-dim mt-0.5">
                           {new Date(v.editedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                           {' '}
@@ -219,7 +219,7 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
                   </Button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
-                  <div className="flex gap-2 mb-3 text-xs text-mission-control-text-dim">
+                  <Flex gap="2" className="mb-3 text-xs text-mission-control-text-dim">
                     <span className="flex items-center gap-1">
                       <span className="w-3 h-3 rounded-sm bg-success-subtle border border-success-border inline-block" />
                       Added
@@ -228,7 +228,7 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
                       <span className="w-3 h-3 rounded-sm bg-error-subtle border border-error-border inline-block" />
                       Removed
                     </span>
-                  </div>
+                  </Flex>
                   <div className="font-mono text-xs rounded border border-mission-control-border overflow-hidden">
                     {(diffLines ?? []).map((line, i) => (
                       <div
