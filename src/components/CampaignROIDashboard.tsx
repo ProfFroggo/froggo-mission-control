@@ -3,7 +3,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useMemo } from 'react';
 import { TrendingUp, DollarSign, Users, MousePointerClick, Eye, Repeat2, BarChart2 } from 'lucide-react';
-import { Heading } from '@radix-ui/themes';
+import { Flex, Heading } from '@radix-ui/themes';
 import type { Campaign, CampaignMetrics } from '../types/campaigns';
 
 interface CampaignROIDashboardProps {
@@ -113,7 +113,7 @@ function AttributionPie({ slices }: { slices: PieSlice[] }) {
   }, [slices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex items-center gap-6">
+    <Flex align="center" gap="6">
       <svg width={SIZE} height={SIZE} style={{ flexShrink: 0 }}>
         {paths.map((p, i) => (
           <path
@@ -128,14 +128,14 @@ function AttributionPie({ slices }: { slices: PieSlice[] }) {
       </svg>
       <div className="flex flex-col gap-1.5">
         {slices.map((sl, i) => (
-          <div key={i} className="flex items-center gap-2">
+          <Flex key={i} align="center" gap="2">
             <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: sl.color }} />
             <span className="text-xs text-mission-control-text">{sl.label}</span>
             <span className="text-xs text-mission-control-text-dim ml-auto pl-4">{sl.pct}%</span>
-          </div>
+          </Flex>
         ))}
       </div>
-    </div>
+    </Flex>
   );
 }
 
@@ -159,7 +159,7 @@ function ComparisonBar({
   return (
     <div className="space-y-1.5">
       <span className="text-xs text-mission-control-text-dim">{label}</span>
-      <div className="flex items-center gap-2">
+      <Flex align="center" gap="2">
         <span className="text-xs text-mission-control-text-dim w-16 text-right flex-shrink-0">Current</span>
         <div className="flex-1 h-2 rounded-full bg-mission-control-border overflow-hidden">
           <div
@@ -170,8 +170,8 @@ function ComparisonBar({
         <span className="text-xs font-medium text-mission-control-text w-16 flex-shrink-0">
           {fmt(current)}
         </span>
-      </div>
-      <div className="flex items-center gap-2">
+      </Flex>
+      <Flex align="center" gap="2">
         <span className="text-xs text-mission-control-text-dim w-16 text-right flex-shrink-0">Previous</span>
         <div className="flex-1 h-2 rounded-full bg-mission-control-border overflow-hidden">
           <div
@@ -182,7 +182,7 @@ function ComparisonBar({
         <span className="text-xs font-medium text-mission-control-text-dim w-16 flex-shrink-0">
           {fmt(previous)}
         </span>
-      </div>
+      </Flex>
     </div>
   );
 }
