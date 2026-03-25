@@ -152,8 +152,8 @@ export default function AnalyticsPanel() {
     <Flex direction="column" height="100%">
       {/* Header + tabs wrapper */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" className="px-6 py-4">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg">
               <BarChart3 size={24} className="text-mission-control-accent" />
             </div>
@@ -161,9 +161,9 @@ export default function AnalyticsPanel() {
               <h1 className="text-xl font-semibold text-mission-control-text">Analytics & Insights</h1>
               <p className="text-sm text-mission-control-text-dim">Comprehensive productivity tracking and performance metrics</p>
             </div>
-          </div>
+          </Flex>
 
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             {/* Time range selector */}
             <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
               {(['7d', '30d', '90d'] as const).map((range) => (
@@ -188,8 +188,8 @@ export default function AnalyticsPanel() {
               <Download size={16} />
               Export
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Tab nav — flush with header border */}
         <TabNav
@@ -215,10 +215,10 @@ export default function AnalyticsPanel() {
             {/* Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
-                <div className="flex items-center justify-between mb-2">
+                <Flex align="center" justify="between" className="mb-2">
                   <Target size={20} className="text-info" />
                   <TrendingUp size={16} className="text-success" />
-                </div>
+                </Flex>
                 <div className="text-3xl font-bold text-info mb-1">
                   {totalCompleted}
                 </div>
@@ -229,10 +229,10 @@ export default function AnalyticsPanel() {
               </div>
 
               <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
-                <div className="flex items-center justify-between mb-2">
+                <Flex align="center" justify="between" className="mb-2">
                   <Users size={20} className="text-review" />
                   <Zap size={16} className="text-warning" />
-                </div>
+                </Flex>
                 <div className="text-3xl font-bold text-review mb-1">
                   {agentUtilization.length}
                 </div>
@@ -243,10 +243,10 @@ export default function AnalyticsPanel() {
               </div>
 
               <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
-                <div className="flex items-center justify-between mb-2">
+                <Flex align="center" justify="between" className="mb-2">
                   <Clock size={20} className="text-warning" />
                   <Activity size={16} className="text-success" />
-                </div>
+                </Flex>
                 <div className="text-3xl font-bold text-warning mb-1">
                   {totalHours.toFixed(0)}h
                 </div>
@@ -257,10 +257,10 @@ export default function AnalyticsPanel() {
               </div>
 
               <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
-                <div className="flex items-center justify-between mb-2">
+                <Flex align="center" justify="between" className="mb-2">
                   <TrendingUp size={20} className="text-success" />
                   <Zap size={16} className="text-info" />
-                </div>
+                </Flex>
                 <div className="text-3xl font-bold text-success mb-1">
                   {avgVelocity > 0 ? '+' : ''}{avgVelocity}
                 </div>
@@ -289,12 +289,12 @@ export default function AnalyticsPanel() {
                 </h3>
                 <div className="space-y-3">
                   {subtaskStats.slice(0, 10).map((stat: any) => (
-                    <div key={stat.taskId} className="flex items-center gap-3">
+                    <Flex key={stat.taskId} align="center" gap="3">
                       <div className="flex-1">
                         <div className="text-sm font-medium mb-1 truncate">
                           {stat.taskTitle}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <Flex align="center" gap="2">
                           <div className="flex-1 bg-mission-control-bg rounded-full h-2">
                             <div
                               className="bg-mission-control-accent rounded-full h-2 transition-all"
@@ -304,12 +304,12 @@ export default function AnalyticsPanel() {
                           <span className="text-xs text-mission-control-text-dim w-16 text-right">
                             {stat.completedSubtasks}/{stat.totalSubtasks}
                           </span>
-                        </div>
+                        </Flex>
                       </div>
                       <div className="text-sm font-medium text-mission-control-accent w-12 text-right">
                         {stat.completionRate}%
                       </div>
-                    </div>
+                    </Flex>
                   ))}
                 </div>
               </div>
@@ -341,7 +341,7 @@ export default function AnalyticsPanel() {
                     key={project.project}
                     className="p-4 bg-mission-control-bg rounded-lg"
                   >
-                    <div className="flex items-center justify-between mb-3">
+                    <Flex align="center" justify="between" className="mb-3">
                       <div>
                         <div className="font-medium">{project.project}</div>
                         <div className="text-secondary">
@@ -350,13 +350,13 @@ export default function AnalyticsPanel() {
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-mission-control-accent">
-                          {project.completedTasks > 0 
+                          {project.completedTasks > 0
                             ? Math.round((project.completedTasks / project.totalTasks) * 100)
                             : 0}%
                         </div>
                         <div className="text-caption">completion</div>
                       </div>
-                    </div>
+                    </Flex>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
