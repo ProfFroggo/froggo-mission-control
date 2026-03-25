@@ -4,7 +4,7 @@
 // Review: 2026-02-17 - suppression retained, patterns are safe
 
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton, TextField, Checkbox } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Checkbox, Flex } from '@radix-ui/themes';
 import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle, ClipboardList, MessageCircle, Gamepad2, Monitor, Bot, Send as SendPlane } from 'lucide-react';
 import { useStore } from '../store/store';
 import { chatApi } from '../lib/api';
@@ -520,7 +520,7 @@ export default function SessionsFilter() {
       <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
+        <Flex align="center" justify="between" className="mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <MessageSquare size={20} />
             Sessions
@@ -533,7 +533,7 @@ export default function SessionsFilter() {
               </span>
             )}
           </h2>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <IconButton
               variant={showSnoozed ? 'ghost' : 'soft'}
               color={showSnoozed ? 'gray' : 'blue'}
@@ -564,14 +564,14 @@ export default function SessionsFilter() {
             >
               <RefreshCw size={16} />
             </IconButton>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Bulk Action Toolbar */}
         {bulkMode && (
           <div className="mb-4 p-3 bg-mission-control-bg border border-mission-control-border rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <Flex align="center" justify="between">
+              <Flex align="center" gap="2">
                 <Button
                   variant="soft"
                   color="gray"
@@ -589,8 +589,8 @@ export default function SessionsFilter() {
                 >
                   Clear Selection
                 </Button>
-              </div>
-              <div className="flex items-center gap-2">
+              </Flex>
+              <Flex align="center" gap="2">
                 <Button
                   variant="soft"
                   color="green"
@@ -631,8 +631,8 @@ export default function SessionsFilter() {
                   <Trash2 size={14} />
                   Delete ({selectedSessions.size})
                 </Button>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
           </div>
         )}
 
@@ -711,12 +711,12 @@ export default function SessionsFilter() {
             {pinnedSessionsList.length > 0 && (
               <div className="bg-gradient-to-b from-mission-control-accent/5 to-transparent">
                 <div className="sticky top-0 z-10 px-4 py-2 bg-mission-control-surface/95 backdrop-blur-sm border-b border-mission-control-accent/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <Flex align="center" gap="2">
                     <Pin size={14} className="text-mission-control-accent fill-current" />
                     <span className="text-xs font-semibold text-mission-control-accent uppercase tracking-wide">
                       Pinned ({pinnedSessionsList.length}/10)
                     </span>
-                  </div>
+                  </Flex>
                   <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                     <span className="hidden sm:inline">Drag to reorder</span>
                     <span className="text-mission-control-accent">⇅</span>
@@ -743,7 +743,7 @@ export default function SessionsFilter() {
                         : 'hover:bg-mission-control-bg/50'
                     }`}
                   >
-                  <div className="flex items-start gap-3">
+                  <Flex align="start" gap="3">
                     {bulkMode && (
                       <div className="pt-1">
                         <Checkbox
@@ -756,7 +756,7 @@ export default function SessionsFilter() {
                     )}
                     <div className="text-2xl">{channelInfo.icon}</div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <Flex align="center" gap="2" className="mb-1">
                         <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-bg0'}`} />
                         <span className="font-medium truncate">{getSessionName(session)}</span>
                         {pinnedSessions.has(session.key) && (
@@ -783,7 +783,7 @@ export default function SessionsFilter() {
                             Snoozed
                           </span>
                         )}
-                      </div>
+                      </Flex>
                       <div className="flex items-center gap-3 text-xs text-mission-control-text-dim flex-wrap">
                         <span className={`px-2 py-0.5 rounded-full ${channelInfo.color} bg-mission-control-border`}>
                           {channelInfo.label}
@@ -873,10 +873,10 @@ export default function SessionsFilter() {
                         <Tag size={14} />
                       </IconButton>
                       <ArrowRight size={16} className="text-mission-control-text-dim mt-2" />
-                          </div>
-                        </div>
-                      </div>
-                    </SortableSession>
+                    </div>
+                  </Flex>
+                  </div>
+                </SortableSession>
                   );
                 })}
               </div>
@@ -918,7 +918,7 @@ export default function SessionsFilter() {
                           : 'hover:bg-mission-control-bg/50'
                       }`}
                     >
-                      <div className="flex items-start gap-3">
+                      <Flex align="start" gap="3">
                         {bulkMode && (
                           <div className="pt-1">
                             <Checkbox
@@ -931,7 +931,7 @@ export default function SessionsFilter() {
                         )}
                         <div className="text-2xl">{channelInfo.icon}</div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <Flex align="center" gap="2" className="mb-1">
                             <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-bg0'}`} />
                             <span className="font-medium truncate">{getSessionName(session)}</span>
                             {isMuted && (
@@ -952,7 +952,7 @@ export default function SessionsFilter() {
                                 Snoozed
                               </span>
                             )}
-                          </div>
+                          </Flex>
                           <div className="flex items-center gap-3 text-xs text-mission-control-text-dim flex-wrap">
                             <span className={`px-2 py-0.5 rounded-full ${channelInfo.color} bg-mission-control-border`}>
                               {channelInfo.label}
@@ -1043,9 +1043,9 @@ export default function SessionsFilter() {
                           </IconButton>
                           <ArrowRight size={16} className="text-mission-control-text-dim mt-2" />
                         </div>
+                      </Flex>
                       </div>
-                    </div>
-                  </DraggableSession>
+                    </DraggableSession>
                 );
               })}
             </div>
