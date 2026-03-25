@@ -800,7 +800,7 @@ export function XEnhancedAnalyticsView() {
                       const allScores = DAYS_SHORT.map((_, dayIdx) => postingHeatmap[dayIdx]?.[slot] ?? 0);
                       const maxScore = Math.max(...allScores, 1);
                       return (
-                        <div key={slot} className="flex items-center gap-1 mb-1">
+                        <Flex key={slot} align="center" gap="1" className="mb-1">
                           <div className="w-24 shrink-0 text-right pr-3 text-xs text-mission-control-text-dim font-medium">
                             {HEATMAP_SLOT_LABELS[slot]}
                           </div>
@@ -821,7 +821,7 @@ export function XEnhancedAnalyticsView() {
                               />
                             );
                           })}
-                        </div>
+                        </Flex>
                       );
                     })}
 
@@ -1090,7 +1090,7 @@ export function XEnhancedAnalyticsView() {
                   
                   {/* Heatmap grid */}
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, _dayIndex) => (
-                    <div key={day} className="flex items-center mb-1">
+                    <Flex key={day} align="center" className="mb-1">
                       <div className="w-10 text-xs text-mission-control-text-dim text-right pr-2">{day}</div>
                       <div className="flex-1 flex gap-0.5">
                         {Array.from({ length: 24 }, (_, hour) => {
@@ -1109,9 +1109,9 @@ export function XEnhancedAnalyticsView() {
                           );
                         })}
                       </div>
-                    </div>
+                    </Flex>
                   ))}
-                  
+
                   {/* Legend */}
                   <Flex align="center" justify="end" gap="2" className="mt-4">
                     <span className="text-xs text-mission-control-text-dim">Low</span>
@@ -1257,13 +1257,15 @@ export function XEnhancedAnalyticsView() {
 
             {/* Error */}
             {predictionError && (
-              <div
-                className="flex items-center gap-2 p-3 rounded-lg text-sm"
+              <Flex
+                align="center"
+                gap="2"
+                className="p-3 rounded-lg text-sm"
                 style={{ background: 'var(--color-error-subtle)', color: 'var(--color-error)' }}
               >
                 <AlertCircle size={16} />
                 {predictionError}
-              </div>
+              </Flex>
             )}
 
             {/* Prediction results */}
@@ -1304,7 +1306,7 @@ export function XEnhancedAnalyticsView() {
                   <div className="text-sm font-medium text-mission-control-text mb-3">Content signals</div>
                   <div className="space-y-2">
                     {prediction.contentSignals.map(signal => (
-                      <div key={signal.label} className="flex items-center gap-3">
+                      <Flex key={signal.label} align="center" gap="3">
                         {signal.verdict === 'good' ? (
                           <CheckCircle2 size={14} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
                         ) : signal.verdict === 'improve' ? (
@@ -1327,7 +1329,7 @@ export function XEnhancedAnalyticsView() {
                           />
                         </div>
                         <span className="text-xs text-mission-control-text-dim w-6 text-right">{signal.score}</span>
-                      </div>
+                      </Flex>
                     ))}
                   </div>
                 </div>

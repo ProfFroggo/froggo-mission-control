@@ -187,11 +187,11 @@ export default function XDraftComposer() {
   return (
     <Flex direction="column" height="100%" p="5" className="bg-mission-control-bg">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="mb-2">
+          <Flex align="center" gap="2">
             <FileText className="w-5 h-5 text-info" />
             <h3 className="text-lg font-semibold text-mission-control-text">Create Draft</h3>
-          </div>
+          </Flex>
             <Button
               onClick={() => setShowPreview(!showPreview)}
               variant="soft"
@@ -201,7 +201,7 @@ export default function XDraftComposer() {
               <Eye className="w-4 h-4" />
               {showPreview ? 'Hide' : 'Show'} Preview
             </Button>
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text-dim">
           Turn approved content plan into final draft with A/B versions.
         </p>
@@ -246,7 +246,7 @@ export default function XDraftComposer() {
                 <span className="block text-sm font-medium text-mission-control-text mb-2">
                   Version <span className="text-error">*</span>
                 </span>
-                <div className="flex gap-2" role="radiogroup" aria-label="Version selection">
+                <Flex gap="2" role="radiogroup" aria-label="Version selection">
                   {['A', 'B', 'C'].map((v) => (
                     <Button
                       key={v}
@@ -259,12 +259,12 @@ export default function XDraftComposer() {
                       Version {v}
                     </Button>
                   ))}
-                </div>
+                </Flex>
               </div>
 
             {/* Tweet Editor */}
               <div>
-                <div className="flex items-center justify-between mb-3">
+                <Flex align="center" justify="between" className="mb-3">
                   <label htmlFor="tweet-content" className="text-sm font-medium text-mission-control-text">
                     Tweets <span className="text-error">*</span>
                   </label>
@@ -280,12 +280,12 @@ export default function XDraftComposer() {
                       Add Tweet
                     </Button>
                   )}
-                </div>
+                </Flex>
 
                 <div className="space-y-4">
                   {tweets.map((tweet, index) => (
                     <div key={`${tweet.slice(0, 20)}-${index}`} className="relative">
-                      <div className="flex items-start gap-2">
+                      <Flex align="start" gap="2">
                         <div className="flex-1">
                           <div className="relative">
                             <TextArea
@@ -317,7 +317,7 @@ export default function XDraftComposer() {
                             <Trash2 className="w-4 h-4" />
                           </IconButton>
                         )}
-                      </div>
+                      </Flex>
                     </div>
                   ))}
                 </div>
@@ -330,15 +330,15 @@ export default function XDraftComposer() {
                 <div className="space-y-3">
                   {tweets.filter(t => t.trim()).map((tweet, index) => (
                     <div key={`${tweet.slice(0, 20)}-${index}`} className="bg-mission-control-bg-alt rounded-lg p-4 border border-mission-control-border">
-                      <div className="flex items-start gap-3">
+                      <Flex align="start" gap="3">
                         <div className="w-10 h-10 bg-mission-control-accent rounded-full flex items-center justify-center flex-shrink-0">
                           <span className="text-mission-control-text font-semibold">K</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <Flex align="center" gap="2" className="mb-1">
                             <span className="font-semibold text-mission-control-text">Your Name</span>
                             <span className="text-mission-control-text-dim text-sm">@you • now</span>
-                          </div>
+                          </Flex>
                           <p className="text-mission-control-text whitespace-pre-wrap break-words">{tweet}</p>
                           {index < tweets.filter(t => t.trim()).length - 1 && (
                             <div className="mt-2 text-info text-sm">
@@ -346,7 +346,7 @@ export default function XDraftComposer() {
                             </div>
                           )}
                         </div>
-                      </div>
+                      </Flex>
                     </div>
                   ))}
                 </div>
@@ -365,7 +365,7 @@ export default function XDraftComposer() {
 
           {/* Schedule Button */}
           <div className="mt-6 pt-6 border-t border-mission-control-border">
-            <div className="flex gap-3 items-end">
+            <Flex gap="3" align="end">
               <div className="flex-1">
                 <label className="block text-sm text-mission-control-text-dim mb-2">Schedule for later</label>
                 <input
@@ -385,7 +385,7 @@ export default function XDraftComposer() {
                 {scheduling ? <Spinner size="1" /> : null}
                 {scheduling ? 'Scheduling...' : 'Schedule'}
               </Button>
-            </div>
+            </Flex>
           </div>
 
           {/* Submit Button */}
