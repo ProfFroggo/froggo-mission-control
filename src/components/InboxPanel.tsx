@@ -1325,7 +1325,7 @@ export default function InboxPanel() {
                   })()}
                   
                   {/* Header */}
-                  <div className="p-4 flex items-start justify-between">
+                  <Flex align="start" justify="between" className="p-4">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       {/* Selection checkbox */}
                       <Checkbox
@@ -1430,7 +1430,7 @@ export default function InboxPanel() {
                         {isExpanded ? <ChevronUp size={16} className="flex-shrink-0" /> : <ChevronDown size={16} className="flex-shrink-0" />}
                       </IconButton>
                     </Flex>
-                  </div>
+                  </Flex>
 
                   {/* Expanded Content */}
                   {isExpanded && (

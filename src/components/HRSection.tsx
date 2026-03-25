@@ -118,7 +118,7 @@ export default function HRSection() {
       <div className="mb-8">
         <div className="rounded-lg border border-success-border bg-gradient-to-br from-teal-500/5 to-transparent overflow-hidden">
           {/* HR Header */}
-          <div className="p-4 flex items-center gap-3 border-b border-success-border">
+          <Flex align="center" gap="3" className="p-4 border-b border-success-border">
             <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-2xl ring-2 ring-teal-500/30">
               🎓
             </div>
@@ -135,7 +135,7 @@ export default function HRSection() {
             </div>
             {/* Indicator — top right, clears when relevant modal opened */}
             {indicatorEl}
-          </div>
+          </Flex>
 
           {/* Quick Stats */}
           {teamHealth && (
@@ -171,7 +171,7 @@ export default function HRSection() {
           )}
 
           {/* Action Buttons */}
-          <div className="p-3 flex gap-2">
+          <Flex gap="2" className="p-3">
             <Button
               onClick={() => setShowCreate(true)}
               size="2"
@@ -203,7 +203,7 @@ export default function HRSection() {
             >
               <Award size={16} /> Skills
             </Button>
-          </div>
+          </Flex>
 
           {/* Skill gaps alert */}
           {teamHealth && teamHealth.agentsNeedingTraining.length > 0 && (

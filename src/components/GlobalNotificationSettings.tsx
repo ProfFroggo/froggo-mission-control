@@ -108,10 +108,10 @@ export default function GlobalNotificationSettings() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center gap-3">
+      <Flex align="center" justify="center" gap="3" className="p-8">
         <Spinner size="2" />
         <span className="text-sm text-mission-control-text-dim">Loading global notification settings...</span>
-      </div>
+      </Flex>
     );
   }
 

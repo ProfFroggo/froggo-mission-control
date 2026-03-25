@@ -243,7 +243,7 @@ export function XAnalyticsView() {
                   </div>
                 ) : (
                   topContent.map((post) => (
-                    <div key={post.id} className="p-4 flex items-start gap-3">
+                    <Flex key={post.id} align="start" gap="3" className="p-4">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-mission-control-text line-clamp-2">
                           {post.content.slice(0, 120)}{post.content.length > 120 ? '...' : ''}
@@ -259,7 +259,7 @@ export function XAnalyticsView() {
                       }`}>
                         {post.status}
                       </span>
-                    </div>
+                    </Flex>
                   ))
                 )}
               </div>
