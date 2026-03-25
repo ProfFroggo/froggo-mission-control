@@ -126,27 +126,27 @@ const ActivityFeed = memo(function ActivityFeed() {
   return (
     <Flex direction="column" height="100%">
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="2">
           <MessageSquare size={16} />
           <span className="font-medium">Activity Feed</span>
           <span className="text-xs text-mission-control-text-dim">
             {activities.length} sessions
           </span>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <IconButton
             size="2"
             variant="ghost"
-           
+
             onClick={fetchSessions}
             disabled={loading || !connected}
             title="Refresh"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Filters */}
       {channels.length > 1 && (
@@ -183,9 +183,9 @@ const ActivityFeed = memo(function ActivityFeed() {
       <div className="flex-1 overflow-y-auto">
         {!connected ? (
           <div className="p-8 text-center text-mission-control-text-dim">
-            <div className="flex justify-center mb-2">
+            <Flex justify="center" className="mb-2">
               <WifiOff size={28} className="text-mission-control-text-dim" />
-            </div>
+            </Flex>
             <p>Connecting to gateway...</p>
           </div>
         ) : loading && activities.length === 0 ? (
@@ -194,9 +194,9 @@ const ActivityFeed = memo(function ActivityFeed() {
           </div>
         ) : filteredActivities.length === 0 ? (
           <div className="p-8 text-center text-mission-control-text-dim">
-            <div className="flex justify-center mb-2">
+            <Flex justify="center" className="mb-2">
               <Inbox size={28} className="text-mission-control-text-dim" />
-            </div>
+            </Flex>
             <p>{filter ? `No ${filter} activity` : 'No activity yet'}</p>
           </div>
         ) : (
@@ -210,17 +210,17 @@ const ActivityFeed = memo(function ActivityFeed() {
                     activity.unread ? 'bg-mission-control-accent/5' : ''
                   }`}
                 >
-                  <div className="flex items-start gap-3">
+                  <Flex align="start" gap="3">
                     {/* Channel Badge */}
                     {(() => { const ChannelIcon = info.icon; return (
-                    <div className={`px-2 py-1 text-xs rounded-lg border flex items-center ${info.color}`}>
+                    <Flex align="center" className={`px-2 py-1 text-xs rounded-lg border ${info.color}`}>
                       <ChannelIcon size={12} />
-                    </div>
+                    </Flex>
                     ); })()}
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <Flex align="center" gap="2" className="mb-0.5">
                         <span className="font-medium text-sm truncate">
                           {activity.participant || info.label}
                         </span>
@@ -230,7 +230,7 @@ const ActivityFeed = memo(function ActivityFeed() {
                         {activity.unread && (
                           <span className="w-2 h-2 bg-mission-control-accent rounded-full" />
                         )}
-                      </div>
+                      </Flex>
                       {activity.lastMessage && (
                         <p className="text-xs text-mission-control-text-dim truncate flex items-center gap-1">
                           {activity.lastMessageRole === 'assistant' && <Bot size={10} className="text-mission-control-text-dim flex-shrink-0" />}
@@ -243,7 +243,7 @@ const ActivityFeed = memo(function ActivityFeed() {
                     <span className="text-[10px] text-mission-control-text-dim whitespace-nowrap">
                       {formatTime(activity.timestamp)}
                     </span>
-                  </div>
+                  </Flex>
                 </div>
               );
             })}
