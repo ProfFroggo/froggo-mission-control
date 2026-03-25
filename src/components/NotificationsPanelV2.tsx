@@ -426,11 +426,11 @@ export default function NotificationsPanelV2() {
     return (
       <div className="h-full flex flex-col">
         <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-          <div className="flex items-center gap-3">
+          <Flex align="center" gap="3">
             <IconButton
               size="2"
               variant="ghost"
-             
+
               onClick={() => setShowSettings(false)}
             >
               <X size={20} />
@@ -439,20 +439,20 @@ export default function NotificationsPanelV2() {
               <h1 className="text-lg font-semibold text-mission-control-text">Notification Settings</h1>
               <p className="text-sm text-mission-control-text-dim">Configure notification preferences</p>
             </div>
-          </div>
+          </Flex>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Browser push opt-in */}
           <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
+            <Flex align="center" justify="between" className="mb-1">
+              <Flex align="center" gap="2">
                 {pushEnabled && pushPermission === 'granted'
                   ? <Bell size={16} className="text-mission-control-accent" />
                   : <BellOff size={16} className="text-mission-control-text-dim" />
                 }
                 <span className="font-medium text-sm">Browser notifications</span>
-              </div>
+              </Flex>
               {pushPermission === 'unsupported' ? (
                 <span className="text-xs text-mission-control-text-dim">Not supported</span>
               ) : pushEnabled && pushPermission === 'granted' ? (
@@ -473,7 +473,7 @@ export default function NotificationsPanelV2() {
                   Enable browser notifications
                 </Button>
               )}
-            </div>
+            </Flex>
             <p className="text-xs text-mission-control-text-dim pl-6">
               {pushEnabled && pushPermission === 'granted'
                 ? 'You will receive browser push notifications for new events.'
@@ -483,16 +483,16 @@ export default function NotificationsPanelV2() {
 
           {/* Sound toggle */}
           <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
+            <Flex align="center" justify="between" className="mb-1">
+              <Flex align="center" gap="2">
                 {soundEnabled
                   ? <Volume2 size={16} className="text-mission-control-accent" />
                   : <VolumeX size={16} className="text-mission-control-text-dim" />
                 }
                 <span className="font-medium text-sm">Notification sounds</span>
-              </div>
+              </Flex>
               <Toggle checked={soundEnabled} onChange={saveSoundPref} />
-            </div>
+            </Flex>
             <p className="text-xs text-mission-control-text-dim pl-6">
               Play a subtle beep when new notifications arrive.
             </p>
@@ -505,7 +505,7 @@ export default function NotificationsPanelV2() {
               const Icon = config?.icon || Bell;
               return (
                 <div key={pref.type} className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-                  <div className="flex items-start gap-3">
+                  <Flex align="start" gap="3">
                     <IconBadge icon={Icon} size={18} color={config?.color || 'bg-mission-control-bg0/10 text-mission-control-text-dim'} />
                     <div className="flex-1">
                       <div className="font-medium mb-1">{config?.label || pref.type}</div>
@@ -533,7 +533,7 @@ export default function NotificationsPanelV2() {
                           />
                           <span>Play sound</span>
                         </label>
-                        <div className="flex items-center gap-2 text-sm">
+                        <Flex align="center" gap="2" className="text-sm">
                           <span>Min priority:</span>
                           <Select.Root
                             value={pref.min_priority}
@@ -549,10 +549,10 @@ export default function NotificationsPanelV2() {
                               <Select.Item value="urgent">Urgent</Select.Item>
                             </Select.Content>
                           </Select.Root>
-                        </div>
+                        </Flex>
                       </div>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               );
             })}
@@ -568,8 +568,8 @@ export default function NotificationsPanelV2() {
     <Flex direction="column" height="100%">
       {/* Header */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" className="mb-4">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg relative">
               <Bell size={24} className="text-mission-control-accent" />
               {stats.unread > 0 && (
@@ -585,7 +585,7 @@ export default function NotificationsPanelV2() {
                 {stats.urgent > 0 && ` • ${stats.urgent} urgent`}
               </p>
             </div>
-          </div>
+          </Flex>
 
           <div className="flex gap-2 items-center flex-wrap">
             {/* Sound quick toggle */}
@@ -657,7 +657,7 @@ export default function NotificationsPanelV2() {
               <Settings size={16} />
             </IconButton>
           </div>
-        </div>
+        </Flex>
 
         {/* Filter tabs */}
         <div className="flex items-center border-b border-mission-control-border -mb-px">
@@ -746,7 +746,7 @@ export default function NotificationsPanelV2() {
                                 : 'bg-mission-control-surface border-mission-control-border shadow-card hover:shadow-card-hover'
                             }`}
                           >
-                            <div className="flex items-start gap-3">
+                            <Flex align="start" gap="3">
                               <IconBadge icon={Icon} size={16} color={config?.color || 'bg-mission-control-bg0/10 text-mission-control-text-dim'} />
 
                               <div className="flex-1 min-w-0">
@@ -813,7 +813,7 @@ export default function NotificationsPanelV2() {
 
                                 {/* Inline quick-actions (always visible for tasks / approvals) */}
                                 {(isTask || isApproval) && !notif.read && (
-                                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-mission-control-border/30">
+                                  <Flex align="center" gap="2" className="mt-3 pt-3 border-t border-mission-control-border/30">
                                     {isTask && (
                                       <Button
                                         size="1"
@@ -885,7 +885,7 @@ export default function NotificationsPanelV2() {
                                         </Button>
                                       </>
                                     )}
-                                  </div>
+                                  </Flex>
                                 )}
                               </div>
 
@@ -895,7 +895,7 @@ export default function NotificationsPanelV2() {
                                 onDismiss={handleDismiss}
                                 onMarkRead={handleMarkRead}
                               />
-                            </div>
+                            </Flex>
                           </div>
                         );
                       })}
