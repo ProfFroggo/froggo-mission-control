@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { Star, Plus, Edit, Trash2, Save, X, CheckCircle, Bot, Briefcase, Target, Users, Heart, ShoppingBag } from 'lucide-react';
-import { Button, IconButton, Select, TextField, TextArea, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextField, TextArea, Spinner, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { settingsApi } from '../lib/api';
@@ -192,7 +192,7 @@ export default function VIPSettingsPanel() {
   return (
     <div className="h-full flex flex-col bg-mission-control-bg">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-mission-control-border/50">
+      <Flex align="center" justify="between" className="p-6 border-b border-mission-control-border/50">
         <div>
           <h2 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
             <Star className="text-warning" size={24} />
@@ -211,7 +211,7 @@ export default function VIPSettingsPanel() {
           <Plus size={16} />
           Add VIP
         </Button>
-      </div>
+      </Flex>
 
       {/* Category Filter */}
       <div className="flex gap-2 px-6 py-3 border-b border-mission-control-border/50 overflow-x-auto">
@@ -239,9 +239,9 @@ export default function VIPSettingsPanel() {
       {/* VIP List */}
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         {loading ? (
-          <div className="flex items-center justify-center py-12 gap-2 text-mission-control-text-dim">
+          <Flex align="center" justify="center" gap="2" className="py-12 text-mission-control-text-dim">
             <Spinner size="2" /> Loading...
-          </div>
+          </Flex>
         ) : vips.length === 0 ? (
           <div className="text-center text-mission-control-text-dim py-12">
             <Star size={48} className="mx-auto mb-4 opacity-20" />
@@ -310,7 +310,7 @@ export default function VIPSettingsPanel() {
                         placeholder="Why is this person a VIP?"
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <Flex gap="2">
                       <Button
                         onClick={() => handleUpdate(vip.id)}
                         variant="solid"
@@ -329,13 +329,13 @@ export default function VIPSettingsPanel() {
                         <X size={14} />
                         Cancel
                       </Button>
-                    </div>
+                    </Flex>
                   </div>
                 ) : (
                   // View Mode
                   <div>
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
+                    <Flex align="start" justify="between" className="mb-2">
+                      <Flex align="center" gap="2">
                         <Star className="text-warning" size={20} />
                         <span className="text-lg font-semibold text-mission-control-text">{vip.label}</span>
                         <span className={`text-sm inline-flex items-center gap-1 ${catInfo.color}`}>
@@ -346,8 +346,8 @@ export default function VIPSettingsPanel() {
                             <Bot size={10} /> Auto
                           </span>
                         )}
-                      </div>
-                      <div className="flex gap-1">
+                      </Flex>
+                      <Flex gap="1">
                         <IconButton
                           onClick={() => startEdit(vip)}
                           variant="ghost"
@@ -366,14 +366,14 @@ export default function VIPSettingsPanel() {
                         >
                           <Trash2 size={16} />
                         </IconButton>
-                      </div>
-                    </div>
+                      </Flex>
+                    </Flex>
 
                     <div className="space-y-1 text-sm">
-                      <div className="flex items-center gap-2 text-mission-control-text-dim">
+                      <Flex align="center" gap="2" className="text-mission-control-text-dim">
                         <span className="font-mono text-info">{vip.identifier}</span>
                         <span className="text-mission-control-text-dim">({vip.identifier_type})</span>
-                      </div>
+                      </Flex>
                       <div className="text-mission-control-text-dim">
                         Priority boost: <span className="text-warning font-semibold">+{vip.priority_boost}</span>
                       </div>
@@ -399,7 +399,7 @@ export default function VIPSettingsPanel() {
       {showAddForm && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
+            <Flex align="center" justify="between" className="mb-4">
               <h3 className="text-lg font-semibold text-mission-control-text">Add VIP Sender</h3>
               <IconButton
                 type="button"
@@ -410,7 +410,7 @@ export default function VIPSettingsPanel() {
               >
                 <X size={20} />
               </IconButton>
-            </div>
+            </Flex>
 
             <div className="space-y-4">
               <div>
@@ -484,11 +484,11 @@ export default function VIPSettingsPanel() {
                   onChange={e => setFormData({ ...formData, boost: parseInt(e.target.value) })}
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
+                <Flex justify="between" className="text-xs text-mission-control-text-dim mt-1">
                   <span>Low</span>
                   <span>Medium</span>
                   <span>High</span>
-                </div>
+                </Flex>
               </div>
 
               <div>
@@ -504,7 +504,7 @@ export default function VIPSettingsPanel() {
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <Flex gap="3" className="pt-4">
                 <Button
                   onClick={handleAdd}
                   variant="solid"
@@ -523,7 +523,7 @@ export default function VIPSettingsPanel() {
                 >
                   Cancel
                 </Button>
-              </div>
+              </Flex>
             </div>
           </div>
         </div>
