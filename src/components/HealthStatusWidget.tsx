@@ -143,7 +143,7 @@ export default function HealthStatusWidget() {
         <div className="space-y-2 pt-2 border-t border-mission-control-border">
           {/* Watcher status */}
           <Flex align="center" justify="between" className="text-xs">
-            <span className="text-mission-control-text-dim">Task Watcher</span>
+            <span className="text-mission-control-text-dim">Task Processing</span>
             <span className={status.watcherRunning ? 'text-success' : 'text-error'}>
               {status.watcherRunning ? 'Running' : 'Stopped'}
             </span>
@@ -151,7 +151,7 @@ export default function HealthStatusWidget() {
 
           {/* Kill switch */}
           <Flex align="center" justify="between" className="text-xs">
-            <span className="text-mission-control-text-dim">Safety Lock</span>
+            <span className="text-mission-control-text-dim">Safety Controls</span>
             <span className={status.killSwitchOn ? 'text-error' : 'text-success'}>
               {status.killSwitchOn ? 'Engaged' : 'Normal'}
             </span>

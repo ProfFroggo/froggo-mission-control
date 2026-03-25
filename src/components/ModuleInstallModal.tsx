@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, IconButton, Box, Flex } from '@radix-ui/themes';
-import { X, CheckCircle, XCircle, Loader2, Download, Key, Package, Bot } from 'lucide-react';
+import { X, CheckCircle, XCircle, Loader2, Download, Key, Package, Bot, Puzzle } from 'lucide-react';
 import { moduleApi, catalogApi } from '../lib/api';
 import type { CatalogModule } from '../types/catalog';
 
@@ -108,7 +108,7 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
         {/* Header */}
         <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
           <Flex align="center" justify="center" className="w-10 h-10 rounded-lg bg-mission-control-accent/10 text-xl flex-shrink-0">
-            {module.icon || '🧩'}
+            {module.icon || <Puzzle size={18} />}
           </Flex>
           <Box className="flex-1 min-w-0">
             <h2 className="font-bold">Install {module.name}</h2>

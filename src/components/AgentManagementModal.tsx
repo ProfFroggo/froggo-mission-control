@@ -685,7 +685,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
   if (!isOpen) return null;
 
   const TABS: { id: Tab; label: string; dirty: boolean }[] = [
-    { id: 'soul',        label: 'Soul',        dirty: soulDirty },
+    { id: 'soul',        label: 'Personality', dirty: soulDirty },
     { id: 'model',       label: 'Model',       dirty: modelDirty },
     { id: 'skills',      label: 'Skills',      dirty: skillsDirty },
     { id: 'tools',       label: 'Tools',       dirty: toolsDirty || mcpDirty },

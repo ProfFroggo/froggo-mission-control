@@ -155,8 +155,7 @@ function PostCard({ post, onClick, onDragStart }: PostCardProps) {
       }}
     >
       <p
-        className="text-xs leading-relaxed mb-1.5 line-clamp-3"
-        style={{ color: 'var(--mission-control-text)' }}
+        className="text-xs leading-relaxed mb-1.5 line-clamp-3 text-mission-control-text"
       >
         {preview}
       </p>
@@ -164,7 +163,7 @@ function PostCard({ post, onClick, onDragStart }: PostCardProps) {
         <span className="text-xs" style={{ color: colors.text }}>
           {statusLabel(post.status)}
         </span>
-        <span className="text-xs" style={{ color: 'var(--mission-control-text-dim)' }}>
+        <span className="text-xs text-mission-control-text-dim">
           {formatTime(post.scheduledAt)}
         </span>
       </Flex>
@@ -207,8 +206,8 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
           style={{ borderColor: 'var(--mission-control-border)' }}
         >
           <Flex align="center" gap="2">
-            <FileText size={16} style={{ color: 'var(--color-info)' }} />
-            <span className="text-sm font-semibold" style={{ color: 'var(--mission-control-text)' }}>
+            <FileText size={16} className="text-info" />
+            <span className="text-sm font-semibold text-mission-control-text">
               Post Detail
             </span>
           </Flex>
@@ -231,7 +230,7 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
             >
               {statusLabel(post.status)}
             </span>
-            <span className="text-xs" style={{ color: 'var(--mission-control-text-dim)' }}>
+            <span className="text-xs text-mission-control-text-dim">
               {new Date(post.scheduledAt).toLocaleString([], {
                 weekday: 'short',
                 month: 'short',
@@ -244,7 +243,7 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
 
           {/* Content */}
           <div>
-            <div className="text-xs font-medium mb-1.5" style={{ color: 'var(--mission-control-text-dim)' }}>
+            <div className="text-xs font-medium mb-1.5 text-mission-control-text-dim">
               Content
             </div>
             <p
@@ -270,7 +269,7 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
           </div>
 
           {/* Meta */}
-          <div className="text-xs space-y-1" style={{ color: 'var(--mission-control-text-dim)' }}>
+          <div className="text-xs space-y-1 text-mission-control-text-dim">
             <div>Platform: {post.platform}</div>
             {post.agentId && <div>Agent: {post.agentId}</div>}
             <div>Created: {new Date(post.createdAt).toLocaleString()}</div>
@@ -279,7 +278,7 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
           {/* Status actions */}
           {post.status !== 'posted' && (
             <div>
-              <div className="text-xs font-medium mb-2" style={{ color: 'var(--mission-control-text-dim)' }}>
+              <div className="text-xs font-medium mb-2 text-mission-control-text-dim">
                 Change Status
               </div>
               <div className="flex flex-wrap gap-2">
@@ -372,8 +371,8 @@ function NewPostModal({ defaultDate, onSubmit, onClose }: NewPostModalProps) {
           style={{ borderColor: 'var(--mission-control-border)' }}
         >
           <Flex align="center" gap="2">
-            <Plus size={16} style={{ color: 'var(--color-info)' }} />
-            <span className="text-sm font-semibold" style={{ color: 'var(--mission-control-text)' }}>
+            <Plus size={16} className="text-info" />
+            <span className="text-sm font-semibold text-mission-control-text">
               Schedule New Post
             </span>
           </Flex>
@@ -384,7 +383,7 @@ function NewPostModal({ defaultDate, onSubmit, onClose }: NewPostModalProps) {
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--mission-control-text-dim)' }}>
+            <label className="block text-xs font-medium mb-1.5 text-mission-control-text-dim">
               Post Content
             </label>
             <TextArea
@@ -405,7 +404,7 @@ function NewPostModal({ defaultDate, onSubmit, onClose }: NewPostModalProps) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--mission-control-text-dim)' }}>
+            <label className="block text-xs font-medium mb-1.5 text-mission-control-text-dim">
               Scheduled Time
             </label>
             <input
@@ -592,11 +591,11 @@ export function XContentCalendar() {
         style={{ borderColor: 'var(--mission-control-border)' }}
       >
         <Flex align="center" gap="3">
-          <Calendar size={18} style={{ color: 'var(--color-info)' }} />
-          <span className="text-sm font-semibold" style={{ color: 'var(--mission-control-text)' }}>
+          <Calendar size={18} className="text-info" />
+          <span className="text-sm font-semibold text-mission-control-text">
             Content Calendar
           </span>
-          <span className="text-sm" style={{ color: 'var(--mission-control-text-dim)' }}>
+          <span className="text-sm text-mission-control-text-dim">
             {weekLabel()}
           </span>
         </Flex>
@@ -719,8 +718,7 @@ export function XContentCalendar() {
 
                   {dayPosts.length === 0 && !loading && (
                     <div
-                      className="text-xs text-center py-4 opacity-40"
-                      style={{ color: 'var(--mission-control-text-dim)' }}
+                      className="text-xs text-center py-4 opacity-40 text-mission-control-text-dim"
                     >
                       No posts
                     </div>

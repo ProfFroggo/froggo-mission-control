@@ -1155,7 +1155,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             { key: 'tools' as const, icon: Wrench, label: 'Tools' },
             { key: 'permissions' as const, icon: Shield, label: 'Permissions' },
             { key: 'rules' as const, icon: FileText, label: 'Rules' },
-            { key: 'soul' as const, icon: CalendarDays, label: 'Soul' },
+            { key: 'soul' as const, icon: CalendarDays, label: 'Personality' },
             { key: 'chat' as const, icon: MessageSquare, label: 'Chat' },
           ]).map((tab) => (
             <button
@@ -1825,7 +1825,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   <div>
                     <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-1 flex items-center gap-2">
                       <CalendarDays size={16} />
-                      Soul File Editor
+                      Personality
                     </h3>
                     <p className="text-xs text-mission-control-text-dim">
                       Defines {agent.name}&apos;s personality, responsibilities, and behavior rules.

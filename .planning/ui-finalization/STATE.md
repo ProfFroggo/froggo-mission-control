@@ -5,16 +5,16 @@
 See: .planning/ui-finalization/ROADMAP.md (updated 2026-03-25)
 
 **Core value:** Zero AI-slop tells, 100% Radix Themes 3 patterns, WCAG AA — production-grade UI
-**Current focus:** Phase 3 — Navigation & IA Architecture
+**Current focus:** Phase 5 — Icon, Media & UX Copy Accuracy
 
 ## Current Position
 
-Phase: 3 of 8 (Navigation & IA Architecture)
+Phase: 5 of 8 (Icon, Media & UX Copy Accuracy)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-03-25 — Phase 2 complete (3/3 plans, commit 183b0a87)
+Last activity: 2026-03-25 — Phase 4 complete (commit 7c469d6b)
 
-Progress: ███░░░░░░░ 9/42 plans (21%)
+Progress: ████░░░░░░ 15/42 plans (36%)
 
 ## Performance Metrics
 
@@ -29,6 +29,8 @@ Progress: ███░░░░░░░ 9/42 plans (21%)
 |-------|-------|-------|----------|
 | 1. Design Token Foundation | 6/6 | ~2h | ~20min |
 | 2. Anti-Pattern Elimination | 3/3 | ~1h | ~20min |
+| 3. Navigation & IA | 6/6 | ~2h | ~20min |
+| 4. Radix Normalization | 5/5 | ~30min | ~6min |
 
 ## Accumulated Context
 

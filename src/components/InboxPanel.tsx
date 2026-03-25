@@ -185,7 +185,7 @@ export default function InboxPanel() {
             .map((t: any) => ({
               id: `task-review-${t.id}`, // Prefix to distinguish from inbox items
               type: 'task' as const,
-              title: `✅ Review: ${t.title}`,
+              title: `Review: ${t.title}`,
               content: t.description || t.last_agent_update || 'Task completed, ready for review',
               context: `Project: ${t.project || 'General'}`,
               status: 'pending', // Review inbox item status (not task status)

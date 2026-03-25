@@ -320,8 +320,7 @@ function StatCard({ label, value, icon: Icon, color, pulse, highlight, onClick, 
     <Button
       onClick={onClick}
       variant="ghost"
-      style={{ flex: 1, minWidth: 0, padding: '1rem', textAlign: 'left', height: 'auto', display: 'block' }}
-      className={`backdrop-blur-xl rounded-lg border transition-all group ${
+      className={`flex-1 min-w-0 p-4 text-left h-auto block rounded-lg border transition-all group ${
         highlight && value > 0
           ? 'bg-warning-subtle border-warning-border hover:border-warning shadow-lg'
           : 'bg-mission-control-surface/80 border-mission-control-border hover:border-mission-control-accent/50'
@@ -1507,13 +1506,13 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
         {sysStatus && (
           <>
             <Flex align="center" justify="between" className="text-xs">
-              <span className="text-mission-control-text-dim">Task Watcher</span>
+              <span className="text-mission-control-text-dim">Task Processing</span>
               <span className={sysStatus.watcherRunning ? 'text-success' : 'text-error'}>
                 {sysStatus.watcherRunning ? 'Running' : 'Stopped'}
               </span>
             </Flex>
             <Flex align="center" justify="between" className="text-xs">
-              <span className="text-mission-control-text-dim">Safety Lock</span>
+              <span className="text-mission-control-text-dim">Safety Controls</span>
               <span className={sysStatus.killSwitchOn ? 'text-error' : 'text-success'}>
                 {sysStatus.killSwitchOn ? 'Engaged' : 'Normal'}
               </span>

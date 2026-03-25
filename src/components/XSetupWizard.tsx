@@ -1,6 +1,6 @@
 // Setup wizard for Social Media module — verifies X/Twitter API, wires agents, syncs data
 import { useState, useEffect, useCallback } from 'react';
-import { Twitter, Key, CheckCircle, AlertTriangle, ArrowRight, ExternalLink, RefreshCw, Eye, EyeOff, XCircle, User, BarChart2, Bot } from 'lucide-react';
+import { Twitter as XIcon, Key, CheckCircle, AlertTriangle, ArrowRight, ExternalLink, RefreshCw, Eye, EyeOff, XCircle, User, BarChart2, Bot, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button, Spinner, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
@@ -51,6 +51,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
   const [loading, setLoading] = useState(true);
   const [values, setValues] = useState<Record<string, string>>({});
   const [showKeys, setShowKeys] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Verify state
@@ -73,7 +74,8 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
     })();
   }, []);
 
-  const requiredFilled = TWITTER_KEYS.filter(k => k.required).every(k => values[k.id]?.trim());
+  const ESSENTIAL_KEYS = ['twitter_api_key', 'twitter_api_secret', 'twitter_bearer_token'] as const;
+  const requiredFilled = ESSENTIAL_KEYS.every(id => values[id]?.trim());
   const anyFilled = TWITTER_KEYS.some(k => values[k.id]?.trim());
 
   const handleSaveKeys = async () => {
@@ -159,8 +161,8 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
       <div className="max-w-lg w-full space-y-6">
         {/* Header */}
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-info-subtle flex items-center justify-center mx-auto mb-4">
-            <Twitter size={32} className="text-info" />
+          <div className="w-16 h-16 rounded-2xl bg-mission-control-accent/20 flex items-center justify-center mx-auto mb-4">
+            <XIcon size={32} className="text-info" />
           </div>
           <h1 className="text-2xl font-bold text-mission-control-text mb-2">Connect X / Twitter</h1>
           <p className="text-sm text-mission-control-text-dim">
@@ -191,6 +193,10 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
         {/* Step 1: Keys */}
         {step === 'keys' && (
           <div className="space-y-4">
+            <a href="https://developer.x.com/en/portal/dashboard" target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors">
+              <ExternalLink size={12} /> Get credentials from the X Developer Portal
+            </a>
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-5 space-y-3">
               <Flex align="center" justify="between">
                 <h3 className="text-sm font-medium text-mission-control-text flex items-center gap-2"><Key size={14} /> API Credentials</h3>
@@ -198,38 +204,61 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                   {showKeys ? <EyeOff size={12} /> : <Eye size={12} />} {showKeys ? 'Hide' : 'Show'}
                 </Button>
               </Flex>
-              {TWITTER_KEYS.map(k => (
+              {/* Essential fields */}
+              {TWITTER_KEYS.filter(k => ['twitter_api_key', 'twitter_api_secret', 'twitter_bearer_token'].includes(k.id)).map(k => (
                 <div key={k.id}>
                   <label className="block text-xs text-mission-control-text-dim mb-1">
-                    {k.label} {k.required && <span className="text-error">*</span>}
+                    {k.label} <span className="text-error">*</span>
                   </label>
-                  <div className="relative">
-                    <TextField.Root
-                      type={showKeys ? 'text' : 'password'}
-                      value={values[k.id] || ''}
-                      onChange={e => setValues(p => ({ ...p, [k.id]: e.target.value }))}
-                      placeholder={k.placeholder}
-                      size="2"
-                    >
-                      {values[k.id]?.trim() && (
-                        <TextField.Slot side="right">
-                          <CheckCircle size={14} className="text-success" />
-                        </TextField.Slot>
-                      )}
-                    </TextField.Root>
-                  </div>
+                  <TextField.Root
+                    type={showKeys ? 'text' : 'password'}
+                    value={values[k.id] || ''}
+                    onChange={e => setValues(p => ({ ...p, [k.id]: e.target.value }))}
+                    placeholder={k.placeholder}
+                    size="2"
+                  >
+                    {values[k.id]?.trim() && (
+                      <TextField.Slot side="right">
+                        <CheckCircle size={14} className="text-mission-control-text-dim" />
+                      </TextField.Slot>
+                    )}
+                  </TextField.Root>
+                </div>
+              ))}
+              {/* Advanced fields (collapsible) */}
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(v => !v)}
+                className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors w-full pt-1"
+              >
+                {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                Advanced credentials (Access Token, OAuth 2.0)
+              </button>
+              {showAdvanced && TWITTER_KEYS.filter(k => !['twitter_api_key', 'twitter_api_secret', 'twitter_bearer_token'].includes(k.id)).map(k => (
+                <div key={k.id}>
+                  <label className="block text-xs text-mission-control-text-dim mb-1">
+                    {k.label} {!k.required && <span className="text-mission-control-text-dim/50">(optional)</span>}
+                  </label>
+                  <TextField.Root
+                    type={showKeys ? 'text' : 'password'}
+                    value={values[k.id] || ''}
+                    onChange={e => setValues(p => ({ ...p, [k.id]: e.target.value }))}
+                    placeholder={k.placeholder}
+                    size="2"
+                  >
+                    {values[k.id]?.trim() && (
+                      <TextField.Slot side="right">
+                        <CheckCircle size={14} className="text-mission-control-text-dim" />
+                      </TextField.Slot>
+                    )}
+                  </TextField.Root>
                 </div>
               ))}
             </div>
-            <a href="https://developer.x.com/en/portal/dashboard" target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors">
-              <ExternalLink size={12} /> Get credentials from the X Developer Portal
-            </a>
             <Button
               onClick={handleSaveKeys}
               disabled={saving || !requiredFilled}
               variant="solid"
-              color="violet"
               size="3"
               className="w-full"
             >
@@ -258,9 +287,9 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 }}
                 size="3"
                 variant="solid"
-                style={{ width: '100%', justifyContent: 'center' }}
+                className="w-full justify-center"
               >
-                <Twitter size={16} />
+                <XIcon size={16} />
                 Connect with X
               </Button>
             )}

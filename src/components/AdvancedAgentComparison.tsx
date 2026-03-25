@@ -9,6 +9,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
+  Check,
 } from 'lucide-react';
 import {
   RadarChart,
@@ -196,7 +197,7 @@ export default function AdvancedAgentComparison({
               >
                 {metric.agent}
                 {selectedAgents.includes(metric.agent) && (
-                  <span className="ml-2">✓</span>
+                  <Check size={12} className="ml-2" />
                 )}
               </Button>
             ))}

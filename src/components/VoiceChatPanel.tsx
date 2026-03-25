@@ -9,7 +9,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Loader2,
   Trash2, MessageSquare, Monitor, MonitorOff, Video, VideoOff,
-  Send, Settings,
+  Send, Settings, Zap,
 } from 'lucide-react';
 import { Button, IconButton, Select, TextField, Box, Flex } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
@@ -803,7 +803,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           <div className="flex items-center justify-center h-12">
             {listening && !speaking && (
               <Flex align="center" gap="3">
-                <span className="text-xs text-mission-control-accent font-medium">⚡ Listening…</span>
+                <span className="flex items-center gap-1 text-xs text-mission-control-accent font-medium"><Zap size={12} /> Listening…</span>
                 <Waveform level={micLevel} color="var(--color-info)" bars={12} height={40} />
               </Flex>
             )}

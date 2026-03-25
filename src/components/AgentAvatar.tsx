@@ -89,7 +89,7 @@ export default function AgentAvatar({ agentId, agentName, fallbackEmoji, size = 
       ) : (
         <span
           className={`absolute inset-0 flex items-center justify-center ${s.text} font-semibold ${theme.text}`}
-          style={{ backgroundColor: theme.color + '22' }}
+          style={{ backgroundColor: `color-mix(in srgb, ${theme.color} 13%, transparent)` }}
         >
           {initials}
         </span>

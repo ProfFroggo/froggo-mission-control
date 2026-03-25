@@ -10,7 +10,7 @@ import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import {
   Mic, MicOff, Play, Square, Download, Trash2, Clock,
   Users, Calendar, ChevronDown, ChevronUp, FileText, Upload,
-  Loader2, Sparkles
+  Loader2, Sparkles, CheckCircle,
 } from 'lucide-react';
 import { MeetingTranscriber, Meeting, MeetingTranscript, MeetingSummary } from '../lib/meetingTranscribe';
 import MarkdownMessage from './MarkdownMessage';
@@ -416,7 +416,7 @@ export default function MeetingTranscribe() {
                       <ul className="space-y-1">
                         {summary.decisions.map((d, i) => (
                           <li key={i} className="text-sm flex items-start gap-2">
-                            <span className="text-success mt-0.5">✓</span>{d}
+                            <CheckCircle size={12} className="text-success mt-0.5 shrink-0" />{d}
                           </li>
                         ))}
                       </ul>
