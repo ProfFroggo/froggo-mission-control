@@ -246,10 +246,10 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-mission-control-text-dim py-8 justify-center">
+      <Flex align="center" gap="2" justify="center" className="text-mission-control-text-dim py-8">
         <RefreshCw size={16} className="animate-spin" />
         <span className="text-sm">Loading soul file...</span>
-      </div>
+      </Flex>
     );
   }
 
@@ -257,10 +257,10 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
     <Box className="space-y-5">
       {/* Character Traits Panel */}
       <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
-        <div className="flex items-center gap-2 mb-3">
+        <Flex align="center" gap="2" className="mb-3">
           <Tag size={14} className="text-mission-control-accent" />
           <span className="text-sm font-semibold text-mission-control-text">Character Traits</span>
-        </div>
+        </Flex>
         <div className="flex flex-wrap gap-1.5 mb-3 min-h-[28px]">
           {traits.map(trait => (
             <span
@@ -297,7 +297,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
             </Button>
           ))}
         </div>
-        <div className="flex gap-2">
+        <Flex gap="2">
           <TextField.Root
             value={newTrait}
             onChange={e => setNewTrait(e.target.value)}
@@ -318,15 +318,15 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
           >
             <Plus size={13} />
           </IconButton>
-        </div>
+        </Flex>
       </div>
 
       {/* Tone Presets */}
       <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
-        <div className="flex items-center gap-2 mb-3">
+        <Flex align="center" gap="2" className="mb-3">
           <MessageSquare size={14} className="text-mission-control-accent" />
           <span className="text-sm font-semibold text-mission-control-text">Tone Preset</span>
-        </div>
+        </Flex>
         <div className="grid grid-cols-2 gap-2">
           {TONE_PRESETS.map(preset => (
             <Button
@@ -348,11 +348,11 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
 
       {/* Memory Scope */}
       <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
-        <div className="flex items-center gap-2 mb-3">
+        <Flex align="center" gap="2" className="mb-3">
           <Brain size={14} className="text-mission-control-accent" />
           <span className="text-sm font-semibold text-mission-control-text">Memory Scope</span>
-        </div>
-        <div className="flex items-center gap-3">
+        </Flex>
+        <Flex align="center" gap="3">
           <Switch
             size="2"
             checked={memoryScope === 'persistent'}
@@ -368,12 +368,12 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
                 : 'Memory cleared after each session ends'}
             </div>
           </div>
-        </div>
+        </Flex>
       </div>
 
       {/* Save Personality Button */}
       {isPersonalityDirty && (
-        <div className="flex justify-end">
+        <Flex justify="end">
           <Button
             type="button"
             size="2"
@@ -384,27 +384,29 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
             {savingPersonality ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
             {savingPersonality ? 'Saving...' : 'Save personality'}
           </Button>
-        </div>
+        </Flex>
       )}
 
       {/* Skill Endorsements */}
       {skills.length > 0 && (
         <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
-          <div className="flex items-center gap-2 mb-3">
+          <Flex align="center" gap="2" className="mb-3">
             <Star size={14} className="text-mission-control-accent" />
             <span className="text-sm font-semibold text-mission-control-text">Skill Endorsements</span>
-          </div>
+          </Flex>
           <div className="flex flex-wrap gap-2">
             {skills.map((skill, i) => (
-              <div
+              <Flex
                 key={i}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-bg text-xs text-mission-control-text"
+                align="center"
+                gap="2"
+                className="px-2.5 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-bg text-xs text-mission-control-text"
               >
                 <span>{skill}</span>
                 <span className="px-1 py-0.5 rounded bg-mission-control-accent/10 text-mission-control-accent text-xs font-semibold tabular-nums">
                   {(i * 3 + 5) % 12 + 1}
                 </span>
-              </div>
+              </Flex>
             ))}
           </div>
         </div>
@@ -412,13 +414,13 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
 
       {/* Recent Interactions */}
       <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="mb-3">
+          <Flex align="center" gap="2">
             <MessageSquare size={14} className="text-mission-control-accent" />
             <span className="text-sm font-semibold text-mission-control-text">Recent Interactions</span>
-          </div>
+          </Flex>
           {messagesLoading && <RefreshCw size={12} className="animate-spin text-mission-control-text-dim" />}
-        </div>
+        </Flex>
         {recentMessages.length === 0 ? (
           <p className="text-xs text-mission-control-text-dim italic">No recent messages from this agent</p>
         ) : (
@@ -437,17 +439,17 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
 
       {/* Soul File Editor */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-sm font-medium text-mission-control-text">
+        <Flex align="center" justify="between" gap="2">
+          <Flex align="center" gap="2" className="text-sm font-medium text-mission-control-text">
             <FileText size={15} />
             <span>~/mission-control/agents/{agentId}/SOUL.md</span>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <IconButton
               type="button"
               size="2"
               variant="ghost"
-             
+
               onClick={() => setShowHint(!showHint)}
               title="Show format hints"
               aria-label="Show format hints"
@@ -458,7 +460,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
               type="button"
               size="2"
               variant="ghost"
-             
+
               onClick={loadSoul}
               disabled={loading}
               title="Reload from disk"
@@ -466,8 +468,8 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             </IconButton>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {showHint && (
           <div className="rounded-lg bg-info-subtle border border-info-border p-3">
@@ -488,12 +490,12 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
           placeholder="No soul file yet. Write one to give this agent its identity, skills, and operating principles."
         />
 
-        <div className="flex items-center justify-between gap-2">
+        <Flex align="center" justify="between" gap="2">
           <span className={`text-xs ${charCount > MAX_CHARS * 0.9 ? 'text-warning' : 'text-mission-control-text-dim'}`}>
             {charCount.toLocaleString()} / {(MAX_CHARS / 1024).toFixed(0)}KB
             {isDirty && <span className="ml-2 text-mission-control-accent">Unsaved changes</span>}
           </span>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Button
               type="button"
               size="2"
@@ -515,8 +517,8 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
               {saving ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
               {saving ? 'Saving...' : 'Save soul file'}
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       </div>
     </Box>
   );
