@@ -290,7 +290,7 @@ function DateTimePicker({ onSchedule, onCancel }: DateTimePickerProps) {
         onChange={e => setValue(e.target.value)}
         className="w-full text-sm bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-mission-control-text mb-2 focus:outline-none focus:border-mission-control-accent"
       />
-      <div className="flex gap-2">
+      <Flex gap="2">
         <Button
           onClick={() => onSchedule(new Date(value).toISOString())}
           variant="solid"
@@ -309,7 +309,7 @@ function DateTimePicker({ onSchedule, onCancel }: DateTimePickerProps) {
         >
           Cancel
         </Button>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -368,7 +368,7 @@ function PipelineDetailModal({ item, onClose, onAction }: {
       <div className="relative w-full max-w-xl max-h-[85vh] overflow-y-auto bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface rounded-t-2xl z-10">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <span className={`px-2 py-0.5 text-xs rounded ${typeBadgeClass(item.type)}`}>
               {typeBadgeLabel(item.type)}
             </span>
@@ -391,7 +391,7 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                 : 'bg-warning-subtle text-warning'
               }`}>{Math.round(confidence * 100)}%</span>
             )}
-          </div>
+          </Flex>
           <IconButton onClick={onClose} variant="ghost" color="gray" size="2">
             <X size={18} />
           </IconButton>
@@ -400,7 +400,7 @@ function PipelineDetailModal({ item, onClose, onAction }: {
         <div className="p-5 space-y-4">
           {/* Author */}
           {mentionAuthor && (
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <div className="font-medium text-mission-control-text">@{mentionAuthor}</div>
               {meta.author_followers != null && (
                 <span className="text-xs text-mission-control-text-dim">{meta.author_followers.toLocaleString()} followers</span>
@@ -410,7 +410,7 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                   View on X
                 </a>
               )}
-            </div>
+            </Flex>
           )}
 
           {/* Parent tweet context */}
@@ -457,10 +457,10 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                     }`}
                     type="button"
                   >
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       {isRec && <Badge color="blue" variant="solid" size="1">BEST</Badge>}
                       <span className="text-mission-control-text">{reply}</span>
-                    </div>
+                    </Flex>
                   </button>
                 );
               })}
@@ -482,9 +482,9 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                 maxLength={280}
                 className="w-full"
               />
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 <span className="text-xs text-mission-control-text-dim">{replyText.length}/280</span>
-                <div className="flex gap-2">
+                <Flex gap="2">
                   <Button onClick={onClose} variant="soft" color="gray" size="2">Cancel</Button>
                   <Button
                     onClick={() => handleSendReply(replyText)}
@@ -496,14 +496,14 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                     {sending ? <Spinner size="1" /> : <Send size={14} />}
                     {sending ? 'Sending...' : 'Send for Approval'}
                   </Button>
-                </div>
-              </div>
+                </Flex>
+              </Flex>
             </div>
           )}
 
           {/* Non-mention actions */}
           {!isMention && (
-            <div className="flex gap-2 pt-2 border-t border-mission-control-border">
+            <Flex gap="2" className="pt-2 border-t border-mission-control-border">
               {item.column === 'in-review' && (
                 <>
                   <Button onClick={() => { onAction(item.id, 'approve'); onClose(); }} variant="solid" color="grass" size="2" className="flex-1">
@@ -519,7 +519,7 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                   <Edit3 size={14} /> Move to Drafting
                 </Button>
               )}
-            </div>
+            </Flex>
           )}
         </div>
       </div>
@@ -570,7 +570,7 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
       style={{ opacity: acting ? 0.6 : 1 }}
     >
       {/* Type badge */}
-      <div className="flex items-center gap-1.5 mb-1.5">
+      <Flex align="center" gap="2" className="mb-1.5">
         <span className={`px-1.5 py-0.5 text-xs rounded ${typeBadgeClass(item.type)}`}>
           {badgeLabel}
         </span>
@@ -582,7 +582,7 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
         {!mentionAuthorCard && item.platform && (
           <span className="px-1.5 py-0.5 text-xs bg-info-subtle text-info rounded">{item.platform}</span>
         )}
-      </div>
+      </Flex>
 
       {/* Mention: original tweet + suggested reply */}
       {isMentionCard ? (
@@ -603,7 +603,7 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
       )}
 
       {/* Footer: agent + time */}
-      <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+      <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
         {proposedBy && (
           <span className="flex items-center gap-1">
             <User size={10} />
@@ -611,7 +611,7 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
           </span>
         )}
         {ts && <span>{ts}</span>}
-      </div>
+      </Flex>
 
       {/* Pending approval indicator */}
       {hasPendingApproval && (item.column === 'in-review' || item.column === 'approved') && (
@@ -735,14 +735,14 @@ function QuickAddIdea({ onAdd }: QuickAddProps) {
         variant="soft"
         className="w-full mb-2"
       />
-      <div className="flex gap-1.5">
+      <Flex gap="2">
         <Button onClick={submit} disabled={saving || !text.trim()} variant="solid" color="blue" size="1" className="flex-1">
           {saving ? 'Adding...' : 'Add idea'}
         </Button>
         <Button onClick={() => setOpen(false)} variant="soft" color="gray" size="1">
           Cancel
         </Button>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -786,7 +786,7 @@ interface ViewModeToggleProps {
 
 function ViewModeToggle({ viewMode, onChange }: ViewModeToggleProps) {
   return (
-    <div className="flex items-center gap-1 px-4 border-b border-mission-control-border bg-mission-control-surface">
+    <Flex align="center" gap="1" className="px-4 border-b border-mission-control-border bg-mission-control-surface">
       {VIEW_MODES.map(mode => {
         const isActive = viewMode === mode.id;
         return (
@@ -805,7 +805,7 @@ function ViewModeToggle({ viewMode, onChange }: ViewModeToggleProps) {
           </button>
         );
       })}
-    </div>
+    </Flex>
   );
 }
 
@@ -964,7 +964,7 @@ function PipelineListView({ items, onAction }: ListViewProps) {
                   {/* Content preview */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-mission-control-text truncate leading-relaxed">{preview}</p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <Flex align="center" gap="2" className="mt-1">
                       {proposedBy && (
                         <span className="flex items-center gap-1 text-xs text-mission-control-text-dim">
                           <User size={10} />
@@ -972,7 +972,7 @@ function PipelineListView({ items, onAction }: ListViewProps) {
                         </span>
                       )}
                       {ts && <span className="text-xs text-mission-control-text-dim">{ts}</span>}
-                    </div>
+                    </Flex>
                   </div>
 
                   {/* Type badge */}
@@ -1073,14 +1073,14 @@ function FloatingQuickCompose({ onAdd, onClose }: FloatingQuickComposeProps) {
         variant="soft"
         className="w-full mb-2"
       />
-      <div className="flex gap-1.5">
+      <Flex gap="2">
         <Button onClick={submit} disabled={saving || !text.trim()} variant="solid" color="blue" size="1" className="flex-1">
           {saving ? 'Adding...' : 'Add idea'}
         </Button>
         <Button onClick={onClose} variant="soft" color="gray" size="1">
           Cancel
         </Button>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -1286,15 +1286,15 @@ export default function XPipelineView() {
                 >
                   {/* Column accent + header */}
                   <div style={{ height: 3, background: col.accent }} />
-                  <div className="flex items-center justify-between px-3 py-2.5 border-b border-mission-control-border bg-mission-control-surface">
-                    <div className="flex items-center gap-1.5 text-mission-control-text-dim">
+                  <Flex align="center" justify="between" className="px-3 py-2.5 border-b border-mission-control-border bg-mission-control-surface">
+                    <Flex align="center" gap="2" className="text-mission-control-text-dim">
                       {col.icon}
                       <span className="text-xs font-medium text-mission-control-text">{col.label}</span>
-                    </div>
+                    </Flex>
                     <span className="px-1.5 py-0.5 text-xs bg-mission-control-bg text-mission-control-text-dim rounded-full min-w-[20px] text-center">
                       {colItems.length}
                     </span>
-                  </div>
+                  </Flex>
 
                   {/* Cards */}
                   <div className="flex-1 overflow-y-auto p-2 space-y-2">
