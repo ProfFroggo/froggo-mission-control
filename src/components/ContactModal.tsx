@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Upload, Edit3, User, Briefcase, Phone, Mail, MapPin, FileText, Sparkles, Send, CheckCircle, AlertCircle } from 'lucide-react';
-import { Button, IconButton, Spinner, TextArea, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, TextArea, TextField, Flex } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
 import BaseModal, { BaseModalHeader, BaseModalBody, BaseModalFooter, BaseModalButton } from './BaseModal';
@@ -494,7 +494,7 @@ Be thorough but only include real people, not generic references.`;
 
       {/* Mode Selector */}
       <div className="px-6 pt-6">
-        <div className="flex gap-2">
+        <Flex gap="2">
           <Button
             onClick={() => setMode('dialogue')}
             variant={mode === 'dialogue' ? 'solid' : 'outline'}
@@ -523,7 +523,7 @@ Be thorough but only include real people, not generic references.`;
             <Edit3 size={16} />
             <span className="font-medium">Manual</span>
           </Button>
-        </div>
+        </Flex>
       </div>
 
       {/* Content */}
@@ -553,26 +553,26 @@ Be thorough but only include real people, not generic references.`;
                 ))}
 
                 {isStreaming && streamingContent && (
-                  <div className="flex justify-start">
+                  <Flex justify="start">
                     <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
-                      <div className="flex items-center gap-2 mt-2">
+                      <Flex align="center" gap="2" className="mt-2">
                         <Spinner size="1" />
                         <span className="text-xs text-mission-control-text-dim">Mission Control is typing...</span>
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 )}
 
                 {isStreaming && !streamingContent && (
-                  <div className="flex justify-start">
+                  <Flex justify="start">
                     <div className="rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <Spinner size="2" />
                         <span className="text-sm text-mission-control-text-dim">Mission Control is thinking...</span>
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 )}
 
                 <div ref={chatEndRef} />
@@ -582,10 +582,10 @@ Be thorough but only include real people, not generic references.`;
               {conversationComplete && extractedData.name && (
                 <div className="px-6 pb-4">
                   <div className="bg-[--accent-3] border border-[--accent-6] rounded-2xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
+                    <Flex align="center" gap="2" className="mb-2">
                       <Sparkles size={16} className="text-[--accent-11]" />
                       <span className="font-semibold text-sm">Contact Ready!</span>
-                    </div>
+                    </Flex>
                     <div className="space-y-1 text-sm">
                       <div><strong>Name:</strong> {extractedData.name}</div>
                       {extractedData.relationship && <div><strong>Relationship:</strong> {extractedData.relationship}</div>}
@@ -615,7 +615,7 @@ Be thorough but only include real people, not generic references.`;
 
               {/* Chat Input */}
               <div className="p-6 border-t border-mission-control-border">
-                <div className="flex gap-3">
+                <Flex gap="3">
                   <TextArea
                     ref={inputRef}
                     value={chatInput}
@@ -642,7 +642,7 @@ Be thorough but only include real people, not generic references.`;
                   >
                     {isStreaming ? <Spinner /> : <Send size={16} />}
                   </IconButton>
-                </div>
+                </Flex>
               </div>
             </div>
           ) : mode === 'upload' ? (
@@ -672,10 +672,10 @@ Be thorough but only include real people, not generic references.`;
 
               {uploadedContent && (
                 <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
+                  <Flex align="center" gap="2" className="mb-2">
                     <FileText size={16} className="text-[--accent-11]" />
                     <span className="font-semibold text-sm">Uploaded Content</span>
-                  </div>
+                  </Flex>
                   <div className="text-xs text-mission-control-text-dim max-h-32 overflow-y-auto">
                     {uploadedContent.slice(0, 500)}...
                   </div>
@@ -683,10 +683,10 @@ Be thorough but only include real people, not generic references.`;
               )}
 
               {isParsing && (
-                <div className="flex items-center justify-center gap-2 py-8">
+                <Flex align="center" justify="center" gap="2" className="py-8">
                   <Spinner size="3" />
                   <span className="text-mission-control-text-dim">Parsing entities...</span>
-                </div>
+                </Flex>
               )}
 
               {parsedEntities.length > 0 && (
@@ -707,7 +707,7 @@ Be thorough but only include real people, not generic references.`;
                             : 'border-mission-control-border hover:border-[--accent-8]/50'
                         }`}
                       >
-                        <div className="flex items-start justify-between">
+                        <Flex align="start" justify="between">
                           <div className="flex-1">
                             <div className="font-semibold">{entity.name}</div>
                             {entity.relationship && (
@@ -725,7 +725,7 @@ Be thorough but only include real people, not generic references.`;
                           <div className="text-xs text-mission-control-text-dim ml-4">
                             {Math.round(entity.confidence * 100)}% confidence
                           </div>
-                        </div>
+                        </Flex>
                       </button>
                     ))}
                   </div>
@@ -755,7 +755,7 @@ Be thorough but only include real people, not generic references.`;
               {/* Contact Type */}
               <div role="group" aria-labelledby="contact-type-label">
                 <span id="contact-type-label" className="block text-sm text-mission-control-text-dim mb-2">Contact Type</span>
-                <div className="flex gap-3" role="radiogroup" aria-label="Contact type selection">
+                <Flex gap="3" role="radiogroup" aria-label="Contact type selection">
                   <Button
                     type="button"
                     role="radio"
@@ -780,7 +780,7 @@ Be thorough but only include real people, not generic references.`;
                     <Briefcase size={16} />
                     Professional
                   </Button>
-                </div>
+                </Flex>
               </div>
 
               {/* Name */}
