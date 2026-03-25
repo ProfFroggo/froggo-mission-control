@@ -449,9 +449,9 @@ export default function AgentPanel() {
 
         {/* Core Agents — Profile Card Grid */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <Flex align="center" justify="between" className="mb-4">
             <h2 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-widest">Core Agents</h2>
-          </div>
+          </Flex>
 
           {/* Search / filter bar */}
           <div className="relative mb-4">
@@ -537,7 +537,7 @@ export default function AgentPanel() {
 
                       {/* Name + role */}
                       <div className="flex-1 min-w-0 pt-0.5">
-                        <div className="flex items-center gap-2 mb-0.5">
+                        <Flex align="center" gap="2" className="mb-0.5">
                           <h3 className="font-semibold text-sm leading-normal truncate">{agent.name}</h3>
                           {/* Only show non-idle status badges — idle is conveyed by Available below */}
                           {(agent.status === 'busy' || agent.status === 'disabled' || agent.status === 'suspended' || agent.status === 'archived' || agent.status === 'draft') && (
@@ -555,7 +555,7 @@ export default function AgentPanel() {
                               <AlertTriangle size={9} /> Circuit open
                             </Badge>
                           )}
-                        </div>
+                        </Flex>
                         <div className="flex items-center gap-1.5">
                           <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
                           {agent.status === 'idle' && !currentTask && agentTasks.length === 0 && (
@@ -601,7 +601,7 @@ export default function AgentPanel() {
 
                     {/* Last active timestamp */}
                     {agent.lastActivity && (
-                      <div className="flex items-center gap-1 text-xs text-mission-control-text-dim mb-2">
+                      <Flex align="center" gap="1" className="text-xs text-mission-control-text-dim mb-2">
                         <Clock size={9} />
                         <span>Last active: {(() => {
                           const diffMs = Date.now() - agent.lastActivity!;
@@ -612,7 +612,7 @@ export default function AgentPanel() {
                           if (diffHr < 24) return `${diffHr}h ago`;
                           return `${Math.floor(diffHr / 24)}d ago`;
                         })()}</span>
-                      </div>
+                      </Flex>
                     )}
 
                     {/* Footer: capability tags + tier badge — relative z-[2] lifts above cover button */}
@@ -629,7 +629,7 @@ export default function AgentPanel() {
                       {/* Tier badge — right-aligned, editable on click */}
                       {agent.trust_tier && (
                         editingTrustTierAgent === agent.id ? (
-                          <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                          <Flex align="center" gap="1" onClick={e => e.stopPropagation()}>
                             <Select.Root
                               size="1"
                               value={String(pendingTrustTier)}
@@ -644,7 +644,7 @@ export default function AgentPanel() {
                             </Select.Root>
                             <IconButton type="button" variant="ghost" size="1" aria-label="Save trust tier" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }}><Check size={12} /></IconButton>
                             <IconButton type="button" variant="ghost" color="red" size="1" aria-label="Cancel trust tier edit" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }}><AlertTriangle size={12} /></IconButton>
-                          </div>
+                          </Flex>
                         ) : (
                           <Button
                             type="button"
