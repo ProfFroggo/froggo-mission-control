@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, ChevronDown, ChevronRight, LogOut, Wifi, WifiOff, MessageSquare, Gamepad2, MessageCircle, Briefcase, Mail, Globe, Radio, Send as SendPlane } from 'lucide-react';
-import { Button, IconButton, Badge, Spinner } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Badge, Spinner } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -104,7 +104,7 @@ export default function ChannelsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <div className="text-sm text-mission-control-text-dim">
           {channels.length} channel{channels.length !== 1 ? 's' : ''} •{' '}
           {channels.reduce((n, c) => n + c.accounts.filter(a => a.connected).length, 0)} connected accounts
@@ -118,12 +118,12 @@ export default function ChannelsTab() {
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
         </Button>
-      </div>
+      </Flex>
 
       {loading && channels.length === 0 ? (
-        <div className="flex items-center justify-center py-12 gap-2 text-mission-control-text-dim">
+        <Flex align="center" justify="center" gap="2" className="py-12 text-mission-control-text-dim">
           <Spinner size="2" /> Loading channels...
-        </div>
+        </Flex>
       ) : channels.length === 0 ? (
         <div className="text-center py-12 text-mission-control-text-dim">
           <MessageSquare size={48} className="mx-auto opacity-20 mb-4" />
@@ -155,7 +155,7 @@ export default function ChannelsTab() {
                       {connectedCount}/{totalCount} account{totalCount !== 1 ? 's' : ''} connected
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <Flex align="center" gap="2">
                     {hasError && <span className="w-2 h-2 rounded-full bg-error" title="Has errors" />}
                     <Badge
                       color={connectedCount > 0 ? 'green' : 'gray'}
@@ -164,7 +164,7 @@ export default function ChannelsTab() {
                       {connectedCount > 0 ? 'Online' : 'Offline'}
                     </Badge>
                     {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                  </div>
+                  </Flex>
                 </div>
 
                 {isExpanded && (
@@ -173,7 +173,7 @@ export default function ChannelsTab() {
                       <div className="p-4 text-sm text-mission-control-text-dim">No accounts configured</div>
                     ) : channel.accounts.map((account, i) => (
                       <div key={i} className="p-4 border-b border-mission-control-border last:border-b-0 hover:bg-mission-control-border/40">
-                        <div className="flex items-center gap-3">
+                        <Flex align="center" gap="3">
                           <div className={`p-1.5 rounded ${account.connected ? 'bg-success-subtle' : 'bg-mission-control-bg'}`}>
                             {account.connected ? <Wifi size={14} className="text-success" /> : <WifiOff size={14} className="text-mission-control-text-dim" />}
                           </div>
@@ -207,7 +207,7 @@ export default function ChannelsTab() {
                           >
                             <LogOut size={14} />
                           </IconButton>
-                        </div>
+                        </Flex>
                       </div>
                     ))}
                   </div>

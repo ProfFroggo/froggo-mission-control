@@ -124,20 +124,20 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
             <div className="space-y-6">
               {Object.entries(grouped).map(([agentId, agentSkills]) => (
                 <div key={agentId}>
-                  <div className="flex items-center gap-2 mb-3">
+                  <Flex align="center" gap="2" className="mb-3">
                     <span className="text-lg">{AGENT_EMOJIS[agentId] || '🤖'}</span>
                     <span className="font-semibold text-mission-control-text capitalize">{agentId}</span>
                     <span className="text-xs text-mission-control-text-dim">
                       · Avg: {(agentSkills.reduce((sum, s) => sum + s.proficiency, 0) / agentSkills.length).toFixed(1)}
                     </span>
-                  </div>
+                  </Flex>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {agentSkills.map(skill => (
                       <div key={`${agentId}-${skill.skill_name}`} className={`rounded-lg border p-2.5 ${profColor(skill.proficiency)}`}>
-                        <div className="flex items-center justify-between mb-1.5">
+                        <Flex align="center" justify="between" className="mb-1.5">
                           <span className="text-sm font-medium">{skill.skill_name}</span>
                           <span className="text-xs font-bold">{skill.proficiency}/10</span>
-                        </div>
+                        </Flex>
                         {/* Proficiency bar */}
                         <div className="h-1.5 bg-black/20 rounded-full overflow-hidden mb-1">
                           <div
@@ -145,12 +145,12 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
                             style={{ width: `${skill.proficiency * 10}%` }}
                           />
                         </div>
-                        <div className="flex items-center justify-between text-[10px] opacity-70">
+                        <Flex align="center" justify="between" className="text-[10px] opacity-70">
                           <span>{profLabel(skill.proficiency)}</span>
                           {(skill.success_count > 0 || skill.failure_count > 0) && (
                             <span>{skill.success_count}✓ {skill.failure_count}✗</span>
                           )}
-                        </div>
+                        </Flex>
                       </div>
                     ))}
                   </div>
