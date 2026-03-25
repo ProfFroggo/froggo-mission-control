@@ -199,17 +199,17 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <Flex align="center" justify="center" className="p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-mission-control-accent border-t-transparent" />
-      </div>
+      </Flex>
     );
   }
 
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3">
           <div className="p-2 bg-mission-control-accent/20 rounded-lg">
             <Zap size={20} className="text-mission-control-accent" />
           </div>
@@ -217,8 +217,8 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
             <h2 className="text-lg font-semibold">Smart Folder Rules</h2>
             <p className="text-sm text-mission-control-text-dim">{folderName}</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <Button
             size="2"
             variant="ghost"
@@ -242,14 +242,14 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
               <X size={16} />
             </IconButton>
           )}
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Rule Info */}
         <div className="card p-4">
-          <div className="flex items-start gap-3 mb-4">
+          <Flex align="start" gap="3" className="mb-4">
             <Info size={16} className="text-mission-control-accent mt-0.5" />
             <div className="flex-1">
               <h3 className="font-semibold mb-1">How Smart Folders Work</h3>
@@ -258,7 +258,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
                 Conversations matching your rules will be added automatically.
               </p>
             </div>
-          </div>
+          </Flex>
 
           {/* Rule Description */}
           {rule.conditions && rule.conditions.length > 0 && (
@@ -271,7 +271,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
 
         {/* Rule Configuration */}
         <div className="card p-4 space-y-4">
-          <div className="flex items-center justify-between">
+          <Flex align="center" justify="between">
             <h3 className="font-semibold">Rule Configuration</h3>
             <Button
               size="2"
@@ -281,7 +281,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
               <ChevronDown size={14} className={`transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
               Templates
             </Button>
-          </div>
+          </Flex>
 
           {/* Templates Dropdown */}
           {showTemplates && (
@@ -334,7 +334,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
           {/* Operator */}
           <div>
             <span className="block text-sm font-medium mb-2">Match Conditions</span>
-            <div className="flex gap-3">
+            <Flex gap="3">
               <Button
                 size="2"
                 variant={rule.operator === 'AND' ? 'solid' : 'ghost'}
@@ -351,11 +351,11 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
               >
                 OR (Any condition)
               </Button>
-            </div>
+            </Flex>
           </div>
 
           {/* Enabled Toggle */}
-          <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+          <Flex align="center" justify="between" className="p-3 bg-mission-control-bg rounded-lg">
             <div>
               <div className="text-sm font-medium">Rule Enabled</div>
               <div className="text-xs text-mission-control-text-dim">Activate auto-assignment for this folder</div>
@@ -365,12 +365,12 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
               checked={rule.enabled ?? true}
               onCheckedChange={(checked) => setRule({ ...rule, enabled: checked })}
             />
-          </div>
+          </Flex>
         </div>
 
         {/* Conditions */}
         <div className="card p-4">
-          <div className="flex items-center justify-between mb-4">
+          <Flex align="center" justify="between" className="mb-4">
             <h3 className="font-semibold">Conditions</h3>
             <Button
               size="2"
@@ -380,7 +380,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
               <Plus size={14} />
               Add Condition
             </Button>
-          </div>
+          </Flex>
 
           {rule.conditions && rule.conditions.length > 0 ? (
             <div className="space-y-3">
@@ -388,7 +388,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
                 const config = getConditionConfig(condition.type);
                 return (
                   <div key={idx} className="p-3 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                    <div className="flex items-start gap-3">
+                    <Flex align="start" gap="3">
                       {/* Condition Type */}
                       <div className="flex-1">
                         <Select.Root
@@ -425,10 +425,10 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
                           />
                         )}
                         {config.valueType === 'boolean' && (
-                          <div className="flex items-center gap-2 text-sm text-mission-control-text-dim">
+                          <Flex align="center" gap="2" className="text-sm text-mission-control-text-dim">
                             <Check size={16} className="text-mission-control-accent" />
                             {config.description}
-                          </div>
+                          </Flex>
                         )}
 
                         {/* Negate Toggle */}
@@ -446,7 +446,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
                       <IconButton
                         size="2"
                         variant="ghost"
-                       
+
                         color="red"
                         onClick={() => removeCondition(idx)}
                         title="Remove condition"
@@ -454,7 +454,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
                       >
                         <Trash2 size={16} />
                       </IconButton>
-                    </div>
+                    </Flex>
                   </div>
                 );
               })}
@@ -516,10 +516,10 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
                     : 'bg-warning-subtle border-warning-border text-warning'
                 }`}
               >
-                <div className="flex items-center gap-2 text-sm font-medium">
+                <Flex align="center" gap="2" className="text-sm font-medium">
                   {testResult ? <Check size={16} /> : <X size={16} />}
                   {testResult ? 'This conversation would match this rule' : 'This conversation would NOT match this rule'}
-                </div>
+                </Flex>
               </div>
             )}
           </div>
