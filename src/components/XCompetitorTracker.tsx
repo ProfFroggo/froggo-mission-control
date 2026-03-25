@@ -104,8 +104,8 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
   return (
     <div className="border border-mission-control-border rounded-lg bg-mission-control-surface overflow-hidden">
       {/* Card header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3">
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
             style={{ background: 'var(--color-info-subtle)', color: 'var(--color-info)' }}
@@ -135,8 +135,8 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
               )}
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <a
             href={`https://x.com/${data.handle}`}
             target="_blank"
@@ -162,8 +162,8 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
           >
             <X size={16} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Metrics row */}
       <div className="grid grid-cols-4 divide-x divide-mission-control-border text-center py-3">
@@ -202,7 +202,7 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
               className="p-3 border-b border-mission-control-border last:border-b-0 text-sm"
             >
               <div className="text-mission-control-text mb-2 line-clamp-3">{tweet.text}</div>
-              <div className="flex items-center gap-4 text-xs text-mission-control-text-dim">
+              <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim">
                 <span className="flex items-center gap-1">
                   <Heart size={11} /> {tweet.public_metrics?.like_count ?? 0}
                 </span>
@@ -220,7 +220,7 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
                     })}
                   </span>
                 )}
-              </div>
+              </Flex>
             </div>
           ))}
         </div>
@@ -368,10 +368,10 @@ export function XCompetitorTracker() {
     <Flex direction="column" height="100%" className="bg-mission-control-bg overflow-y-auto">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" className="mb-1">
           <Target size={20} style={{ color: 'var(--color-warning)' }} />
           <h2 className="text-lg font-semibold text-mission-control-text">Competitor Tracker</h2>
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text-dim">
           Search competitor X accounts and analyze their recent tweet engagement.
         </p>
@@ -381,12 +381,12 @@ export function XCompetitorTracker() {
         {/* Latest AI Report */}
         {latestReport && (
           <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
+            <Flex align="center" justify="between" className="mb-2">
+              <Flex align="center" gap="2">
                 <FileText size={14} className="text-info" />
                 <span className="text-sm font-medium text-mission-control-text">{latestReport.title}</span>
-              </div>
-              <div className="flex items-center gap-2">
+              </Flex>
+              <Flex align="center" gap="2">
                 <span className="text-[10px] text-mission-control-text-dim">
                   {new Date(latestReport.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
@@ -415,8 +415,8 @@ export function XCompetitorTracker() {
                 >
                   <Download size={13} />
                 </IconButton>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
             {!showReport && <p className="text-xs text-mission-control-text-dim">{latestReport.summary}</p>}
             {showReport && (
               <div className="mt-3 p-3 rounded-lg border border-mission-control-border bg-mission-control-bg max-h-[500px] overflow-y-auto text-sm">
@@ -427,7 +427,7 @@ export function XCompetitorTracker() {
         )}
 
         {/* Generate Report Button */}
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Button
             onClick={async () => {
               setGeneratingReport(true);
@@ -459,14 +459,14 @@ export function XCompetitorTracker() {
             {generatingReport ? 'Generating...' : 'Run Competitor Analysis'}
           </Button>
           {!latestReport && <span className="text-[10px] text-mission-control-text-dim">Add competitor handles below, then run analysis</span>}
-        </div>
+        </Flex>
 
         {/* Add handle input */}
         <div>
           <label className="block text-sm font-medium text-mission-control-text mb-2">
             Track a competitor
           </label>
-          <div className="flex gap-2">
+          <Flex gap="2">
             <div className="flex-1">
               <TextField.Root
                 value={inputValue}
@@ -488,7 +488,7 @@ export function XCompetitorTracker() {
               <Plus size={16} />
               Add
             </Button>
-          </div>
+          </Flex>
           <p className="text-xs text-mission-control-text-dim mt-1.5">
             Track up to 10 competitors. Uses X search API to fetch recent tweets.
           </p>
@@ -497,7 +497,7 @@ export function XCompetitorTracker() {
         {/* Tracked handles chips */}
         {handles.length > 0 && competitors.length === 0 && !loading && (
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <Flex align="center" justify="between" className="mb-2">
               <span className="text-sm font-medium text-mission-control-text">
                 Tracked accounts ({handles.length})
               </span>
@@ -510,18 +510,20 @@ export function XCompetitorTracker() {
                 <RefreshCw size={12} />
                 Load data
               </Button>
-            </div>
+            </Flex>
             <div className="flex flex-wrap gap-2">
               {handles.map(h => (
-                <div
+                <Flex
                   key={h}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border border-mission-control-border text-mission-control-text"
+                  align="center"
+                  gap="2"
+                  className="px-2.5 py-1 rounded-full text-xs border border-mission-control-border text-mission-control-text"
                 >
                   @{h}
                   <IconButton onClick={() => handleRemove(h)} size="1" variant="ghost" aria-label={`Remove @${h}`}>
                     <X size={12} />
                   </IconButton>
-                </div>
+                </Flex>
               ))}
             </div>
           </div>
@@ -529,16 +531,18 @@ export function XCompetitorTracker() {
 
         {/* Loading */}
         {loading && (
-          <div className="flex items-center justify-center gap-3 py-12 text-mission-control-text-dim">
+          <Flex align="center" justify="center" gap="3" className="py-12 text-mission-control-text-dim">
             <Spinner size="2" />
             Searching X for competitor tweets...
-          </div>
+          </Flex>
         )}
 
         {/* Error */}
         {error && !loading && (
-          <div
-            className="flex items-center gap-2 p-3 rounded-lg text-sm"
+          <Flex
+            align="center"
+            gap="2"
+            className="p-3 rounded-lg text-sm"
             style={{ background: 'var(--color-error-subtle)', color: 'var(--color-error)' }}
           >
             <AlertCircle size={16} />
@@ -546,19 +550,19 @@ export function XCompetitorTracker() {
             <Button onClick={handleRefresh} size="1" variant="ghost" style={{ marginLeft: 'auto' }}>
               Retry
             </Button>
-          </div>
+          </Flex>
         )}
 
         {/* Competitor cards */}
         {!loading && competitors.length > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
+            <Flex align="center" justify="between" className="mb-3">
+              <Flex align="center" gap="2">
                 <BarChart2 size={16} className="text-mission-control-text-dim" />
                 <span className="text-sm font-medium text-mission-control-text">
                   Competitor Analysis ({competitors.length})
                 </span>
-              </div>
+              </Flex>
               <Button
                 onClick={handleRefresh}
                 disabled={loading}
@@ -569,7 +573,7 @@ export function XCompetitorTracker() {
                 <RefreshCw size={12} />
                 Refresh
               </Button>
-            </div>
+            </Flex>
             <div className="space-y-3">
               {competitors.map(c => (
                 <CompetitorCard key={c.handle} data={c} onRemove={handleRemove} />
