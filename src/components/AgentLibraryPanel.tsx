@@ -269,7 +269,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
       </Flex>
 
       {activeTab === 'capabilities' && <AgentCapabilityMatrix />}
-      {activeTab === 'catalog' && <div className="flex gap-4">
+      {activeTab === 'catalog' && <Flex gap="4">
         {/* ── Category sidebar ── */}
         <aside className="flex-shrink-0 w-44">
           <p className="text-xs font-semibold uppercase tracking-widest text-mission-control-text-dim mb-2 px-1">
@@ -304,7 +304,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
         {/* ── Main content ── */}
         <div className="flex-1 min-w-0">
           {/* Stats bar */}
-          <div className="flex items-center gap-4 mb-4 text-sm">
+          <Flex align="center" gap="4" className="mb-4 text-sm">
             <span className="icon-text text-success">
               <CheckCircle size={14} className="flex-shrink-0" />
               {hiredCount} hired
@@ -361,10 +361,10 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
             >
               <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
             </IconButton>
-          </div>
+          </Flex>
 
           {/* Search + filter */}
-          <div className="flex items-center gap-2 mb-4">
+          <Flex align="center" gap="2" className="mb-4">
             <div className="relative flex-1">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ pointerEvents: 'none', zIndex: 1, color: 'var(--gray-9)' }} />
               <TextField.Root
@@ -394,7 +394,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                 </button>
               ))}
             </div>
-          </div>
+          </Flex>
 
           {/* Compare bar */}
           {compareIds.length > 0 && (
@@ -470,7 +470,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                     )}
 
                     {/* Header */}
-                    <div className="flex items-start gap-3 mb-3">
+                    <Flex align="start" gap="3" className="mb-3">
                       <LibraryAvatar agentId={agent.id} agentName={agent.name} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
@@ -483,7 +483,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                           {agent.role || agent.description || '—'}
                         </p>
                       </div>
-                    </div>
+                    </Flex>
 
                     {/* Badges row */}
                     <div className="flex flex-wrap gap-1.5 mb-3">
@@ -513,16 +513,16 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
 
                     {/* Required APIs warning */}
                     {agent.requiredApis.length > 0 && !isInstalled && (
-                      <div className="flex items-center gap-1 text-xs text-warning mb-3">
+                      <Flex align="center" gap="1" className="text-xs text-warning mb-3">
                         <Cpu size={11} className="flex-shrink-0" />
                         <span>Requires: {agent.requiredApis.join(', ')}</span>
-                      </div>
+                      </Flex>
                     )}
 
                     {/* Action */}
                     <div className="pt-2 border-t border-mission-control-border mt-auto">
                       {isInstalled ? (
-                        <div className="flex items-center gap-2">
+                        <Flex align="center" gap="2">
                           <div className="flex items-center gap-1.5 text-xs text-success flex-1">
                             <CheckCircle size={13} className="flex-shrink-0" />
                             <span>Hired &amp; active{CORE_AGENT_IDS.includes(agent.id) ? ' · Core' : ''}</span>
@@ -560,9 +560,9 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                               <Trash2 size={10} /> Fire
                             </Button>
                           )}
-                        </div>
+                        </Flex>
                       ) : (
-                        <div className="flex gap-2">
+                        <Flex gap="2">
                           {/* Quick Hire / Hire Agent */}
                           <Button
                             type="button"
@@ -586,7 +586,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                           >
                             <GitCompare size={11} />
                           </IconButton>
-                        </div>
+                        </Flex>
                       )}
                     </div>
                   </div>
@@ -595,7 +595,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
             </div>
           )}
         </div>
-      </div>}
+      </Flex>}
 
       {/* Hire wizard */}
       {hiringAgent && (
