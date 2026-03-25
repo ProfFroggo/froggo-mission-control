@@ -59,7 +59,7 @@ import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { Skeleton } from './LoadingStates';
 import ModuleLibraryPanel from './ModuleLibraryPanel';
 import type { CatalogModule } from '../types/catalog';
-import { Button, IconButton, Switch, Box } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Switch, Box } from '@radix-ui/themes';
 
 // ─── Activity log helpers ──────────────────────────────────────────────────────
 
@@ -187,21 +187,21 @@ function ModuleCardSkeleton() {
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <Skeleton width="w-10" height="h-10" rounded="lg" />
           <div className="space-y-1.5">
             <Skeleton width="w-24" height="h-4" />
             <Skeleton width="w-16" height="h-3" />
           </div>
-        </div>
+        </Flex>
         <Skeleton width="w-10" height="h-5" rounded="full" />
       </div>
       <Skeleton width="w-full" height="h-3" />
       <Skeleton width="w-4/5" height="h-3" />
-      <div className="flex items-center gap-2 pt-1">
+      <Flex align="center" gap="2" className="pt-1">
         <Skeleton width="w-16" height="h-5" rounded="full" />
         <Skeleton width="w-20" height="h-6" rounded="lg" />
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -330,7 +330,7 @@ function ModuleCard({
     >
       {/* Header row */}
       <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-center gap-3 min-w-0">
+        <Flex align="center" gap="3" className="min-w-0">
           {/* Icon */}
           <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
             <IconComponent size={20} className="text-mission-control-accent" />
@@ -360,7 +360,7 @@ function ModuleCard({
               {manifest.author && ` · ${manifest.author}`}
             </span>
           </div>
-        </div>
+        </Flex>
 
         {/* Right-side controls */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -432,7 +432,7 @@ function ModuleCard({
       <div className="flex-1" />
 
       {/* Footer row: category badge + configure button */}
-      <div className="flex items-center gap-2 mt-auto pt-1">
+      <Flex align="center" gap="2" className="mt-auto pt-1">
         <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border/60 text-mission-control-text-dim capitalize">
           {category}
         </span>
@@ -458,7 +458,7 @@ function ModuleCard({
             Configure
           </Button>
         )}
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -675,7 +675,7 @@ export default function ModulesPage() {
     <Box className="h-full overflow-y-auto">
       {/* Header */}
       <div className="px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <div className="p-2 bg-mission-control-accent/20 rounded-lg">
             <Puzzle size={24} className="text-mission-control-accent" />
           </div>
@@ -683,7 +683,7 @@ export default function ModulesPage() {
             <h1 className="text-xl font-semibold text-mission-control-text">Modules</h1>
             <p className="text-sm text-mission-control-text-dim">Manage installed modules, configure credentials, and toggle features</p>
           </div>
-        </div>
+        </Flex>
       </div>
       {/* View tabs */}
       <div className="flex border-b border-mission-control-border px-6">
