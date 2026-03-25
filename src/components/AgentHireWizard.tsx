@@ -130,7 +130,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
         {/* Step progress indicator */}
         {currentProgressIndex >= 0 && (
-          <div className="flex items-center gap-1 px-6 pt-4 pb-2">
+          <Flex align="center" gap="1" className="px-6 pt-4 pb-2">
             {PROGRESS_STEPS.map((s, i) => (
               <div key={s} className="flex items-center gap-1 flex-1">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold tabular-nums transition-colors flex-shrink-0 ${
@@ -145,7 +145,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 {i < PROGRESS_STEPS.length - 1 && <div className="flex-1 h-px bg-mission-control-border" />}
               </div>
             ))}
-          </div>
+          </Flex>
         )}
 
         {/* ── Step 0: Match ── */}
@@ -249,16 +249,16 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
             {/* Required APIs warning */}
             {agent.requiredApis.length > 0 && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-warning-subtle border border-warning-border text-warning text-xs mb-4">
+              <Flex align="start" gap="2" className="p-3 rounded-lg bg-warning-subtle border border-warning-border text-warning text-xs mb-4">
                 <Cpu size={13} className="flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium mb-0.5">Required APIs</p>
                   <p>{agent.requiredApis.join(', ')}</p>
                 </div>
-              </div>
+              </Flex>
             )}
 
-            <div className="flex gap-2">
+            <Flex gap="2">
               <Button
                 type="button"
                 size="2"
@@ -276,7 +276,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               >
                 Continue <ChevronRight size={16} />
               </Button>
-            </div>
+            </Flex>
           </div>
         )}
 
@@ -334,12 +334,12 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             </div>
 
             {/* Trial mode toggle */}
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-surface border border-mission-control-border mb-5">
+            <Flex align="center" gap="3" className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border mb-5">
               <div className="flex-1">
-                <div className="flex items-center gap-1.5 mb-0.5">
+                <Flex align="center" gap="1" className="mb-0.5">
                   <FlaskConical size={13} className="text-mission-control-accent" />
                   <span className="text-sm font-medium">Try for 7 days</span>
-                </div>
+                </Flex>
                 <p className="text-xs text-mission-control-text-dim">
                   Adds a trial tag to the agent. Remove any time from their settings.
                 </p>
@@ -349,9 +349,9 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 checked={trialMode}
                 onCheckedChange={(checked) => setTrialMode(checked)}
               />
-            </div>
+            </Flex>
 
-            <div className="flex gap-2">
+            <Flex gap="2">
               <Button
                 type="button"
                 size="2"
@@ -369,7 +369,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               >
                 Review &amp; Hire <ChevronRight size={15} />
               </Button>
-            </div>
+            </Flex>
           </div>
         )}
 
@@ -386,25 +386,25 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
             <div className="rounded-lg border border-mission-control-border divide-y divide-mission-control-border overflow-hidden mb-5">
               {/* Agent name */}
-              <div className="flex items-start gap-3 px-4 py-3">
+              <Flex align="start" gap="3" className="px-4 py-3">
                 <Bot size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Agent</p>
                   <p className="text-sm font-medium">{agent.name}</p>
                   <p className="text-xs text-mission-control-text-dim">{agent.description || agent.role || '—'}</p>
                 </div>
-              </div>
+              </Flex>
               {/* Role */}
-              <div className="flex items-start gap-3 px-4 py-3">
+              <Flex align="start" gap="3" className="px-4 py-3">
                 <Briefcase size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Role</p>
                   <p className="text-sm">{role || agent.role || 'Agent'}</p>
                 </div>
-              </div>
+              </Flex>
               {/* Capabilities */}
               {agent.capabilities.length > 0 && (
-                <div className="flex items-start gap-3 px-4 py-3">
+                <Flex align="start" gap="3" className="px-4 py-3">
                   <Tag size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-1">Assigned tasks</p>
@@ -416,29 +416,29 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                       ))}
                     </div>
                   </div>
-                </div>
+                </Flex>
               )}
               {/* Start date */}
-              <div className="flex items-start gap-3 px-4 py-3">
+              <Flex align="start" gap="3" className="px-4 py-3">
                 <Calendar size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Start date</p>
                   <p className="text-sm">{startDate}</p>
                 </div>
-              </div>
+              </Flex>
               {/* Trial */}
               {trialMode && (
-                <div className="flex items-start gap-3 px-4 py-3 bg-info-subtle/30">
+                <Flex align="start" gap="3" className="px-4 py-3 bg-info-subtle/30">
                   <FlaskConical size={14} className="text-info mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-info mb-0.5">Trial mode</p>
                     <p className="text-sm text-mission-control-text-dim">7-day trial tag applied</p>
                   </div>
-                </div>
+                </Flex>
               )}
             </div>
 
-            <div className="flex gap-2">
+            <Flex gap="2">
               <Button
                 type="button"
                 size="2"
@@ -457,7 +457,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 <CheckCircle size={15} />
                 Confirm &amp; Hire
               </Button>
-            </div>
+            </Flex>
           </div>
         )}
 
