@@ -583,16 +583,18 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                     {activeSubagents.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-mission-control-border/30 space-y-2">
                         {activeSubagents.slice(0, 3).map((session) => (
-                          <div 
+                          <Flex
                             key={session.key}
-                            className="flex items-center gap-3 p-2 rounded-lg bg-success-subtle border border-success-border"
+                            align="center"
+                            gap="3"
+                            className="p-2 rounded-lg bg-success-subtle border border-success-border"
                           >
                             <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-medium truncate">{session.displayName}</div>
                               <div className="text-xs text-mission-control-text-dim tabular-nums">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</div>
                             </div>
-                          </div>
+                          </Flex>
                         ))}
                       </div>
                     )}
