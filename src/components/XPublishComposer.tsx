@@ -111,7 +111,7 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
 
   return (
     <div className="relative">
-      <div className="flex items-start gap-2">
+      <Flex align="start" gap="2">
         {showThread && (
           <div className="flex flex-col items-center pt-3 flex-shrink-0">
             <div className="w-8 h-8 bg-mission-control-accent rounded-full flex items-center justify-center">
@@ -162,7 +162,7 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
             <Trash2 className="w-4 h-4" />
           </IconButton>
         )}
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -545,11 +545,11 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
   return (
     <Flex ref={composerRef} direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="px-6 pt-5 pb-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3">
           <Send className="w-5 h-5 text-mission-control-accent" />
           <h3 className="text-lg font-semibold text-mission-control-text">Post to X</h3>
-        </div>
+        </Flex>
         {/* Mode toggle */}
         <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden" style={{ background: 'var(--color-surface)' }}>
           <button
@@ -575,18 +575,18 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
             Thread
           </button>
         </div>
-      </div>
+      </Flex>
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {/* Failed posts notification banner */}
         {failedPosts.length > 0 && (
           <div className="p-3 bg-error-subtle border border-error rounded-lg">
-            <div className="flex items-center gap-2 mb-1">
+            <Flex align="center" gap="2" className="mb-1">
               <AlertCircle className="w-4 h-4 text-error" />
               <span className="text-sm font-medium text-error">
                 {failedPosts.length} scheduled post{failedPosts.length > 1 ? 's' : ''} failed to publish
               </span>
-            </div>
+            </Flex>
             <div className="text-xs text-mission-control-text-dim mt-1 space-y-1">
               {failedPosts.slice(0, 3).map(fp => (
                 <div key={fp.id} className="truncate">
@@ -608,7 +608,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
 
         {/* Rate limit banner */}
         {!rateLimitLoading && rateLimit !== null && (
-          <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm ${rateLimitBannerClass()}`}>
+          <Flex align="center" gap="2" className={`px-4 py-2.5 rounded-lg text-sm ${rateLimitBannerClass()}`}>
             {rateLimit.remaining === 0 ? (
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
             ) : (
@@ -627,7 +627,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                 <span className="text-mission-control-text-dim/50 ml-1">(resets on restart)</span>
               </span>
             )}
-          </div>
+          </Flex>
         )}
 
         {/* Media attachment */}
@@ -651,7 +651,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
               Attach Image/Video
             </Button>
           ) : (
-            <div className="flex items-start gap-3 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg">
+            <Flex align="start" gap="3" className="p-3 bg-mission-control-surface border border-mission-control-border rounded-lg">
               {/* Preview */}
               {mediaPreviewUrl && mediaFile.type.startsWith('image/') && (
                 <img
@@ -692,7 +692,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
               >
                 <X className="w-4 h-4" />
               </IconButton>
-            </div>
+            </Flex>
           )}
         </div>
 
@@ -756,10 +756,10 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
               onBlur={e => { e.target.style.borderColor = 'var(--gray-6)'; }}
             />
             {scheduleResult && !scheduleResult.success && (
-              <div className="flex items-center gap-2 text-sm text-error">
+              <Flex align="center" gap="2" className="text-sm text-error">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {scheduleResult.error}
-              </div>
+              </Flex>
             )}
             <Button
               onClick={handleScheduleSubmit}
@@ -788,15 +788,15 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
 
         {/* Schedule success banner */}
         {scheduleResult?.success && (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm bg-success-subtle border border-success text-success">
+          <Flex align="center" gap="2" className="px-4 py-3 rounded-lg text-sm bg-success-subtle border border-success text-success">
             <CheckCircle className="w-4 h-4 flex-shrink-0" />
             {scheduleResult.message}
-          </div>
+          </Flex>
         )}
 
         {/* Post confirmation inline bar */}
         {showConfirm && (
-          <div className="flex items-center gap-3 px-4 py-3 bg-warning-subtle border border-warning rounded-lg">
+          <Flex align="center" gap="3" className="px-4 py-3 bg-warning-subtle border border-warning rounded-lg">
             <AlertCircle className="w-5 h-5 text-warning flex-shrink-0" />
             <span className="text-sm text-mission-control-text flex-1">
               {mode === 'single' ? 'Post this tweet to X?' : `Post this ${tweets.filter(t => t.trim()).length}-tweet thread to X?`}
@@ -818,13 +818,14 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
             >
               Cancel
             </Button>
-          </div>
+          </Flex>
         )}
 
         {/* Post result banner */}
         {result && (
-          <div
-            className={`flex items-start gap-3 px-4 py-3 rounded-lg text-sm ${
+          <Flex
+            align="start" gap="3"
+            className={`px-4 py-3 rounded-lg text-sm ${
               result.success
                 ? 'bg-success-subtle border border-success text-success'
                 : 'bg-error-subtle border border-error text-error'
@@ -868,16 +869,16 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                 ×
               </IconButton>
             )}
-          </div>
+          </Flex>
         )}
 
         {/* Scheduled posts list */}
         {!loadingScheduled && scheduled.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-mission-control-text">
+            <Flex align="center" gap="2" className="text-sm font-medium text-mission-control-text">
               <Clock className="w-4 h-4 text-mission-control-accent" />
               Scheduled Posts
-            </div>
+            </Flex>
             <div className="space-y-2">
               {scheduled.map((post) => {
                 let displayContent = post.content;
@@ -888,9 +889,10 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                   }
                 } catch {}
                 return (
-                  <div
+                  <Flex
                     key={post.id}
-                    className={`flex items-start gap-3 p-3 bg-mission-control-surface border rounded-lg ${
+                    align="start" gap="3"
+                    className={`p-3 bg-mission-control-surface border rounded-lg ${
                       editingScheduledId === post.id
                         ? 'border-warning bg-warning-subtle/30'
                         : 'border-mission-control-border'
@@ -926,7 +928,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                     >
                       <Trash2 className="w-4 h-4" />
                     </IconButton>
-                  </div>
+                  </Flex>
                 );
               })}
             </div>
@@ -936,7 +938,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
 
       {/* Action buttons */}
       <div className="px-6 pb-6 pt-4 border-t border-mission-control-border space-y-3">
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           {/* Post button — shows confirmation first */}
           <Button
             onClick={() => setShowConfirm(true)}
@@ -990,7 +992,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
             <Calendar className="w-5 h-5" />
             Schedule
           </Button>
-        </div>
+        </Flex>
       </div>
     </Flex>
   );
