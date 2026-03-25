@@ -1352,8 +1352,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       {/* Header */}
       <div className="shrink-0 border-b border-mission-control-border bg-mission-control-surface">
         <div className="max-w-5xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <Flex align="center" justify="between">
+            <Flex align="center" gap="4">
               <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
                 <Phone size={20} className="text-mission-control-accent" />
               </div>
@@ -1363,8 +1363,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                   {isMeetingActive ? 'Recording in progress' : 'Transcribe and review meetings'}
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
+            </Flex>
+            <Flex align="center" gap="3">
               {statusMessage && (
                 <span className="text-sm text-mission-control-text-dim bg-mission-control-bg px-3 py-1 rounded-full">
                   {statusMessage}
@@ -1374,14 +1374,14 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 size="2"
                 variant={isMuted ? 'soft' : 'ghost'}
                 color={isMuted ? 'red' : 'gray'}
-               
+
                 onClick={toggleMuted}
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
               </IconButton>
-            </div>
-          </div>
+            </Flex>
+          </Flex>
         </div>
       </div>
 
@@ -1417,7 +1417,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {isMeetingActive ? (
                       <div className="space-y-4">
                         {/* Header row */}
-                        <div className="flex items-center gap-3">
+                        <Flex align="center" gap="3">
                           <div className="relative flex-shrink-0 w-10 h-10 rounded-lg bg-error-subtle flex items-center justify-center">
                             <Mic size={18} className="text-error" />
                             <span className="absolute -top-1 -right-1 w-3 h-3 bg-error rounded-full animate-pulse" />
@@ -1433,15 +1433,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             size="2"
                             variant="solid"
                             color="red"
-                           
+
                             className="flex-shrink-0"
                           >
                             <PhoneOff size={15} /> End
                           </Button>
-                        </div>
+                        </Flex>
 
                         {/* Audio waveform */}
-                        <div className="flex items-end gap-0.5 h-8 px-1">
+                        <Flex align="end" gap="1" className="h-8 px-1">
                           {Array.from({ length: 32 }).map((_, i) => {
                             const active = i / 32 < audioLevel * 1.4;
                             const height = active ? `${30 + Math.sin(i * 0.9 + Date.now() / 200) * 50}%` : '15%';
@@ -1450,7 +1450,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                 style={{ height }} />
                             );
                           })}
-                        </div>
+                        </Flex>
 
                         {/* Live transcript feed */}
                         <div className="bg-mission-control-bg rounded-lg p-4 min-h-[80px]">
@@ -1464,7 +1464,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             </div>
                           ) : (
                             <div className="space-y-2">
-                              <div className="flex items-center gap-3 text-mission-control-text-dim">
+                              <Flex align="center" gap="3" className="text-mission-control-text-dim">
                                 <span className="flex gap-1 items-center">
                                   {[0, 1, 2].map(i => (
                                     <span key={i} className="w-1.5 h-1.5 rounded-full bg-success animate-bounce"
@@ -1472,7 +1472,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   ))}
                                 </span>
                                 <span className="text-sm">{statusMessage || 'Listening — audio is being recorded...'}</span>
-                              </div>
+                              </Flex>
                               <p className="text-xs text-mission-control-text-dim">
                                 Audio is recording. Transcript will be generated with speaker labels when the meeting ends.
                               </p>
@@ -1545,19 +1545,17 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         </div>
 
                         {startError && (
-                          <div className="flex items-start gap-3 p-4 bg-error-subtle border border-error-border rounded-lg">
+                          <Flex align="start" gap="3" p="4" className="bg-error-subtle border border-error-border rounded-lg">
                             <XCircle size={18} className="text-error shrink-0 mt-0.5" />
                             <p className="text-sm text-error">{startError}</p>
-                          </div>
+                          </Flex>
                         )}
 
-                        <div className="flex gap-3">
+                        <Flex gap="3">
                           <Button
                             onClick={startMeeting}
                             size="3"
                             variant="solid"
-                            color="green"
-                           
                             className="flex-1"
                           >
                             <Mic size={24} />
@@ -1568,11 +1566,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             size="3"
                             variant="ghost"
                             color="gray"
-                           
                           >
                             <X size={20} />
                           </IconButton>
-                        </div>
+                        </Flex>
                       </div>
                     ) : (
                       <div className="text-center py-8">
@@ -1587,8 +1584,6 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           onClick={() => setShowTitleInput(true)}
                           size="3"
                           variant="solid"
-                          color="green"
-                         
                           className="mx-auto"
                         >
                           <Phone size={24} />
@@ -1602,11 +1597,11 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {/* Upcoming Calendar Events */}
                 {upcomingEvents.length > 0 && !isMeetingActive && (
                   <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                    <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    <Flex align="center" justify="between" p="4" className="border-b border-mission-control-border">
+                      <Flex align="center" gap="2">
                         <Calendar size={18} className="text-mission-control-accent" />
                         <h3 className="font-medium text-mission-control-text">Upcoming Meetings</h3>
-                      </div>
+                      </Flex>
                       <Button
                         onClick={loadUpcomingEvents}
                         disabled={loadingUpcomingEvents}
@@ -1617,7 +1612,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         <Loader2 size={12} className={loadingUpcomingEvents ? 'animate-spin inline' : 'hidden'} />
                         Refresh
                       </Button>
-                    </div>
+                    </Flex>
                     <div className="divide-y divide-mission-control-border">
                       {upcomingEvents.slice(0, 5).map((event) => {
                         const startDate = new Date(event.start?.dateTime || event.start?.date || '');
@@ -1625,7 +1620,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         const isToday = startDate.toDateString() === new Date().toDateString();
                         return (
                           <div key={event.id} className="p-4 hover:bg-mission-control-bg/50 transition-colors">
-                            <div className="flex items-start gap-3">
+                            <Flex align="start" gap="3">
                               <div className="w-12 h-12 rounded-lg bg-mission-control-bg flex flex-col items-center justify-center shrink-0">
                                 <span className="text-xs font-medium text-mission-control-accent">
                                   {isToday ? 'Today' : startDate.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -1647,7 +1642,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   <p className="text-xs text-mission-control-text-dim mt-1 truncate">{event.location}</p>
                                 )}
                               </div>
-                            </div>
+                            </Flex>
                           </div>
                         );
                       })}
@@ -1661,17 +1656,17 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* AI Summary */}
                     {(generatingSummary || aiSummary) && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border flex items-center gap-2">
+                        <Flex align="center" gap="2" p="4" className="border-b border-mission-control-border">
                           <Brain size={18} className="text-review" />
                           <h3 className="font-medium text-mission-control-text">AI Summary</h3>
                           {generatingSummary && <Loader2 size={14} className="animate-spin text-mission-control-text-dim" />}
-                        </div>
+                        </Flex>
                         <div className="p-6">
                           {generatingSummary ? (
-                            <div className="flex items-center gap-3 text-mission-control-text-dim">
+                            <Flex align="center" gap="3" className="text-mission-control-text-dim">
                               <Loader2 size={16} className="animate-spin" />
                               <span>Generating summary...</span>
-                            </div>
+                            </Flex>
                           ) : aiSummary ? (
                             <div className="prose prose-sm prose-invert max-w-none">
                               <MarkdownMessage content={aiSummary} />
@@ -1684,14 +1679,14 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Action Items Approval */}
                     {meetingActionItems.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                        <Flex align="center" justify="between" p="4" className="border-b border-mission-control-border">
+                          <Flex align="center" gap="2">
                             <ListTodo size={18} className="text-warning" />
                             <h3 className="font-medium text-mission-control-text">Action Items</h3>
                             <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                               {pendingItems.length} pending • {approvedItems.length} approved
                             </span>
-                          </div>
+                          </Flex>
                           {pendingItems.length > 0 && (
                             <Button
                               onClick={approveAllPending}
@@ -1703,7 +1698,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               Approve All
                             </Button>
                           )}
-                        </div>
+                        </Flex>
                         <div className="divide-y divide-mission-control-border">
                           {meetingActionItems.map((item) => (
                             <div 
@@ -1723,13 +1718,12 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     }}
                                     className="w-full"
                                   />
-                                  <div className="flex gap-2">
+                                  <Flex gap="2">
                                     <Button
                                       onClick={saveEditedItem}
                                       size="1"
                                       variant="solid"
                                       color="green"
-                                     
                                     >
                                       <Check size={14} />
                                       Save & Approve
@@ -1739,16 +1733,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="1"
                                       variant="ghost"
                                       color="gray"
-                                     
                                     >
                                       Cancel
                                     </Button>
-                                  </div>
+                                  </Flex>
                                 </div>
                               ) : (
-                                <div className="flex items-start justify-between gap-4">
+                                <Flex align="start" justify="between" gap="4">
                                   <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
+                                    <Flex align="center" gap="2" className="mb-1">
                                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                                         item.type === 'task' ? 'bg-info-subtle text-info' :
                                         item.type === 'schedule' ? 'bg-review-subtle text-review' :
@@ -1768,19 +1761,18 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                           Dismissed
                                         </span>
                                       )}
-                                    </div>
+                                    </Flex>
                                     <p className={`text-sm ${item.status === 'dismissed' ? 'line-through text-mission-control-text-dim' : 'text-mission-control-text'}`}>
                                       {item.editedText || item.text}
                                     </p>
                                   </div>
                                   {item.status === 'pending' && (
-                                    <div className="flex items-center gap-1">
+                                    <Flex align="center" gap="1">
                                       <IconButton
                                         onClick={() => approveActionItem(item.id)}
                                         size="2"
                                         variant="ghost"
                                         color="green"
-                                       
                                         title="Approve"
                                       >
                                         <Check size={16} />
@@ -1790,7 +1782,6 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         size="2"
                                         variant="ghost"
                                         color="gray"
-                                       
                                         title="Edit"
                                       >
                                         <Edit3 size={16} />
@@ -1800,20 +1791,19 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         size="2"
                                         variant="ghost"
                                         color="red"
-                                       
                                         title="Dismiss"
                                       >
                                         <XCircle size={16} />
                                       </IconButton>
-                                    </div>
+                                    </Flex>
                                   )}
-                                </div>
+                                </Flex>
                               )}
                             </div>
                           ))}
                         </div>
                         {approvedItems.length > 0 && (
-                          <div className="p-4 border-t border-mission-control-border bg-mission-control-bg/50 flex items-center justify-between">
+                          <Flex align="center" justify="between" p="4" className="border-t border-mission-control-border bg-mission-control-bg/50">
                             <p className="text-sm text-mission-control-text-dim">
                               {approvedItems.length} item{approvedItems.length > 1 ? 's' : ''} ready to create as tasks
                             </p>
@@ -1831,7 +1821,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               <Plus size={16} />
                               Create Tasks
                             </Button>
-                          </div>
+                          </Flex>
                         )}
                       </div>
                     )}
@@ -1839,13 +1829,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Agent-Proposed Tasks */}
                     {proposedTasks.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border flex items-center gap-2">
+                        <Flex align="center" gap="2" className="p-4 border-b border-mission-control-border">
                           <Brain size={18} className="text-review" />
                           <h3 className="font-medium text-mission-control-text">Agent-Proposed Tasks</h3>
                           <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                             {proposedTasks.filter(t => t.status === 'pending').length} pending • {proposedTasks.filter(t => t.status === 'approved').length} approved
                           </span>
-                        </div>
+                        </Flex>
                         <div className="divide-y divide-mission-control-border">
                           {proposedTasks.map((task) => (
                             <div 
@@ -1862,7 +1852,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     placeholder="Edit task title..."
                                     className="w-full"
                                   />
-                                  <div className="flex gap-2">
+                                  <Flex gap="2">
                                     <Button
                                       onClick={() => {
                                         setProposedTasks(prev => prev.map(t =>
@@ -1873,7 +1863,6 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="1"
                                       variant="solid"
                                       color="green"
-                                     
                                     >
                                       Save
                                     </Button>
@@ -1882,14 +1871,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="1"
                                       variant="ghost"
                                       color="gray"
-                                     
                                     >
                                       Cancel
                                     </Button>
-                                  </div>
+                                  </Flex>
                                 </div>
                               ) : (
-                                <div className="flex items-start justify-between gap-4">
+                                <Flex align="start" justify="between" gap="4">
                                   <div className="min-w-0 flex-1">
                                     <p className="font-medium text-mission-control-text">{task.title}</p>
                                     {task.description && (
@@ -1898,14 +1886,14 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     {task.plan && (
                                       <p className="text-xs text-mission-control-text-dim mt-2 italic">Plan: {task.plan}</p>
                                     )}
-                                    <div className="flex items-center gap-2 mt-2">
+                                    <Flex align="center" gap="2" className="mt-2">
                                       <span className="text-xs px-2 py-0.5 bg-mission-control-accent/20 text-mission-control-accent rounded-full">
                                         {task.proposedAgent}
                                       </span>
-                                    </div>
+                                    </Flex>
                                   </div>
                                   {task.status === 'pending' && (
-                                    <div className="flex items-center gap-1 shrink-0">
+                                    <Flex align="center" gap="1" className="shrink-0">
                                       <IconButton
                                         onClick={() => approveProposedTask(task.id)}
                                         size="2"
@@ -1939,9 +1927,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       >
                                         <XCircle size={16} />
                                       </IconButton>
-                                    </div>
+                                    </Flex>
                                   )}
-                                </div>
+                                </Flex>
                               )}
                             </div>
                           ))}
@@ -1972,7 +1960,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-3">
+                    <Flex gap="3">
                       <Button
                         onClick={sendMeetingSummary}
                         size="2"
@@ -1999,7 +1987,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         <Trash2 size={18} />
                         Clear
                       </Button>
-                    </div>
+                    </Flex>
                   </>
                 )}
               </div>
@@ -2010,7 +1998,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {selectedMeeting ? (
                   <div className="space-y-6">
                     {/* Meeting Detail Header */}
-                    <div className="flex items-center justify-between">
+                    <Flex align="center" justify="between">
                       <Button
                         onClick={() => { setSelectedMeeting(null); setMeetingChatMessages([]); }}
                         size="2"
@@ -2020,7 +2008,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         <ChevronRight size={16} className="rotate-180" />
                         Back to list
                       </Button>
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <Button
                           onClick={() => exportMeeting(selectedMeeting)}
                           size="2"
@@ -2068,8 +2056,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         >
                           <Trash2 size={14} />
                         </IconButton>
-                      </div>
-                    </div>
+                      </Flex>
+                    </Flex>
 
                     {/* Meeting Info */}
                     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
@@ -2079,7 +2067,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       {selectedMeeting.oneLiner && (
                         <p className="text-sm text-mission-control-text-dim mb-2">{selectedMeeting.oneLiner}</p>
                       )}
-                      <div className="flex items-center gap-4 text-secondary">
+                      <Flex align="center" gap="4" className="text-secondary">
                         <span className="flex items-center gap-1">
                           <Calendar size={14} />
                           {selectedMeeting.date.toLocaleDateString()}
@@ -2093,7 +2081,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             {formatDuration(selectedMeeting.duration)}
                           </span>
                         )}
-                      </div>
+                      </Flex>
                     </div>
 
                     {/* Summary (from uploaded transcript — stored in rawContent/description) */}
@@ -2168,15 +2156,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Proposed Tasks (from uploaded transcript metadata) — fully actionable */}
                     {selectedMeeting.storedTaskProposals && selectedMeeting.storedTaskProposals.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                        <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+                          <Flex align="center" gap="2">
                             <Zap size={16} className="text-mission-control-accent" />
                             <h3 className="font-medium text-mission-control-text">Proposed Tasks</h3>
                             <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                               {selectedMeeting.storedTaskProposals.filter(t => t.status === 'pending').length} pending
                             </span>
-                          </div>
-                        </div>
+                          </Flex>
+                        </Flex>
                         <div className="divide-y divide-mission-control-border">
                           {selectedMeeting.storedTaskProposals.map(proposal => (
                             <div
@@ -2185,7 +2173,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                 proposal.status === 'rejected' ? 'opacity-30' : ''
                               } ${proposal.status === 'approved' ? 'bg-success-subtle' : ''}`}
                             >
-                              <div className="flex items-start gap-3">
+                              <Flex align="start" gap="3">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                                     <span className="font-medium text-sm text-mission-control-text">{proposal.title}</span>
@@ -2210,7 +2198,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   )}
                                 </div>
                                 {proposal.status === 'pending' && (
-                                  <div className="flex items-center gap-1 shrink-0">
+                                  <Flex align="center" gap="1" className="shrink-0">
                                     <IconButton
                                       onClick={async () => {
                                         // Update local state
@@ -2263,18 +2251,18 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     >
                                       <XCircle size={16} />
                                     </IconButton>
-                                  </div>
+                                  </Flex>
                                 )}
                                 {proposal.status === 'approved' && (
-                                  <div className="flex items-center gap-1 shrink-0 mt-1">
+                                  <Flex align="center" gap="1" className="shrink-0 mt-1">
                                     <CheckCircle2 size={14} className="text-success" />
                                     <span className="text-xs text-success">Created</span>
-                                  </div>
+                                  </Flex>
                                 )}
                                 {proposal.status === 'rejected' && (
                                   <span className="text-xs text-mission-control-text-dim shrink-0 mt-1">Rejected</span>
                                 )}
-                              </div>
+                              </Flex>
                             </div>
                           ))}
                         </div>
@@ -2310,7 +2298,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             ))}
                           </div>
                         )}
-                        <div className="flex gap-2">
+                        <Flex gap="2">
                           <TextField.Root
                             value={meetingChatInput}
                             onChange={(e) => setMeetingChatInput(e.target.value)}
@@ -2327,19 +2315,18 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             disabled={!meetingChatInput.trim() || meetingChatProcessing}
                             size="2"
                             variant="solid"
-                            color="green"
-                           
+
                           >
                             {meetingChatProcessing ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                           </IconButton>
-                        </div>
+                        </Flex>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div>
                     {/* Meetings List */}
-                    <div className="flex items-center justify-between mb-4">
+                    <Flex align="center" justify="between" className="mb-4">
                       <h2 className="text-heading-3">Meetings</h2>
                       <Button
                         onClick={loadPastMeetings}
@@ -2351,12 +2338,12 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         {loadingPastMeetings ? <Spinner size={14} /> : <Loader2 size={14} />}
                         Refresh
                       </Button>
-                    </div>
+                    </Flex>
 
                     {loadingPastMeetings ? (
-                      <div className="flex items-center justify-center py-12">
+                      <Flex align="center" justify="center" className="py-12">
                         <Spinner size={24} />
-                      </div>
+                      </Flex>
                     ) : pastMeetingsError ? (
                       <ErrorDisplay
                         error={pastMeetingsError}
@@ -2379,29 +2366,29 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             onClick={() => setSelectedMeeting(meeting)}
                             className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-4 hover:border-mission-control-accent transition-all group cursor-pointer"
                           >
-                            <div className="flex items-center justify-between mb-2">
+                            <Flex align="center" justify="between" className="mb-2">
                               <div>
                                 <p className="font-medium text-mission-control-text group-hover:text-success transition-all">
                                   {meeting.title || meeting.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                                 </p>
-                                <div className="flex items-center gap-3 text-sm text-mission-control-text-dim">
+                                <Flex align="center" gap="3" className="text-sm text-mission-control-text-dim">
                                   <span>{meeting.time}</span>
                                   {meeting.duration && meeting.duration > 0 && (
                                     <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full">
                                       {formatDuration(meeting.duration)}
                                     </span>
                                   )}
-                                </div>
+                                </Flex>
                               </div>
                               <ChevronRight size={16} className="text-mission-control-text-dim group-hover:text-success transition-all" />
-                            </div>
+                            </Flex>
                             {(meeting.oneLiner || meeting.transcript.length > 0) && (
                               <p className="text-sm text-mission-control-text-dim line-clamp-2 mt-2">
                                 {meeting.oneLiner || meeting.transcript[0]?.slice(0, 150)}
                               </p>
                             )}
                             {(meeting.actionItems.length > 0 || meeting.tasksCreated.length > 0) && (
-                              <div className="flex gap-2 mt-3">
+                              <Flex gap="2" className="mt-3">
                                 {meeting.actionItems.length > 0 && (
                                   <span className="text-xs px-2 py-0.5 bg-warning-subtle text-warning rounded-full">
                                     {meeting.actionItems.length} action items
@@ -2412,7 +2399,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     {meeting.tasksCreated.length} tasks
                                   </span>
                                 )}
-                              </div>
+                              </Flex>
                             )}
                           </button>
                         ))}
@@ -2453,10 +2440,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {/* Progress bar during transcription */}
                 {transcribing && (
                   <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-8">
-                    <div className="flex items-center gap-3 mb-4">
+                    <Flex align="center" gap="3" className="mb-4">
                       <Loader2 size={20} className="animate-spin text-mission-control-accent" />
                       <span className="font-medium text-mission-control-text">Transcribing audio...</span>
-                    </div>
+                    </Flex>
                     <div className="w-full h-3 bg-mission-control-bg rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-mission-control-accent to-success rounded-full transition-all duration-500"
@@ -2538,10 +2525,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {/* Progress bar during processing */}
                 {transcribing && (
                   <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-8">
-                    <div className="flex items-center gap-3 mb-4">
+                    <Flex align="center" gap="3" className="mb-4">
                       <Loader2 size={20} className="animate-spin text-mission-control-accent" />
                       <span className="font-medium text-mission-control-text">Processing transcript...</span>
-                    </div>
+                    </Flex>
                     <div className="w-full h-3 bg-mission-control-bg rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-mission-control-accent to-success rounded-full transition-all duration-500"
@@ -2559,17 +2546,17 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                   <div className="space-y-4">
                     {/* Success — navigate to meeting detail */}
                     <div className="bg-success-subtle border border-success-border rounded-2xl p-5">
-                      <div className="flex items-center gap-3 mb-3">
+                      <Flex align="center" gap="3" className="mb-3">
                         <CheckCircle2 size={20} className="text-success shrink-0" />
                         <p className="font-medium text-success">Transcript processed</p>
-                      </div>
+                      </Flex>
                       <p className="text-sm text-mission-control-text-dim mb-4">
                         {uploadSummary ? 'AI summary generated' : 'Extractive summary created'}
                         {taskProposals.length > 0 && ` with ${taskProposals.length} proposed tasks`}
                         {uploadActionItems.length > 0 && ` and ${uploadActionItems.length} action items`}.
                         View the full meeting to review and approve tasks.
                       </p>
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <Button
                           onClick={async () => {
                             await loadPastMeetings();
@@ -2631,11 +2618,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           size="2"
                           variant="soft"
                           color="gray"
-                         
                         >
                           Upload Another
                         </Button>
-                      </div>
+                      </Flex>
                     </div>
 
                     {/* All detail content (summary, actions, proposals) now lives in meeting detail view */}
@@ -2680,12 +2666,12 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 <div className="space-y-4">
                   {!transcriptionSaved ? (
                     <div className="bg-success-subtle border border-success-border rounded-2xl p-6">
-                      <div className="flex items-center gap-2 mb-4">
+                      <Flex align="center" gap="2" className="mb-4">
                         <CheckCircle2 size={20} className="text-success" />
                         <span className="font-medium text-success">
                           {activeView === 'transcribe' ? 'Transcription Complete' : 'Text Extracted'}
                         </span>
-                      </div>
+                      </Flex>
                       <div className="space-y-3">
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Meeting Name</label>
@@ -2696,14 +2682,12 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             className="w-full"
                           />
                         </div>
-                        <div className="flex gap-3">
+                        <Flex gap="3">
                           <Button
                             onClick={saveTranscriptionAsMeeting}
                             disabled={transcriptionSaving}
                             size="2"
                             variant="solid"
-                            color="green"
-                           
                             className="flex-1"
                           >
                             {transcriptionSaving ? (
@@ -2722,11 +2706,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             size="2"
                             variant="soft"
                             color="gray"
-                           
                           >
                             Copy Text
                           </Button>
-                        </div>
+                        </Flex>
                       </div>
                     </div>
                   ) : (
@@ -2736,12 +2719,11 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       <p className="text-sm text-mission-control-text-dim mb-4">
                         Summary and tasks have been generated. View in the Meetings tab.
                       </p>
-                      <div className="flex gap-3 justify-center">
+                      <Flex gap="3" justify="center">
                         <Button
                           onClick={() => { setActiveView('history'); setTranscriptionResult(''); setTranscriptionSaved(false); }}
                           size="2"
                           variant="solid"
-                          color="green"
                          
                         >
                           View Meetings
@@ -2751,27 +2733,26 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           size="2"
                           variant="soft"
                           color="gray"
-                         
                         >
                           Upload Another
                         </Button>
-                      </div>
+                      </Flex>
                     </div>
                   )}
 
                   {/* Proposed Task Cards from Mission Control */}
                   {proposedTasks.length > 0 && (
                     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                      <Flex align="center" justify="between" p="4" className="border-b border-mission-control-border">
+                        <Flex align="center" gap="2">
                           <Brain size={18} className="text-review" />
                           <h3 className="font-medium text-mission-control-text">Task Cards from Mission Control</h3>
                           <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                             {proposedTasks.filter(t => t.status === 'pending').length} pending
                           </span>
-                        </div>
+                        </Flex>
                         <p className="text-xs text-mission-control-text-dim">Approve to add to Kanban</p>
-                      </div>
+                      </Flex>
                       <div className="divide-y divide-mission-control-border">
                         {proposedTasks.map((task) => (
                           <div
@@ -2788,7 +2769,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   placeholder="Edit task title..."
                                   className="w-full"
                                 />
-                                <div className="flex gap-2">
+                                <Flex gap="2">
                                   <Button
                                     onClick={() => {
                                       setProposedTasks(prev => prev.map(t =>
@@ -2800,7 +2781,6 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     size="1"
                                     variant="solid"
                                     color="green"
-                                   
                                   >
                                     Save & Approve
                                   </Button>
@@ -2809,20 +2789,19 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     size="1"
                                     variant="ghost"
                                     color="gray"
-                                   
                                   >
                                     Cancel
                                   </Button>
-                                </div>
+                                </Flex>
                               </div>
                             ) : (
-                              <div className="flex items-start justify-between gap-4">
+                              <Flex align="start" justify="between" gap="4">
                                 <div className="min-w-0 flex-1">
                                   <p className="font-medium text-mission-control-text">{task.title}</p>
                                   {task.description && (
                                     <p className="text-sm text-mission-control-text-dim mt-1">{task.description}</p>
                                   )}
-                                  <div className="flex items-center gap-2 mt-2">
+                                  <Flex align="center" gap="2" className="mt-2">
                                     <span className="text-xs px-2 py-0.5 bg-mission-control-accent/20 text-mission-control-accent rounded-full">
                                       {task.proposedAgent}
                                     </span>
@@ -2831,16 +2810,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         <Check size={10} /> Added to Kanban
                                       </span>
                                     )}
-                                  </div>
+                                  </Flex>
                                 </div>
                                 {task.status === 'pending' && (
-                                  <div className="flex items-center gap-1 shrink-0">
+                                  <Flex align="center" gap="1" className="shrink-0">
                                     <IconButton
                                       onClick={() => approveProposedTask(task.id)}
                                       size="2"
                                       variant="ghost"
                                       color="green"
-                                     
                                       title="Approve — add to Kanban"
                                     >
                                       <CheckCircle2 size={16} />
@@ -2853,7 +2831,6 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="2"
                                       variant="ghost"
                                       color="gray"
-                                     
                                       title="Edit & Approve"
                                     >
                                       <Edit3 size={16} />
@@ -2863,14 +2840,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       size="2"
                                       variant="ghost"
                                       color="red"
-                                     
                                       title="Reject"
                                     >
                                       <XCircle size={16} />
                                     </IconButton>
-                                  </div>
+                                  </Flex>
                                 )}
-                              </div>
+                              </Flex>
                             )}
                           </div>
                         ))}
