@@ -394,8 +394,8 @@ export function XEnhancedAnalyticsView() {
     <Flex direction="column" height="100%" className="bg-mission-control-bg overflow-hidden">
       {/* Header */}
       <div className="border-b border-mission-control-border shrink-0">
-        <div className="flex items-center justify-between p-4 pb-0">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" p="4" className="pb-0">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/10 rounded-lg">
               <BarChart2 size={24} className="text-mission-control-accent" />
             </div>
@@ -403,8 +403,8 @@ export function XEnhancedAnalyticsView() {
               <h1 className="text-xl font-semibold text-mission-control-text">Enhanced Analytics</h1>
               <p className="text-sm text-mission-control-text-dim">Deep insights for your social media performance</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
               {(['7d', '30d', '90d'] as const).map((range) => (
                 <button
@@ -447,8 +447,8 @@ export function XEnhancedAnalyticsView() {
                 {action.label}
               </Button>
             ))}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* View Tabs */}
         <div className="flex items-center overflow-x-auto px-4">
@@ -486,38 +486,38 @@ export function XEnhancedAnalyticsView() {
             {/* Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <MessageCircle size={16} className="text-info" />
                   <span className="text-sm text-mission-control-text-dim">Total Posts</span>
-                </div>
+                </Flex>
                 <div className="text-2xl font-bold text-mission-control-text">{data.summary.totalPosts}</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <Eye size={16} className="text-mission-control-accent" />
                   <span className="text-sm text-mission-control-text-dim">Impressions</span>
-                </div>
+                </Flex>
                 <div className="text-2xl font-bold text-mission-control-text">{formatNumber(data.summary.totalImpressions)}</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <TrendingUp size={16} className="text-success" />
                   <span className="text-sm text-mission-control-text-dim">Engagement Rate</span>
-                </div>
+                </Flex>
                 <div className="text-2xl font-bold text-success">{data.summary.engagementRate.toFixed(2)}%</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <Users size={16} className="text-mission-control-accent" />
                   <span className="text-sm text-mission-control-text-dim">Followers</span>
-                </div>
+                </Flex>
                 <div className="text-2xl font-bold text-mission-control-accent">{formatNumber(data.summary.followerCount)}</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <Activity size={16} className="text-warning" />
                   <span className="text-sm text-mission-control-text-dim">Avg Likes/Tweet</span>
-                </div>
+                </Flex>
                 <div className="text-2xl font-bold text-warning">{data.summary.avgLikesPerTweet.toFixed(1)}</div>
               </div>
             </div>
@@ -632,7 +632,7 @@ export function XEnhancedAnalyticsView() {
 
             {/* Top Suggestions Preview */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-4">
+              <Flex align="center" justify="between" className="mb-4">
                 <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
                   <Lightbulb size={16} className="text-warning" />
                   Top Insights
@@ -645,11 +645,11 @@ export function XEnhancedAnalyticsView() {
                 >
                   View all →
                 </Button>
-              </div>
+              </Flex>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {data.suggestions.slice(0, 3).map((suggestion) => (
                   <div key={suggestion.id} className="p-4 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
+                    <Flex align="center" gap="2" className="mb-2">
                       <span className="text-xl">{SUGGESTION_ICONS[suggestion.icon] || <Lightbulb size={20} />}</span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                         suggestion.impact === 'high' ? 'bg-success-subtle text-success' :
@@ -658,7 +658,7 @@ export function XEnhancedAnalyticsView() {
                       }`}>
                         {suggestion.impact} impact
                       </span>
-                    </div>
+                    </Flex>
                     <div className="font-medium text-mission-control-text text-sm">{suggestion.title}</div>
                     <div className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">{suggestion.description}</div>
                   </div>
@@ -670,12 +670,12 @@ export function XEnhancedAnalyticsView() {
                 Engagement Rate Trend Sparkline (7-day, from real data)
             ============================================================ */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-1">
+              <Flex align="center" justify="between" className="mb-1">
                 <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
                   <TrendingUp size={16} className="text-success" />
                   Engagement Rate Trend
                 </h3>
-              </div>
+              </Flex>
               <p className="text-xs text-mission-control-text-dim mb-4">Engagement rate by day of week</p>
 
               {engagementTrend.values.length > 0 && engagementTrend.values.some(v => v > 0) ? (
@@ -748,7 +748,7 @@ export function XEnhancedAnalyticsView() {
                   </div>
 
                   {/* Day labels + values */}
-                  <div className="flex justify-between mt-2 px-1">
+                  <Flex justify="between" className="mt-2 px-1">
                     {engagementTrend.labels.map((label, i) => (
                       <div key={label} className="flex flex-col items-center gap-0.5">
                         <span className="text-xs font-semibold text-success">
@@ -757,12 +757,12 @@ export function XEnhancedAnalyticsView() {
                         <span className="text-xs text-mission-control-text-dim">{label}</span>
                       </div>
                     ))}
-                  </div>
+                  </Flex>
                 </>
               ) : (
-                <div className="flex items-center justify-center h-20 text-sm text-mission-control-text-dim">
+                <Flex align="center" justify="center" className="h-20 text-sm text-mission-control-text-dim">
                   No engagement data available for this period
-                </div>
+                </Flex>
               )}
             </div>
 
@@ -770,12 +770,12 @@ export function XEnhancedAnalyticsView() {
                 Best Posting Times Heatmap (from real data)
             ============================================================ */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-1">
+              <Flex align="center" justify="between" className="mb-1">
                 <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
                   <Clock size={16} className="text-info" />
                   Best Posting Times
                 </h3>
-              </div>
+              </Flex>
               <p className="text-xs text-mission-control-text-dim mb-4">
                 Based on your tweet engagement data. Darker cells = higher engagement.
               </p>
@@ -784,7 +784,7 @@ export function XEnhancedAnalyticsView() {
                 <div className="overflow-x-auto">
                   <div className="min-w-[360px]">
                     {/* Day headers */}
-                    <div className="flex ml-24 mb-1.5 gap-1">
+                    <Flex gap="1" className="ml-24 mb-1.5">
                       {DAYS_SHORT.map((d) => (
                         <div
                           key={d}
@@ -793,7 +793,7 @@ export function XEnhancedAnalyticsView() {
                           {d}
                         </div>
                       ))}
-                    </div>
+                    </Flex>
 
                     {/* Time slot rows */}
                     {HEATMAP_TIME_SLOTS.map((slot) => {
@@ -826,21 +826,21 @@ export function XEnhancedAnalyticsView() {
                     })}
 
                     {/* Legend */}
-                    <div className="flex items-center justify-end gap-2 mt-3">
+                    <Flex align="center" justify="end" gap="2" className="mt-3">
                       <span className="text-xs text-mission-control-text-dim">Low</span>
-                      <div className="flex gap-1">
+                      <Flex gap="1">
                         <div className="w-5 h-4 rounded-sm bg-info/10" />
                         <div className="w-5 h-4 rounded-sm bg-info/40" />
                         <div className="w-5 h-4 rounded-sm bg-info/70" />
-                      </div>
+                      </Flex>
                       <span className="text-xs text-mission-control-text-dim">High</span>
-                    </div>
+                    </Flex>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-20 text-sm text-mission-control-text-dim">
+                <Flex align="center" justify="center" className="h-20 text-sm text-mission-control-text-dim">
                   No posting data available for this period
-                </div>
+                </Flex>
               )}
             </div>
 
@@ -848,7 +848,7 @@ export function XEnhancedAnalyticsView() {
                 Content Performance Mini-Table (top 5 posts, real data)
             ============================================================ */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
+              <Flex align="center" justify="between" p="4" className="border-b border-mission-control-border">
                 <div>
                   <h3 className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
                     <BarChart2 size={15} className="text-mission-control-accent" />
@@ -870,7 +870,7 @@ export function XEnhancedAnalyticsView() {
                     Export CSV
                   </Button>
                 )}
-              </div>
+              </Flex>
 
               {recentTopPosts.length > 0 ? (
                 <div className="overflow-x-auto">
@@ -950,9 +950,9 @@ export function XEnhancedAnalyticsView() {
                   </table>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-20 text-sm text-mission-control-text-dim">
+                <Flex align="center" justify="center" className="h-20 text-sm text-mission-control-text-dim">
                   No posts available for this period
-                </div>
+                </Flex>
               )}
             </div>
 
@@ -965,31 +965,31 @@ export function XEnhancedAnalyticsView() {
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4">
               <div className="text-sm text-mission-control-text-dim mb-3">Average Post Performance</div>
               <div className="flex items-center gap-6 flex-wrap">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <Eye size={14} className="text-mission-control-accent" />
                   <span className="text-mission-control-text">{formatFullNumber(avgMetrics.impressions)}</span>
                   <span className="text-xs text-mission-control-text-dim">impressions</span>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   <Heart size={14} className="text-review" />
                   <span className="text-mission-control-text">{avgMetrics.likes}</span>
                   <span className="text-xs text-mission-control-text-dim">likes</span>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   <Repeat size={14} className="text-success" />
                   <span className="text-mission-control-text">{avgMetrics.retweets}</span>
                   <span className="text-xs text-mission-control-text-dim">retweets</span>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   <MessageCircle size={14} className="text-info" />
                   <span className="text-mission-control-text">{avgMetrics.replies}</span>
                   <span className="text-xs text-mission-control-text-dim">replies</span>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   <MousePointer size={14} className="text-mission-control-accent" />
                   <span className="text-mission-control-text">{avgMetrics.clicks}</span>
                   <span className="text-xs text-mission-control-text-dim">clicks</span>
-                </div>
+                </Flex>
               </div>
             </div>
 
@@ -1001,9 +1001,9 @@ export function XEnhancedAnalyticsView() {
               <div className="divide-y divide-mission-control-border">
                 {data.postMetrics.map((post) => (
                   <div key={post.id} className="p-4 hover:bg-mission-control-bg/50 transition-colors">
-                    <div className="flex items-start gap-4">
+                    <Flex align="start" gap="4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <Flex align="center" gap="2" className="mb-1">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                             post.type === 'thread' ? 'bg-success-subtle text-success' :
                             post.type === 'reply' ? 'bg-info-subtle text-info' :
@@ -1015,7 +1015,7 @@ export function XEnhancedAnalyticsView() {
                           <span className="text-xs text-mission-control-text-dim">
                             {new Date(post.created_at).toLocaleDateString()}
                           </span>
-                        </div>
+                        </Flex>
                         <p className="text-sm text-mission-control-text line-clamp-2">{post.content}</p>
                       </div>
                       <div className="shrink-0 flex items-center gap-4">
@@ -1032,32 +1032,32 @@ export function XEnhancedAnalyticsView() {
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                           <div>
-                            <div className="flex items-center justify-center gap-1 text-review">
+                            <Flex align="center" justify="center" gap="1" className="text-review">
                               <Heart size={12} />
-                            </div>
+                            </Flex>
                             <div className="text-xs font-medium text-mission-control-text">{post.likes}</div>
                           </div>
                           <div>
-                            <div className="flex items-center justify-center gap-1 text-success">
+                            <Flex align="center" justify="center" gap="1" className="text-success">
                               <Repeat size={12} />
-                            </div>
+                            </Flex>
                             <div className="text-xs font-medium text-mission-control-text">{post.retweets}</div>
                           </div>
                           <div>
-                            <div className="flex items-center justify-center gap-1 text-info">
+                            <Flex align="center" justify="center" gap="1" className="text-info">
                               <MessageCircle size={12} />
-                            </div>
+                            </Flex>
                             <div className="text-xs font-medium text-mission-control-text">{post.replies}</div>
                           </div>
                           <div>
-                            <div className="flex items-center justify-center gap-1 text-mission-control-accent">
+                            <Flex align="center" justify="center" gap="1" className="text-mission-control-accent">
                               <MousePointer size={12} />
-                            </div>
+                            </Flex>
                             <div className="text-xs font-medium text-mission-control-text">{post.clicks}</div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Flex>
                   </div>
                 ))}
               </div>
@@ -1080,13 +1080,13 @@ export function XEnhancedAnalyticsView() {
               <div className="overflow-x-auto">
                 <div className="min-w-[800px]">
                   {/* Hour labels */}
-                  <div className="flex ml-12 mb-2">
+                  <Flex className="ml-12 mb-2">
                     {[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
                       <div key={hour} className="flex-1 text-xs text-mission-control-text-dim text-center">
                         {hour.toString().padStart(2, '0')}:00
                       </div>
                     ))}
-                  </div>
+                  </Flex>
                   
                   {/* Heatmap grid */}
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, _dayIndex) => (
@@ -1113,9 +1113,9 @@ export function XEnhancedAnalyticsView() {
                   ))}
                   
                   {/* Legend */}
-                  <div className="flex items-center justify-end gap-2 mt-4">
+                  <Flex align="center" justify="end" gap="2" className="mt-4">
                     <span className="text-xs text-mission-control-text-dim">Low</span>
-                    <div className="flex gap-0.5">
+                    <Flex gap="1" style={{ gap: '2px' }}>
                       {[0.2, 0.4, 0.6, 0.8, 1].map((intensity) => (
                         <div
                           key={intensity}
@@ -1123,9 +1123,9 @@ export function XEnhancedAnalyticsView() {
                           style={{ backgroundColor: `${CHART_COLORS.blue}${Math.round(intensity * 255).toString(16).padStart(2, '0')}` }}
                         />
                       ))}
-                    </div>
+                    </Flex>
                     <span className="text-xs text-mission-control-text-dim">High</span>
-                  </div>
+                  </Flex>
                 </div>
               </div>
             </div>
@@ -1133,26 +1133,26 @@ export function XEnhancedAnalyticsView() {
             {/* Best Times Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <Zap size={16} className="text-warning" />
                   <span className="text-sm text-mission-control-text-dim">Best Day</span>
-                </div>
+                </Flex>
                 <div className="text-2xl font-bold text-mission-control-text">{bestTimes.day}</div>
                 <div className="text-sm text-mission-control-text-dim">Highest average engagement</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <Clock size={16} className="text-info" />
                   <span className="text-sm text-mission-control-text-dim">Best Time</span>
-                </div>
+                </Flex>
                 <div className="text-2xl font-bold text-mission-control-text">{bestTimes.hour}</div>
                 <div className="text-sm text-mission-control-text-dim">Peak engagement window</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <Calendar size={16} className="text-success" />
                   <span className="text-sm text-mission-control-text-dim">Best Day + Time</span>
-                </div>
+                </Flex>
                 <div className="text-2xl font-bold text-mission-control-text">{bestTimes.combined}</div>
                 <div className="text-sm text-mission-control-text-dim">Optimal posting slot</div>
               </div>
@@ -1172,10 +1172,10 @@ export function XEnhancedAnalyticsView() {
                   key={suggestion.id}
                   className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5"
                 >
-                  <div className="flex items-start gap-4">
+                  <Flex align="start" gap="4">
                     <div className="text-3xl">{SUGGESTION_ICONS[suggestion.icon] || <Lightbulb size={28} />}</div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      <Flex align="center" gap="2" className="mb-2">
                         <h4 className="font-semibold text-mission-control-text">{suggestion.title}</h4>
                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                           suggestion.impact === 'high' ? 'bg-success-subtle text-success' :
@@ -1184,10 +1184,10 @@ export function XEnhancedAnalyticsView() {
                         }`}>
                           {suggestion.impact} impact
                         </span>
-                      </div>
+                      </Flex>
                       <p className="text-sm text-mission-control-text-dim">{suggestion.description}</p>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               ))}
             </div>
@@ -1221,7 +1221,7 @@ export function XEnhancedAnalyticsView() {
                 resize="vertical"
                 className="w-full"
               />
-              <div className="flex items-center justify-between mt-2">
+              <Flex align="center" justify="between" className="mt-2">
                 <span className="text-xs text-mission-control-text-dim">{predictorDraft.length}/280</span>
                 <Button
                   onClick={async () => {
@@ -1252,7 +1252,7 @@ export function XEnhancedAnalyticsView() {
                   <Sparkles size={14} />
                   {predicting ? 'Predicting...' : 'Predict Performance'}
                 </Button>
-              </div>
+              </Flex>
             </div>
 
             {/* Error */}
@@ -1281,23 +1281,23 @@ export function XEnhancedAnalyticsView() {
                       key={label}
                       className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4"
                     >
-                      <div className="flex items-center gap-1.5 mb-1">
+                      <Flex align="center" gap="1" className="mb-1">
                         <Icon size={14} style={{ color }} />
                         <span className="text-xs text-mission-control-text-dim">{label}</span>
-                      </div>
+                      </Flex>
                       <div className="text-xl font-bold text-mission-control-text">{value}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* Optimal post time */}
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-surface border border-mission-control-border">
+                <Flex align="center" gap="3" p="3" className="rounded-lg bg-mission-control-surface border border-mission-control-border">
                   <Clock size={16} style={{ color: 'var(--color-info)' }} />
                   <div>
                     <div className="text-xs text-mission-control-text-dim">Optimal post time</div>
                     <div className="text-sm font-semibold text-mission-control-text">{prediction.optimalPostTime}</div>
                   </div>
-                </div>
+                </Flex>
 
                 {/* Content signals */}
                 <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4">
