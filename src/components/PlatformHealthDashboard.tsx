@@ -14,7 +14,7 @@ import {
   Download,
   X,
 } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, Flex, IconButton } from '@radix-ui/themes';
 import BaseModal, { BaseModalHeader } from './BaseModal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -90,7 +90,7 @@ function Sparkline({ data, width = 120, height = 36, color = 'var(--color-info, 
     return (
       <div className="flex flex-col gap-1">
         {label && <span className="text-[10px] text-mission-control-text-dim uppercase tracking-wide">{label}</span>}
-        <div style={{ width, height }} className="flex items-center justify-center text-[10px] text-mission-control-text-dim">no data</div>
+        <Flex style={{ width, height }} align="center" justify="center" className="text-[10px] text-mission-control-text-dim">no data</Flex>
       </div>
     );
   }
@@ -157,14 +157,14 @@ function StatusItem({ icon, label, status, detail }: StatusItemProps) {
     'text-error';
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border">
+    <Flex align="center" gap="2" className="px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border">
       <span className="text-mission-control-text-dim">{icon}</span>
       <div className="flex flex-col flex-1 min-w-0">
         <span className="text-xs font-medium text-mission-control-text">{label}</span>
         {detail && <span className="text-[10px] text-mission-control-text-dim truncate">{detail}</span>}
       </div>
       <StatusIcon size={14} className={iconColor} aria-label={status} />
-    </div>
+    </Flex>
   );
 }
 
@@ -308,7 +308,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
       showCloseButton={false}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-mission-control-border">
+      <Flex align="center" gap="3" className="px-6 py-4 border-b border-mission-control-border">
         <Activity size={18} className="text-mission-control-accent flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <h2 className="text-base font-semibold text-mission-control-text">Platform Health</h2>
@@ -367,7 +367,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
         >
           <X size={14} />
         </IconButton>
-      </div>
+      </Flex>
 
       <div className="overflow-y-auto p-6 flex flex-col gap-6" style={{ maxHeight: 'calc(90vh - 64px)' }}>
         {/* ── Traffic light status row ── */}
@@ -495,17 +495,17 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
         )}
 
         {!current && !loading && (
-          <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">
+          <Flex align="center" justify="center" className="py-12 text-mission-control-text-dim text-sm">
             <Activity size={16} className="mr-2" aria-hidden="true" />
             No metrics available yet
-          </div>
+          </Flex>
         )}
 
         {loading && !current && (
-          <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">
+          <Flex align="center" justify="center" className="py-12 text-mission-control-text-dim text-sm">
             <RefreshCw size={16} className="mr-2 animate-spin" aria-hidden="true" />
             Loading metrics...
-          </div>
+          </Flex>
         )}
       </div>
     </BaseModal>

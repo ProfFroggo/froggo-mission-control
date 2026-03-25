@@ -3,7 +3,7 @@
 // Review: 2026-02-17 - suppression retained, pattern is safe
 
 import { useState, useEffect } from 'react';
-import { IconButton, Heading, Text, Spinner } from '@radix-ui/themes';
+import { Flex, IconButton, Heading, Text, Spinner } from '@radix-ui/themes';
 import {
   MessageSquare,
   Users,
@@ -75,10 +75,10 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
   if (loading || !stats) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="flex items-center gap-2 text-mission-control-text-dim">
+        <Flex align="center" gap="2" className="text-mission-control-text-dim">
           <Spinner size="2" />
           Loading usage statistics...
-        </div>
+        </Flex>
       </div>
     );
   }
@@ -98,7 +98,7 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
   return (
     <div className="h-full flex flex-col overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <Flex align="center" justify="between" className="mb-6">
         <div>
           <Heading size="4" weight="medium" className="flex items-center gap-2">
             <Activity className="text-mission-control-accent" size={20} />
@@ -109,21 +109,21 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
           </Text>
         </div>
 
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
 
           <IconButton variant="ghost" size="2" onClick={loadStats} aria-label="Refresh">
             <RefreshCw size={16} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-2">
+          <Flex align="center" justify="between" className="mb-2">
             <MessageSquare size={20} className="text-info" />
             <TrendingUp size={16} className="text-success" />
-          </div>
+          </Flex>
           <div className="text-3xl font-bold text-info mb-1 tabular-nums">
             {stats.totalMessages.toLocaleString()}
           </div>
@@ -134,10 +134,10 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
         </div>
 
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-2">
+          <Flex align="center" justify="between" className="mb-2">
             <Users size={20} className="text-review" />
             <MessageCircle size={16} className="text-info" />
-          </div>
+          </Flex>
           <div className="text-3xl font-bold text-review mb-1 tabular-nums">
             {stats.totalConversations}
           </div>
@@ -148,10 +148,10 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
         </div>
 
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-2">
+          <Flex align="center" justify="between" className="mb-2">
             <Phone size={20} className="text-success" />
             <Activity size={16} className="text-warning" />
-          </div>
+          </Flex>
           <div className="text-3xl font-bold text-success mb-1">
             {topChannel?.channel || 'N/A'}
           </div>
@@ -162,10 +162,10 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
         </div>
 
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-2">
+          <Flex align="center" justify="between" className="mb-2">
             <Mail size={20} className="text-warning" />
             <TrendingUp size={16} className="text-success" />
-          </div>
+          </Flex>
           <div className="text-3xl font-bold text-warning mb-1 tabular-nums">
             {stats.avgResponseTime.toFixed(1)}m
           </div>
