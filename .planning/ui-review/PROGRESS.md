@@ -13,7 +13,7 @@
 - [x] **001** `Screenshot 2026-03-24 at 23.05.11.png` — real badge counts (999 cap), dedup messages by id, staleness indicator (>3d = warning clock on timestamp)
 - [x] **002** `Screenshot 2026-03-24 at 23.05.23.png` — Communications panel clean: no green CTAs, proper violet accent, badges use 999 cap, token-based colors throughout
 - [x] **003** `Screenshot 2026-03-24 at 23.05.27.png` — Dashboard clean: header buttons use outline variant, Online badge uses semantic grass color (connected=success), Quick Actions use default violet accent
-- [ ] **004** `Screenshot 2026-03-24 at 23.05.34.png`
+- [x] **004** `Screenshot 2026-03-24 at 23.05.34.png` — Task Board empty state clean: New Task button uses default violet accent, empty state messages are contextual and action-oriented
 - [ ] **005** `Screenshot 2026-03-24 at 23.05.43.png`
 - [ ] **006** `Screenshot 2026-03-24 at 23.05.49.png`
 - [ ] **007** `Screenshot 2026-03-24 at 23.05.56.png`
