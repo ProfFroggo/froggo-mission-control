@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Target, Zap } from 'lucide-react';
-import { Button, Flex, Box } from '@radix-ui/themes';
+import { Flex, Box } from '@radix-ui/themes';
 import XResearchView from './XResearchView';
 import XCompetitorTracker from './XCompetitorTracker';
 
@@ -36,30 +36,29 @@ export default function XIntelligenceView() {
       <Flex align="center" justify="between" px="4" py="2" className="border-b border-mission-control-border bg-mission-control-surface">
         <Flex align="center" gap="1">
           {SUB_TABS.map((tab) => (
-            <Button
+            <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveSubTab(tab.id)}
-              variant={activeSubTab === tab.id ? 'soft' : 'ghost'}
-              color={activeSubTab === tab.id ? 'violet' : 'gray'}
-              size="1"
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                activeSubTab === tab.id ? 'border-mission-control-accent text-mission-control-accent' : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {tab.icon}
               {tab.label}
-            </Button>
+            </button>
           ))}
         </Flex>
         <Flex align="center" gap="1">
           {AI_ACTIONS[activeSubTab]?.map((action, i) => (
-            <Button
+            <button
               key={i}
               onClick={() => dispatchToAgent(action.prompt)}
-              variant="ghost"
-              color="violet"
-              size="1"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <Zap size={10} />
               {action.label}
-            </Button>
+            </button>
           ))}
         </Flex>
       </Flex>

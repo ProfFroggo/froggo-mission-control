@@ -26,11 +26,11 @@ export const CommandInput = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, ref) => (
   <Flex align="center" gap="3" className="border-b border-mission-control-border px-4 py-3">
-    <Search size={16} className="text-mission-control-text-dim/60 flex-shrink-0" />
+    <Search size={16} className="text-mission-control-text-dim flex-shrink-0" />
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
-        'flex-1 bg-transparent text-sm text-mission-control-text placeholder:text-mission-control-text-dim/40 outline-none',
+        'flex-1 bg-transparent text-sm text-mission-control-text placeholder:text-mission-control-text-dim/50 outline-none',
         className
       )}
       {...props}
@@ -57,7 +57,7 @@ export const CommandEmpty = React.forwardRef<
 >((props, ref) => (
   <CommandPrimitive.Empty
     ref={ref}
-    className="py-8 text-center text-sm text-mission-control-text-dim/60"
+    className="py-8 text-center text-sm text-mission-control-text-dim"
     {...props}
   />
 ));
@@ -70,7 +70,7 @@ export const CommandGroup = React.forwardRef<
   <CommandPrimitive.Group
     ref={ref}
     className={cn(
-      '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-mission-control-text-dim/60',
+      '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-mission-control-text-dim',
       className
     )}
     {...props}
@@ -98,7 +98,9 @@ export const CommandItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-3 py-2 text-sm outline-none transition-colors',
-      'text-mission-control-text aria-selected:bg-mission-control-border/40',
+      'text-mission-control-text',
+      'aria-selected:bg-[var(--mission-control-accent)]/12 aria-selected:text-mission-control-accent',
+      'data-[selected=true]:bg-[var(--mission-control-accent)]/12 data-[selected=true]:text-mission-control-accent',
       'data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-40',
       className
     )}
@@ -108,5 +110,5 @@ export const CommandItem = React.forwardRef<
 CommandItem.displayName = CommandPrimitive.Item.displayName;
 
 export function CommandShortcut({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
-  return <span className={cn('ml-auto text-[11px] tracking-widest text-mission-control-text-dim/40', className)} {...props} />;
+  return <span className={cn('ml-auto text-[11px] tracking-widest text-mission-control-text-dim/60', className)} {...props} />;
 }

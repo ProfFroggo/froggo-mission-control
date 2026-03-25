@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Button, IconButton, Spinner, Flex } from '@radix-ui/themes';
+import { Button, Spinner, Flex } from '@radix-ui/themes';
 import { FileAudio, Download, Trash2, Upload, Sparkles } from 'lucide-react';
 
 interface TranscriptionResult {
@@ -171,7 +171,7 @@ export default function MeetingTranscriptionPanel() {
       </div>
 
       {error && (
-        <div className="mx-4 mt-2 p-3 bg-error-subtle text-error rounded-lg text-sm">{error}</div>
+        <div className="mx-4 mt-2 p-3 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-lg text-sm">{error}</div>
       )}
 
       {/* Results */}
@@ -184,40 +184,38 @@ export default function MeetingTranscriptionPanel() {
           </div>
         ) : (
           results.map(result => (
-            <div key={result.id} className="bg-mission-control-surface rounded-lg p-4 space-y-3">
+            <div key={result.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 space-y-3">
               <Flex align="center" justify="between">
                 <div>
                   <div className="font-medium">{result.filename}</div>
-                  <div className="text-xs text-mission-control-text-dim">{new Date(result.timestamp).toLocaleString()}</div>
+                  <div className="text-xs text-mission-control-text-dim/70 tabular-nums mt-0.5">{new Date(result.timestamp).toLocaleString()}</div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-1">
                   {!result.summary && (
-                    <IconButton
+                    <button
                       onClick={() => summarize(result.id)}
                       disabled={summarizingIds.has(result.id)}
-                      variant="ghost"
-                      color="violet"
-                      size="2"
                       title="AI Summarize"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50"
                     >
                       {summarizingIds.has(result.id) ? <Spinner /> : <Sparkles className="w-4 h-4" />}
-                    </IconButton>
+                    </button>
                   )}
-                  <IconButton onClick={() => downloadTranscript(result)} variant="ghost" color="gray" size="2" title="Download">
+                  <button onClick={() => downloadTranscript(result)} title="Download" className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                     <Download className="w-4 h-4" />
-                  </IconButton>
-                  <IconButton onClick={() => deleteResult(result.id)} variant="ghost" color="red" size="2" title="Delete">
+                  </button>
+                  <button onClick={() => deleteResult(result.id)} title="Delete" className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-border/40 transition-colors">
                     <Trash2 className="w-4 h-4" />
-                  </IconButton>
+                  </button>
                 </div>
               </Flex>
 
-              <div className="text-sm text-mission-control-text max-h-40 overflow-y-auto whitespace-pre-wrap bg-mission-control-bg rounded p-3">
+              <div className="text-sm text-mission-control-text/70 max-h-40 overflow-y-auto whitespace-pre-wrap bg-mission-control-bg border border-mission-control-border/50 rounded-lg p-3">
                 {result.transcript}
               </div>
 
               {errors[result.id] && (
-                <div className="p-2 bg-error-subtle text-error rounded text-xs">{errors[result.id]}</div>
+                <div className="p-2 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded text-xs">{errors[result.id]}</div>
               )}
 
               {result.summary && (
@@ -226,7 +224,7 @@ export default function MeetingTranscriptionPanel() {
                   <p className="text-sm text-mission-control-text">{result.summary.summary}</p>
                   {result.summary.actionItems.length > 0 && (
                     <div>
-                      <div className="text-xs font-medium text-warning mb-1">Action Items</div>
+                      <div className="text-xs font-medium text-[var(--color-warning)] mb-1">Action Items</div>
                       <ul className="text-xs text-mission-control-text-dim space-y-1">
                         {result.summary.actionItems.map((item, i) => <li key={i}>- {item}</li>)}
                       </ul>
@@ -234,7 +232,7 @@ export default function MeetingTranscriptionPanel() {
                   )}
                   {result.summary.keyDecisions.length > 0 && (
                     <div>
-                      <div className="text-xs font-medium text-info mb-1">Key Decisions</div>
+                      <div className="text-xs font-medium text-[var(--color-info)] mb-1">Key Decisions</div>
                       <ul className="text-xs text-mission-control-text-dim space-y-1">
                         {result.summary.keyDecisions.map((d, i) => <li key={i}>- {d}</li>)}
                       </ul>

@@ -7,9 +7,8 @@ import {
   Check,
   Zap,
   Rocket,
-  ChevronDown,
 } from 'lucide-react';
-import { Button, Flex, IconButton, Select, TextField } from '@radix-ui/themes';
+import { Button, Flex, Select, TextField } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 
 // ─────────────────────────────────────────────
@@ -51,23 +50,49 @@ const FALLBACK_AGENTS: AgentDef[] = [
 const AGENT_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#6366f1', '#14b8a6', '#e11d48', '#8b5cf6', '#eab308'];
 
 // ─────────────────────────────────────────────
-// Step dots progress indicator
+// Step progress indicator
 // ─────────────────────────────────────────────
 function StepDots({ total, current }: { total: number; current: number }) {
   return (
-    <div className="flex items-center gap-1.5" role="progressbar" aria-valuenow={current + 1} aria-valuemax={total}>
-      {Array.from({ length: total }).map((_, i) => (
-        <span
-          key={i}
-          className={`block h-1.5 rounded-full transition-all duration-300 ${
-            i === current
-              ? 'w-6 bg-mission-control-accent'
-              : i < current
-              ? 'w-1.5 bg-mission-control-accent/50'
-              : 'w-1.5 bg-mission-control-border'
-          }`}
-        />
-      ))}
+    <div
+      className="flex items-center"
+      role="progressbar"
+      aria-valuenow={current + 1}
+      aria-valuemax={total}
+      aria-label={`Step ${current + 1} of ${total}`}
+    >
+      {Array.from({ length: total }).map((_, i) => {
+        const isComplete = i < current;
+        const isActive = i === current;
+        return (
+          <div key={i} className="flex items-center">
+            <div
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors duration-200 flex-shrink-0 ${
+                isActive
+                  ? 'bg-mission-control-accent text-white'
+                  : isComplete
+                  ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                  : 'bg-mission-control-border/60 text-mission-control-text-dim'
+              }`}
+            >
+              {isComplete ? (
+                <Check size={10} />
+              ) : (
+                i + 1
+              )}
+            </div>
+            {i < total - 1 && (
+              <div className="w-6 h-px mx-0.5 flex-shrink-0">
+                <div
+                  className={`h-full transition-colors duration-300 ${
+                    i < current ? 'bg-mission-control-accent/50' : 'bg-mission-control-border'
+                  }`}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -82,7 +107,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
       <div
         className="relative -mx-6 -mt-2 h-36 rounded-t-xl overflow-hidden flex items-center justify-center"
         style={{
-          background: 'linear-gradient(135deg, var(--mission-control-accent) 0%, #3b82f6 50%, #a855f7 100%)',
+          background: 'linear-gradient(135deg, var(--mission-control-accent) 0%, var(--color-info) 50%, var(--color-review) 100%)',
           backgroundSize: '200% 200%',
           animation: 'ob-gradient-shift 6s ease infinite',
         }}
@@ -117,7 +142,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
         ))}
       </div>
 
-      <Button onClick={onNext} variant="solid" color="grass" size="3" className="w-full">
+      <Button onClick={onNext} variant="solid" color="violet" size="3" className="w-full">
         Get started
         <ArrowRight size={16} />
       </Button>
@@ -198,26 +223,27 @@ function StepPlatformSetup({
               { value: '6-20', label: '6–20' },
               { value: '20+', label: '20+' },
             ].map(opt => (
-              <Button
+              <button
                 key={opt.value}
+                type="button"
                 onClick={() => onChange({ ...data, teamSize: opt.value })}
-                size="2"
-                variant={data.teamSize === opt.value ? 'soft' : 'outline'}
-               
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  data.teamSize === opt.value ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 {opt.label}
-              </Button>
+              </button>
             ))}
           </div>
         </div>
       </div>
 
       <Flex align="center" gap="3">
-        <Button onClick={onBack} variant="ghost" color="gray" size="2">
+        <button type="button" onClick={onBack} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
           <ArrowLeft size={14} />
           Back
-        </Button>
-        <Button onClick={onNext} variant="solid" color="grass" size="2" className="flex-1">
+        </button>
+        <Button onClick={onNext} variant="solid" color="violet" size="2" className="flex-1">
           Continue
           <ArrowRight size={16} />
         </Button>
@@ -278,7 +304,7 @@ function StepMeetAgents({
               key={agent.id}
               type="button"
               onClick={() => onToggle(agent.id)}
-              className={`w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-all duration-150 ${
+              className={`w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-colors duration-150 ${
                 isSelected
                   ? 'border-mission-control-accent bg-mission-control-accent/5'
                   : 'border-mission-control-border bg-mission-control-bg hover:border-mission-control-accent/40'
@@ -310,16 +336,15 @@ function StepMeetAgents({
       </div>
 
       <Flex align="center" gap="3">
-        <Button onClick={onBack} variant="ghost" color="gray" size="2">
+        <button type="button" onClick={onBack} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
           <ArrowLeft size={14} />
           Back
-        </Button>
+        </button>
         <Button
           onClick={onNext}
           disabled={selected.size === 0 || creating}
           variant="solid"
-          color="grass"
-          size="2"
+                   size="2"
           className="flex-1"
         >
           {creating ? 'Adding agents...' : `Add ${selected.size} agent${selected.size !== 1 ? 's' : ''} & continue`}
@@ -377,7 +402,7 @@ function StepFirstTask({
       <div className="space-y-3.5">
         <div>
           <label htmlFor="ob-task-title" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
-            Task title <span className="text-error">*</span>
+            Task title <span className="text-[var(--color-error)]">*</span>
           </label>
           <TextField.Root
             id="ob-task-title"
@@ -389,7 +414,7 @@ function StepFirstTask({
             placeholder="e.g. Draft a product announcement"
             disabled={taskCreated}
           />
-          {error && <p className="mt-1 text-xs text-error">{error}</p>}
+          {error && <p className="mt-1 text-xs text-[var(--color-error)]">{error}</p>}
         </div>
 
         <div>
@@ -427,16 +452,15 @@ function StepFirstTask({
       </div>
 
       <Flex align="center" gap="3">
-        <Button onClick={onBack} disabled={loading} variant="ghost" color="gray" size="2">
+        <button type="button" onClick={onBack} disabled={loading} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50">
           <ArrowLeft size={14} />
           Back
-        </Button>
+        </button>
         <Button
           onClick={handleSubmit}
           disabled={loading || taskCreated}
           variant="solid"
-          color="grass"
-          size="2"
+                   size="2"
           className="flex-1"
         >
           {loading ? 'Creating...' : taskCreated ? 'Task created' : 'Create task & continue'}
@@ -446,15 +470,12 @@ function StepFirstTask({
       </Flex>
 
       <div className="text-center">
-        <Button
+        <button
           onClick={onSkip}
-          variant="ghost"
-          size="1"
-         
-          color="gray"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           Skip for now
-        </Button>
+        </button>
       </div>
     </div>
   );
@@ -487,7 +508,7 @@ function StepReady({
       {/* Hero */}
       <div
         className="relative -mx-6 -mt-2 h-28 rounded-t-xl overflow-hidden flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, var(--mission-control-accent) 0%, #3b82f6 100%)' }}
+        style={{ background: 'linear-gradient(135deg, var(--mission-control-accent) 0%, var(--color-info) 100%)' }}
       >
         <div className="text-center z-10 px-4">
           <Rocket size={28} className="text-white mx-auto mb-1" />
@@ -518,7 +539,7 @@ function StepReady({
         ))}
       </div>
 
-      <Button onClick={onLaunch} disabled={loading} variant="solid" color="grass" size="3" className="w-full">
+      <Button onClick={onLaunch} disabled={loading} variant="solid" color="violet" size="3" className="w-full">
         {loading ? 'Saving...' : 'Launch Mission Control'}
         {!loading && <Rocket size={16} />}
       </Button>
@@ -749,9 +770,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           {/* Header */}
           <Flex align="center" justify="between" className="px-6 pt-5 pb-0">
             <StepDots total={TOTAL_STEPS} current={step} />
-            <IconButton onClick={handleSkipAll} variant="ghost" color="gray" size="1" aria-label="Skip onboarding">
+            <button onClick={handleSkipAll} aria-label="Skip onboarding" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={14} />
-            </IconButton>
+            </button>
           </Flex>
 
           {/* Step content */}
@@ -924,7 +945,7 @@ export function QuickTips({ onDone }: QuickTipsProps) {
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none" role="dialog" aria-modal="true" aria-label="Quick tips">
-      <div className="absolute inset-0 bg-black/50 pointer-events-auto" onClick={handleSkip} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto" onClick={handleSkip} />
 
       {rect && (
         <div
@@ -939,35 +960,35 @@ export function QuickTips({ onDone }: QuickTipsProps) {
       )}
 
       <div
-        className="absolute w-80 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl pointer-events-auto"
+        className="absolute w-80 bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl pointer-events-auto"
         style={{ top: pos.top, left: pos.left }}
       >
         <div className="p-4 space-y-3">
           <Flex align="start" justify="between" gap="2">
             <div>
-              <p className="text-xs text-mission-control-accent font-medium uppercase tracking-wide">
+              <p className="text-[10px] text-mission-control-accent font-bold uppercase tracking-wide">
                 Tip {tipIndex + 1} of {TIPS.length}
               </p>
               <h3 className="text-sm font-semibold text-mission-control-text mt-0.5">{tip.title}</h3>
               <p className="text-xs text-mission-control-text-dim mt-1 leading-relaxed">{tip.content}</p>
             </div>
-            <IconButton onClick={handleSkip} variant="ghost" color="gray" size="1" aria-label="Close tips" className="flex-shrink-0">
+            <button onClick={handleSkip} aria-label="Close tips" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0">
               <X size={14} />
-            </IconButton>
+            </button>
           </Flex>
 
           <div className="h-0.5 bg-mission-control-border rounded-full overflow-hidden">
             <div
-              className="h-full bg-mission-control-accent transition-all duration-300"
+              className="h-full bg-mission-control-accent transition-[width] duration-300"
               style={{ width: `${((tipIndex + 1) / TIPS.length) * 100}%` }}
             />
           </div>
 
           <Flex align="center" justify="between">
-            <Button onClick={handleSkip} variant="ghost" color="gray" size="1">
+            <button type="button" onClick={handleSkip} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               Skip tips
-            </Button>
-            <Button onClick={handleNext} variant="solid" color="grass" size="1">
+            </button>
+            <Button onClick={handleNext} variant="solid" color="violet" size="1">
               {isLast ? (
                 <>
                   <Check size={12} />

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, BookOpen, RefreshCw } from 'lucide-react';
-import { Button, IconButton, Flex } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -90,23 +90,22 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
         aria-label="Close training log"
       />
       <div
-        className={`relative w-full max-w-4xl bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}
+        className={`relative w-full max-w-4xl bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}
       >
         {/* Header */}
-        <Flex align="center" gap="3" className="p-4 border-b border-mission-control-border">
-          <BookOpen size={20} className="text-mission-control-accent" />
-          <h2 className="text-lg font-semibold text-mission-control-text flex-1">Training Log</h2>
-          <IconButton
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="2">
+            <BookOpen size={16} className="text-mission-control-accent" />
+            <span className="text-base font-semibold text-mission-control-text">Training Log</span>
+          </Flex>
+          <button
             onClick={handleClose}
             aria-label="Close"
-            variant="ghost"
-            color="gray"
-            size="2"
-
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
-            <X size={18} />
-          </IconButton>
-        </Flex>
+            <X size={15} />
+          </button>
+        </div>
 
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
@@ -120,17 +119,19 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
               </div>
             ) : (
               files.map((file) => (
-                <Button
+                <button
                   key={file.name}
+                  type="button"
                   onClick={() => loadFileContent(file)}
-                  variant={selectedFile?.name === file.name ? 'soft' : 'ghost'}
-                  color={selectedFile?.name === file.name ? 'blue' : 'gray'}
-                  size="2"
-                  className="w-full text-left px-3 py-2 rounded-lg flex-col items-start h-auto"
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedFile?.name === file.name
+                      ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                      : 'text-mission-control-text hover:bg-mission-control-border/30'
+                  }`}
                 >
                   <div className="font-medium text-xs line-clamp-2 mb-0.5">{file.name}</div>
                   <div className="text-[10px] opacity-70">{formatDate(file.modifiedAt)}</div>
-                </Button>
+                </button>
               ))
             )}
           </div>

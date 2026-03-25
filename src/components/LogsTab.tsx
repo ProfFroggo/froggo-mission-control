@@ -118,7 +118,7 @@ export default function LogsTab() {
           const isDebug = /\bdebug\b/i.test(line);
           return (
             <div key={i} className={`py-0.5 leading-relaxed whitespace-pre-wrap break-all ${
-              isError ? 'text-error' : isWarn ? 'text-warning' : isDebug ? 'text-info/60' : 'text-mission-control-text-dim'
+              isError ? 'text-[var(--color-error)]' : isWarn ? 'text-[var(--color-warning)]' : isDebug ? 'text-[var(--color-info)]/60' : 'text-mission-control-text-dim'
             }`}>
               {line}
             </div>

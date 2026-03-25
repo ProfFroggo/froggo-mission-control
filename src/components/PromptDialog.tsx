@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { Button, IconButton, TextArea, TextField } from '@radix-ui/themes';
+import { TextArea, TextField } from '@radix-ui/themes';
 import BaseModal from './BaseModal';
 import { LoadingButton } from './LoadingStates';
 
@@ -128,16 +128,14 @@ export default function PromptDialog({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <h2 className="text-base font-semibold text-mission-control-text">{title}</h2>
-          <IconButton
+          <button
             onClick={onClose}
             disabled={isSubmitting}
-            size="2"
-            variant="ghost"
-           
             aria-label="Close"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <X size={16} />
-          </IconButton>
+          </button>
         </div>
 
         {/* Body */}
@@ -172,20 +170,20 @@ export default function PromptDialog({
 
           {/* Error */}
           {submitError && (
-            <p className="text-sm text-error">{submitError}</p>
+            <p className="text-sm text-[var(--color-error)]">{submitError}</p>
           )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
-          <Button
+          <button
+            type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            size="2"
-            variant="ghost"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {cancelLabel}
-          </Button>
+          </button>
           <LoadingButton
             onClick={handleSubmit}
             loading={isSubmitting || loading}

@@ -49,13 +49,13 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
   );
 
   const getColor = (value: number) => {
-    if (value === 0) return 'bg-mission-control-border';
+    if (value === 0) return 'bg-mission-control-border/40';
     const intensity = (value / maxActivity) * 100;
-    if (intensity < 20) return 'bg-success-subtle';
-    if (intensity < 40) return 'bg-success-subtle';
-    if (intensity < 60) return 'bg-success-subtle';
-    if (intensity < 80) return 'bg-success-subtle';
-    return 'bg-success';
+    if (intensity < 20) return 'bg-[var(--color-success)]/15';
+    if (intensity < 40) return 'bg-[var(--color-success)]/30';
+    if (intensity < 60) return 'bg-[var(--color-success)]/50';
+    if (intensity < 80) return 'bg-[var(--color-success)]/70';
+    return 'bg-[var(--color-success)]';
   };
 
   const peakDay = DAYS[
@@ -73,8 +73,13 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-mission-control-text-dim">Loading heatmap...</div>
+      <div className="space-y-4">
+        <div className="grid grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-20 bg-mission-control-border/20 rounded-xl animate-pulse" />
+          ))}
+        </div>
+        <div className="h-[280px] bg-mission-control-border/20 rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -84,31 +89,30 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
       {/* Header */}
       <Flex align="center" justify="between" className="mb-6">
         <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Activity className="text-mission-control-accent" size={20} />
+          <h2 className="text-sm font-semibold flex items-center gap-2 text-mission-control-text">
+            <Activity className="text-mission-control-accent" size={16} />
             Productivity Heatmap
           </h2>
-          <p className="text-sm text-mission-control-text-dim mt-1">
+          <p className="text-[10px] uppercase tracking-wider text-mission-control-text-dim mt-1">
             Activity patterns by day and hour
           </p>
         </div>
-
       </Flex>
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="text-sm text-mission-control-text-dim mb-1">Total Activity</div>
-          <div className="text-2xl font-bold text-success">{totalActivity}</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Total Activity</div>
+          <div className="text-2xl font-bold tabular-nums text-mission-control-text">{totalActivity}</div>
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="text-sm text-mission-control-text-dim mb-1">Peak Day</div>
-          <div className="text-2xl font-bold text-info">{peakDay}</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Peak Day</div>
+          <div className="text-2xl font-bold text-mission-control-text">{peakDay}</div>
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="text-sm text-mission-control-text-dim mb-1">Peak Hour</div>
-          <div className="text-2xl font-bold text-review">
-            {peakHour}:00 - {peakHour + 1}:00
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Peak Hour</div>
+          <div className="text-2xl font-bold tabular-nums text-mission-control-text">
+            {peakHour}:00 – {peakHour + 1}:00
           </div>
         </div>
       </div>
@@ -138,8 +142,7 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
               {aggregatedData[dayIndex].map((value, hour) => (
                 <div
                   key={hour}
-                  className={`aspect-square mx-px rounded cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-mission-control-accent ${getColor(value)}`}
-                  style={{ maxHeight: '2rem' }}
+                  className={`aspect-square mx-px rounded cursor-pointer transition-[colors,transform] hover:scale-110 hover:ring-2 hover:ring-mission-control-accent max-h-8 ${getColor(value)}`}
                   title={`${day} ${hour}:00 - ${value} activities`}
                   role="presentation"
                   onMouseEnter={() => {
@@ -158,12 +161,12 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
           <Flex align="center" gap="2" className="mt-6">
             <span className="text-xs text-mission-control-text-dim">Less</span>
             <Flex gap="1">
-              <div className="w-4 h-4 rounded bg-mission-control-border" />
-              <div className="w-4 h-4 rounded bg-success-subtle" />
-              <div className="w-4 h-4 rounded bg-success-subtle" />
-              <div className="w-4 h-4 rounded bg-success-subtle" />
-              <div className="w-4 h-4 rounded bg-success-subtle" />
-              <div className="w-4 h-4 rounded bg-success" />
+              <div className="w-4 h-4 rounded bg-mission-control-border/40" />
+              <div className="w-4 h-4 rounded bg-[var(--color-success)]/15" />
+              <div className="w-4 h-4 rounded bg-[var(--color-success)]/30" />
+              <div className="w-4 h-4 rounded bg-[var(--color-success)]/50" />
+              <div className="w-4 h-4 rounded bg-[var(--color-success)]/70" />
+              <div className="w-4 h-4 rounded bg-[var(--color-success)]" />
             </Flex>
             <span className="text-xs text-mission-control-text-dim">More</span>
           </Flex>
@@ -183,31 +186,31 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
       </div>
 
       {/* Insights */}
-      <div className="mt-6 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-        <h3 className="font-medium mb-3 flex items-center gap-2">
-          <Calendar size={16} className="text-mission-control-accent" />
+      <div className="mt-6 bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+        <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+          <Calendar size={12} className="text-mission-control-text-dim" />
           Pattern Insights
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-3 bg-mission-control-bg rounded-lg">
-            <div className="text-sm text-mission-control-text-dim mb-1">Most productive day</div>
-            <div className="font-medium text-success">{peakDay}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="p-3 bg-mission-control-border/10 rounded-lg">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Most productive day</div>
+            <div className="text-sm font-medium text-mission-control-text">{peakDay}</div>
           </div>
-          <div className="p-3 bg-mission-control-bg rounded-lg">
-            <div className="text-sm text-mission-control-text-dim mb-1">Peak productivity time</div>
-            <div className="font-medium text-info">
-              {peakHour}:00 - {peakHour + 1}:00
+          <div className="p-3 bg-mission-control-border/10 rounded-lg">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Peak productivity time</div>
+            <div className="text-sm font-medium tabular-nums text-mission-control-text">
+              {peakHour}:00 – {peakHour + 1}:00
             </div>
           </div>
-          <div className="p-3 bg-mission-control-bg rounded-lg">
-            <div className="text-sm text-mission-control-text-dim mb-1">Avg activities/day</div>
-            <div className="font-medium text-review">
+          <div className="p-3 bg-mission-control-border/10 rounded-lg">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Avg activities/day</div>
+            <div className="text-sm font-medium tabular-nums text-mission-control-text">
               {days > 0 ? Math.round(totalActivity / days) : 0}
             </div>
           </div>
-          <div className="p-3 bg-mission-control-bg rounded-lg">
-            <div className="text-sm text-mission-control-text-dim mb-1">Working hours span</div>
-            <div className="font-medium text-warning">
+          <div className="p-3 bg-mission-control-border/10 rounded-lg">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Working hours span</div>
+            <div className="text-sm font-medium tabular-nums text-mission-control-text">
               {HOURS.filter((h) => aggregatedData.flat()[h] > 0).length}h
             </div>
           </div>

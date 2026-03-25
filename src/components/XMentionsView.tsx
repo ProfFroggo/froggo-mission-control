@@ -202,7 +202,7 @@ export const XMentionsView: React.FC = () => {
             href={`https://twitter.com/${mention.author_username}/status/${mention.tweet_id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-info hover:underline"
+            className="text-[var(--color-info)] hover:underline"
           >
             View on X →
           </a>
@@ -210,32 +210,41 @@ export const XMentionsView: React.FC = () => {
 
         {/* Status badges */}
         <Flex align="center" gap="2" className="mb-3">
-          <Button
+          <button
+            type="button"
             onClick={() => updateStatus(mention.id, 'pending')}
-            variant={mention.reply_status === 'pending' ? 'soft' : 'ghost'}
-            color={mention.reply_status === 'pending' ? 'amber' : 'gray'}
-            size="1"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+              mention.reply_status === 'pending'
+                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Clock size={12} /> Pending
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
             onClick={() => updateStatus(mention.id, 'considering')}
-            variant={mention.reply_status === 'considering' ? 'soft' : 'ghost'}
-            color={mention.reply_status === 'considering' ? 'blue' : 'gray'}
-            size="1"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+              mention.reply_status === 'considering'
+                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <HelpCircle size={12} /> Considering
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
             onClick={() => updateStatus(mention.id, 'ignored')}
-            variant={mention.reply_status === 'ignored' ? 'soft' : 'ghost'}
-            color="gray"
-            size="1"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+              mention.reply_status === 'ignored'
+                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Ban size={12} /> Ignored
-          </Button>
+          </button>
           {mention.reply_status === 'replied' && (
-            <div className="px-2 py-1 text-xs rounded bg-success-subtle text-success border border-success">
+            <div className="px-2 py-1 text-xs rounded bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]">
               <CheckCircle size={12} className="inline" /> Replied
               {mention.replied_at && (
                 <span className="ml-1 text-mission-control-text-dim">
@@ -373,15 +382,18 @@ export const XMentionsView: React.FC = () => {
             : mentions.filter(m => m.reply_status === status).length;
 
           return (
-            <Button
+            <button
               key={status}
+              type="button"
               onClick={() => setFilter(status)}
-              variant={filter === status ? 'solid' : 'outline'}
-              color={filter === status ? 'blue' : 'gray'}
-              size="1"
+              className={`flex items-center gap-0.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                filter === status
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)} ({count})
-            </Button>
+            </button>
           );
         })}
       </Flex>

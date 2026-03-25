@@ -11,7 +11,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { X, Minimize2, Maximize2, Monitor, Video, Move, Camera } from 'lucide-react';
-import { Button, Flex, IconButton } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('VideoWindow');
@@ -128,22 +128,20 @@ export default function DraggableVideoWindow({
         aria-label="Expand video window"
       >
         <Flex align="center" gap="2" className="px-3 py-2">
-          {videoMode === 'camera' ? <Video size={16} className="text-review" /> : <Monitor size={16} className="text-info" />}
+          {videoMode === 'camera' ? <Video size={16} className="text-[var(--color-review)]" /> : <Monitor size={16} className="text-[var(--color-info)]" />}
           <span className="text-xs font-medium text-mission-control-text">
             {videoMode === 'camera' ? 'Camera' : 'Screen'}
           </span>
-          <IconButton
-            size="1"
-            variant="ghost"
-           
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onClose();
             }}
             aria-label="Close video window"
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <X size={14} />
-          </IconButton>
+          </button>
         </Flex>
       </div>
     );
@@ -165,7 +163,7 @@ export default function DraggableVideoWindow({
     >
       {/* Header bar */}
       <div
-        className={`absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-sm flex items-center justify-between px-3 z-10 ${
+        className={`absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-between px-3 z-10 ${
           viewMode !== 'fullwidth' ? 'cursor-move' : ''
         }`}
         onMouseDown={handleDragStart}
@@ -192,33 +190,27 @@ export default function DraggableVideoWindow({
               Switch Source
             </Button>
           )}
-          <IconButton
-            size="1"
-            variant="ghost"
-           
+          <button
             onClick={minimize}
             title="Minimize"
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/10 transition-colors"
           >
             <Minimize2 size={14} />
-          </IconButton>
-          <IconButton
-            size="1"
-            variant="ghost"
-           
+          </button>
+          <button
             onClick={toggleViewMode}
             title={viewMode === 'fullwidth' ? 'Exit full width' : 'Full width'}
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/10 transition-colors"
           >
             <Maximize2 size={14} />
-          </IconButton>
-          <IconButton
-            size="1"
-            variant="ghost"
-           
+          </button>
+          <button
             onClick={onClose}
             title="Close"
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/10 transition-colors"
           >
             <X size={14} />
-          </IconButton>
+          </button>
         </Flex>
       </div>
 

@@ -25,7 +25,7 @@ export default function FactForm({ fact, onCancel, onSave }: FactFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-2 space-y-2 bg-mission-control-bg/50 rounded border border-mission-control-border">
+    <form onSubmit={handleSubmit} className="p-2 space-y-2 bg-mission-control-surface rounded border border-mission-control-border">
       <TextArea
         value={claim}
         onChange={(e) => setClaim(e.target.value)}
@@ -58,14 +58,13 @@ export default function FactForm({ fact, onCancel, onSave }: FactFormProps) {
         >
           {saving ? '...' : fact ? 'Update' : 'Add'}
         </Button>
-        <Button
+        <button
           type="button"
-          size="1"
-          variant="ghost"
           onClick={onCancel}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           Cancel
-        </Button>
+        </button>
       </Flex>
     </form>
   );

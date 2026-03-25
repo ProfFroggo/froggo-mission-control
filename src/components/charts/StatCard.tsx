@@ -37,7 +37,7 @@ function TrendBadge({ change }: { change: number }) {
   const abs = Math.abs(change).toFixed(1);
   if (change > 0) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-success">
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-[var(--color-success)]">
         <TrendingUp size={11} />
         {abs}%
       </span>
@@ -45,7 +45,7 @@ function TrendBadge({ change }: { change: number }) {
   }
   if (change < 0) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-error">
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-[var(--color-error)]">
         <TrendingDown size={11} />
         {abs}%
       </span>

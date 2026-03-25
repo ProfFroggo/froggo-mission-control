@@ -72,9 +72,9 @@ function varianceColor(planned: number, actual: number): string {
 function VarianceIcon({ planned, actual }: { planned: number; actual: number }) {
   if (actual === 0) return <Minus size={12} className="text-mission-control-text-dim" />;
   const ratio = actual / planned;
-  if (ratio > 1.05) return <TrendingUp size={12} style={{ color: 'var(--color-error, #ef4444)' }} />;
-  if (ratio > 0.9) return <Minus size={12} style={{ color: 'var(--color-warning, #eab308)' }} />;
-  return <TrendingDown size={12} style={{ color: 'var(--color-success, #22c55e)' }} />;
+  if (ratio > 1.05) return <TrendingUp size={12} className="text-[var(--color-error)]" />;
+  if (ratio > 0.9) return <Minus size={12} className="text-[var(--color-warning)]" />;
+  return <TrendingDown size={12} className="text-[var(--color-success)]" />;
 }
 
 export default function CampaignBudgetTracker({
@@ -108,7 +108,7 @@ export default function CampaignBudgetTracker({
       {/* Ring + stats */}
       <Flex align="center" gap="6">
         {/* Circular progress ring */}
-        <Box className="relative flex-shrink-0" style={{ width: 88, height: 88 }}>
+        <Box className="relative flex-shrink-0 w-[88px] h-[88px]">
           <ProgressRing radius={44} strokeWidth={8} percentage={consumedPct} color={ringColor} />
           <Flex direction="column" align="center" justify="center" className="absolute inset-0">
             <span className="text-base font-bold leading-none tabular-nums" style={{ color: ringColor }}>
@@ -129,18 +129,17 @@ export default function CampaignBudgetTracker({
           <Flex align="center" justify="between">
             <span className="text-xs text-mission-control-text-dim">Spent</span>
             <span
-              className="text-sm font-semibold tabular-nums"
-              style={{ color: isOverBudget ? 'var(--color-error, #ef4444)' : 'var(--mission-control-text)' }}
+              className={`text-sm font-semibold tabular-nums ${isOverBudget ? 'text-[var(--color-error)]' : 'text-mission-control-text'}`}
             >
               {currency} {fmt(spent)}
               {isOverBudget && (
-                <span className="text-xs font-normal ml-1 text-error">(over budget)</span>
+                <span className="text-xs font-normal ml-1 text-[var(--color-error)]">(over budget)</span>
               )}
             </span>
           </Flex>
           <Flex align="center" justify="between">
             <span className="text-xs text-mission-control-text-dim">Remaining</span>
-            <span className="text-sm font-semibold tabular-nums text-success">
+            <span className="text-sm font-semibold tabular-nums text-[var(--color-success)]">
               {currency} {fmt(remaining)}
             </span>
           </Flex>
@@ -151,7 +150,7 @@ export default function CampaignBudgetTracker({
       <Box>
         <Box className="h-2 bg-mission-control-border rounded-full overflow-hidden">
           <Box
-            className="h-full rounded-full transition-all duration-500"
+            className="h-full rounded-full transition-colors duration-500"
             style={{ width: `${Math.min(100, consumedPct)}%`, backgroundColor: ringColor }}
           />
         </Box>
@@ -184,7 +183,7 @@ export default function CampaignBudgetTracker({
                   </Flex>
                   <Box className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                     <Box
-                      className="h-full rounded-full transition-all"
+                      className="h-full rounded-full transition-colors"
                       style={{ width: `${catPct}%`, backgroundColor: color }}
                     />
                   </Box>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Mail, RefreshCw, AlertCircle, Inbox, Star, Tag, Briefcase, Diamond } from 'lucide-react';
-import { Button, Flex, IconButton } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { useUserSettings } from '../store/userSettings';
 import WidgetLoading from './WidgetLoading';
@@ -72,7 +72,7 @@ export default function EmailWidget() {
     <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="2">
-          <Mail size={16} className="text-success" />
+          <Mail size={16} className="text-[var(--color-success)]" />
           <h2 className="font-semibold">Email</h2>
           {totalUnread > 0 && (
             <span className="text-xs px-1.5 py-0.5 bg-mission-control-accent/20 text-mission-control-accent rounded-full flex-shrink-0 whitespace-nowrap">
@@ -80,21 +80,19 @@ export default function EmailWidget() {
             </span>
           )}
           {totalAction > 0 && (
-            <span className="text-xs px-1.5 py-0.5 bg-error-subtle text-error rounded-full flex-shrink-0 whitespace-nowrap">
+            <span className="text-xs px-1.5 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full flex-shrink-0 whitespace-nowrap">
               {totalAction} action
             </span>
           )}
         </Flex>
-        <IconButton
-          size="2"
-          variant="ghost"
-
+        <button
           onClick={fetchEmail}
           disabled={loading}
           title="Refresh"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-        </IconButton>
+        </button>
       </Flex>
 
       <div className="divide-y divide-mission-control-border">
@@ -107,28 +105,26 @@ export default function EmailWidget() {
           />
         ) : error ? (
           <div className="p-6 text-center text-mission-control-text-dim">
-            <AlertCircle size={24} className="mx-auto mb-2 text-error" />
+            <AlertCircle size={24} className="mx-auto mb-2 text-[var(--color-error)]" />
             <p className="text-sm">{error}</p>
-            <Button size="1" variant="ghost" onClick={fetchEmail} className="mt-2">
+            <button onClick={fetchEmail} className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
               Try again
-            </Button>
+            </button>
           </div>
         ) : accounts.length === 0 ? (
           <div className="p-6 text-center text-mission-control-text-dim">
             <Inbox size={24} className="mx-auto mb-2 opacity-50" />
             <p className="text-sm">Click refresh to check email</p>
-            <Button size="1" variant="ghost" onClick={fetchEmail} className="mt-2">
+            <button onClick={fetchEmail} className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
               Fetch now
-            </Button>
+            </button>
           </div>
         ) : (
           accounts.map((account) => (
-            <Button
+            <button
               key={account.email}
-              variant="ghost"
-              color="gray"
-              size="2"
-              className="w-full text-left"
+              type="button"
+              className="w-full text-left px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={() => quickCheck(account.label)}
               aria-label={`Quick check ${account.label} account`}
             >
@@ -144,13 +140,13 @@ export default function EmailWidget() {
                 </Flex>
                 <Flex align="center" gap="2">
                   {account.action > 0 && (
-                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-error-subtle text-error rounded-full">
+                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full">
                       <Tag size={10} />
                       {account.action}
                     </span>
                   )}
                   {account.starred > 0 && (
-                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-warning-subtle text-warning rounded-full">
+                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full">
                       <Star size={10} />
                       {account.starred}
                     </span>
@@ -162,7 +158,7 @@ export default function EmailWidget() {
                   )}
                 </Flex>
               </div>
-            </Button>
+            </button>
           ))
         )}
       </div>

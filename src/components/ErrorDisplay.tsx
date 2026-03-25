@@ -3,7 +3,8 @@
  * Shows user-friendly error messages with recovery actions
  */
 
-import { AlertCircle, AlertTriangle, Info, RefreshCw, ArrowLeft, Mail, ExternalLink } from 'lucide-react';
+import React from 'react';
+import { AlertCircle, AlertTriangle, Info, RefreshCw, ArrowLeft, Mail, ExternalLink, X } from 'lucide-react';
 import { Callout, Button, Flex, Heading, Text } from '@radix-ui/themes';
 import { getErrorInfo, ErrorInfo } from '../utils/errorMessages';
 
@@ -20,7 +21,7 @@ interface ErrorDisplayProps {
   showStack?: boolean;
 }
 
-export default function ErrorDisplay({
+const ErrorDisplay = React.memo(function ErrorDisplay({
   error,
   context,
   onRetry,
@@ -84,29 +85,27 @@ export default function ErrorDisplay({
           {errorInfo.recovery && errorInfo.recovery.length > 0 && (
             <Flex gap="2" mt="1">
               {errorInfo.recovery.map((action, idx) => (
-                <Button
+                <button
                   key={idx}
-                  size="1"
-                  variant="ghost"
-                  color={calloutColor}
+                  type="button"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                   onClick={() => handleRecoveryAction(action)}
                 >
                   {action.label}
-                </Button>
+                </button>
               ))}
             </Flex>
           )}
         </Flex>
         {onDismiss && (
-          <Button
-            size="1"
-            variant="ghost"
-            color={calloutColor}
+          <button
+            type="button"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0"
             onClick={onDismiss}
-            className="flex-shrink-0"
+            aria-label="Dismiss"
           >
-            &times;
-          </Button>
+            <X size={12} aria-hidden="true" />
+          </button>
         )}
       </Callout.Root>
     );
@@ -121,29 +120,47 @@ export default function ErrorDisplay({
     custom: ExternalLink,
   };
 
+  const errorBgClass = calloutColor === 'red'
+    ? 'bg-[var(--color-error)]/8 border border-[var(--color-error)]/20'
+    : calloutColor === 'orange'
+    ? 'bg-[var(--color-warning)]/8 border border-[var(--color-warning)]/20'
+    : 'bg-[var(--color-info)]/8 border border-[var(--color-info)]/20';
+
+  const iconColorClass = calloutColor === 'red'
+    ? 'text-[var(--color-error)]'
+    : calloutColor === 'orange'
+    ? 'text-[var(--color-warning)]'
+    : 'text-[var(--color-info)]';
+
+  const iconBgClass = calloutColor === 'red'
+    ? 'bg-[var(--color-error)]/10'
+    : calloutColor === 'orange'
+    ? 'bg-[var(--color-warning)]/10'
+    : 'bg-[var(--color-info)]/10';
+
   return (
     <Flex align="center" justify="center" className="min-h-[400px] p-8">
-      <div className="max-w-md w-full">
+      <div className={`max-w-md w-full rounded-xl px-6 py-5 ${errorBgClass}`}>
         {/* Icon */}
-        <Flex justify="center" mb="6">
-          <div className={`w-16 h-16 rounded-full bg-${calloutColor === 'red' ? 'error' : calloutColor === 'orange' ? 'warning' : 'info'}-subtle flex items-center justify-center`}>
-            <Icon size={32} className={`text-${calloutColor === 'red' ? 'error' : calloutColor === 'orange' ? 'warning' : 'info'}`} />
+        <Flex justify="center" mb="4">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${iconBgClass}`}>
+            <Icon size={24} className={iconColorClass} aria-hidden="true" />
           </div>
         </Flex>
 
         {/* Title */}
-        <Heading size="4" align="center" mb="2">
+        <Heading size="3" align="center" mb="2" className="text-mission-control-text">
           {errorInfo.title}
         </Heading>
 
         {/* Message */}
-        <Text size="2" color="gray" align="center" as="p" mb="6">
+        <Text size="2" align="center" as="p" mb="4" className="text-mission-control-text-dim">
           {errorInfo.message}
         </Text>
 
         {/* Error code */}
         {errorInfo.code && (
-          <Text size="1" color="gray" align="center" as="p" mb="4">
+          <Text size="1" align="center" as="p" mb="4" className="text-mission-control-text-dim">
             Error Code: {errorInfo.code}
           </Text>
         )}
@@ -158,12 +175,12 @@ export default function ErrorDisplay({
                 <Button
                   key={idx}
                   onClick={() => handleRecoveryAction(action)}
-                  variant={idx === 0 ? 'solid' : 'surface'}
-                  color={idx === 0 ? 'grass' : 'gray'}
-                  size="2"
+                  variant="soft"
+                  color={idx === 0 ? 'red' : 'gray'}
+                  size="1"
                   className="w-full"
                 >
-                  <ActionIcon size={16} />
+                  <ActionIcon size={14} />
                   {action.label}
                 </Button>
               );
@@ -177,7 +194,7 @@ export default function ErrorDisplay({
             <summary className="text-xs text-mission-control-text-dim cursor-pointer hover:text-mission-control-text">
               Technical Details
             </summary>
-            <pre className="mt-2 p-3 bg-mission-control-bg rounded text-xs text-mission-control-text-dim overflow-auto max-h-40">
+            <pre className="mt-2 p-3 bg-mission-control-surface rounded-lg text-xs text-mission-control-text-dim overflow-auto max-h-40">
               {error.stack}
             </pre>
           </details>
@@ -185,20 +202,20 @@ export default function ErrorDisplay({
 
         {/* Dismiss button */}
         {onDismiss && (
-          <Button
-            variant="ghost"
-            color="gray"
-            size="2"
+          <button
+            type="button"
+            className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors w-full mt-4"
             onClick={onDismiss}
-            className="w-full mt-4"
           >
             Dismiss
-          </Button>
+          </button>
         )}
       </div>
     </Flex>
   );
-}
+});
+
+export default ErrorDisplay;
 
 /**
  * Inline error for form fields
@@ -213,8 +230,8 @@ export function FieldError({ error, touched }: FieldErrorProps) {
 
   return (
     <Flex align="center" gap="1" mt="1">
-      <AlertCircle size={14} className="text-error" />
-      <Text size="1" className="text-error">{error}</Text>
+      <AlertCircle size={14} className="text-[var(--color-error)]" />
+      <Text size="1" className="text-[var(--color-error)]">{error}</Text>
     </Flex>
   );
 }

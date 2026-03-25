@@ -1,7 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useRef } from 'react';
 import { SmilePlus, ThumbsUp, Check, X, Lightbulb, Flame, Eye } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
 
 export interface ReactionSummary {
   reaction: string;
@@ -99,17 +98,15 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
 
       {/* Add reaction button */}
       <div className="relative" ref={pickerRef}>
-        <IconButton
+        <button
+          type="button"
           onClick={() => setShowPicker(v => !v)}
           title="Add reaction"
-          size="1"
-          variant="ghost"
-          radius="full"
           aria-label="Add reaction"
-          className="opacity-0 group-hover:opacity-100"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover:opacity-100"
         >
           <SmilePlus size={13} />
-        </IconButton>
+        </button>
 
         {showPicker && (
           <div
@@ -118,17 +115,19 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
             }`}
           >
             {QUICK_REACTIONS.map(({ emoji, icon, label }) => (
-              <IconButton
+              <button
                 key={emoji}
                 onClick={() => toggleReaction(emoji)}
                 title={label}
-                size="2"
-                variant={myReactions.has(emoji) ? 'soft' : 'ghost'}
-               
                 aria-label={label}
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
+                  myReactions.has(emoji)
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                }`}
               >
                 {icon}
-              </IconButton>
+              </button>
             ))}
           </div>
         )}

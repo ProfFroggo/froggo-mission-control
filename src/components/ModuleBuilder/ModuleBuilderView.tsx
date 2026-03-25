@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { Button, Flex } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import ConversationPanel from './ConversationPanel';
 import SpecPreviewPanel from './SpecPreviewPanel';
 import { useModuleSpec } from './useModuleSpec';
@@ -137,13 +137,13 @@ function ModuleBuilderInner({ saved, onBack }: { saved: SavedModule; onBack: () 
       {/* Top bar */}
       <Flex align="center" justify="between" className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
         <Flex align="center" gap="3">
-          <Button
+          <button
+            type="button"
             onClick={() => { doSave(); onBack(); }}
-            size="2"
-            variant="ghost"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <ArrowLeft size={14} /> My Modules
-          </Button>
+          </button>
           <span className="text-mission-control-border">|</span>
           <h1 className="text-lg font-semibold text-mission-control-text truncate">
             {spec.name || 'Untitled Module'}
@@ -153,7 +153,7 @@ function ModuleBuilderInner({ saved, onBack }: { saved: SavedModule; onBack: () 
 
       {/* Split layout */}
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-1/2 min-w-0">
+        <div className="w-1/2 min-w-0 border-r border-mission-control-border">
           <ConversationPanel
             messages={flow.messages}
             sectionProgress={sectionProgress}
@@ -225,9 +225,13 @@ export default function ModuleBuilderView({ moduleId, onBack }: ModuleBuilderVie
     return (
       <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim gap-3">
         <p>Failed to load module: {error}</p>
-        <Button onClick={onBack} size="2" variant="ghost">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+        >
           Back to list
-        </Button>
+        </button>
       </div>
     );
   }

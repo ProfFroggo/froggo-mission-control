@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Settings, Inbox } from 'lucide-react';
-import { Button, IconButton, Box, Flex } from '@radix-ui/themes';
+import { Box, Flex } from '@radix-ui/themes';
 import FolderManager from './FolderManager';
 import ErrorDisplay from './ErrorDisplay';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from '@dnd-kit/core';
@@ -56,12 +56,12 @@ function SortableFolderTab({ folder, isActive, onClick, isOver }: SortableFolder
       {...listeners}
       onClick={onClick}
       className={`
-        relative flex items-center gap-2 px-4 py-3 min-w-[140px] transition-all
+        relative flex items-center gap-2 px-4 py-3 min-w-[140px] transition-colors
         border-b-2 -mb-px whitespace-nowrap cursor-move
         ${isActive 
           ? 'border-mission-control-accent text-mission-control-accent bg-mission-control-accent/5'
           : isDropOver || isOver
-          ? 'border-success text-mission-control-text bg-success-subtle'
+          ? 'border-[var(--color-success)] text-mission-control-text bg-[var(--color-success)]/10'
           : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
         }
       `}
@@ -249,24 +249,22 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
 
           {/* Action Buttons */}
           <Flex align="center" gap="1" px="2" className="ml-auto border-l border-mission-control-border">
-            <IconButton
-              size="2"
-              variant="ghost"
-             
+            <button
+              type="button"
               onClick={handleCreateFolder}
               title="Create new folder"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <Plus size={16} />
-            </IconButton>
-            <IconButton
-              size="2"
-              variant="ghost"
-             
+            </button>
+            <button
+              type="button"
               onClick={() => setShowManager(true)}
               title="Manage folders"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <Settings size={16} />
-            </IconButton>
+            </button>
           </Flex>
         </Flex>
       </Box>

@@ -36,13 +36,16 @@ export default function WizardReview() {
     return (
       <div className="h-full flex items-center justify-center bg-mission-control-bg">
         <div className="text-center p-8">
-          <AlertCircle size={32} className="mx-auto text-error mb-3" />
+          <AlertCircle size={32} className="mx-auto text-[var(--color-error)] mb-3" />
           <p className="text-mission-control-text text-sm font-medium">No plan to review</p>
           <div className="mt-4 flex justify-center">
-            <Button onClick={() => setStep('conversation')} variant="ghost" size="2">
+            <button
+              onClick={() => setStep('conversation')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            >
               <ArrowLeft size={14} />
               Back to Chat
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -155,7 +158,7 @@ export default function WizardReview() {
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
         {/* Error banner */}
         {error && (
-          <Flex align="start" gap="2" className="p-3 rounded-lg bg-error-subtle border border-error-border text-error text-sm">
+          <Flex align="start" gap="2" className="p-3 rounded-lg bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)] text-sm">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
             <div>
               <p className="font-medium">Creation failed</p>
@@ -223,14 +226,12 @@ export default function WizardReview() {
                 className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20"
               >
                 {theme}
-                <IconButton
-                  size="1"
-                  variant="ghost"
-                 
+                <button
                   onClick={() => removeTheme(i)}
+                  className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <X size={10} />
-                </IconButton>
+                </button>
               </span>
             ))}
           </div>
@@ -241,7 +242,7 @@ export default function WizardReview() {
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTheme())}
               placeholder="Add a theme"
               size="2"
-              style={{ flex: 1 }}
+              className="flex-1"
             />
             <IconButton
               size="2"
@@ -285,16 +286,14 @@ export default function WizardReview() {
                     onChange={(e) => updateChapter(i, 'title', e.target.value)}
                     placeholder="Chapter title"
                     size="2"
-                    style={{ flex: 1 }}
+                    className="flex-1"
                   />
-                  <IconButton
-                    size="2"
-                    variant="ghost"
-                   
+                  <button
                     onClick={() => removeChapter(i)}
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     <Trash2 size={14} />
-                  </IconButton>
+                  </button>
                 </Flex>
                 <div className="ml-8">
                   <TextArea
@@ -308,10 +307,13 @@ export default function WizardReview() {
               </div>
             ))}
           </div>
-          <Button onClick={addChapter} size="2" variant="ghost">
+          <button
+            onClick={addChapter}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+          >
             <Plus size={14} />
             Add Chapter
-          </Button>
+          </button>
         </div>
 
         {/* Characters */}
@@ -328,7 +330,7 @@ export default function WizardReview() {
                     onChange={(e) => updateCharacter(i, 'name', e.target.value)}
                     placeholder="Character name"
                     size="2"
-                    style={{ flex: 1 }}
+                    className="flex-1"
                   />
                   <Select.Root
                     value={
@@ -350,14 +352,12 @@ export default function WizardReview() {
                       <Select.Item value="_custom">Custom...</Select.Item>
                     </Select.Content>
                   </Select.Root>
-                  <IconButton
-                    size="2"
-                    variant="ghost"
-                   
+                  <button
                     onClick={() => removeCharacter(i)}
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     <Trash2 size={14} />
-                  </IconButton>
+                  </button>
                 </Flex>
                 {/* Custom role input */}
                 {!['protagonist', 'antagonist', 'supporting', 'narrator'].includes(c.role) && (
@@ -394,10 +394,13 @@ export default function WizardReview() {
               </div>
             ))}
           </div>
-          <Button onClick={addCharacter} size="2" variant="ghost">
+          <button
+            onClick={addCharacter}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+          >
             <Plus size={14} />
             Add Character
-          </Button>
+          </button>
         </div>
 
         {/* Timeline */}
@@ -416,7 +419,7 @@ export default function WizardReview() {
                     size="2"
                     style={{ width: 160 }}
                   />
-                  <div style={{ flex: 1 }}>
+                  <div className="flex-1">
                     <TextArea
                       value={evt.description}
                       onChange={(e) => updateTimelineEvent(i, 'description', e.target.value)}
@@ -425,36 +428,37 @@ export default function WizardReview() {
                       size="2"
                     />
                   </div>
-                  <IconButton
-                    size="2"
-                    variant="ghost"
-                   
+                  <button
                     onClick={() => removeTimelineEvent(i)}
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     <Trash2 size={14} />
-                  </IconButton>
+                  </button>
                 </Flex>
               </div>
             ))}
           </div>
-          <Button onClick={addTimelineEvent} size="2" variant="ghost">
+          <button
+            onClick={addTimelineEvent}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+          >
             <Plus size={14} />
             Add Event
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Bottom action bar */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-mission-control-border bg-mission-control-surface flex-shrink-0">
         <Flex align="center" gap="2">
-          <Button onClick={() => setStep('conversation')} size="2" variant="ghost">
+          <button type="button" onClick={() => setStep('conversation')} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <ArrowLeft size={14} />
             Back to Chat
-          </Button>
-          <Button onClick={() => cancelWizard()} size="2" variant="ghost">
+          </button>
+          <button type="button" onClick={() => cancelWizard()} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <X size={14} />
             Cancel
-          </Button>
+          </button>
         </Flex>
         <Button
           onClick={handleCreate}

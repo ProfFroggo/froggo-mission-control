@@ -10,9 +10,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       className={cn(
         'flex h-9 w-full rounded-lg px-3 py-2 text-sm',
         'bg-mission-control-surface border border-mission-control-border',
-        'text-mission-control-text placeholder:text-mission-control-text-dim/40',
-        'hover:border-mission-control-accent/40',
-        'focus:outline-none focus:ring-2 focus:ring-mission-control-accent/40 focus:border-mission-control-accent/40',
+        'text-mission-control-text placeholder:text-mission-control-text-dim/50',
+        'hover:border-[var(--mission-control-accent)]/40',
+        'focus:outline-none focus:ring-1 focus:ring-[var(--mission-control-accent)]/30 focus:border-[var(--mission-control-accent)]',
+        'aria-[invalid=true]:border-[var(--color-error)]',
         'disabled:cursor-not-allowed disabled:opacity-40',
         'transition-colors',
         className

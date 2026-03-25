@@ -78,7 +78,7 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
       </div>
 
       {error && (
-        <Flex align="center" gap="2" className="text-error text-xs bg-error border border-error rounded-lg px-3 py-2 w-full">
+        <Flex align="center" gap="2" className="text-[var(--color-error)] text-xs bg-[var(--color-error)] border border-[var(--color-error)] rounded-lg px-3 py-2 w-full">
           <AlertCircle size={14} className="flex-shrink-0" />
           <span>{error}</span>
         </Flex>
@@ -88,7 +88,7 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
         onClick={handleConnect}
         size="2"
         variant="solid"
-        style={{ width: '100%', justifyContent: 'center' }}
+        className="w-full justify-center"
       >
         <Mail size={16} />
         Connect Google Account

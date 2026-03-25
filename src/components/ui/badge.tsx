@@ -7,13 +7,13 @@ export const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default:   'bg-mission-control-accent/15 border-mission-control-accent/25 text-mission-control-accent',
+        default:   'bg-mission-control-border/40 border-mission-control-border text-mission-control-text',
+        primary:   'bg-[var(--mission-control-accent)]/12 border-[var(--mission-control-accent)]/25 text-mission-control-accent',
         secondary: 'bg-mission-control-surface border-mission-control-border text-mission-control-text-dim',
-        glass:     'bg-mission-control-surface border-mission-control-border text-mission-control-text',
-        success:   'bg-success/10 border-success/20 text-success',
-        error:     'bg-error/10 border-error/20 text-error',
-        warning:   'bg-warning/10 border-warning/20 text-warning',
-        info:      'bg-info/10 border-info/20 text-info',
+        success:   'bg-[var(--color-success)]/10 border-[var(--color-success)]/20 text-[var(--color-success)]',
+        error:     'bg-[var(--color-error)]/10 border-[var(--color-error)]/20 text-[var(--color-error)]',
+        warning:   'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/20 text-[var(--color-warning)]',
+        info:      'bg-[var(--color-info)]/10 border-[var(--color-info)]/20 text-[var(--color-info)]',
         outline:   'border-mission-control-border text-mission-control-text bg-transparent',
       },
     },

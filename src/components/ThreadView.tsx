@@ -101,14 +101,14 @@ function ThreadMessage({
             {formatMessageTime(message.timestamp)}
           </span>
           {message.is_starred && (
-            <Star size={10} className="text-warning fill-warning" />
+            <Star size={10} className="text-[var(--color-warning)] fill-warning" />
           )}
         </div>
 
         {/* Message bubble with actions */}
         <div className="relative w-full">
           {/* Message actions bar */}
-          <div className={`absolute ${isMe ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200`}>
+          <div className={`absolute ${isMe ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-colors duration-200`}>
             {onToggleStar && (
               <IconButton
                 onClick={() => onToggleStar(message.id)}
@@ -137,10 +137,10 @@ function ThreadMessage({
 
           {/* Message bubble */}
           <div
-            className={`px-4 py-3 transition-all ${
+            className={`px-4 py-3 transition-colors ${
               isMe
                 ? 'bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] text-white shadow-md rounded-2xl rounded-tr-sm'
-                : 'bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border/60 shadow-sm hover:shadow-md rounded-2xl rounded-tl-sm'
+                : 'bg-mission-control-surface border border-mission-control-border/60 shadow-sm hover:shadow-md rounded-2xl rounded-tl-sm'
             } ${!message.is_read && !isMe ? 'ring-2 ring-mission-control-accent/30' : ''}`}
           >
             {/* Subject (for thread root) */}
@@ -163,11 +163,9 @@ function ThreadMessage({
 
             {/* Expand/collapse for long messages */}
             {hasFullContent && (
-              <Button
+              <button
                 onClick={() => setExpanded(!expanded)}
-                variant="ghost"
-                size="1"
-                className="mt-3"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mt-3"
               >
                 {expanded ? (
                   <>
@@ -178,7 +176,7 @@ function ThreadMessage({
                     <ChevronDown size={14} /> Show more
                   </>
                 )}
-              </Button>
+              </button>
             )}
 
             {/* Attachments indicator */}
@@ -275,15 +273,12 @@ export default function ThreadView({
           </Flex>
         </div>
         {onClose && (
-          <Button
+          <button
             onClick={onClose}
-            variant="ghost"
-            color="gray"
-            size="2"
-            className="ml-2"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ml-2"
           >
             Close
-          </Button>
+          </button>
         )}
       </div>
 

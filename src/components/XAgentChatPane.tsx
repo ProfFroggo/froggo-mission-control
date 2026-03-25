@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Loader2, Users, AlertCircle, Zap, RotateCcw, Brain, BookOpen, MessageSquare, Archive } from 'lucide-react';
-import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import type { XTab } from './XTwitterPage';
 import MarkdownMessage from './MarkdownMessage';
 import { chatApi } from '../lib/api';
@@ -400,11 +400,11 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border">
+      <div className="px-4 py-3 border-b border-mission-control-border flex-shrink-0">
         <Flex align="center" justify="between" className="mb-2">
           <Flex align="center" gap="2">
-            <Users className="w-5 h-5 text-info" />
-            <h3 className="text-sm font-semibold text-mission-control-text">Agent Chat</h3>
+            <Users className="w-4 h-4 text-mission-control-text-dim" />
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Agent Chat</h3>
           </Flex>
           <Flex align="center" gap="2">
             <Button
@@ -418,18 +418,18 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
               New session
             </Button>
             <Flex align="center" gap="1" className={`px-2 py-1 text-xs rounded-full ${
-              isConnected ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
+              isConnected ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-error)]/10 text-[var(--color-error)]'
             }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-success' : 'bg-error'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-[var(--color-success)]' : 'bg-[var(--color-error)]'}`} />
               {isConnected ? 'Connected' : 'Disconnected'}
             </Flex>
           </Flex>
         </Flex>
-        <div className="flex flex-wrap gap-2">
-          <span className="px-2 py-1 text-xs bg-info-subtle text-info rounded-full">
+        <div className="flex flex-wrap gap-1.5">
+          <span className="px-2 py-0.5 text-[10px] font-medium bg-mission-control-accent/10 text-mission-control-accent rounded-full">
             {safeDisplayName}
           </span>
-          <span className="px-2 py-1 text-xs bg-mission-control-bg-alt text-mission-control-text-dim rounded-full">
+          <span className="px-2 py-0.5 text-[10px] font-medium bg-mission-control-border/40 text-mission-control-text-dim rounded-full">
             {tab}
           </span>
         </div>
@@ -440,16 +440,16 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
               <MessageSquare className="w-3 h-3" />
               {sessionStats.messageCount} msgs
             </span>
-            <span className={`flex items-center gap-1 text-[10px] ${sessionStats.memoryFileCount > 0 ? 'text-mission-control-text-dim' : 'text-mission-control-text-dim/50'}`}>
+            <span className={`flex items-center gap-1 text-[10px] ${sessionStats.memoryFileCount > 0 ? 'text-mission-control-text-dim' : 'text-mission-control-text-dim/70'}`}>
               <Brain className="w-3 h-3" />
               {sessionStats.memoryFileCount > 0 ? `${sessionStats.memoryFileCount} memory files` : 'No memory'}
             </span>
-            <span className={`flex items-center gap-1 text-[10px] ${sessionStats.kbArticleCount > 0 ? 'text-mission-control-text-dim' : 'text-mission-control-text-dim/50'}`}>
+            <span className={`flex items-center gap-1 text-[10px] ${sessionStats.kbArticleCount > 0 ? 'text-mission-control-text-dim' : 'text-mission-control-text-dim/70'}`}>
               <BookOpen className="w-3 h-3" />
               {sessionStats.kbArticleCount > 0 ? `${sessionStats.kbArticleCount} KB articles` : 'No KB'}
             </span>
             {sessionStats.compacted && (
-              <span className="flex items-center gap-1 text-[10px] text-info">
+              <span className="flex items-center gap-1 text-[10px] text-[var(--color-info)]">
                 <Archive className="w-3 h-3" />
                 Compacted
               </span>
@@ -459,12 +459,12 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
               <span>Context:</span>
               <div className="w-16 h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all ${
+                  className={`h-full rounded-full transition-colors ${
                     (sessionStats.tokenEstimate / 32000) > 0.8
-                      ? 'bg-error'
+                      ? 'bg-[var(--color-error)]'
                       : (sessionStats.tokenEstimate / 32000) > 0.5
-                      ? 'bg-warning'
-                      : 'bg-success'
+                      ? 'bg-[var(--color-warning)]'
+                      : 'bg-[var(--color-success)]'
                   }`}
                   style={{ width: `${Math.min(100, (sessionStats.tokenEstimate / 32000) * 100)}%` }}
                 />
@@ -474,7 +474,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           </div>
         )}
         {error && (
-          <div className="mt-2 p-2 bg-error-subtle border border-error-border rounded-lg flex items-center gap-2 text-xs text-error">
+          <div className="mt-2 p-2 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg flex items-center gap-2 text-xs text-[var(--color-error)]">
             <AlertCircle className="w-4 h-4" />
             <span>{error}</span>
           </div>
@@ -482,7 +482,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4">
         {!historyLoaded ? (
           <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
             <Flex gap="1" className="mb-2">
@@ -490,65 +490,74 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
               <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
               <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
             </Flex>
+            <span className="text-xs text-mission-control-text-dim">Loading...</span>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-mission-control-text-dim">
-            <Users className="w-12 h-12 text-mission-control-text-dim mb-3" />
-            <p className="font-medium text-mission-control-text">Start a conversation</p>
-            <p className="text-sm mt-1 text-mission-control-text">
+            <div className="w-10 h-10 rounded-full bg-mission-control-accent/10 flex items-center justify-center mb-3">
+              <Users className="w-5 h-5 text-mission-control-accent" />
+            </div>
+            <p className="text-sm font-medium text-mission-control-text-dim">Start a conversation</p>
+            <p className="text-xs mt-1 text-mission-control-text-dim">
               Chat with {safeDisplayName} about {tab}
             </p>
           </div>
         ) : (
           <>
-            {messages.map((msg) => (
-              <Flex
-                key={msg.id}
-                justify={msg.role === 'user' ? 'end' : 'start'}
-              >
-                <div
-                  className={`max-w-[90%] px-4 py-3 rounded-2xl ${
-                    msg.role === 'user'
-                      ? 'bg-mission-control-accent text-white rounded-tr-sm'
-                      : msg.error
-                      ? 'bg-error-subtle border border-error-border text-error rounded-tl-sm'
-                      : 'bg-mission-control-bg-alt text-mission-control-text rounded-tl-sm'
-                  }`}
-                >
-                  {msg.role === 'agent' && msg.agentName && (
-                    <div className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1">
-                      <span>{msg.agentName}</span>
-                      {msg.streaming && (
-                        <span className="flex items-center gap-1">
-                          <span className="flex gap-0.5">
+            {messages.map((msg, idx) => {
+              const prev = idx > 0 ? messages[idx - 1] : null;
+              const isNewSpeaker = !prev || prev.role !== msg.role || (msg.role === 'agent' && prev.agentId !== msg.agentId);
+              return (
+                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} ${isNewSpeaker ? 'mt-6' : 'mt-2'}`}>
+                  {msg.role === 'agent' && (
+                    <div className={`flex-shrink-0 mr-2 ${isNewSpeaker ? '' : 'invisible'}`}>
+                      <div className="w-8 h-8 rounded-lg bg-mission-control-border/60 flex items-center justify-center">
+                        <Users className="w-4 h-4 text-mission-control-text-dim" />
+                      </div>
+                    </div>
+                  )}
+                  <div className={`max-w-[80%] flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    {isNewSpeaker && msg.role === 'agent' && msg.agentName && (
+                      <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">{msg.agentName}</span>
+                    )}
+                    {isNewSpeaker && msg.role === 'user' && (
+                      <span className="text-xs font-medium text-mission-control-accent mb-1 px-1">You</span>
+                    )}
+                    {msg.role === 'user' ? (
+                      <div
+                        className="text-sm px-4 py-2.5 rounded-[18px_18px_4px_18px] text-mission-control-text"
+                        style={{ background: 'color-mix(in srgb, var(--mission-control-accent) 11%, transparent)', border: '1px solid color-mix(in srgb, var(--mission-control-accent) 18%, transparent)' }}
+                      >
+                        <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                      </div>
+                    ) : msg.error ? (
+                      <div className="text-sm px-4 py-2.5 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)] rounded-xl">
+                        <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-mission-control-text">
+                        {msg.streaming && !msg.content ? (
+                          <Flex gap="1" align="center" className="py-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
                             <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
                             <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <div className="text-sm">
-                    {msg.role === 'agent' && !msg.error ? (
-                      <MarkdownMessage content={msg.content} />
-                    ) : (
-                      <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                            <span className="text-xs text-mission-control-text-dim ml-1">thinking...</span>
+                          </Flex>
+                        ) : (
+                          <MarkdownMessage content={msg.content} />
+                        )}
+                      </div>
                     )}
-                  </div>
-                  <div
-                    className={`text-xs mt-1 ${
-                      msg.role === 'user' ? 'text-mission-control-text-dim' : 'text-mission-control-text-dim'
-                    }`}
-                  >
-                    {new Date(msg.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    <div className="text-[11px] tabular-nums mt-1 text-mission-control-text-dim/70 px-1">
+                      {new Date(msg.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
                   </div>
                 </div>
-              </Flex>
-            ))}
+              );
+            })}
             <div ref={messagesEndRef} />
           </>
         )}
@@ -558,7 +567,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       <div className="px-4 pt-3 pb-1 border-t border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center gap-1.5 mb-2">
           <Zap className="w-3 h-3 text-mission-control-text-dim flex-shrink-0" />
-          <span className="text-xs text-mission-control-text-dim font-medium">Quick prompts</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Quick prompts</span>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {(QUICK_PROMPTS[validTab] || []).slice(0, 4).map((prompt) => (
@@ -579,31 +588,27 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       </div>
 
       {/* Input */}
-      <div className="px-4 pb-4 pt-2 bg-mission-control-surface">
-        <Flex gap="2">
-          <TextField.Root
+      <div className="border-t border-mission-control-border bg-mission-control-bg px-4 py-3">
+        <Flex gap="2" align="end">
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={`Ask ${safeDisplayName} about ${tab}...`}
             disabled={loading}
-            size="3"
-            className="flex-1"
+            rows={1}
+            className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-[14px] px-4 py-3 text-sm resize-none text-mission-control-text placeholder:text-mission-control-text-dim outline-none focus:border-[var(--mission-control-accent)] focus:ring-2 focus:ring-[var(--mission-control-accent)]/20 transition-colors"
+            style={{ minHeight: '44px', maxHeight: '120px' }}
           />
-          <IconButton
+          <button
             onClick={handleSend}
             disabled={!input.trim() || loading}
-            variant="solid"
-            size="3"
-           
+            className="w-8 h-8 rounded-lg bg-[var(--mission-control-accent)] text-white flex items-center justify-center hover:opacity-85 transition-opacity disabled:opacity-40 flex-shrink-0"
             aria-label="Send"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-          </IconButton>
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </button>
         </Flex>
-        <p className="text-xs text-mission-control-text-dim mt-2">
-          Press Enter to send • Shift+Enter for new line
-        </p>
       </div>
     </Flex>
   );

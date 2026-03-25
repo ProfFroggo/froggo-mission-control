@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Moon, Coffee, Home, Briefcase, X, Clock, BellOff } from 'lucide-react';
-import { Button, IconButton, Flex } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 type FocusModeType = 'work' | 'personal' | 'family' | 'dnd' | null;
@@ -21,7 +21,7 @@ const modes: FocusModeConfig[] = [
     icon: Briefcase,
     label: 'Work Mode',
     description: 'Focus on work tasks',
-    color: 'bg-info',
+    color: 'bg-[var(--color-info)]',
     holdApprovals: false,
     muteNotifications: false,
   },
@@ -30,7 +30,7 @@ const modes: FocusModeConfig[] = [
     icon: Coffee,
     label: 'Personal',
     description: 'Relaxed, non-urgent only',
-    color: 'bg-review',
+    color: 'bg-[var(--color-review)]',
     holdApprovals: false,
     muteNotifications: true,
   },
@@ -39,7 +39,7 @@ const modes: FocusModeConfig[] = [
     icon: Home,
     label: 'Family Time',
     description: 'Only urgent notifications',
-    color: 'bg-success',
+    color: 'bg-[var(--color-success)]',
     holdApprovals: true,
     muteNotifications: true,
   },
@@ -48,7 +48,7 @@ const modes: FocusModeConfig[] = [
     icon: Moon,
     label: 'Do Not Disturb',
     description: 'Complete silence',
-    color: 'bg-error',
+    color: 'bg-[var(--color-error)]',
     holdApprovals: true,
     muteNotifications: true,
   },
@@ -111,17 +111,22 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
   };
 
   return (
-    <Flex align="center" justify="center" p="4" className="fixed inset-0 bg-black/60 backdrop-blur-md z-50">
-      <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-md">
+    <Flex align="center" justify="center" p="4" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
-        <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border">
           <div>
             <h2 className="text-sm font-semibold text-mission-control-text">Focus Mode</h2>
             <p className="text-xs text-mission-control-text-dim">Control notifications and approvals</p>
           </div>
-          <IconButton variant="ghost" color="gray" size="1" onClick={onClose} aria-label="Close">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+          >
             <X size={16} />
-          </IconButton>
+          </button>
         </Flex>
 
         {/* Mode Options */}
@@ -135,7 +140,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
                 type="button"
                 key={mode.type}
                 onClick={() => handleSelect(mode.type)}
-                className={`w-full p-4 rounded-lg border text-left transition-all ${
+                className={`w-full p-4 rounded-lg border text-left transition-colors ${
                   isSelected
                     ? 'border-mission-control-accent bg-mission-control-accent/10'
                     : 'border-mission-control-border hover:border-mission-control-accent/50'

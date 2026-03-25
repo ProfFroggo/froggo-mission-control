@@ -6,9 +6,11 @@ import {
   Code2,
   Image as ImageIcon,
   FileText,
+  FileCode2,
   Database,
   Network,
   Copy,
+  Check,
   Download,
   Trash2,
   History,
@@ -19,7 +21,7 @@ import {
   WifiOff,
   type LucideIcon,
 } from 'lucide-react';
-import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import { useArtifactStore, type Artifact, type ArtifactType } from '../store/artifactStore';
 import MarkdownMessage from './MarkdownMessage';
 
@@ -38,12 +40,12 @@ const ARTIFACT_ICONS: Record<ArtifactType, LucideIcon> = {
 };
 
 const ARTIFACT_COLORS: Record<ArtifactType, string> = {
-  code: 'text-info bg-info-subtle border-info-border',
-  image: 'text-success bg-success-subtle border-success-border',
-  file: 'text-review bg-review-subtle border-review-border',
+  code: 'text-[var(--color-info)] bg-[var(--color-info)]/10 border-[var(--color-info)]/30',
+  image: 'text-[var(--color-success)] bg-[var(--color-success)]/10 border-[var(--color-success)]/30',
+  file: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle border-[var(--color-review)]-border',
   text: 'text-mission-control-text-dim bg-mission-control-border/30 border-mission-control-border',
-  diagram: 'text-danger bg-warning-subtle border-warning-border',
-  data: 'text-info bg-info-subtle border-info-border',
+  diagram: 'text-danger bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30',
+  data: 'text-[var(--color-info)] bg-[var(--color-info)]/10 border-[var(--color-info)]/30',
 };
 
 function isPreviewable(artifact: Artifact): boolean {
@@ -185,14 +187,14 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       case 'code':
         return (
           <div className="space-y-2">
-            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               <Icon size={14} />
               <span className="font-mono">{artifact.metadata?.language || 'code'}</span>
               {artifact.metadata?.filename && (
                 <span className="ml-auto text-mission-control-text-dim">{artifact.metadata.filename}</span>
               )}
             </Flex>
-            <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4 overflow-x-auto">
+            <div className="bg-mission-control-bg rounded-lg p-4 overflow-x-auto">
               <pre className="text-sm font-mono whitespace-pre-wrap break-words">
                 <code>{artifact.content}</code>
               </pre>
@@ -203,7 +205,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       case 'image':
         return (
           <div className="space-y-2">
-            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               <Icon size={14} />
               <span>Image</span>
             </Flex>
@@ -220,7 +222,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       case 'diagram':
         return (
           <div className="space-y-2">
-            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               <Icon size={14} />
               <span>Diagram (Mermaid)</span>
             </Flex>
@@ -233,11 +235,11 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       case 'data':
         return (
           <div className="space-y-2">
-            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               <Icon size={14} />
               <span>Data</span>
             </Flex>
-            <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4 overflow-x-auto">
+            <div className="bg-mission-control-bg rounded-lg p-4 overflow-x-auto">
               <pre className="text-sm font-mono whitespace-pre-wrap break-words">
                 <code>{artifact.content}</code>
               </pre>
@@ -250,7 +252,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       default:
         return (
           <div className="space-y-2">
-            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               <Icon size={14} />
               <span>{artifact.type}</span>
             </Flex>
@@ -263,24 +265,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
   };
 
   if (isCollapsed) {
-    return (
-      <IconButton
-        onClick={toggleCollapse}
-        size="2"
-        variant="ghost"
-       
-        title="Open Artifacts"
-        className="fixed right-0 top-1/2 -translate-y-1/2 border-l border-y border-mission-control-border rounded-l-lg rounded-r-none z-10"
-        style={{ position: 'fixed' }}
-      >
-        <ChevronLeft size={20} className="text-mission-control-text-dim" />
-        {displayArtifacts.length > 0 && (
-          <span className="absolute -top-1 -left-1 w-5 h-5 bg-mission-control-accent text-white text-xs rounded-full flex items-center justify-center">
-            {displayArtifacts.length}
-          </span>
-        )}
-      </IconButton>
-    );
+    return null;
   }
 
   return (
@@ -306,26 +291,25 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-mission-control-border group-hover:bg-mission-control-accent/60 transition-colors" />
       </div>
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
         <Flex align="center" gap="2">
           <FileText size={18} className="text-mission-control-accent" />
-          <h3 className="font-semibold text-sm">Artifacts</h3>
+          <h3 className="text-sm font-semibold text-mission-control-text">Artifacts</h3>
           {displayArtifacts.length > 0 && (
             <span className="px-2 py-0.5 bg-mission-control-bg text-xs rounded-full text-mission-control-text-dim">
               {displayArtifacts.length}
             </span>
           )}
         </Flex>
-        <IconButton
+        <button
+          type="button"
           onClick={toggleCollapse}
-          size="2"
-          variant="ghost"
-         
           title="Collapse panel"
           aria-label="Collapse panel"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           <ChevronRight size={18} />
-        </IconButton>
+        </button>
       </div>
 
       {/* Artifact List or Detail View */}
@@ -333,71 +317,68 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Artifact Header — single compact row */}
           <Flex align="center" gap="2" className="px-3 py-2 border-b border-mission-control-border">
-            <IconButton
+            <button
               onClick={() => selectArtifact(null)}
-              size="1"
-              variant="ghost"
-             
-              className="flex-shrink-0"
+              className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors flex-shrink-0"
               aria-label="Back"
             >
               <ChevronLeft size={15} />
-            </IconButton>
+            </button>
             <span className="font-medium text-sm truncate flex-1 min-w-0">{selectedArtifact.title}</span>
-            <span className={`px-1.5 py-0.5 rounded text-xs border flex-shrink-0 ${ARTIFACT_COLORS[selectedArtifact.type]}`}>
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full border flex-shrink-0 ${ARTIFACT_COLORS[selectedArtifact.type]}`}>
               {selectedArtifact.type}
             </span>
             <span className="text-xs text-mission-control-text-dim flex-shrink-0 tabular-nums">v{selectedArtifact.currentVersion}</span>
             <div className="flex items-center gap-1 flex-shrink-0">
-              <IconButton
+              <button
                 onClick={() => handleCopy(selectedArtifact.content, selectedArtifact.id)}
-                size="1"
-                variant={copiedId === selectedArtifact.id ? 'soft' : 'ghost'}
-               
                 title="Copy"
                 aria-label="Copy"
+                className={`inline-flex items-center gap-1 px-1.5 py-1 rounded border text-xs transition-colors ${
+                  copiedId === selectedArtifact.id
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-border'
+                }`}
               >
-                <Copy size={13} />
+                {copiedId === selectedArtifact.id ? <Check size={13} /> : <Copy size={13} />}
                 {copiedId === selectedArtifact.id && <span className="text-xs">Copied!</span>}
-              </IconButton>
-              <IconButton
+              </button>
+              <button
                 onClick={() => handleDownload(selectedArtifact)}
-                size="1"
-                variant="ghost"
-               
                 title="Download"
                 aria-label="Download"
+                className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Download size={13} />
-              </IconButton>
-              <IconButton
+              </button>
+              <button
                 onClick={() => setShowVersionHistory(!showVersionHistory)}
-                size="1"
-                variant={showVersionHistory ? 'soft' : 'ghost'}
-               
                 title="Version history"
                 aria-label="Version history"
+                className={`inline-flex items-center justify-center w-6 h-6 rounded border transition-colors ${
+                  showVersionHistory
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-border'
+                }`}
               >
                 <History size={13} />
-              </IconButton>
-              <IconButton
+              </button>
+              <button
+                type="button"
                 onClick={() => { if (confirm('Delete this artifact?')) { deleteArtifact(selectedArtifact.id); selectArtifact(null); } }}
-                size="1"
-                variant="ghost"
-                color="red"
-               
                 title="Delete"
                 aria-label="Delete"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <Trash2 size={13} />
-              </IconButton>
+              </button>
             </div>
           </Flex>
 
           {/* Version History */}
           {showVersionHistory && (
             <div className="p-4 border-b border-mission-control-border bg-mission-control-bg">
-              <h5 className="text-xs font-semibold mb-2">Version History</h5>
+              <h5 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Version History</h5>
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {selectedArtifact.versions.map((v) => (
                   <div
@@ -452,30 +433,26 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 })}
               </div>
               <Flex align="center" gap="1" className="ml-2">
-                <IconButton
+                <button
                   onClick={() => setReloadKey(k => k + 1)}
-                  size="1"
-                  variant="ghost"
-                 
                   title="Reload preview"
                   aria-label="Reload preview"
+                  className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <RefreshCw size={14} />
-                </IconButton>
+                </button>
                 {viewTab === 'preview' && (
-                  <IconButton
+                  <button
                     onClick={() => {
                       const win = window.open('', '_blank');
                       if (win) { win.document.write(selectedArtifact.content); win.document.close(); }
                     }}
-                    size="1"
-                    variant="ghost"
-                   
                     title="Open in new window"
                     aria-label="Open in new window"
+                    className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     <Expand size={14} />
-                  </IconButton>
+                  </button>
                 )}
               </Flex>
             </Flex>
@@ -535,14 +512,12 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                       <WifiOff size={32} className="opacity-50" />
                       <p className="text-sm font-medium text-mission-control-text">Could not connect to localhost</p>
                       <p className="text-xs text-mission-control-text-dim">Make sure the dev server is running on that port</p>
-                      <Button
+                      <button
                         onClick={() => { setPortUrl(''); setLoadedPortUrl(''); setPortError(false); }}
-                        size="1"
-                        variant="ghost"
-                       
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         Try again
-                      </Button>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -558,8 +533,8 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
         <div className="flex-1 overflow-y-auto">
           {displayArtifacts.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full py-16 text-center gap-3">
-              <FileText size={32} className="text-mission-control-text-dim opacity-50" />
-              <p className="text-sm font-medium text-mission-control-text">No artifacts yet</p>
+              <FileCode2 size={32} className="text-mission-control-text-dim opacity-50" />
+              <p className="text-sm font-medium text-mission-control-text">No artifact selected</p>
               <p className="text-xs text-mission-control-text-dim max-w-xs">
                 {agentName
                   ? `Ask ${agentName} to generate code, images, or files — they'll appear here.`

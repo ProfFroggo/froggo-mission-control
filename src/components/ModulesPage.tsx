@@ -59,7 +59,7 @@ import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { Skeleton } from './LoadingStates';
 import ModuleLibraryPanel from './ModuleLibraryPanel';
 import type { CatalogModule } from '../types/catalog';
-import { Button, Flex, IconButton, Switch, Box } from '@radix-ui/themes';
+import { Flex, Switch, Box } from '@radix-ui/themes';
 
 // ─── Activity log helpers ──────────────────────────────────────────────────────
 
@@ -216,9 +216,9 @@ function CredentialStatusDot({
   details: CredentialDetail[];
 }) {
   const colorMap = {
-    green: 'bg-success',
-    yellow: 'bg-warning',
-    red: 'bg-error',
+    green: 'bg-[var(--color-success)]',
+    yellow: 'bg-[var(--color-warning)]',
+    red: 'bg-[var(--color-error)]',
   };
 
   const tooltip = details
@@ -275,17 +275,17 @@ function CategoryChip({
   onClick: () => void;
 }) {
   return (
-    <Button
+    <button
       type="button"
       onClick={onClick}
-      variant={selected ? 'soft' : 'ghost'}
-      color={selected ? 'violet' : 'gray'}
-      size="1"
-      radius="full"
-      style={{ textTransform: 'capitalize' }}
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors capitalize ${
+        selected
+          ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+          : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+      }`}
     >
       {label}
-    </Button>
+    </button>
   );
 }
 
@@ -326,7 +326,7 @@ function ModuleCard({
 
   return (
     <div
-      className={`bg-mission-control-surface border border-mission-control-border rounded-lg p-4 transition-all hover:border-mission-control-text-dim/30 flex flex-col ${cardClass}`}
+      className={`bg-mission-control-surface border border-mission-control-border rounded-lg p-4 transition-colors hover:border-mission-control-text-dim/30 flex flex-col ${cardClass}`}
     >
       {/* Header row */}
       <Flex align="start" justify="between" gap="2" className="mb-3">
@@ -366,18 +366,15 @@ function ModuleCard({
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {/* Settings gear — installed, non-core modules only */}
           {!manifest.core && moduleStatus !== 'disposed' && (
-            <IconButton
+            <button
               type="button"
               title={`Settings for ${manifest.name}`}
               aria-label={`Open settings for ${manifest.name}`}
               onClick={() => onSettingsClick(manifest.id)}
-              size="2"
-              variant="ghost"
-              color="gray"
-             
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <Settings size={14} />
-            </IconButton>
+            </button>
           )}
 
           {/* Toggle / Core label / Re-enable */}
@@ -386,15 +383,13 @@ function ModuleCard({
               Always on
             </span>
           ) : isDisabled ? (
-            <Button
+            <button
               type="button"
               onClick={() => onToggle(data, true)}
-              variant="ghost"
-              color="gray"
-              size="1"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Re-enable
-            </Button>
+            </button>
           ) : (
             <ToggleSwitch
               checked={panelVisible}
@@ -438,7 +433,7 @@ function ModuleCard({
         </span>
 
         {isUnconfigured && (
-          <span className="text-xs text-error">Unconfigured</span>
+          <span className="text-xs text-[var(--color-error)]">Unconfigured</span>
         )}
 
         {isDisabled && (
@@ -446,17 +441,14 @@ function ModuleCard({
         )}
 
         {hasCredentials && (
-          <Button
+          <button
             type="button"
             onClick={() => onConfigure(data)}
-            variant="ghost"
-            color="gray"
-            size="1"
-            style={{ marginLeft: 'auto' }}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ml-auto"
           >
             <Key size={12} />
             Configure
-          </Button>
+          </button>
         )}
       </Flex>
     </div>
@@ -686,30 +678,25 @@ export default function ModulesPage() {
         </Flex>
       </div>
       {/* View tabs */}
-      <Flex className="border-b border-mission-control-border px-6">
-        <Button
-          type="button"
-          onClick={() => setView('installed')}
-          variant={view === 'installed' ? 'soft' : 'ghost'}
-          color={view === 'installed' ? 'violet' : 'gray'}
-          size="2"
-          radius="none"
-          style={{ borderBottom: view === 'installed' ? '2px solid var(--violet-9)' : '2px solid transparent', borderRadius: 0, marginBottom: '-1px' }}
-        >
-          <Puzzle size={15} /> Installed
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setView('library')}
-          variant={view === 'library' ? 'soft' : 'ghost'}
-          color={view === 'library' ? 'violet' : 'gray'}
-          size="2"
-          radius="none"
-          style={{ borderBottom: view === 'library' ? '2px solid var(--violet-9)' : '2px solid transparent', borderRadius: 0, marginBottom: '-1px' }}
-        >
-          <Library size={15} /> Library
-        </Button>
-      </Flex>
+      <div className="flex border-b border-mission-control-border px-6">
+        {([
+          { id: 'installed', label: 'Installed', icon: Puzzle },
+          { id: 'library',   label: 'Library',   icon: Library },
+        ] as const).map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setView(id)}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
+              view === id
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+          >
+            <Icon size={14} /> {label}
+          </button>
+        ))}
+      </div>
       <div className="p-6 space-y-6">
 
       {/* Library view */}

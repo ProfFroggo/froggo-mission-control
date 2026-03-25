@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Award } from 'lucide-react';
-import { IconButton, Select, Flex, Box } from '@radix-ui/themes';
+import { X, Award, Bot } from 'lucide-react';
+import { Select, Flex, Box } from '@radix-ui/themes';
 import { libraryApi } from '../lib/api';
+import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
 
 interface AgentSkill {
   agent_id: string;
@@ -15,10 +16,10 @@ interface AgentSkill {
 
 // Proficiency color coding
 function profColor(p: number): string {
-  if (p >= 8) return 'text-success bg-success-subtle border-success-border';
-  if (p >= 6) return 'text-info bg-info-subtle border-info-border';
-  if (p >= 4) return 'text-warning bg-warning-subtle border-warning-border';
-  return 'text-error bg-error-subtle border-error-border';
+  if (p >= 8) return 'text-[var(--color-success)] bg-[var(--color-success)]/10 border-[var(--color-success)]/30';
+  if (p >= 6) return 'text-[var(--color-info)] bg-[var(--color-info)]/10 border-[var(--color-info)]/30';
+  if (p >= 4) return 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30';
+  return 'text-[var(--color-error)] bg-[var(--color-error)]/10 border-[var(--color-error)]/30';
 }
 
 function profLabel(p: number): string {
@@ -29,8 +30,10 @@ function profLabel(p: number): string {
   return 'Beginner';
 }
 
-const AGENT_EMOJIS: Record<string, string> = {
-  'mission-control': '🐸', coder: '💻', researcher: '🔬', writer: '✍️', chief: '👔', hr: '🎓',
+// Map well-known agent IDs to display names; fallback to a Bot icon
+const AGENT_DISPLAY: Record<string, string> = {
+  'mission-control': 'Mission Control', coder: 'Coder', researcher: 'Researcher',
+  writer: 'Writer', chief: 'Chief', hr: 'HR',
 };
 
 export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
@@ -85,81 +88,86 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Flex align="center" justify="center" p="4" className={`fixed inset-0 z-50 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
-        onClick={handleBackdropClick}
-        onKeyDown={handleBackdropClick}
-        role="button"
-        tabIndex={0}
-        aria-label="Close agent skills"
+    <BaseModal
+      isOpen={!isClosing}
+      onClose={handleClose}
+      size="lg"
+      ariaLabel="Agent Skills and Proficiency"
+      isClosing={isClosing}
+    >
+      <BaseModalHeader
+        title="Skills & Proficiency"
+        onClose={handleClose}
+        icon={<Award size={18} className="text-mission-control-accent" />}
       />
-      <Flex direction="column" className={`relative w-full max-w-2xl bg-mission-control-bg border border-mission-control-border rounded-xl shadow-2xl max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
-        {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-mission-control-border flex-shrink-0">
-          <Award size={20} className="text-mission-control-accent" />
-          <h2 className="text-base font-semibold text-mission-control-text flex-1">Agent Skills & Proficiency</h2>
-          <Select.Root value={selectedAgent} onValueChange={setSelectedAgent} size="1">
-            <Select.Trigger />
-            <Select.Content>
-              <Select.Item value="all">All Agents</Select.Item>
-              {agents.map(a => <Select.Item key={a} value={a}>{a}</Select.Item>)}
-            </Select.Content>
-          </Select.Root>
-          <IconButton onClick={handleClose} variant="ghost" color="gray" size="2">
-            <X size={18} />
-          </IconButton>
-        </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {loading ? (
-            <div className="text-center text-mission-control-text-dim py-8">Loading...</div>
-          ) : Object.keys(grouped).length === 0 ? (
-            <div className="text-center py-12">
-              <Award size={32} className="mx-auto text-mission-control-text-dim mb-3 opacity-40" />
-              <p className="text-mission-control-text-dim text-sm">No skills tracked yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(grouped).map(([agentId, agentSkills]) => (
-                <div key={agentId}>
-                  <Flex align="center" gap="2" className="mb-3">
-                    <span className="text-lg">{AGENT_EMOJIS[agentId] || '🤖'}</span>
-                    <span className="font-semibold text-mission-control-text capitalize">{agentId}</span>
-                    <span className="text-xs text-mission-control-text-dim">
-                      · Avg: {(agentSkills.reduce((sum, s) => sum + s.proficiency, 0) / agentSkills.length).toFixed(1)}
-                    </span>
-                  </Flex>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {agentSkills.map(skill => (
-                      <div key={`${agentId}-${skill.skill_name}`} className={`rounded-lg border p-2.5 ${profColor(skill.proficiency)}`}>
-                        <Flex align="center" justify="between" className="mb-1.5">
-                          <span className="text-sm font-medium">{skill.skill_name}</span>
-                          <span className="text-xs font-bold">{skill.proficiency}/10</span>
-                        </Flex>
-                        {/* Proficiency bar */}
-                        <div className="h-1.5 bg-black/20 rounded-full overflow-hidden mb-1">
-                          <div
-                            className="h-full rounded-full bg-current transition-all duration-500"
-                            style={{ width: `${skill.proficiency * 10}%` }}
-                          />
-                        </div>
-                        <Flex align="center" justify="between" className="text-[10px] opacity-70">
-                          <span>{profLabel(skill.proficiency)}</span>
-                          {(skill.success_count > 0 || skill.failure_count > 0) && (
-                            <span>{skill.success_count}✓ {skill.failure_count}✗</span>
-                          )}
-                        </Flex>
-                      </div>
-                    ))}
+      {/* Agent filter */}
+      <div className="px-6 py-3 border-b border-mission-control-border flex-shrink-0">
+        <Select.Root value={selectedAgent} onValueChange={setSelectedAgent} size="1">
+          <Select.Trigger />
+          <Select.Content>
+            <Select.Item value="all">All Agents</Select.Item>
+            {agents.map(a => (
+              <Select.Item key={a} value={a}>{AGENT_DISPLAY[a] ?? a}</Select.Item>
+            ))}
+          </Select.Content>
+        </Select.Root>
+      </div>
+
+      <BaseModalBody maxHeight="70vh">
+        {loading ? (
+          <div className="text-center text-mission-control-text-dim/70 py-8 text-sm">Loading...</div>
+        ) : Object.keys(grouped).length === 0 ? (
+          <div className="text-center py-12">
+            <Award size={32} className="mx-auto text-mission-control-text-dim mb-3 opacity-40" />
+            <p className="text-mission-control-text-dim/70 text-sm">No skills tracked yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {Object.entries(grouped).map(([agentId, agentSkills]) => (
+              <div key={agentId}>
+                <Flex align="center" gap="2" className="mb-3">
+                  <div className="w-6 h-6 rounded-md bg-mission-control-border/40 flex items-center justify-center flex-shrink-0">
+                    <Bot size={12} className="text-mission-control-text-dim" />
                   </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+                    {AGENT_DISPLAY[agentId] ?? agentId}
+                  </span>
+                  <span className="text-[10px] text-mission-control-text-dim/70 tabular-nums">
+                    Avg {(agentSkills.reduce((sum, s) => sum + s.proficiency, 0) / agentSkills.length).toFixed(1)}/10
+                  </span>
+                </Flex>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {agentSkills.map(skill => (
+                    <div key={`${agentId}-${skill.skill_name}`} className={`rounded-lg border p-2.5 bg-mission-control-surface ${profColor(skill.proficiency)}`}>
+                      <Flex align="center" justify="between" className="mb-1.5">
+                        <span className="text-sm font-medium">{skill.skill_name}</span>
+                        <span className="text-xs font-bold tabular-nums">{skill.proficiency}/10</span>
+                      </Flex>
+                      {/* Proficiency bar */}
+                      <div className="h-1.5 bg-black/20 rounded-full overflow-hidden mb-1">
+                        <div
+                          className="h-full rounded-full bg-current transition-[width] duration-500"
+                          style={{ width: `${skill.proficiency * 10}%` }}
+                        />
+                      </div>
+                      <Flex align="center" justify="between" className="text-[10px] opacity-70 tabular-nums">
+                        <span>{profLabel(skill.proficiency)}</span>
+                        {(skill.success_count > 0 || skill.failure_count > 0) && (
+                          <span className="flex items-center gap-2">
+                            <span className="text-[var(--color-success)]">{skill.success_count} ok</span>
+                            <span className="text-[var(--color-error)]">{skill.failure_count} fail</span>
+                          </span>
+                        )}
+                      </Flex>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </Flex>
-    </Flex>
+              </div>
+            ))}
+          </div>
+        )}
+      </BaseModalBody>
+    </BaseModal>
   );
 }

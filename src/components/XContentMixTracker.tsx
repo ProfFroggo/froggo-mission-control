@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PieChart, TrendingUp, AlertTriangle, Check } from 'lucide-react';
-import { Button, TextField, Flex } from '@radix-ui/themes';
+import { TextField, Flex } from '@radix-ui/themes';
 import { CHART_COLORS } from '../lib/chartTheme';
 
 interface ContentMixData {
@@ -161,9 +161,9 @@ export const XContentMixTracker: React.FC = () => {
               {currentPercent.toFixed(1)}% / {item.target}%
             </span>
             {offTarget ? (
-              <AlertTriangle size={14} className="text-warning" />
+              <AlertTriangle size={14} className="text-[var(--color-warning)]" />
             ) : (
-              <Check size={14} className="text-success" />
+              <Check size={14} className="text-[var(--color-success)]" />
             )}
           </Flex>
         </Flex>
@@ -173,7 +173,7 @@ export const XContentMixTracker: React.FC = () => {
           {/* Current */}
           <div className="relative h-6 bg-mission-control-surface rounded overflow-hidden">
             <div
-              className="absolute h-full transition-all duration-300"
+              className="absolute h-full transition-colors duration-300"
               style={{
                 width: `${Math.min(currentPercent, 100)}%`,
                 backgroundColor: item.color,
@@ -188,7 +188,7 @@ export const XContentMixTracker: React.FC = () => {
           {/* Target */}
           <div className="relative h-2 bg-mission-control-surface rounded overflow-hidden">
             <div
-              className="absolute h-full transition-all duration-300"
+              className="absolute h-full transition-colors duration-300"
               style={{
                 width: `${item.target}%`,
                 backgroundColor: item.color,
@@ -200,7 +200,7 @@ export const XContentMixTracker: React.FC = () => {
 
         {/* Deviation indicator */}
         {offTarget && (
-          <div className="mt-1 text-xs text-warning flex items-center gap-1">
+          <div className="mt-1 text-xs text-[var(--color-warning)] flex items-center gap-1">
             <AlertTriangle size={12} />
             {deviation > 0
               ? `${deviation.toFixed(1)}% over target`
@@ -239,11 +239,11 @@ export const XContentMixTracker: React.FC = () => {
   const statusClasses = (status: string) => {
     switch (status) {
       case 'on-target':
-        return 'bg-success-subtle border-success-border';
+        return 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30';
       case 'minor-deviation':
-        return 'bg-warning-subtle border-warning-border';
+        return 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30';
       default:
-        return 'bg-error-subtle border-error-border';
+        return 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30';
     }
   };
 
@@ -255,7 +255,7 @@ export const XContentMixTracker: React.FC = () => {
       {/* Header */}
       <Flex align="center" justify="between" className="mb-6">
         <Flex align="center" gap="3">
-          <PieChart className="text-info" size={24} />
+          <PieChart className="text-[var(--color-info)]" size={24} />
           <div>
             <h2 className="text-lg font-semibold text-mission-control-text">Content Mix Tracker</h2>
             <p className="text-sm text-mission-control-text-dim">
@@ -293,12 +293,12 @@ export const XContentMixTracker: React.FC = () => {
 
       {/* Error state */}
       {error && (
-        <Flex align="center" gap="2" className="mb-4 p-3 rounded-lg bg-error-subtle text-error text-sm">
+        <Flex align="center" gap="2" className="mb-4 p-3 rounded-lg bg-[var(--color-error)]/10 text-[var(--color-error)] text-sm">
           <AlertTriangle size={16} />
           {error}
-          <Button onClick={loadContentMix} variant="ghost" color="red" size="1" className="ml-auto">
+          <button type="button" onClick={loadContentMix} className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-colors">
             Retry
-          </Button>
+          </button>
         </Flex>
       )}
 
@@ -307,18 +307,18 @@ export const XContentMixTracker: React.FC = () => {
         <Flex align="center" gap="2" className="mb-1">
           {status === 'on-target' ? (
             <>
-              <Check className="text-success" size={20} />
+              <Check className="text-[var(--color-success)]" size={20} />
               <span className="font-medium text-mission-control-text">Content Mix On Target</span>
             </>
           ) : status === 'minor-deviation' ? (
             <>
-              <TrendingUp className="text-warning" size={20} />
-              <span className="font-medium text-warning">Minor Deviation</span>
+              <TrendingUp className="text-[var(--color-warning)]" size={20} />
+              <span className="font-medium text-[var(--color-warning)]">Minor Deviation</span>
             </>
           ) : (
             <>
-              <AlertTriangle className="text-error" size={20} />
-              <span className="font-medium text-error">Major Deviation</span>
+              <AlertTriangle className="text-[var(--color-error)]" size={20} />
+              <span className="font-medium text-[var(--color-error)]">Major Deviation</span>
             </>
           )}
         </Flex>

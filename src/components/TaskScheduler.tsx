@@ -8,19 +8,19 @@ import { showToast } from './Toast';
 import IconBadge from './IconBadge';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { label: string; badgeClass: string; iconColor: string }> = {
-  p0: { label: 'P0 — Urgent', badgeClass: 'bg-error/10 text-error',     iconColor: 'text-error bg-error/10' },
-  p1: { label: 'P1 — High',   badgeClass: 'bg-warning/10 text-warning',  iconColor: 'text-warning bg-warning/10' },
-  p2: { label: 'P2 — Medium', badgeClass: 'bg-info/10 text-info',        iconColor: 'text-info bg-info/10' },
+  p0: { label: 'P0 — Urgent', badgeClass: 'bg-[var(--color-error)]/10 text-[var(--color-error)]',     iconColor: 'text-[var(--color-error)] bg-[var(--color-error)]/10' },
+  p1: { label: 'P1 — High',   badgeClass: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]',  iconColor: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10' },
+  p2: { label: 'P2 — Medium', badgeClass: 'bg-[var(--color-info)]/10 text-[var(--color-info)]',        iconColor: 'text-[var(--color-info)] bg-[var(--color-info)]/10' },
   p3: { label: 'P3 — Low',    badgeClass: 'bg-mission-control-border/50 text-mission-control-text-dim', iconColor: 'text-mission-control-text-dim bg-mission-control-border/50' },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; class: string }> = {
   'todo':            { label: 'Todo',            class: 'bg-mission-control-border/50 text-mission-control-text-dim' },
-  'in-progress':     { label: 'In Progress',     class: 'bg-info/10 text-info' },
-  'review':          { label: 'Review',          class: 'bg-warning/10 text-warning' },
-  'human-review':    { label: 'Needs Review',    class: 'bg-warning/10 text-warning' },
-  'internal-review': { label: 'Pre-review', class: 'bg-review/10 text-review' },
-  'done':            { label: 'Done',            class: 'bg-success/10 text-success' },
+  'in-progress':     { label: 'In Progress',     class: 'bg-[var(--color-info)]/10 text-[var(--color-info)]' },
+  'review':          { label: 'Review',          class: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' },
+  'human-review':    { label: 'Needs Review',    class: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' },
+  'internal-review': { label: 'Pre-review', class: 'bg-[var(--color-review)]/10 text-[var(--color-review)]' },
+  'done':            { label: 'Done',            class: 'bg-[var(--color-success)]/10 text-[var(--color-success)]' },
 };
 
 const PRIORITIES: TaskPriority[] = ['p0', 'p1', 'p2', 'p3'];
@@ -42,7 +42,7 @@ export default function TaskScheduler() {
   const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
 
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<FilterType>('active');
+  const [filter, setFilter] = useState<FilterType>('all');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -219,10 +219,10 @@ export default function TaskScheduler() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <Flex align="center" justify="between" className="mb-4">
+      <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="mb-3">
           <Flex align="center" gap="3">
-            <div className="p-2 bg-mission-control-accent/20 rounded-lg">
+            <div className="p-2 bg-mission-control-accent/20 rounded-xl">
               <ListTodo size={24} className="text-mission-control-accent" />
             </div>
             <div>
@@ -257,54 +257,60 @@ export default function TaskScheduler() {
         {/* Filters */}
         <Flex gap="2">
           {(['active', 'done', 'all'] as const).map((f) => (
-            <Button
+            <button
               key={f}
+              type="button"
               onClick={() => setFilter(f)}
-              variant={filter === f ? 'solid' : 'outline'}
-              color={filter === f ? 'violet' : 'gray'}
-              size="2"
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                filter === f
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {f === 'active' && `Active (${activeCount})`}
               {f === 'done'   && `Done (${doneCount})`}
               {f === 'all'    && `All (${tasks.length})`}
-            </Button>
+            </button>
           ))}
         </Flex>
       </div>
 
       {/* Form */}
       {showForm && (
-        <div className="p-6 border-b border-mission-control-border bg-mission-control-bg">
+        <div className="p-4 border-b border-mission-control-border bg-mission-control-bg">
           <Flex align="center" justify="between" className="mb-4">
             <h3 className="font-medium">{editingId ? 'Edit Task' : 'Schedule Task'}</h3>
-            <Button onClick={resetForm} variant="ghost" color="gray" size="1">
+            <button type="button" onClick={resetForm} className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={16} />
-            </Button>
+            </button>
           </Flex>
 
           <div className="space-y-4">
             {/* Mode toggle (new only) */}
             {!editingId && (
-              <Flex gap="2">
+              <div className="flex items-center gap-0.5 p-1 rounded-xl bg-mission-control-bg border border-mission-control-border">
                 {(['new', 'existing'] as const).map((m) => (
-                  <Button
+                  <button
                     key={m}
+                    type="button"
                     onClick={() => setMode(m)}
-                    variant={mode === m ? 'soft' : 'outline'}
-                    color={mode === m ? 'violet' : 'gray'}
-                    size="2"
+                    className={`flex flex-1 items-center justify-center px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      mode === m
+                        ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                        : 'text-mission-control-text-dim hover:text-mission-control-text'
+                    }`}
                   >
                     {m === 'new' ? 'New Task' : 'Existing Task'}
-                  </Button>
+                  </button>
                 ))}
-              </Flex>
+              </div>
             )}
 
             {mode === 'existing' && !editingId ? (
               <div>
                 <label className="block text-sm text-mission-control-text-dim mb-1">Task</label>
                 <Select.Root value={existingTaskId || '__placeholder__'} onValueChange={val => setExistingTaskId(val === '__placeholder__' ? '' : val)}>
-                  <Select.Trigger style={{ width: '100%' }} />
+                  <Select.Trigger className="w-full" />
                   <Select.Content>
                     <Select.Item value="__placeholder__" disabled>Select unscheduled task…</Select.Item>
                     {unscheduledTasks.map(t => (
@@ -320,20 +326,20 @@ export default function TaskScheduler() {
                   value={formTitle}
                   onChange={e => setFormTitle(e.target.value)}
                   placeholder="Task title"
-                  style={{ width: '100%' }}
+                  className="w-full"
                 />
                 <TextArea
                   value={formDescription}
                   onChange={e => setFormDescription(e.target.value)}
                   placeholder="Description (optional)"
                   rows={2}
-                  style={{ width: '100%' }}
+                  className="w-full"
                 />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-mission-control-text-dim mb-1">Priority</label>
                     <Select.Root value={formPriority} onValueChange={(val) => setFormPriority(val as TaskPriority)}>
-                      <Select.Trigger style={{ width: '100%' }} />
+                      <Select.Trigger className="w-full" />
                       <Select.Content>
                         {PRIORITIES.map(p => (
                           <Select.Item key={p} value={p}>{PRIORITY_CONFIG[p].label}</Select.Item>
@@ -344,7 +350,7 @@ export default function TaskScheduler() {
                   <div>
                     <label className="block text-sm text-mission-control-text-dim mb-1">Assign to</label>
                     <Select.Root value={formAssignee || '__unassigned__'} onValueChange={val => setFormAssignee(val === '__unassigned__' ? '' : val)}>
-                      <Select.Trigger style={{ width: '100%' }} />
+                      <Select.Trigger className="w-full" />
                       <Select.Content>
                         <Select.Item value="__unassigned__">Unassigned</Select.Item>
                         {agents
@@ -367,7 +373,7 @@ export default function TaskScheduler() {
                   type="date"
                   value={formDate}
                   onChange={e => setFormDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
               <div>
@@ -376,19 +382,18 @@ export default function TaskScheduler() {
                   type="time"
                   value={formTime}
                   onChange={e => setFormTime(e.target.value)}
-                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
             </div>
 
             {/* Recurrence */}
             {mode !== 'existing' && (
-              <div className="border border-mission-control-border rounded-lg overflow-hidden">
-                <Button
+              <div className="border border-mission-control-border rounded-xl overflow-hidden">
+                <button
                   type="button"
-                  variant="ghost"
                   onClick={() => setIsRecurring(!isRecurring)}
-                  className={`w-full flex items-center justify-between px-4 py-3 transition-colors rounded-t-lg ${
+                  className={`w-full flex items-center justify-between px-4 py-3 transition-colors rounded-t-xl ${
                     isRecurring
                       ? 'bg-mission-control-accent/10 text-mission-control-accent'
                       : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'
@@ -399,7 +404,7 @@ export default function TaskScheduler() {
                     <span className="text-sm font-medium">Recurring task</span>
                   </Flex>
                   <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
-                </Button>
+                </button>
 
                 {isRecurring && (
                   <div className="px-4 py-3 bg-mission-control-bg border-t border-mission-control-border space-y-2.5">
@@ -456,7 +461,7 @@ export default function TaskScheduler() {
                           value={recurEndDate}
                           onChange={e => setRecurEndDate(e.target.value)}
                           onClick={() => setRecurEndType('on')}
-                          className="px-2 py-0.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
+                          className="px-2 py-0.5 bg-mission-control-surface border border-mission-control-border rounded-xl text-sm focus:outline-none focus:border-mission-control-accent"
                         />
                       </label>
                     </div>
@@ -515,9 +520,9 @@ export default function TaskScheduler() {
               return (
                 <div
                   key={task.id}
-                  className={`p-4 bg-mission-control-surface border rounded-lg transition-colors ${
+                  className={`p-4 bg-mission-control-surface border rounded-xl transition-colors ${
                     isOverdue
-                      ? 'border-error/40 hover:border-error/60'
+                      ? 'border-[var(--color-error)]/40 hover:border-[var(--color-error)]/60'
                       : task.status === 'done'
                       ? 'border-mission-control-border opacity-70'
                       : 'border-mission-control-border hover:border-mission-control-accent/30'
@@ -541,7 +546,7 @@ export default function TaskScheduler() {
                           </span>
                         )}
                         {task.dueDate ? (
-                          <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-error' : 'text-mission-control-text-dim'}`}>
+                          <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}>
                             <Clock size={12} />
                             {formatDueDate(task.dueDate)}
                           </span>
@@ -572,25 +577,23 @@ export default function TaskScheduler() {
 
                     {task.status !== 'done' && (
                       <div className="flex gap-1 shrink-0">
-                        <Button
+                        <button
+                          type="button"
                           onClick={() => handleEdit(task)}
-                          variant="ghost"
-                          color="gray"
-                          size="1"
                           title="Edit / set due date"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                         >
                           <Edit2 size={15} />
-                        </Button>
+                        </button>
                         {task.dueDate && (
-                          <Button
+                          <button
+                            type="button"
                             onClick={() => handleClearDueDate(task.id)}
-                            variant="ghost"
-                            color="red"
-                            size="1"
                             title="Clear due date"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                           >
                             <Trash2 size={15} />
-                          </Button>
+                          </button>
                         )}
                       </div>
                     )}
@@ -630,23 +633,23 @@ export default function TaskScheduler() {
                 due.getMonth() === now.getMonth() &&
                 due.getDate() === now.getDate();
               const statusColor =
-                task.status === 'in-progress' ? 'text-info' :
-                task.status === 'review' ? 'text-review' :
-                task.status === 'done' ? 'text-success' :
+                task.status === 'in-progress' ? 'text-[var(--color-info)]' :
+                task.status === 'review' ? 'text-[var(--color-review)]' :
+                task.status === 'done' ? 'text-[var(--color-success)]' :
                 'text-mission-control-text-dim';
 
               return (
                 <div
                   key={task.id}
-                  className={`px-3 py-2 rounded-lg border transition-colors ${
+                  className={`px-3 py-2 rounded-xl border transition-colors ${
                     isDueToday
-                      ? 'border-warning/30 bg-warning/5'
+                      ? 'border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5'
                       : 'border-mission-control-border hover:border-mission-control-accent/30'
                   }`}
                 >
                   <Flex align="start" gap="2">
                     {isDueToday && (
-                      <AlertTriangle size={11} className="text-warning mt-0.5 shrink-0" />
+                      <AlertTriangle size={11} className="text-[var(--color-warning)] mt-0.5 shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate" title={task.title}>
@@ -657,7 +660,7 @@ export default function TaskScheduler() {
                           {STATUS_CONFIG[task.status]?.label ?? task.status}
                         </span>
                         {due && (
-                          <span className={`text-xs tabular-nums ${isDueToday ? 'text-warning font-medium' : 'text-mission-control-text-dim'}`}>
+                          <span className={`text-xs tabular-nums ${isDueToday ? 'text-[var(--color-warning)] font-medium' : 'text-mission-control-text-dim'}`}>
                             · {isDueToday ? 'Today' : due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             {' '}
                             {due.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}

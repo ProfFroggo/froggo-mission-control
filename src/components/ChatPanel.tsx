@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
-import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Button, TextField, Flex } from '@radix-ui/themes';
+import { Send, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle, ThumbsUp, ThumbsDown, UserCheck, PanelRight } from 'lucide-react';
 import { AssistantRuntimeProvider } from '@assistant-ui/react';
 import { useMissionControlRuntime } from './chat/ChatRuntime';
 import { MissionControlThread, MissionControlComposer } from './chat/ThreadStyles';
@@ -30,6 +30,7 @@ import { useArtifactOpen } from '../hooks/useArtifactOpen';
 import { useArtifactStore } from '../store/artifactStore';
 import { Spinner } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
+import { formatTimeAgo } from '../utils/formatting';
 
 const logger = createLogger('ChatPanel');
 
@@ -78,13 +79,39 @@ interface StructuredChatMessage extends Omit<ChatMessage, 'content'> {
   content: string | ContentBlock[];
   status?: string; // live streaming status: 'Thinking...', 'Using: Bash', etc.
   subtle?: boolean; // true for heartbeat/working pulses — rendered with lighter styling
+  isError?: boolean; // true when message content is an error string
+  isEscalation?: boolean; // true when message requires human attention
+}
+
+/** Returns true when message text signals an escalation / approval request */
+function isEscalationMessage(content: string | ContentBlock[]): boolean {
+  const text =
+    typeof content === 'string'
+      ? content
+      : content
+          .filter((b: ContentBlock) => b.type === 'text')
+          .map((b: ContentBlock) => b.text ?? '')
+          .join('');
+  const lower = text.toLowerCase();
+  return (
+    lower.includes('human-review') ||
+    lower.includes('human review') ||
+    lower.includes('approval needed') ||
+    lower.includes('approval required') ||
+    lower.includes('needs approval') ||
+    lower.includes('waiting for approval') ||
+    lower.includes('waiting for human') ||
+    lower.includes('needs your decision') ||
+    lower.includes('needs your input') ||
+    lower.includes('escalat')
+  );
 }
 
 export default function ChatPanel() {
   const { addActivity } = useStore();
   const { rooms: allRooms, activeRoomId, setActiveRoom, createRoom, loadRooms } = useChatRoomStore();
   // Project rooms (id: project-*) are managed by the Projects module — exclude from chat panel
-  const rooms = allRooms.filter(r => !r.id.startsWith('project-'));
+  const rooms = useMemo(() => allRooms.filter(r => !r.id.startsWith('project-')), [allRooms]);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showRoomList, setShowRoomList] = useState(false);
   const [messages, setMessages] = useState<StructuredChatMessage[]>([]);
@@ -101,10 +128,12 @@ export default function ChatPanel() {
   const [showSearch, setShowSearch] = useState(false);
   const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'agents' | 'rooms'>('agents');
   const [starredMessageIds, setStarredMessageIds] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
   const [streamError, setStreamError] = useState<string | null>(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [dismissedEscalationIds, setDismissedEscalationIds] = useState<Set<string>>(new Set());
   const lastUserMessageRef = useRef<string>('');
   const { agents: chatAgents } = useAgentList();
   const [selectedAgent, setSelectedAgent] = useState<ChatAgent | null>(null);
@@ -124,18 +153,16 @@ export default function ChatPanel() {
   );
 
   // Auto-extract artifacts from 1-1 chat messages
-  useArtifactExtraction(
-    messages.map(m => ({
-      id: m.id ?? '',
-      role: m.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
-      content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
-      timestamp: m.timestamp,
-    })),
-    currentSessionId
-  );
+  const artifactMessages = useMemo(() => messages.map(m => ({
+    id: m.id ?? '',
+    role: m.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
+    content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+    timestamp: m.timestamp,
+  })), [messages]);
+  useArtifactExtraction(artifactMessages, currentSessionId);
 
   // Scope the artifact panel to the current agent's session; clear stale selection
-  const { setFilterBySession, getSessionArtifacts, selectArtifact } = useArtifactStore();
+  const { setFilterBySession, getSessionArtifacts, selectArtifact, toggleCollapse, isCollapsed } = useArtifactStore();
   useEffect(() => {
     if (!currentSessionId) return;
     setFilterBySession(currentSessionId);
@@ -170,6 +197,8 @@ export default function ChatPanel() {
   const currentRunIdRef = useRef<string>('');
   // Phase 80: AbortController for SDK streaming cancellation
   const sdkAbortControllerRef = useRef<AbortController | null>(null);
+  // Track active tool name for the status strip shown during streaming
+  const [currentTool, setCurrentTool] = useState<string | null>(null);
 
   const connected = connectionState === 'connected';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -360,6 +389,16 @@ export default function ChatPanel() {
     handleFiles(files);
   }, []);
 
+  // Handle clipboard paste — images and files paste directly into the chat
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData?.items ?? []);
+    const fileItems = items.filter(item => item.kind === 'file');
+    if (fileItems.length === 0) return; // Let text paste fall through to textarea
+    e.preventDefault();
+    const files = fileItems.map(item => item.getAsFile()).filter(Boolean) as File[];
+    if (files.length > 0) handleFiles(files);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleFiles = (files: File[]) => {
     const newAttachments: AttachedFile[] = [];
     
@@ -425,6 +464,36 @@ export default function ChatPanel() {
     });
   }, [messages, searchQuery]);
 
+  // Derive active escalation messages — assistant messages that need human attention
+  // and have not been dismissed by the user.
+  const activeEscalations = useMemo(() => {
+    return messages.filter(
+      msg =>
+        !msg.streaming &&
+        msg.role === 'assistant' &&
+        isEscalationMessage(msg.content) &&
+        !dismissedEscalationIds.has(msg.id ?? '')
+    );
+  }, [messages, dismissedEscalationIds]);
+
+  // Derive last assistant message for quick-reply detection
+  const lastAssistantMessage = useMemo(() => {
+    const visible = messages.filter(m => !m.streaming && m.role === 'assistant');
+    return visible[visible.length - 1] ?? null;
+  }, [messages]);
+
+  const lastAssistantText = useMemo(() => {
+    if (!lastAssistantMessage) return '';
+    return typeof lastAssistantMessage.content === 'string'
+      ? lastAssistantMessage.content
+      : (lastAssistantMessage.content as ContentBlock[])
+          .filter((b: ContentBlock) => b.type === 'text')
+          .map((b: ContentBlock) => b.text ?? '')
+          .join('');
+  }, [lastAssistantMessage]);
+
+  // Quick replies are now AI-generated via generateSuggestions (auto-called after each message)
+
   // Scroll to bottom — use a brief timeout so the DOM has settled before scrolling.
   // Without this, scrollIntoView fires before the new message element is fully rendered,
   // which causes it to stop just above the last message.
@@ -434,6 +503,29 @@ export default function ChatPanel() {
     }, 50);
     return () => clearTimeout(t);
   }, [messages]);
+
+  // Auto-generate contextual reply suggestions when assistant message completes.
+  // Debounced 800ms to avoid triggering during mid-stream updates.
+  const suggestionsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (loading) {
+      // Clear pending suggestions while agent is still responding
+      if (suggestionsTimerRef.current) clearTimeout(suggestionsTimerRef.current);
+      return;
+    }
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.role !== 'assistant') return;
+
+    // Debounce: wait 800ms after stream completes to avoid rapid API calls
+    if (suggestionsTimerRef.current) clearTimeout(suggestionsTimerRef.current);
+    suggestionsTimerRef.current = setTimeout(() => {
+      generateSuggestions(true);
+    }, 800);
+    return () => {
+      if (suggestionsTimerRef.current) clearTimeout(suggestionsTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, loading]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -566,7 +658,7 @@ export default function ChatPanel() {
       if (currentMsgIdRef.current) {
         // Store the FULL content structure (blocks array or string)
         let content: string | ContentBlock[] = '';
-        
+
         if (data.message?.content && Array.isArray(data.message.content)) {
           // Keep structured content blocks
           content = data.message.content;
@@ -576,16 +668,19 @@ export default function ChatPanel() {
             .filter((c: any) => c.type === 'text')
             .map((c: any) => c.text)
             .join('');
+          // Track the most recent tool_use block name for the status strip
+          const toolBlock = [...data.message.content].reverse().find((c: any) => c.type === 'tool_use');
+          if (toolBlock) setCurrentTool(toolBlock.name ?? null);
         } else if (data.content) {
           content = data.content;
           currentContentRef.current = content;
           currentResponseRef.current = data.content;
         }
-        
+
         if (content) {
-          setMessages(prev => prev.map(m => 
-            m.id === currentMsgIdRef.current 
-              ? { ...m, content, streaming: false } 
+          setMessages(prev => prev.map(m =>
+            m.id === currentMsgIdRef.current
+              ? { ...m, content, streaming: false }
               : m
           ));
         }
@@ -604,6 +699,7 @@ export default function ChatPanel() {
             : m
         ));
         setLoading(false);
+        setCurrentTool(null);
         const runId = currentRunIdRef.current;
         currentMsgIdRef.current = '';
         currentResponseRef.current = '';
@@ -659,6 +755,9 @@ export default function ChatPanel() {
           .filter((c: any) => c.type === 'text')
           .map((c: any) => c.text)
           .join('');
+        // Track the most recent tool_use block for the status strip
+        const toolBlock = [...data.message.content].reverse().find((c: any) => c.type === 'tool_use');
+        if (toolBlock) setCurrentTool(toolBlock.name ?? null);
       } else if (data.content) {
         content = data.content;
         currentContentRef.current = content;
@@ -728,6 +827,7 @@ export default function ChatPanel() {
         }
         
         setLoading(false);
+        setCurrentTool(null);
         currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
         currentResponseRef.current = '';
       }
@@ -742,14 +842,16 @@ export default function ChatPanel() {
         });
         setMessages(prev => prev.map(m =>
           m.id === currentMsgIdRef.current
-            ? { ...m, content: friendlyError, streaming: false }
+            ? { ...m, content: friendlyError, streaming: false, isError: true }
             : m
         ));
+        setStreamError(friendlyError);
         setLoading(false);
+        setCurrentTool(null);
         currentResponseRef.current = '';
         currentContentRef.current = '';
         currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
-        showToast('error', 'Message failed', data.message || data.error || 'Could not send message');
+        showToast('error', 'Message failed', friendlyError);
       }
     };
 
@@ -795,30 +897,43 @@ export default function ChatPanel() {
     }
   };
 
-  const generateSuggestions = useCallback(async () => {
+  const generateSuggestions = useCallback(async (autoTriggered = false) => {
     if (messages.length === 0 || loadingSuggestions) return;
-    
+
+    // Find last assistant message text
+    const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant');
+    if (!lastAssistant) return;
+    const lastText = typeof lastAssistant.content === 'string'
+      ? lastAssistant.content
+      : (lastAssistant.content as ContentBlock[]).filter(b => b.type === 'text').map(b => b.text ?? '').join('');
+    if (!lastText.trim()) return;
+
     setLoadingSuggestions(true);
     setSuggestedReplies([]);
-    
+
     try {
-      // Extract last 10 messages for context
-      const context = messages.slice(-10).map(msg => ({
-        role: msg.role,
-        content: typeof msg.content === 'string'
-          ? msg.content
-          : msg.content.filter(b => b.type === 'text').map(b => b.text ?? '').join(''),
-      }));
-      
-      // TODO Phase 4: migrate — [web-not-available] not available in web
-      showToast('error', 'Not available', 'Suggestion feature not available in web version');
+      const res = await fetch('/api/agents/suggest-replies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lastMessage: lastText,
+          agentName: selectedAgent?.name ?? 'Agent',
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { suggestions?: string[] };
+        if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+          setSuggestedReplies(data.suggestions);
+        }
+      }
     } catch (error: unknown) {
-      // '[Chat] Suggestion error:', error;
-      showToast('error', 'Failed to generate', error instanceof Error ? error.message : 'Unknown error');
+      if (!autoTriggered) {
+        showToast('error', 'Failed to generate', error instanceof Error ? error.message : 'Unknown error');
+      }
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [messages, loadingSuggestions]);
+  }, [messages, loadingSuggestions, selectedAgent]);
 
   const applySuggestion = (suggestion: string) => {
     setInput(suggestion);
@@ -929,14 +1044,20 @@ export default function ChatPanel() {
 
       if (!response.ok || !response.body) {
         if (response.status === 429) {
-          showToast('error', 'Agent unavailable', 'Agent is busy — please wait a moment and try again.');
+          const rateLimitMsg = 'Rate limited — please wait a moment';
+          showToast('error', 'Agent unavailable', rateLimitMsg);
           setMessages(prev => prev.map(m =>
-            m.id === assistantId ? { ...m, content: 'Agent is busy — please wait a moment and try again.', streaming: false } : m
+            m.id === assistantId ? { ...m, content: rateLimitMsg, streaming: false, isError: true } : m
           ));
+          setStreamError(rateLimitMsg);
           setLoading(false);
           return;
         }
-        throw new Error(`Stream error: ${response.status} ${response.statusText}`);
+        const statusMsg =
+          response.status === 503 || response.status === 502 ? 'Agent service temporarily unavailable' :
+          response.status === 408 ? 'Connection timed out — the agent may be busy' :
+          `Stream error: ${response.status} ${response.statusText}`;
+        throw new Error(statusMsg);
       }
 
       const reader = response.body.getReader();
@@ -944,6 +1065,7 @@ export default function ChatPanel() {
       let buffer = '';
       let accumulated = '';
       let structuredContent: ContentBlock[] | null = null;
+      let thinkingContent = ''; // Extended thinking blocks from Claude
 
       while (true) {
         const { done, value } = await reader.read();
@@ -969,25 +1091,58 @@ export default function ChatPanel() {
               setMessages(prev => prev.map(m =>
                 m.id === assistantId ? { ...m, content: pulse, status: 'thinking', subtle: isSubtle } : m
               ));
+            } else if (evt.type === 'tool_use' && evt.name) {
+              // Tool execution started — update status strip
+              setCurrentTool(evt.name as string);
+            } else if (evt.type === 'thinking_block' && typeof evt.thinking === 'string') {
+              // Extended thinking block from Claude — prepend to message content as thinking block
+              thinkingContent = evt.thinking;
+              // Build structured content: thinking block + text (text added as text_deltas arrive)
+              structuredContent = [
+                { type: 'thinking', thinking: thinkingContent } as ContentBlock,
+                ...(accumulated ? [{ type: 'text', text: accumulated } as ContentBlock] : []),
+              ];
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, content: structuredContent! } : m
+              ));
+            } else if (evt.type === 'tool_result') {
+              // Tool finished — clear active tool
+              setCurrentTool(null);
             } else if (evt.type === 'text_delta' && typeof evt.text === 'string') {
               // SDK chat route: true character-by-character text_delta events
               accumulated += evt.text;
-              structuredContent = null;
-              setMessages(prev => prev.map(m =>
-                m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
-              ));
+              setCurrentTool(null); // Text flowing in means no active tool
+              if (thinkingContent) {
+                // Keep thinking block + update text block together
+                structuredContent = [
+                  { type: 'thinking', thinking: thinkingContent } as ContentBlock,
+                  { type: 'text', text: accumulated } as ContentBlock,
+                ];
+                setMessages(prev => prev.map(m =>
+                  m.id === assistantId ? { ...m, content: structuredContent!, status: undefined } : m
+                ));
+              } else {
+                structuredContent = null;
+                setMessages(prev => prev.map(m =>
+                  m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
+                ));
+              }
               // Re-enable input once text starts arriving
               setLoading(false);
             } else if (evt.type === 'error') {
               // Server-side error — surface it in the message bubble
-              const errText = evt.error || evt.text || 'An error occurred';
-              accumulated = errText;
+              const rawErrText = evt.error || evt.text || 'An error occurred';
+              const friendlyErrText = getUserFriendlyError(new Error(rawErrText), { action: 'send your message', resource: 'chat' });
+              accumulated = friendlyErrText;
+              setCurrentTool(null);
               setMessages(prev => prev.map(m =>
-                m.id === assistantId ? { ...m, content: errText, status: undefined, streaming: false } : m
+                m.id === assistantId ? { ...m, content: friendlyErrText, status: undefined, streaming: false, isError: true } : m
               ));
+              setStreamError(friendlyErrText);
               setLoading(false);
               break;
             } else if (evt.type === 'done') {
+              setCurrentTool(null);
               setMessages(prev => prev.map(m =>
                 m.id === assistantId ? { ...m, streaming: false, status: undefined } : m
               ));
@@ -1010,6 +1165,7 @@ export default function ChatPanel() {
         ));
       }
       setLoading(false);
+      setCurrentTool(null);
       currentMsgIdRef.current = '';
       currentResponseRef.current = accumulated;
       currentContentRef.current = structuredContent ?? accumulated;
@@ -1028,15 +1184,16 @@ export default function ChatPanel() {
       });
       setMessages(prev => prev.map(m =>
         m.id === assistantId
-          ? { ...m, content: friendlyError, streaming: false }
+          ? { ...m, content: friendlyError, streaming: false, isError: true }
           : m
       ));
-      setStreamError(e instanceof Error ? e.message : 'Could not send message');
+      setStreamError(friendlyError);
       setLoading(false);
+      setCurrentTool(null);
       currentResponseRef.current = '';
       currentContentRef.current = '';
       currentMsgIdRef.current = '';
-      showToast('error', 'Message failed', e instanceof Error ? e.message : 'Could not send message');
+      showToast('error', 'Message failed', friendlyError);
     }
   };
 
@@ -1089,10 +1246,10 @@ export default function ChatPanel() {
 
   const getStatusColor = () => {
     switch (connectionState) {
-      case 'connected': return 'bg-success';
+      case 'connected': return 'bg-[var(--color-success)]';
       case 'connecting':
-      case 'authenticating': return 'bg-warning animate-pulse';
-      case 'disconnected': return 'bg-error';
+      case 'authenticating': return 'bg-[var(--color-warning)] animate-pulse';
+      case 'disconnected': return 'bg-[var(--color-error)]';
     }
   };
 
@@ -1154,483 +1311,640 @@ export default function ChatPanel() {
 
   return (
     <AssistantRuntimeProvider runtime={assistantRuntime}>
-    <Flex
-      direction="column"
-      height="100%"
-      className={`relative ${isDragging ? 'ring-2 ring-mission-control-accent ring-inset' : ''}`}
+    <div
+      className={`relative flex h-full overflow-hidden ${isDragging ? 'ring-2 ring-mission-control-accent ring-inset' : ''}`}
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
+      onPaste={handlePaste}
       role="region"
       aria-label="Chat panel"
     >
       {/* Drag overlay */}
       {isDragging && (
-        <div className="absolute inset-0 bg-mission-control-accent/10 backdrop-blur-sm z-10 flex items-center justify-center">
+        <div className="absolute inset-0 bg-mission-control-accent/10 z-20 flex items-center justify-center">
           <div className="text-center">
-            <Paperclip size={48} className="mx-auto mb-2 text-mission-control-accent" />
-            <p className="text-lg font-medium">Drop files to attach</p>
+            <Paperclip size={44} className="mx-auto mb-3 text-mission-control-accent" />
+            <p className="text-base font-medium text-mission-control-text">Drop files to attach</p>
           </div>
         </div>
       )}
-      {/* Header */}
-      <Flex align="start" justify="between" className="p-4 border-b border-mission-control-border bg-mission-control-surface">
-        <Flex align="start" gap="3" className="min-w-0">
-          <AgentSelector selectedAgent={selectedAgent} onSelect={handleAgentSwitch} />
-          {selectedAgent?.dbSessionKey ? (
-            <SessionStatsBar
-              sessionKey={selectedAgent.dbSessionKey}
-              statusText={getStatusText()}
-              isDisconnected={connectionState === 'disconnected'}
-              onReconnect={reconnect}
-              onCompact={handleCompact}
-              onReset={() => setMessages([])}
-            />
-          ) : (
-            <div className="flex items-center gap-2 text-xs flex-shrink-0 pt-0.5">
-              <span className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
-              <span className="text-mission-control-text-dim">{getStatusText()}</span>
-              {connectionState === 'disconnected' && (
-                <Button onClick={reconnect} variant="ghost" size="1" style={{ gap: 4 }}>
-                  <RefreshCw size={10} /> Reconnect
-                </Button>
-              )}
-            </div>
-          )}
-        </Flex>
 
-        <Flex align="center" gap="2">
-          <IconButton
-            onClick={() => setIsVoiceMode(!isVoiceMode)}
-            size="2"
-            variant={isVoiceMode ? 'soft' : 'ghost'}
-           
-            title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
-            aria-label={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
-            aria-pressed={isVoiceMode}
-          >
-            {isVoiceMode ? <PhoneOff size={16} /> : <Phone size={16} />}
-          </IconButton>
-          <IconButton
-            onClick={() => setShowSearch(!showSearch)}
-            size="2"
-            variant={showSearch ? 'soft' : 'ghost'}
-           
-            title={showSearch ? 'Hide search' : 'Search messages'}
-            aria-label={showSearch ? 'Hide message search' : 'Search messages'}
-            aria-expanded={showSearch}
-          >
-            <Search size={16} />
-          </IconButton>
-          <IconButton
-            onClick={() => setSpeakResponses(!speakResponses)}
-            size="2"
-            variant={speakResponses ? 'soft' : 'ghost'}
-           
-            title={speakResponses ? 'Voice on' : 'Voice off'}
-            aria-label={speakResponses ? 'Disable voice responses' : 'Enable voice responses'}
-            aria-pressed={speakResponses}
-          >
-            {speakResponses ? <Volume2 size={16} /> : <VolumeX size={16} />}
-          </IconButton>
-          <IconButton
-            onClick={clearChat}
-            size="2"
-            variant="ghost"
-           
-            title="Clear chat"
-            aria-label="Clear chat history"
-          >
-            <Trash2 size={16} />
-          </IconButton>
-          <div className="w-px h-5 bg-mission-control-border mx-1" />
-          <Button
-            onClick={startTeamMeeting}
-            variant="solid"
-            size="2"
-           
-            title="Start Team Meeting — All agents join"
-            style={{ gap: 6 }}
-          >
-            <UsersRound size={15} />
-            <span className="hidden sm:inline">Team Meeting</span>
-          </Button>
-          <div className="relative">
-            <IconButton
-              onClick={() => setShowRoomList(!showRoomList)}
-              size="2"
-              variant={showRoomList ? 'soft' : 'ghost'}
-             
-              title="Chat Rooms"
-              aria-label={`Chat rooms (${rooms.length})`}
-              aria-expanded={showRoomList}
+      {/* ─── Left sidebar: agent list + rooms ─── */}
+      <div className="w-64 shrink-0 flex flex-col border-r border-mission-control-border bg-mission-control-surface overflow-hidden">
+
+        {/* Sidebar header — CONVERSATIONS label + action buttons */}
+        <div className="px-4 pt-3 pb-0 flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Conversations</span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={startTeamMeeting}
+              title="Start Team Meeting"
+              aria-label="Start team meeting"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
             >
-              <Users size={16} />
-            </IconButton>
+              <UsersRound size={14} />
+            </button>
+            {sidebarTab === 'rooms' && (
+              <button
+                type="button"
+                onClick={() => setShowCreateRoom(true)}
+                title="New chat room"
+                aria-label="Create new chat room"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+              >
+                <MessageSquarePlus size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* AGENTS | ROOMS tab toggle */}
+        <div className="flex border-b border-mission-control-border">
+          <button
+            type="button"
+            onClick={() => setSidebarTab('agents')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium border-b-2 transition-colors -mb-px ${
+              sidebarTab === 'agents'
+                ? 'border-b-mission-control-accent text-mission-control-accent'
+                : 'border-b-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+            aria-pressed={sidebarTab === 'agents'}
+          >
+            Agents
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarTab('rooms')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium border-b-2 transition-colors -mb-px ${
+              sidebarTab === 'rooms'
+                ? 'border-b-mission-control-accent text-mission-control-accent'
+                : 'border-b-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+            aria-pressed={sidebarTab === 'rooms'}
+          >
+            Rooms
             {rooms.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-mission-control-accent text-white text-xs font-bold rounded-full flex items-center justify-center pointer-events-none">
+              <span className={`text-[10px] px-1 rounded tabular-nums ${sidebarTab === 'rooms' ? 'bg-mission-control-accent/15 text-mission-control-accent' : 'bg-mission-control-border text-mission-control-text-dim'}`}>
                 {rooms.length}
               </span>
             )}
-          </div>
-          <IconButton
-            onClick={() => setShowCreateRoom(true)}
-            size="2"
-            variant="solid"
-           
-            title="Create Chat Room"
-            aria-label="Create new chat room"
-          >
-            <MessageSquarePlus size={16} />
-          </IconButton>
-        </Flex>
-      </Flex>
-
-      {/* Body — below header: chat left, artifact panel right */}
-      <div className="flex-1 flex min-h-0">
-      <div className="flex-1 flex flex-col min-w-0 min-h-0">
-
-      {/* Room List Dropdown */}
-      {showRoomList && (
-        <div className="border-b border-mission-control-border bg-mission-control-surface/95 backdrop-blur-sm">
-          <div className="p-3">
-            <Flex align="center" justify="between" className="mb-2">
-              <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Chat Rooms</span>
-              <Button
-                onClick={() => { setShowCreateRoom(true); setShowRoomList(false); }}
-                variant="ghost"
-                size="1"
-                style={{ gap: 4 }}
-              >
-                <MessageSquarePlus size={12} /> New Room
-              </Button>
-            </Flex>
-            {rooms.length === 0 ? (
-              <p className="text-sm text-mission-control-text-dim py-3 text-center">
-                No rooms yet. Create one to start a multi-agent discussion!
-              </p>
-            ) : (
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {rooms.map(room => (
-                  <Button
-                    key={room.id}
-                    onClick={() => { setActiveRoom(room.id); setShowRoomList(false); }}
-                    variant="ghost"
-                   
-                    style={{ width: '100%', justifyContent: 'flex-start', padding: '10px 10px' }}
-                  >
-                    <div className="flex -space-x-1.5">
-                      {room.agents.slice(0, 3).map(id => (
-                        <AgentAvatar key={id} agentId={id} size="xs" />
-                      ))}
-                    </div>
-                    <div className="flex-1 min-w-0 text-left ml-3">
-                      <div className="text-sm font-medium truncate">{room.name}</div>
-                      <div className="text-xs text-mission-control-text-dim">
-                        {room.messageCount ?? room.messages.length} messages · {new Date(room.updatedAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
+          </button>
         </div>
-      )}
 
-      {/* Voice Mode */}
-      {isVoiceMode && (
-        <VoiceChatPanel
-          agentId={selectedAgent.id === 'mission-control' ? 'mission-control' : selectedAgent.id}
-          onSwitchToText={() => setIsVoiceMode(false)}
-          embedded={true}
-        />
-      )}
-
-      {/* Search Bar */}
-      {!isVoiceMode && showSearch && (
-        <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-bg/50">
-          <TextField.Root
-            aria-label="Search messages input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search messages..."
-            style={{ width: '100%' }}
-          >
-            <TextField.Slot>
-              <Search size={16} />
-            </TextField.Slot>
-            {searchQuery && (
-              <TextField.Slot side="right">
-                <IconButton
-                  onClick={() => setSearchQuery('')}
-                  size="1"
-                  variant="ghost"
-                  radius="full"
-                  aria-label="Clear search"
-                >
-                  <X size={14} />
-                </IconButton>
-              </TextField.Slot>
-            )}
-          </TextField.Root>
-          {searchQuery && (
-            <div className="mt-2 text-xs text-mission-control-text-dim">
-              {filteredMessages.length} result{filteredMessages.length !== 1 ? 's' : ''} found
+        {/* Agent list — direct 1:1 threads */}
+        <div className={`flex-1 overflow-y-auto py-2 ${sidebarTab !== 'agents' ? 'hidden' : ''}`}>
+          {chatAgents.length > 0 && (
+            <div className="px-3 mb-1">
+              <span className="sr-only">Agents</span>
             </div>
           )}
-        </div>
-      )}
+          {chatAgents.map((agent) => {
+            const isActive = selectedAgent?.id === agent.id;
+            const agentMessages = messageCacheRef.current.get(agent.id);
+            const lastMsg = agentMessages?.[agentMessages.length - 1];
+            const lastMsgText = lastMsg
+              ? (typeof lastMsg.content === 'string'
+                  ? lastMsg.content
+                  : (lastMsg.content as any[]).filter((b: any) => b.type === 'text').map((b: any) => b.text).join(''))
+              : null;
+            const lastMsgTime = lastMsg?.timestamp
+              ? formatTimeAgo(lastMsg.timestamp)
+              : null;
 
-      {/* Messages — rendered by assistant-ui Thread primitives */}
-      <div className={`flex-1 min-h-0 ${isVoiceMode ? 'hidden' : ''}`} aria-label="Conversation messages">
-        {loadingMessages ? (
-          <div className="space-y-3 p-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className={`flex gap-3 ${i % 2 === 0 ? 'flex-row-reverse' : ''}`}>
-                <div className="w-7 h-7 rounded-full bg-mission-control-surface animate-pulse shrink-0" />
-                <div className="flex-1 space-y-1.5">
-                  <div className={`h-4 rounded bg-mission-control-surface animate-pulse ${i % 2 === 0 ? 'w-3/4 ml-auto' : 'w-2/3'}`} />
-                  <div className={`h-4 rounded bg-mission-control-surface animate-pulse ${i % 2 === 0 ? 'w-1/2 ml-auto' : 'w-1/2'}`} />
+            return (
+              <button
+                key={agent.id}
+                type="button"
+                onClick={() => handleAgentSwitch(agent)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 mx-1 rounded-lg transition-colors text-left group ${
+                  isActive
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text hover:bg-mission-control-bg'
+                }`}
+                style={{ width: 'calc(100% - 8px)' }}
+                aria-current={isActive ? 'true' : undefined}
+              >
+                <div className="relative shrink-0">
+                  <AgentAvatar agentId={agent.id} agentName={agent.name} size="sm" />
+                  {/* Status dot */}
+                  <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-mission-control-surface ${
+                    agent.status === 'active' ? 'bg-[var(--color-success)]' :
+                    agent.status === 'paused' ? 'bg-[var(--color-warning)]' :
+                    agent.status === 'error' ? 'bg-[var(--color-error)]' :
+                    'bg-mission-control-border'
+                  }`} />
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : searchQuery && filteredMessages.length === 0 ? (
-          <div className="p-4">
-            <EmptyState
-              type="search"
-              action={{ label: 'Clear search', onClick: () => setSearchQuery('') }}
-            />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <EmptyState
-              icon={MessageSquare}
-              title="No messages yet"
-              description="Start a conversation with your agent team"
-              size="md"
-            />
-          </div>
-        ) : (
-          <MissionControlThread />
-        )}
-        <div ref={messagesEndRef} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className={`text-sm font-medium truncate ${isActive ? 'text-mission-control-accent' : 'text-mission-control-text'}`}>
+                      {agent.name}
+                    </span>
+                    {lastMsgTime && (
+                      <span className="text-[10px] text-mission-control-text-dim shrink-0 tabular-nums">{lastMsgTime}</span>
+                    )}
+                  </div>
+                  {lastMsgText ? (
+                    <p className="text-xs text-mission-control-text-dim truncate mt-0.5 leading-snug">
+                      {lastMsgText.slice(0, 60)}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-mission-control-text-dim/60 mt-0.5">
+                      {agent.role || 'AI Agent'}
+                    </p>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+
+        </div>
+
+        {/* Rooms tab */}
+        <div className={`flex-1 overflow-y-auto py-2 ${sidebarTab !== 'rooms' ? 'hidden' : ''}`}>
+          {rooms.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-32 gap-2 px-4 text-center">
+              <MessageSquarePlus size={20} className="text-mission-control-text-dim/40" />
+              <p className="text-xs text-mission-control-text-dim/60">No rooms yet</p>
+              <button
+                type="button"
+                onClick={() => setShowCreateRoom(true)}
+                className="text-xs text-mission-control-accent hover:underline"
+              >
+                Create a room
+              </button>
+            </div>
+          ) : (
+            rooms.map((room) => (
+              <button
+                key={room.id}
+                type="button"
+                onClick={() => setActiveRoom(room.id)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 mx-1 rounded-lg text-mission-control-text hover:bg-mission-control-bg transition-colors text-left"
+                style={{ width: 'calc(100% - 8px)' }}
+              >
+                <div className="flex -space-x-2 shrink-0">
+                  {room.agents.slice(0, 2).map(id => (
+                    <AgentAvatar key={id} agentId={id} size="xs" />
+                  ))}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{room.name}</div>
+                  <div className="text-xs text-mission-control-text-dim">
+                    {room.messageCount ?? room.messages.length} messages
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
       </div>
 
-      {/* Typing indicator — shown while agent is generating a response (before first token) */}
-      {loading && (
-        <Flex
-          align="center"
-          gap="2"
-          className={`px-4 py-2 text-xs text-mission-control-text-dim select-none ${isVoiceMode ? 'hidden' : ''}`}
-          aria-live="polite"
-          aria-label="Agent is typing"
-        >
-          <Flex gap="1">
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-mission-control-accent inline-block"
-              style={{ animation: 'typing-bounce 1.2s ease-in-out infinite', animationDelay: '0ms' }}
-            />
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-mission-control-accent inline-block"
-              style={{ animation: 'typing-bounce 1.2s ease-in-out infinite', animationDelay: '200ms' }}
-            />
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-mission-control-accent inline-block"
-              style={{ animation: 'typing-bounce 1.2s ease-in-out infinite', animationDelay: '400ms' }}
-            />
-          </Flex>
-          <span>{selectedAgent?.name ?? 'Agent'} is typing...</span>
-        </Flex>
-      )}
+      {/* ─── Main chat column ─── */}
+      <div className="flex-1 flex min-w-0 min-h-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
 
-      {/* Connection banner removed — chat uses REST API, gateway is optional */}
+          {/* Thread header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0 bg-mission-control-surface gap-3">
+            {/* Agent identity */}
+            <div className="flex items-center gap-3 min-w-0">
+              <AgentSelector selectedAgent={selectedAgent} onSelect={handleAgentSwitch} />
 
-      {/* Input — sticky bottom on mobile so it's always accessible */}
-      <div className={`p-3 border-t border-mission-control-border bg-mission-control-bg sticky bottom-0 sm:relative ${isVoiceMode ? 'hidden' : ''}`}>
-        {/* Attachment preview */}
-        {attachments.length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-2">
-            {attachments.map((att) => {
-              const Icon = getFileIcon(att.type);
-              return (
-                <div
-                  key={att.id}
-                  className="flex items-center gap-1 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
-                >
-                  <Button
-                    type="button"
-                    onClick={() => setPreviewFile(att)}
-                    variant="ghost"
-                    size="2"
-                   
-                    title="Click to preview"
-                    aria-label={`Preview attachment ${att.name}`}
-                    style={{ gap: 8 }}
-                  >
-                    <Icon size={16} className="text-mission-control-accent" aria-hidden="true" />
-                    <span className="text-sm truncate max-w-32">{att.name}</span>
-                    <span className="text-xs text-mission-control-text-dim">
-                      {(att.size / 1024).toFixed(1)}KB
+              {/* Agent status pill */}
+              {(() => {
+                if (loading && currentTool) {
+                  return (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20 select-none flex-shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-info)] animate-pulse flex-shrink-0" />
+                      Using {currentTool}...
                     </span>
-                  </Button>
-                  <IconButton
-                    type="button"
-                    onClick={() => removeAttachment(att.id)}
-                    size="1"
-                    variant="ghost"
-                    radius="full"
-                    aria-label={`Remove attachment ${att.name}`}
-                    style={{ marginRight: 4 }}
-                  >
-                    <X size={14} aria-hidden="true" />
-                  </IconButton>
+                  );
+                }
+                if (loading) {
+                  return (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 select-none flex-shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-pulse flex-shrink-0" />
+                      Thinking...
+                    </span>
+                  );
+                }
+                if (connectionState === 'disconnected') {
+                  return (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/20 select-none flex-shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-warning)] flex-shrink-0" />
+                      Reconnecting...
+                    </span>
+                  );
+                }
+                if (connectionState === 'connected') {
+                  return (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium text-mission-control-text-dim border border-mission-control-border select-none flex-shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] flex-shrink-0" />
+                      Ready
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+
+              {selectedAgent?.dbSessionKey ? (
+                <SessionStatsBar
+                  sessionKey={selectedAgent.dbSessionKey}
+                  statusText={getStatusText()}
+                  isDisconnected={connectionState === 'disconnected'}
+                  onReconnect={reconnect}
+                  onCompact={handleCompact}
+                  onReset={() => setMessages([])}
+                />
+              ) : (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${getStatusColor()}`} />
+                  <span className="text-mission-control-text-dim">{getStatusText()}</span>
+                  {connectionState === 'disconnected' && (
+                    <button
+                      type="button"
+                      onClick={reconnect}
+                      className="inline-flex items-center gap-1 text-xs text-mission-control-accent hover:underline"
+                    >
+                      <RefreshCw size={10} /> Reconnect
+                    </button>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        )}
+              )}
+            </div>
 
-        {/* Stream error banner */}
-        {streamError && (
-          <Flex align="center" gap="2" className="p-3 mb-3 rounded-md bg-error/10 border border-error/20 text-error text-sm">
-            <AlertTriangle size={14} className="shrink-0" />
-            <span className="flex-1">{streamError}</span>
-            <Button
-              onClick={handleRetry}
-              variant="ghost"
-              size="1"
-              className="shrink-0"
-            >
-              Retry
-            </Button>
-          </Flex>
-        )}
-
-        {/* Loading suggestions indicator */}
-        {loadingSuggestions && (
-          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim px-1 py-1 mb-2">
-            <Loader2 size={12} className="animate-spin" />
-            <span>Loading suggestions...</span>
-          </Flex>
-        )}
-
-        {/* Suggested Replies */}
-        {suggestedReplies.length > 0 && (
-          <div className="mb-3">
-            <Flex align="center" gap="2" className="mb-2">
-              <Sparkles size={14} className="text-mission-control-accent" />
-              <span className="text-xs text-mission-control-text-dim">Suggested replies</span>
-              <Button
-                onClick={() => setSuggestedReplies([])}
-                variant="ghost"
-                size="1"
-                style={{ marginLeft: 'auto' }}
+            {/* Header actions */}
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsVoiceMode(!isVoiceMode)}
+                title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
+                aria-label={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
+                aria-pressed={isVoiceMode}
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                  isVoiceMode
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg'
+                }`}
               >
-                Clear
-              </Button>
-            </Flex>
-            <div className="flex flex-wrap gap-2">
-              {suggestedReplies.map((suggestion, idx) => (
-                <Button
-                  key={idx}
-                  onClick={() => applySuggestion(suggestion)}
-                  variant="outline"
-                  size="2"
-                 
-                  title="Click to use this reply"
-                >
-                  {suggestion}
-                </Button>
-              ))}
+                {isVoiceMode ? <PhoneOff size={15} /> : <Phone size={15} />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSearch(!showSearch)}
+                title={showSearch ? 'Hide search' : 'Search messages'}
+                aria-label={showSearch ? 'Hide message search' : 'Search messages'}
+                aria-expanded={showSearch}
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                  showSearch
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg'
+                }`}
+              >
+                <Search size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setSpeakResponses(!speakResponses)}
+                title={speakResponses ? 'Voice on' : 'Voice off'}
+                aria-label={speakResponses ? 'Disable voice responses' : 'Enable voice responses'}
+                aria-pressed={speakResponses}
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                  speakResponses
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg'
+                }`}
+              >
+                {speakResponses ? <Volume2 size={15} /> : <VolumeX size={15} />}
+              </button>
+              <button
+                type="button"
+                onClick={clearChat}
+                title="Clear chat history"
+                aria-label="Clear chat history"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+              >
+                <Trash2 size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={toggleCollapse}
+                title={isCollapsed ? 'Open artifacts' : 'Close artifacts'}
+                aria-label={isCollapsed ? 'Open artifact panel' : 'Close artifact panel'}
+                aria-pressed={!isCollapsed}
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                  !isCollapsed
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg'
+                }`}
+              >
+                <PanelRight size={15} />
+              </button>
             </div>
           </div>
-        )}
 
-        <Flex align="center" gap="3">
-          {/* Hidden file input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            className="hidden"
-            aria-label="File attachment"
-            onChange={(e) => e.target.files && handleFiles(Array.from(e.target.files))}
+          {/* Voice Mode */}
+          {isVoiceMode && (
+            <VoiceChatPanel
+              agentId={selectedAgent.id === 'mission-control' ? 'mission-control' : selectedAgent.id}
+              onSwitchToText={() => setIsVoiceMode(false)}
+              embedded={true}
+            />
+          )}
+
+          {/* Search Bar */}
+          {!isVoiceMode && showSearch && (
+            <div className="px-5 py-3 border-b border-mission-control-border bg-mission-control-bg">
+              <TextField.Root
+                aria-label="Search messages input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search messages..."
+                className="w-full"
+              >
+                <TextField.Slot>
+                  <Search size={14} />
+                </TextField.Slot>
+                {searchQuery && (
+                  <TextField.Slot side="right">
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      aria-label="Clear search"
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                    >
+                      <X size={13} />
+                    </button>
+                  </TextField.Slot>
+                )}
+              </TextField.Root>
+              {searchQuery && (
+                <div className="mt-2 text-xs text-mission-control-text-dim">
+                  {filteredMessages.length} result{filteredMessages.length !== 1 ? 's' : ''} found
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Gateway disconnected banner */}
+          {connectionState === 'disconnected' && !isVoiceMode && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-[var(--color-warning)]/8 border-b border-[var(--color-warning)]/20 text-xs text-[var(--color-warning)] flex-shrink-0">
+              <AlertTriangle size={12} className="flex-shrink-0" />
+              <span>Gateway disconnected — messages will send when reconnected</span>
+            </div>
+          )}
+
+          {/* Messages */}
+          <div className={`flex-1 min-h-0 overflow-hidden ${isVoiceMode ? 'hidden' : ''}`} aria-label="Conversation messages">
+            {loadingMessages ? (
+              <div className="space-y-6 p-6">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className={`flex gap-3 ${i % 2 === 0 ? 'flex-row-reverse' : ''}`}>
+                    <div className="w-8 h-8 rounded-full bg-mission-control-surface animate-pulse shrink-0" />
+                    <div className="flex-1 space-y-2 max-w-lg">
+                      <div className={`h-3.5 rounded-full bg-mission-control-surface animate-pulse ${i % 2 === 0 ? 'w-3/4 ml-auto' : 'w-2/3'}`} />
+                      <div className={`h-3 rounded-full bg-mission-control-surface animate-pulse ${i % 2 === 0 ? 'w-1/2 ml-auto' : 'w-1/2'}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : searchQuery && filteredMessages.length === 0 ? (
+              <div className="p-6">
+                <EmptyState
+                  type="search"
+                  action={{ label: 'Clear search', onClick: () => setSearchQuery('') }}
+                />
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 rounded-full bg-mission-control-accent/10 border border-mission-control-accent/20 flex items-center justify-center mx-auto">
+                    <MessageCircle size={20} className="text-mission-control-accent" />
+                  </div>
+                  <h3 className="text-base font-semibold text-mission-control-text">{selectedAgent?.name ?? 'Agent'}</h3>
+                  <p className="text-sm text-mission-control-text-dim/80">How can I help you today?</p>
+                </div>
+                {/* Suggested prompts — Claude cowork style */}
+                <div className="grid grid-cols-2 gap-2 max-w-md w-full">
+                  {[
+                    "What tasks are in progress?",
+                    "Summarize recent activity",
+                    "Help me draft a message",
+                    "What can you do for me?",
+                  ].map((prompt) => (
+                    <button
+                      key={prompt}
+                      type="button"
+                      onClick={() => sendMessage(prompt)}
+                      className="text-left px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 hover:bg-mission-control-accent/5 transition-colors text-sm text-mission-control-text-dim hover:text-mission-control-text"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <MissionControlThread />
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+
+          {/* Tool execution status strip — only visible when a tool is actively running */}
+          {currentTool && !isVoiceMode && (
+            <div className="flex items-center gap-2 px-4 py-1.5 text-[11px] text-mission-control-text-dim border-t border-mission-control-border/40 shrink-0 select-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-info)] animate-pulse flex-shrink-0" aria-hidden="true" />
+              <span>Using: {currentTool}</span>
+            </div>
+          )}
+
+          {/* Escalation / human-review banner — shown when agent signals it needs human attention */}
+          {!isVoiceMode && activeEscalations.length > 0 && (
+            <div className="mx-4 mb-2 flex-shrink-0 space-y-2" aria-live="assertive">
+              {activeEscalations.map((msg) => {
+                const text =
+                  typeof msg.content === 'string'
+                    ? msg.content
+                    : (msg.content as ContentBlock[])
+                        .filter((b: ContentBlock) => b.type === 'text')
+                        .map((b: ContentBlock) => b.text ?? '')
+                        .join('');
+                return (
+                  <div
+                    key={msg.id}
+                    className="flex items-start gap-3 px-4 py-3 bg-[var(--color-warning)]/8 border border-[var(--color-warning)]/25 rounded-xl"
+                    role="alert"
+                  >
+                    <UserCheck
+                      size={16}
+                      className="text-[var(--color-warning)] flex-shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold text-[var(--color-warning)] uppercase tracking-wider mb-1">
+                        Needs your attention
+                      </p>
+                      <p className="text-sm text-mission-control-text leading-snug line-clamp-3">{text}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDismissedEscalationIds(prev => new Set([...prev, msg.id ?? '']))
+                      }
+                      aria-label="Dismiss this escalation notice"
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg flex-shrink-0 transition-colors"
+                    >
+                      <X size={12} aria-hidden="true" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Composer area */}
+          <div className={`flex flex-col gap-2 px-4 py-3 border-t border-mission-control-border flex-shrink-0 bg-mission-control-bg ${isVoiceMode ? 'hidden' : ''}`}>
+            {/* Attachment previews */}
+            {attachments.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {attachments.map((att) => {
+                  const Icon = getFileIcon(att.type);
+                  const isImage = att.type.startsWith('image/');
+                  return (
+                    <div
+                      key={att.id}
+                      className="relative group/chip flex items-center gap-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors max-w-[140px] overflow-hidden"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setPreviewFile(att)}
+                        title="Click to preview"
+                        aria-label={`Preview attachment ${att.name}`}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-mission-control-text hover:text-mission-control-text transition-colors min-w-0 flex-1"
+                      >
+                        {isImage && att.dataUrl ? (
+                          <img
+                            src={att.dataUrl}
+                            alt={att.name}
+                            className="w-8 h-8 rounded object-cover flex-shrink-0 border border-mission-control-border/40"
+                          />
+                        ) : (
+                          <Icon size={14} className="text-mission-control-accent flex-shrink-0" aria-hidden="true" />
+                        )}
+                        <span className="truncate text-xs">{att.name}</span>
+                      </button>
+                      {/* Remove button — visible on hover */}
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(att.id)}
+                        aria-label={`Remove attachment ${att.name}`}
+                        className="absolute top-0.5 right-0.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/40 transition-colors opacity-0 group-hover/chip:opacity-100"
+                      >
+                        <X size={10} aria-hidden="true" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Stream error banner */}
+            {streamError && (
+              <div className="flex items-start gap-3 px-4 py-3 mb-3 rounded-xl bg-[var(--color-error)]/8 border border-[var(--color-error)]/20 text-[var(--color-error)] text-sm">
+                <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                <span className="flex-1 leading-snug">{streamError}</span>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="shrink-0 text-xs font-semibold text-[var(--color-error)] hover:underline whitespace-nowrap"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {/* Loading suggestions */}
+            {/* AI-generated quick reply pills — auto-appear after each assistant message */}
+            {(loadingSuggestions || suggestedReplies.length > 0) && (
+              <div className="mb-2">
+                {loadingSuggestions ? (
+                  <div className="flex items-center gap-1.5 text-[11px] text-mission-control-text-dim px-1 py-1">
+                    <Loader2 size={11} className="animate-spin flex-shrink-0" />
+                    <span>Generating replies…</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5" aria-label="Quick reply options">
+                    {suggestedReplies.map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => { sendMessage(suggestion); setSuggestedReplies([]); }}
+                        title="Send this reply"
+                        className="px-3 py-1.5 text-xs rounded-full border border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent hover:text-mission-control-accent hover:bg-mission-control-accent/5 transition-colors bg-mission-control-surface"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setSuggestedReplies([])}
+                      className="px-2 py-1.5 text-xs text-mission-control-text-dim/50 hover:text-mission-control-text-dim transition-colors"
+                      title="Dismiss suggestions"
+                      aria-label="Dismiss suggestions"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              aria-label="File attachment"
+              onChange={(e) => e.target.files && handleFiles(Array.from(e.target.files))}
+            />
+
+            {/* Composer — attach + mic integrated inside */}
+            <MissionControlComposer
+              placeholder={`Message ${selectedAgent.name}…`}
+              disabled={loading || messages.some(m => !!m.streaming)}
+              loading={loading}
+              onAttach={() => fileInputRef.current?.click()}
+              isListening={listening}
+              onToggleVoice={toggleVoice}
+            />
+          </div>
+
+          {/* File Preview Modal */}
+          <FilePreviewModal
+            isOpen={!!previewFile}
+            onClose={() => setPreviewFile(null)}
+            file={previewFile}
           />
 
-          {/* Attach button */}
-          <IconButton
-            onClick={() => fileInputRef.current?.click()}
-            size="3"
-            variant="ghost"
-           
-            title="Attach files"
-            aria-label="Attach files"
-          >
-            <Paperclip size={20} />
-          </IconButton>
-
-          <IconButton
-            onClick={toggleVoice}
-            size="3"
-            variant={listening ? 'soft' : 'ghost'}
-           
-            className={listening ? 'animate-pulse' : ''}
-            aria-label={listening ? 'Stop voice input' : 'Start voice input'}
-            aria-pressed={listening}
-          >
-            {listening ? <MicOff size={20} /> : <Mic size={20} />}
-          </IconButton>
-
-          {/* Suggest Replies button */}
-          <IconButton
-            onClick={generateSuggestions}
-            disabled={messages.length === 0 || loadingSuggestions}
-            size="3"
-            variant={loadingSuggestions ? 'soft' : 'ghost'}
-           
-            className={loadingSuggestions ? 'animate-pulse' : ''}
-            title="AI suggested replies"
-            aria-label="Generate suggested replies"
-          >
-            {loadingSuggestions ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
-          </IconButton>
-
-          {/* Composer — textarea + send handled by assistant-ui ComposerPrimitive */}
-          <MissionControlComposer
-            placeholder={`Message ${selectedAgent.name}...`}
-            disabled={loading || messages.some(m => !!m.streaming)}
-            loading={loading}
+          {/* Create Room Modal */}
+          <CreateRoomModal
+            isOpen={showCreateRoom}
+            onClose={() => setShowCreateRoom(false)}
+            onCreate={handleCreateRoom}
           />
-        </Flex>
-      </div>
 
-      {/* File Preview Modal */}
-      <FilePreviewModal
-        isOpen={!!previewFile}
-        onClose={() => setPreviewFile(null)}
-        file={previewFile}
-      />
+          {/* Live Activity Indicator */}
+          <LiveActivity sessionKey={selectedAgent?.dbSessionKey} />
+        </div>{/* end inner chat col */}
 
-      {/* Create Room Modal */}
-      <CreateRoomModal
-        isOpen={showCreateRoom}
-        onClose={() => setShowCreateRoom(false)}
-        onCreate={handleCreateRoom}
-      />
-
-      {/* Live Activity Indicator */}
-      <LiveActivity sessionKey={selectedAgent?.dbSessionKey} />
-      </div>{/* end inner chat col */}
-
-      {/* Artifact Panel — right sidebar */}
-      <ArtifactPanel sessionId={currentSessionId} agentName={selectedAgent?.name} />
-      </div>{/* end body row */}
+        {/* Artifact Panel — right sidebar */}
+        <ArtifactPanel sessionId={currentSessionId} agentName={selectedAgent?.name} />
+      </div>{/* end main chat column */}
 
       {/* Image lightbox */}
       {lightboxSrc && <ImageLightbox src={lightboxSrc.src} alt={lightboxSrc.alt} onClose={() => setLightboxSrc(null)} />}
-    </Flex>
+    </div>
     </AssistantRuntimeProvider>
   );
 }
@@ -1687,7 +2001,7 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
       aria-modal="true"
       aria-label="Image preview"
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm outline-none"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm outline-none"
       onClick={onClose}
       onKeyDown={handleKeyDown}
     >
@@ -1697,7 +2011,7 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
           <a
             href={src}
             download
-            className="px-4 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text hover:bg-mission-control-bg-alt"
+            className="px-4 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text hover:bg-mission-control-border/20"
             onClick={e => e.stopPropagation()}
           >
             Download
@@ -1819,7 +2133,7 @@ const MessageItem = memo(function MessageItem({
         {/* Sender name (only on first message in group) */}
         {showAvatar && (
           <div className={`text-xs font-medium mb-1 px-1 ${
-            isUser ? 'text-mission-control-accent' : 'text-success'
+            isUser ? 'text-mission-control-accent' : 'text-[var(--color-success)]'
           }`}>
             {isUser ? 'You' : selectedAgent.name}
           </div>
@@ -1829,48 +2143,52 @@ const MessageItem = memo(function MessageItem({
         <div className="relative group w-full">
           {/* ChatMessage actions bar (appears on hover) */}
           {!msg.streaming && (
-            <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred || reaction.mine ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-100`}>
+            <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred || reaction.mine ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-colors duration-100`}>
               {/* Thumbs up */}
-              <IconButton
+              <button
                 onClick={(e) => handleReaction('up', e)}
-                size="1"
-                variant={reaction.mine === 'up' ? 'soft' : 'ghost'}
-               
                 title="Helpful"
                 aria-label="Mark as helpful"
-                style={{ gap: 2 }}
+                className={`inline-flex items-center gap-0.5 px-1.5 py-1 rounded border text-xs font-medium transition-colors ${
+                  reaction.mine === 'up'
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                }`}
               >
                 <ThumbsUp size={13} className={reaction.mine === 'up' ? 'fill-current' : ''} />
                 {reaction.up > 0 && (
                   <span className="text-xs font-medium leading-none">{reaction.up}</span>
                 )}
-              </IconButton>
+              </button>
               {/* Thumbs down */}
-              <IconButton
+              <button
                 onClick={(e) => handleReaction('down', e)}
-                size="1"
-                variant={reaction.mine === 'down' ? 'soft' : 'ghost'}
-               
                 title="Not helpful"
                 aria-label="Mark as not helpful"
-                style={{ gap: 2 }}
+                className={`inline-flex items-center gap-0.5 px-1.5 py-1 rounded border text-xs font-medium transition-colors ${
+                  reaction.mine === 'down'
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                }`}
               >
                 <ThumbsDown size={13} className={reaction.mine === 'down' ? 'fill-current' : ''} />
                 {reaction.down > 0 && (
                   <span className="text-xs font-medium leading-none">{reaction.down}</span>
                 )}
-              </IconButton>
-              <IconButton
+              </button>
+              <button
                 onClick={(e) => onToggleStar(msg, e)}
-                size="1"
-                variant={isStarred ? 'soft' : 'ghost'}
-               
                 title={isStarred ? 'Unstar message' : 'Star message'}
                 aria-label={isStarred ? 'Unstar message' : 'Star message'}
+                className={`inline-flex items-center justify-center px-1.5 py-1 rounded border text-xs font-medium transition-colors ${
+                  isStarred
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                }`}
               >
                 <Star size={14} className={isStarred ? 'fill-current' : ''} />
-              </IconButton>
-              <IconButton
+              </button>
+              <button
                 onClick={async () => {
                   const textToCopy = Array.isArray(msg.content)
                     ? msg.content
@@ -1886,14 +2204,12 @@ const MessageItem = memo(function MessageItem({
                     showToast('error', 'Copy Failed', 'Unable to copy to clipboard');
                   }
                 }}
-                size="1"
-                variant="ghost"
-               
                 title="Copy message"
                 aria-label="Copy message"
+                className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Copy size={14} />
-              </IconButton>
+              </button>
             </div>
           )}
 
@@ -1904,7 +2220,7 @@ const MessageItem = memo(function MessageItem({
                 ? 'bg-mission-control-accent/10 border border-mission-control-accent/20 text-mission-control-text rounded-xl rounded-tr-sm px-4 py-3'
                 : msg.subtle
                   ? 'bg-transparent text-mission-control-text-dim border border-mission-control-border/50 rounded-xl rounded-tl-sm px-3 py-1.5 text-sm'
-                  : 'bg-mission-control-surface/80 border border-mission-control-border text-mission-control-text rounded-xl rounded-tl-sm px-4 py-3'
+                  : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text rounded-xl rounded-tl-sm px-4 py-3'
             }`}
             onClick={(e) => {
               if (onImageClick && e.target instanceof HTMLImageElement) {
@@ -1927,7 +2243,7 @@ const MessageItem = memo(function MessageItem({
               Array.isArray(msg.content) ? (
                 <div className="space-y-1">
                   {msg.content.map((block, idx) => (
-                    <ContentBlock key={idx} block={block} index={idx} onArtifactOpen={onArtifactOpen} />
+                    <ContentBlock key={idx} block={block} index={idx} streaming={!!msg.streaming} onArtifactOpen={onArtifactOpen} />
                   ))}
                 </div>
               ) : (
@@ -1955,13 +2271,13 @@ const MessageItem = memo(function MessageItem({
           </div>
         </div>
         
-        {/* Timestamp and status */}
-        <div className={`flex items-center gap-2 mt-1.5 px-1 ${isUser ? 'flex-row-reverse' : ''} ${isLastInGroup ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-100`}>
-          <span className="text-xs tabular-nums text-mission-control-text-dim font-medium">
+        {/* Timestamp and status — always visible on last in group, hover-revealed otherwise */}
+        <div className={`flex items-center gap-2 mt-1 px-1 ${isUser ? 'flex-row-reverse' : ''} opacity-0 group-hover:opacity-100 ${isLastInGroup ? 'opacity-60' : ''} transition-opacity duration-100`}>
+          <span className="text-[10px] tabular-nums text-mission-control-text-dim/60">
             {time}
           </span>
           {isStarred && (
-            <Star size={10} className="text-warning fill-current" />
+            <Star size={10} className="text-[var(--color-warning)] fill-current" />
           )}
         </div>
       </div>

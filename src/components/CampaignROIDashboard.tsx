@@ -163,7 +163,7 @@ function ComparisonBar({
         <span className="text-xs text-mission-control-text-dim w-16 text-right flex-shrink-0">Current</span>
         <div className="flex-1 h-2 rounded-full bg-mission-control-border overflow-hidden">
           <div
-            className="h-full rounded-full transition-all duration-500"
+            className="h-full rounded-full transition-colors duration-500"
             style={{ width: `${currentPct}%`, backgroundColor: 'var(--mission-control-accent, #6366f1)' }}
           />
         </div>
@@ -175,7 +175,7 @@ function ComparisonBar({
         <span className="text-xs text-mission-control-text-dim w-16 text-right flex-shrink-0">Previous</span>
         <div className="flex-1 h-2 rounded-full bg-mission-control-border overflow-hidden">
           <div
-            className="h-full rounded-full transition-all duration-500"
+            className="h-full rounded-full transition-colors duration-500"
             style={{ width: `${previousPct}%`, backgroundColor: 'var(--mission-control-text-dim, #888)' }}
           />
         </div>

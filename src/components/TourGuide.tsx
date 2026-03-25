@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
-import { Button, Flex, IconButton } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 
 export interface TourStep {
   target: string; // CSS selector for element to highlight
@@ -202,7 +202,7 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
 
       {/* Tooltip */}
       <div
-        className="absolute w-[400px] bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl"
+        className="absolute w-[400px] bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl"
         style={{
           top: tooltipPosition.top,
           left: tooltipPosition.left,
@@ -216,15 +216,14 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
               Step {currentStep + 1} of {tour.steps.length}
             </p>
           </div>
-          <IconButton
-            size="2"
-            variant="ghost"
-           
+          <button
+            type="button"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             onClick={onSkip}
             aria-label="Skip tour"
           >
             <X size={16} />
-          </IconButton>
+          </button>
         </div>
 
         {/* Content */}
@@ -236,7 +235,7 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
         <div className="px-4 pb-2">
           <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
             <div
-              className="h-full bg-mission-control-accent transition-all duration-300"
+              className="h-full bg-mission-control-accent transition-colors duration-300"
               style={{ width: `${((currentStep + 1) / tour.steps.length) * 100}%` }}
             />
           </div>
@@ -244,25 +243,23 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
 
         {/* Footer */}
         <div className="p-4 border-t border-mission-control-border flex items-center justify-between">
-          <Button
-            variant="ghost"
-            color="gray"
-            size="2"
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             onClick={onSkip}
           >
             Skip Tour
-          </Button>
+          </button>
           <Flex align="center" gap="2">
-            <IconButton
-              size="2"
-              variant="ghost"
-
+            <button
+              type="button"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               disabled={currentStep === 0}
               onClick={handlePrevious}
               aria-label="Previous step"
             >
               <ChevronLeft size={16} />
-            </IconButton>
+            </button>
             <Button
               size="2"
               variant="solid"

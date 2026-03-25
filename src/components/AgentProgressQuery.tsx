@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { BarChart3, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Button, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { gateway } from '@/lib/gateway';
@@ -15,12 +15,24 @@ interface AgentProgressQueryProps {
   className?: string;
 }
 
+/** Returns a human-friendly relative time string */
+function relativeTime(timestamp: number): string {
+  const diffMs = Date.now() - timestamp;
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 10) return 'just now';
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export default function AgentProgressQuery({ taskId, taskTitle, className = '' }: AgentProgressQueryProps) {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasActiveAgent, setHasActiveAgent] = useState(false);
   const [sessionKey, setSessionKey] = useState<string | null>(null);
+  const [lastQueriedAt, setLastQueriedAt] = useState<number | null>(null);
 
   // Check for active agent on mount and periodically
   useEffect(() => {
@@ -83,6 +95,7 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
           const lastMessage = msgList[msgList.length - 1];
           if (lastMessage.role === 'assistant') {
             setResponse(lastMessage.content);
+            setLastQueriedAt(Date.now());
             showToast('success', 'Progress received', 'Agent responded with status update');
           } else {
             setError('Agent did not respond yet. Check Sessions panel for response.');
@@ -109,34 +122,45 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
 
   return (
     <div className={`space-y-3 ${className}`}>
-      <Button
-        onClick={handleQuery}
-        disabled={loading}
-        size="2"
-        variant="soft"
-        color="purple"
-      >
-        {loading ? (
-          <>
-            <Loader2 size={16} className="animate-spin" />
-            Querying agent...
-          </>
-        ) : (
-          <>
-            <MessageSquare size={16} />
-            Get Progress Report
-          </>
+      {/* Query button + last queried timestamp */}
+      <Flex align="center" gap="3">
+        <Button
+          onClick={handleQuery}
+          disabled={loading}
+          size="2"
+          variant="soft"
+          color="purple"
+        >
+          {loading ? (
+            <>
+              <Loader2 size={15} className="animate-spin" />
+              Querying agent...
+            </>
+          ) : (
+            <>
+              <BarChart3 size={15} />
+              Get Progress Report
+            </>
+          )}
+        </Button>
+
+        {lastQueriedAt && (
+          <span className="text-[10px] text-mission-control-text-dim">
+            Last queried {relativeTime(lastQueriedAt)}
+          </span>
         )}
-      </Button>
+      </Flex>
 
       {/* Response display */}
       {response && (
-        <div className="bg-success-subtle border border-success-border rounded-lg p-4">
+        <div className="bg-[var(--color-info)]/8 border border-[var(--color-info)]/20 rounded-xl px-4 py-3">
           <Flex align="start" gap="2" className="mb-2">
-            <CheckCircle size={16} className="text-success mt-0.5 flex-shrink-0" />
-            <div className="text-xs font-semibold text-success">Agent Progress Report</div>
+            <CheckCircle size={14} className="text-[var(--color-info)] mt-0.5 flex-shrink-0" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)]">
+              Agent Progress Report
+            </span>
           </Flex>
-          <div className="text-sm text-mission-control-text-dim whitespace-pre-wrap ml-6">
+          <div className="text-sm text-mission-control-text whitespace-pre-wrap pl-5 leading-relaxed">
             {response}
           </div>
         </div>
@@ -144,10 +168,10 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
 
       {/* Error display */}
       {error && (
-        <div className="bg-error-subtle border border-error-border rounded-lg p-4">
+        <div className="bg-[var(--color-error)]/8 border border-[var(--color-error)]/20 rounded-xl px-4 py-3">
           <Flex align="start" gap="2">
-            <XCircle size={16} className="text-error mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-error">{error}</div>
+            <XCircle size={14} className="text-[var(--color-error)] mt-0.5 flex-shrink-0" />
+            <span className="text-xs text-[var(--color-error)]">{error}</span>
           </Flex>
         </div>
       )}

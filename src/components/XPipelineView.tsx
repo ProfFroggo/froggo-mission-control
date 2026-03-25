@@ -184,24 +184,24 @@ function matchesListFilter(item: PipelineItem, filter: ListFilter): boolean {
 
 function statusBadgeClass(status: string): string {
   switch (status?.toLowerCase()) {
-    case 'approved': return 'bg-success-subtle text-success';
-    case 'rejected': return 'bg-error-subtle text-error';
-    case 'idea': return 'bg-info-subtle text-info';
-    case 'scheduled': return 'bg-review-subtle text-review';
+    case 'approved': return 'bg-[var(--color-success)]/10 text-[var(--color-success)]';
+    case 'rejected': return 'bg-[var(--color-error)]/10 text-[var(--color-error)]';
+    case 'idea': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+    case 'scheduled': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
     case 'published':
-    case 'sent': return 'bg-success-subtle text-success';
-    case 'pending': return 'bg-info-subtle text-info';
-    default: return 'bg-warning-subtle text-warning';
+    case 'sent': return 'bg-[var(--color-success)]/10 text-[var(--color-success)]';
+    case 'pending': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+    default: return 'bg-mission-control-border/50 text-mission-control-text-dim';
   }
 }
 
 function typeBadgeClass(type: string): string {
   switch (type?.toLowerCase()) {
-    case 'plan': return 'bg-info-subtle text-info';
-    case 'thread': return 'bg-review-subtle text-review';
+    case 'plan': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+    case 'thread': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
     case 'campaign': return 'bg-mission-control-accent/10 text-mission-control-accent';
-    case 'idea': return 'bg-info-subtle text-info';
-    default: return 'bg-mission-control-surface text-mission-control-text-dim';
+    case 'idea': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+    default: return 'bg-mission-control-border/50 text-mission-control-text-dim';
   }
 }
 
@@ -211,10 +211,10 @@ function typeBadgeClass(type: string): string {
 
 function eventColorResolver(event: CalendarEvent): string | undefined {
   const colorId = (event as unknown as { colorId?: string }).colorId || '';
-  if (colorId === 'research')  return 'bg-review';
-  if (colorId === 'plan')      return 'bg-info';
-  if (colorId === 'draft')     return 'bg-warning';
-  if (colorId === 'scheduled') return 'bg-success';
+  if (colorId === 'research')  return 'bg-[var(--color-review)]';
+  if (colorId === 'plan')      return 'bg-[var(--color-info)]';
+  if (colorId === 'draft')     return 'bg-[var(--color-warning)]';
+  if (colorId === 'scheduled') return 'bg-[var(--color-success)]';
   return undefined;
 }
 
@@ -364,20 +364,20 @@ function PipelineDetailModal({ item, onClose, onAction }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-xl max-h-[85vh] overflow-y-auto bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface rounded-t-2xl z-10">
+        <div className="sticky top-0 flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0 bg-mission-control-surface rounded-t-2xl z-10">
           <Flex align="center" gap="2">
-            <span className={`px-2 py-0.5 text-xs rounded ${typeBadgeClass(item.type)}`}>
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${typeBadgeClass(item.type)}`}>
               {typeBadgeLabel(item.type)}
             </span>
             {mentionType && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                 mentionType === 'reply'
-                  ? isReplyToUs ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info'
-                  : mentionType === 'quote' ? 'bg-warning-subtle text-warning'
-                  : 'bg-mission-control-surface text-mission-control-text-dim border border-mission-control-border'
+                  ? isReplyToUs ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
+                  : mentionType === 'quote' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
+                  : 'bg-mission-control-border/50 text-mission-control-text-dim'
               }`}>
                 {mentionType === 'reply'
                   ? isReplyToUs ? 'Reply to you' : 'Reply (tagged)'
@@ -385,16 +385,20 @@ function PipelineDetailModal({ item, onClose, onAction }: {
               </span>
             )}
             {confidence != null && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                confidence >= 0.8 ? 'bg-success-subtle text-success'
-                : confidence >= 0.5 ? 'bg-info-subtle text-info'
-                : 'bg-warning-subtle text-warning'
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                confidence >= 0.8 ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]'
+                : confidence >= 0.5 ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
+                : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
               }`}>{Math.round(confidence * 100)}%</span>
             )}
           </Flex>
-          <IconButton onClick={onClose} variant="ghost" color="gray" size="2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+          >
             <X size={18} />
-          </IconButton>
+          </button>
         </div>
 
         <div className="p-5 space-y-4">
@@ -406,7 +410,7 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                 <span className="text-xs text-mission-control-text-dim">{meta.author_followers.toLocaleString()} followers</span>
               )}
               {tweetId && (
-                <a href={`https://twitter.com/${mentionAuthor}/status/${tweetId}`} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-info hover:underline">
+                <a href={`https://twitter.com/${mentionAuthor}/status/${tweetId}`} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-[var(--color-info)] hover:underline">
                   View on X
                 </a>
               )}
@@ -435,7 +439,7 @@ function PipelineDetailModal({ item, onClose, onAction }: {
               <div className="font-medium text-mission-control-text mb-1">AI Assessment</div>
               <div>{aiJudgment.triage_reason}</div>
               {aiJudgment.safety_flags?.length > 0 && (
-                <div className="mt-1 text-error">Safety flags: {aiJudgment.safety_flags.join(', ')}</div>
+                <div className="mt-1 text-[var(--color-error)]">Safety flags: {aiJudgment.safety_flags.join(', ')}</div>
               )}
             </div>
           )}
@@ -452,8 +456,8 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                     onClick={() => setReplyText(reply)}
                     className={`w-full text-left px-4 py-3 text-sm rounded-xl border transition-colors ${
                       isRec
-                        ? 'border-info bg-info-subtle/40 hover:bg-info-subtle/60'
-                        : 'border-mission-control-border bg-mission-control-surface hover:border-info'
+                        ? 'border-[var(--color-info)] bg-[var(--color-info)]/10/40 hover:bg-[var(--color-info)]/10/60'
+                        : 'border-mission-control-border bg-mission-control-surface hover:border-[var(--color-info)]'
                     }`}
                     type="button"
                   >
@@ -566,21 +570,21 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setShowDatePicker(false); }}
       onClick={() => onSelect?.(item)}
-      className="relative bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-3 cursor-pointer transition-shadow hover:shadow-md"
+      className="relative bg-mission-control-surface border border-mission-control-border rounded-xl p-3 cursor-pointer hover:border-mission-control-accent/30 hover:shadow-lg hover:-translate-y-0.5 transition-colors duration-150"
       style={{ opacity: acting ? 0.6 : 1 }}
     >
       {/* Type badge */}
       <Flex align="center" gap="2" className="mb-1.5">
-        <span className={`px-1.5 py-0.5 text-xs rounded ${typeBadgeClass(item.type)}`}>
+        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${typeBadgeClass(item.type)}`}>
           {badgeLabel}
         </span>
         {mentionAuthorCard && (
-          <span className="px-1.5 py-0.5 text-xs bg-mission-control-surface text-mission-control-text-dim rounded">
+          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-mission-control-border/50 text-mission-control-text-dim rounded-full">
             @{mentionAuthorCard}
           </span>
         )}
         {!mentionAuthorCard && item.platform && (
-          <span className="px-1.5 py-0.5 text-xs bg-info-subtle text-info rounded">{item.platform}</span>
+          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded-full">{item.platform}</span>
         )}
       </Flex>
 
@@ -591,19 +595,19 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
             <p className="text-xs text-mission-control-text-dim leading-relaxed line-clamp-2">{preview}</p>
           )}
           {suggestedReply && (
-            <div className="border-l-2 border-info/50 pl-2">
-              <p className="text-xs text-mission-control-text-dim mb-0.5 uppercase tracking-wide" style={{ fontSize: '10px' }}>Suggested reply</p>
-              <p className="text-sm text-mission-control-text leading-relaxed line-clamp-2">{suggestedReply}</p>
+            <div className="border-l-2 border-[var(--color-info)]/50 pl-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Suggested reply</p>
+              <p className="text-sm font-medium text-mission-control-text leading-snug line-clamp-2">{suggestedReply}</p>
             </div>
           )}
         </div>
       ) : (
         /* Content preview */
-        <p className="text-sm text-mission-control-text leading-relaxed mb-2">{preview}</p>
+        <p className="text-sm font-medium text-mission-control-text leading-snug mb-2">{preview}</p>
       )}
 
       {/* Footer: agent + time */}
-      <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
+      <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mt-2">
         {proposedBy && (
           <span className="flex items-center gap-1">
             <User size={10} />
@@ -615,7 +619,7 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
 
       {/* Pending approval indicator */}
       {hasPendingApproval && (item.column === 'in-review' || item.column === 'approved') && (
-        <div className="mt-1.5 flex items-center gap-1 text-xs text-info">
+        <div className="mt-1.5 flex items-center gap-1 text-xs text-[var(--color-info)]">
           <Clock size={10} />
           Pending approval
         </div>
@@ -661,9 +665,9 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
           )}
           {item.column === 'approved' && (
             <div className="relative">
-              <Button onClick={() => setShowDatePicker(v => !v)} variant="ghost" color="gray" size="1">
+              <button onClick={() => setShowDatePicker(v => !v)} type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                 <Calendar size={10} /> Schedule
-              </Button>
+              </button>
               {showDatePicker && (
                 <DateTimePicker
                   onSchedule={iso => { setShowDatePicker(false); doAction('schedule', { scheduledTime: iso }); }}
@@ -767,7 +771,7 @@ function StatsBar({ counts, total }: StatsBarProps) {
         </span>
       ))}
       {needsAction > 0 && (
-        <span className="whitespace-nowrap flex items-center gap-1 text-warning font-medium">
+        <span className="whitespace-nowrap flex items-center gap-1 text-[var(--color-warning)] font-medium">
           <AlertCircle size={11} /> Needs action: {needsAction}
         </span>
       )}
@@ -959,7 +963,7 @@ function PipelineListView({ items, onAction }: ListViewProps) {
               return (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-mission-control-bg-alt/50 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-mission-control-border/20/50 transition-colors"
                 >
                   {/* Content preview */}
                   <div className="flex-1 min-w-0">
@@ -976,12 +980,12 @@ function PipelineListView({ items, onAction }: ListViewProps) {
                   </div>
 
                   {/* Type badge */}
-                  <span className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${typeBadgeClass(item.type)}`}>
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${typeBadgeClass(item.type)}`}>
                     {typeBadgeLabel(item.type)}
                   </span>
 
                   {/* Status badge */}
-                  <span className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${statusBadgeClass(item.status)}`}>
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${statusBadgeClass(item.status)}`}>
                     {item.status}
                   </span>
 
@@ -1009,9 +1013,9 @@ function PipelineListView({ items, onAction }: ListViewProps) {
                     )}
                     {item.column === 'approved' && (
                       <div className="relative">
-                        <Button onClick={() => setShowDatePickerFor(showDatePickerFor === item.id ? null : item.id)} variant="ghost" color="gray" size="1">
+                        <button type="button" onClick={() => setShowDatePickerFor(showDatePickerFor === item.id ? null : item.id)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                           <Calendar size={10} /> Schedule
-                        </Button>
+                        </button>
                         {showDatePickerFor === item.id && (
                           <DateTimePicker
                             onSchedule={iso => { setShowDatePickerFor(null); doAction(item.id, 'schedule', { scheduledTime: iso }); }}
@@ -1256,7 +1260,7 @@ export default function XPipelineView() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-mission-control-bg gap-3">
-        <p className="text-error text-sm">{error}</p>
+        <p className="text-[var(--color-error)] text-sm">{error}</p>
         <Button onClick={load} variant="outline" color="gray" size="2">
           <RefreshCw size={14} /> Retry
         </Button>
@@ -1286,18 +1290,18 @@ export default function XPipelineView() {
                 >
                   {/* Column accent + header */}
                   <div style={{ height: 3, background: col.accent }} />
-                  <Flex align="center" justify="between" className="px-3 py-2.5 border-b border-mission-control-border bg-mission-control-surface">
+                  <Flex align="center" justify="between" className="px-3 py-2.5 border-b border-mission-control-border bg-mission-control-bg/50">
                     <Flex align="center" gap="2" className="text-mission-control-text-dim">
                       {col.icon}
-                      <span className="text-xs font-medium text-mission-control-text">{col.label}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{col.label}</span>
                     </Flex>
-                    <span className="px-1.5 py-0.5 text-xs bg-mission-control-bg text-mission-control-text-dim rounded-full min-w-[20px] text-center">
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 bg-mission-control-border/50 text-mission-control-text-dim rounded-full min-w-[20px] text-center tabular-nums">
                       {colItems.length}
                     </span>
                   </Flex>
 
                   {/* Cards */}
-                  <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                  <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-mission-control-bg/50">
                     {/* Quick add — only in Ideas column, at top */}
                     {col.id === 'ideas' && (
                       <QuickAddIdea onAdd={handleAddIdea} />

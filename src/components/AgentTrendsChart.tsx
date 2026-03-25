@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Loader2, Download, Copy, Check } from 'lucide-react';
-import { Button, Flex } from '@radix-ui/themes';
+import { Users, Download, Copy, Check } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 
 interface DailyPoint {
   date: string;
@@ -127,8 +127,13 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
 
   if (loading) {
     return (
-      <div className="h-64 flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-mission-control-text-dim" />
+      <div className="space-y-4">
+        <div className="flex gap-2">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-6 w-20 bg-mission-control-border/40 rounded-full animate-pulse" />
+          ))}
+        </div>
+        <div className="h-[280px] bg-mission-control-border/20 rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -175,30 +180,28 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <Flex align="center" gap="2">
           <Users size={16} className="text-mission-control-accent" />
-          <span className="font-medium">Agent Task Trends</span>
-          <span className="text-xs text-mission-control-text-dim">last {days} days</span>
+          <span className="text-sm font-semibold text-mission-control-text">Agent Task Trends</span>
+          <span className="text-[10px] uppercase tracking-wider text-mission-control-text-dim">last {days} days</span>
         </Flex>
         <Flex align="center" gap="2">
-          <Button
-            size="1"
-            variant="surface"
-            color="gray"
+          <button
+            type="button"
             onClick={handleExportCsv}
             title="Export agent trends as CSV"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Download size={12} />
             CSV
-          </Button>
-          <Button
-            size="1"
-            variant="surface"
-            color={copied ? 'green' : 'gray'}
+          </button>
+          <button
+            type="button"
             onClick={handleCopy}
             title="Copy to clipboard"
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs hover:bg-mission-control-border/40 transition-colors ${copied ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
-          </Button>
+          </button>
         </Flex>
       </div>
 
@@ -208,19 +211,23 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
           const color = AGENT_COLORS[idx % AGENT_COLORS.length];
           const isHidden = hidden.has(agent.id);
           return (
-            <Button
+            <button
               key={agent.id}
-              size="1"
-              variant={isHidden ? 'surface' : 'solid'}
-              color="gray"
-              radius="full"
+              type="button"
               onClick={() => toggleAgent(agent.id)}
-              style={isHidden ? {} : { background: color, borderColor: color }}
               title={isHidden ? `Show ${agent.name}` : `Hide ${agent.name}`}
-              className={isHidden ? 'opacity-50' : ''}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                isHidden
+                  ? 'border-mission-control-border text-mission-control-text-dim opacity-50 hover:opacity-70'
+                  : 'border-mission-control-border text-mission-control-text hover:bg-mission-control-border/30'
+              }`}
             >
+              <span
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: isHidden ? 'var(--mission-control-text-dim)' : color }}
+              />
               {agent.name}
-            </Button>
+            </button>
           );
         })}
       </div>
@@ -333,11 +340,11 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="text-left text-xs text-mission-control-text-dim border-b border-mission-control-border">
-              <th className="pb-2 pr-4">Agent</th>
-              <th className="pb-2 pr-4 text-right">Total Tasks</th>
-              <th className="pb-2 pr-4 text-right">Avg Daily</th>
-              <th className="pb-2 text-right">Avg Success Rate</th>
+            <tr className="border-b border-mission-control-border">
+              <th className="text-left pb-2 pr-4 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Agent</th>
+              <th className="text-right pb-2 pr-4 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Total Tasks</th>
+              <th className="text-right pb-2 pr-4 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Avg Daily</th>
+              <th className="text-right pb-2 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Avg Success</th>
             </tr>
           </thead>
           <tbody>
@@ -346,7 +353,7 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
               return (
                 <tr
                   key={agent.id}
-                  className="border-b border-mission-control-border/50 hover:bg-mission-control-border/20 transition-colors"
+                  className="border-b border-mission-control-border/40 last:border-0 hover:bg-mission-control-border/10 transition-colors"
                 >
                   <td className="py-2 pr-4">
                     <span className="flex items-center gap-2">
@@ -362,10 +369,10 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
                     <span
                       className={`tabular-nums ${
                         avgSuccessRate(agent) >= 80
-                          ? 'text-success'
+                          ? 'text-[var(--color-success)]'
                           : avgSuccessRate(agent) >= 50
-                          ? 'text-warning'
-                          : 'text-error'
+                          ? 'text-[var(--color-warning)]'
+                          : 'text-[var(--color-error)]'
                       }`}
                     >
                       {avgSuccessRate(agent)}%

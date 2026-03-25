@@ -5,7 +5,7 @@ import {
   Plus, Search, X, Trash2, Edit, ExternalLink,
 } from 'lucide-react';
 // eslint-disable-next-line import/order
-import { Button, Flex, IconButton, Select, TextArea, TextField } from '@radix-ui/themes';
+import { Button, Flex, Select, TextArea, TextField } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -65,9 +65,9 @@ const SCOPE_OPTIONS = [
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  logos:         'text-info bg-info',
-  colors:        'text-review bg-review',
-  typography:    'text-success bg-success',
+  logos:         'text-[var(--color-info)] bg-[var(--color-info)]',
+  colors:        'text-[var(--color-review)] bg-[var(--color-review)]',
+  typography:    'text-[var(--color-success)] bg-[var(--color-success)]',
   imagery:       'text-danger bg-danger',
   presentations: 'text-pink-400 bg-pink-500/10',
   guidelines:    'text-mission-control-accent bg-mission-control-accent/10',
@@ -95,9 +95,9 @@ function getFileIcon(fileType: string): React.ElementType {
 
 function getFileTypeBg(fileType: string): string {
   switch (fileType) {
-    case 'pdf':      return 'bg-error';
-    case 'video':    return 'bg-review';
-    case 'document': return 'bg-info';
+    case 'pdf':      return 'bg-[var(--color-error)]';
+    case 'video':    return 'bg-[var(--color-review)]';
+    case 'document': return 'bg-[var(--color-info)]';
     default:         return 'bg-muted-subtle';
   }
 }
@@ -123,7 +123,7 @@ function AssetCard({ asset, onClick }: AssetCardProps) {
   return (
     <div
       onClick={onClick}
-      className="group rounded-lg bg-mission-control-surface border border-mission-control-border hover:border-info/40 cursor-pointer transition-colors overflow-hidden"
+      className="group rounded-lg bg-mission-control-surface border border-mission-control-border hover:border-[var(--color-info)]/40 cursor-pointer transition-colors overflow-hidden"
     >
       {/* Preview area */}
       <div className="w-full h-28 overflow-hidden flex items-center justify-center bg-mission-control-bg">
@@ -239,40 +239,38 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
     setForm(prev => ({ ...prev, [key]: val }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border">
           <span className="font-semibold text-mission-control-text text-sm">
             {initial ? 'Edit Asset' : 'Add Brand Asset'}
           </span>
-          <IconButton
+          <button
             onClick={onClose}
-            variant="ghost"
-            color="gray"
-            size="2"
             aria-label="Close"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={14} />
-          </IconButton>
+          </button>
         </Flex>
 
         {/* Body */}
         <div className="p-4 space-y-3 overflow-y-auto max-h-[70vh]">
           {error && (
-            <p className="text-xs text-error bg-error border border-error rounded px-3 py-2">{error}</p>
+            <p className="text-xs text-[var(--color-error)] bg-[var(--color-error)] border border-[var(--color-error)] rounded px-3 py-2">{error}</p>
           )}
 
           <TextField.Root
             value={form.name}
             onChange={e => set('name', e.target.value)}
             placeholder="Asset name..."
-            style={{ width: '100%' }}
+            className="w-full"
           />
 
           <Flex gap="2">
             <Select.Root value={form.category} onValueChange={(val) => set('category', val)}>
-              <Select.Trigger style={{ flex: 1 }} />
+              <Select.Trigger className="flex-1" />
               <Select.Content>
                 {ASSET_CATEGORIES.filter(c => c.value !== 'all').map(c => (
                   <Select.Item key={c.value} value={c.value}>{c.label}</Select.Item>
@@ -281,7 +279,7 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
             </Select.Root>
 
             <Select.Root value={form.fileType} onValueChange={(val) => set('fileType', val as AssetFileType)}>
-              <Select.Trigger style={{ flex: 1 }} />
+              <Select.Trigger className="flex-1" />
               <Select.Content>
                 {FILE_TYPE_OPTIONS.map(o => (
                   <Select.Item key={o.value} value={o.value}>{o.label}</Select.Item>
@@ -303,14 +301,14 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
             value={form.url}
             onChange={e => set('url', e.target.value)}
             placeholder="URL or image link..."
-            style={{ width: '100%' }}
+            className="w-full"
           />
 
           <TextField.Root
             value={form.fileName}
             onChange={e => set('fileName', e.target.value)}
             placeholder="File name (optional)..."
-            style={{ width: '100%' }}
+            className="w-full"
           />
 
           <TextArea
@@ -318,27 +316,26 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
             onChange={e => set('description', e.target.value)}
             placeholder="Description (optional)..."
             rows={3}
-            style={{ width: '100%' }}
+            className="w-full"
           />
 
           <TextField.Root
             value={form.tags}
             onChange={e => set('tags', e.target.value)}
             placeholder="Tags: brand, primary, dark (comma-separated)..."
-            style={{ width: '100%' }}
+            className="w-full"
           />
         </div>
 
         {/* Footer */}
         <Flex justify="end" gap="2" className="px-4 py-3 border-t border-mission-control-border">
-          <Button
+          <button
+            type="button"
             onClick={onClose}
-            variant="ghost"
-            color="gray"
-            size="2"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             Cancel
-          </Button>
+          </button>
           <Button
             onClick={handleSave}
             disabled={saving}
@@ -376,16 +373,13 @@ function AssetDrawer({ asset, onClose, onEdit, onDelete }: AssetDrawerProps) {
       {/* Header */}
       <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border">
         <span className="font-semibold text-mission-control-text text-sm truncate">{asset.name}</span>
-        <IconButton
+        <button
           onClick={onClose}
-          variant="ghost"
-          color="gray"
-          size="2"
           aria-label="Close"
-          className="shrink-0 ml-2"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors shrink-0 ml-2"
         >
           <X size={14} />
-        </IconButton>
+        </button>
       </Flex>
 
       {/* Preview */}
@@ -430,7 +424,7 @@ function AssetDrawer({ asset, onClose, onEdit, onDelete }: AssetDrawerProps) {
             href={asset.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-info hover:text-info transition-colors truncate"
+            className="flex items-center gap-1.5 text-xs text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors truncate"
           >
             <ExternalLink size={12} className="shrink-0" />
             <span className="truncate">{asset.url}</span>
@@ -569,7 +563,7 @@ export default function BrandAssetsPanel() {
                 onClick={() => setCategory(value)}
                 className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors ${
                   active
-                    ? 'bg-info/20 text-info font-medium'
+                    ? 'bg-[var(--color-info)]/20 text-[var(--color-info)] font-medium'
                     : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
                 }`}
               >
@@ -591,23 +585,20 @@ export default function BrandAssetsPanel() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search brand assets..."
-                style={{ width: '100%' }}
+                className="w-full"
               >
                 <TextField.Slot>
                   <Search size={13} />
                 </TextField.Slot>
               </TextField.Root>
               {search && (
-                <IconButton
+                <button
                   onClick={() => setSearch('')}
-                  variant="ghost"
-                  color="gray"
-                  size="1"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2"
                   aria-label="Clear search"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors absolute right-2.5 top-1/2 -translate-y-1/2"
                 >
                   <X size={13} />
-                </IconButton>
+                </button>
               )}
             </div>
             <Button
@@ -654,7 +645,7 @@ export default function BrandAssetsPanel() {
                       <div
                         key={asset.id}
                         onClick={() => setSelected(prev => prev?.id === asset.id ? null : asset)}
-                        className={`border rounded-lg p-4 bg-mission-control-surface cursor-pointer transition-colors hover:border-info/40 ${
+                        className={`border rounded-lg p-4 bg-mission-control-surface cursor-pointer transition-colors hover:border-[var(--color-info)]/40 ${
                           isSelected ? 'border-mission-control-accent/60' : 'border-mission-control-border'
                         }`}
                       >

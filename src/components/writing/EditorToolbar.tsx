@@ -40,10 +40,10 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`p-1.5 rounded transition-colors ${
+      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
         active
-          ? 'bg-mission-control-border text-mission-control-text'
-          : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
+          ? 'bg-mission-control-accent/10 text-mission-control-accent'
+          : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
       } disabled:opacity-30 disabled:cursor-not-allowed`}
     >
       {children}
@@ -79,7 +79,7 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
 
   return (
     <>
-      <div className="flex items-center gap-0.5 px-3 py-2 bg-mission-control-surface border-b border-mission-control-border flex-shrink-0">
+      <div className="flex items-center gap-0.5 px-2 py-1.5 bg-mission-control-surface border-b border-mission-control-border flex-shrink-0">
         {/* Headings */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
@@ -197,7 +197,7 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder="https://example.com"
             onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
-            style={{ width: '100%' }}
+            className="w-full"
           />
         </BaseModalBody>
         <BaseModalFooter align="right">

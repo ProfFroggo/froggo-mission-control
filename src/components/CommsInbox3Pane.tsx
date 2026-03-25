@@ -121,10 +121,10 @@ const SYSTEM_ACCOUNT: Account = {
   label: 'System',
   platform: 'system',
   icon: <ActivityIcon size={16} />,
-  color: 'text-review',
+  color: 'text-[var(--color-review)]',
 };
 
-const EMAIL_COLORS = ['text-warning', 'text-info', 'text-success', 'text-error', 'text-review'];
+const EMAIL_COLORS = ['text-[var(--color-warning)]', 'text-[var(--color-info)]', 'text-[var(--color-success)]', 'text-[var(--color-error)]', 'text-[var(--color-review)]'];
 
 // Build accounts from gateway channels + discovered email accounts + social module
 function buildAccountsFromSources(
@@ -267,7 +267,7 @@ type TimeFilter = 'all' | 'today' | 'week';
 
 function platformColor(p: string): string {
   const map: Record<string, string> = {
-    email: 'text-warning', twitter: 'text-mission-control-text-dim', system: 'text-review'
+    email: 'text-[var(--color-warning)]', twitter: 'text-mission-control-text-dim', system: 'text-[var(--color-review)]'
   };
   return map[p] || 'text-mission-control-text-dim';
 }
@@ -283,9 +283,9 @@ function platformIcon(platform: string, size: number) {
 
 // Triage badge colors
 const TRIAGE_COLORS: Record<string, string> = {
-  urgent: 'bg-error',
-  action: 'bg-warning',
-  fyi: 'bg-info',
+  urgent: 'bg-[var(--color-error)]',
+  action: 'bg-[var(--color-warning)]',
+  fyi: 'bg-[var(--color-info)]',
   'no-reply': 'bg-mission-control-bg',
 };
 
@@ -406,24 +406,28 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
 
       {/* HTML/Plain toggle for HTML emails */}
       {htmlMode && (
-        <Flex align="center" gap="2" px="4" py="1" className="border-b border-mission-control-border bg-mission-control-bg/50">
-          <Button
+        <div className="flex items-center gap-0.5 p-1 mx-4 my-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+          <button
             onClick={() => setShowHtml(true)}
-            size="1"
-            variant={showHtml ? 'soft' : 'ghost'}
-            color={showHtml ? undefined : 'gray'}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              showHtml
+                ? 'bg-mission-control-surface text-mission-control-accent shadow-sm'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+            }`}
           >
             <Code size={10} />HTML
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={() => setShowHtml(false)}
-            size="1"
-            variant={!showHtml ? 'soft' : 'ghost'}
-            color={!showHtml ? undefined : 'gray'}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              !showHtml
+                ? 'bg-mission-control-surface text-mission-control-accent shadow-sm'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+            }`}
           >
             <FileText size={10} />Plain
-          </Button>
-        </Flex>
+          </button>
+        </div>
       )}
 
       {/* Body content */}
@@ -504,17 +508,15 @@ function LeftPane({
 
       {/* Accounts Section — grouped by channel type */}
       <div className="border-b border-mission-control-border">
-        <Button
+        <button
+          type="button"
           onClick={() => setAccountsExpanded(!accountsExpanded)}
-          size="1"
-          variant="ghost"
-          color="gray"
-          className="flex items-center gap-2 px-4 py-2 w-full text-xs font-bold uppercase tracking-wider"
+          className="inline-flex items-center gap-2 px-4 py-2 w-full text-[10px] font-bold uppercase tracking-wider rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           {accountsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           Channels
           {loadingAccounts && <RefreshCw size={10} className="animate-spin ml-auto" />}
-        </Button>
+        </button>
         {accountsExpanded && (
           <div className="pb-2">
             {/* Group accounts by platform */}
@@ -527,7 +529,7 @@ function LeftPane({
                 if (groupAccounts.length === 0) return null;
                 return (
                   <div key={label}>
-                    <div className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-widest text-mission-control-text-dim">
+                    <div className="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
                       {label}
                     </div>
                     {groupAccounts.map(account => (
@@ -573,16 +575,14 @@ function LeftPane({
 
       {/* Folders Section */}
       <div>
-        <Button
+        <button
+          type="button"
           onClick={() => setFoldersExpanded(!foldersExpanded)}
-          size="1"
-          variant="ghost"
-          color="gray"
-          className="flex items-center gap-2 px-4 py-2 w-full text-xs font-bold uppercase tracking-wider"
+          className="inline-flex items-center gap-2 px-4 py-2 w-full text-[10px] font-bold uppercase tracking-wider rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           {foldersExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           Folders
-        </Button>
+        </button>
         {foldersExpanded && (
           <div className="pb-2">
             {FOLDERS.map(folder => (
@@ -669,25 +669,23 @@ function CenterPane({
           <h2 className="font-semibold text-sm">{accountLabel}</h2>
           <Flex align="center" gap="1">
             {unreadCount > 0 && onMarkAllRead && (
-              <IconButton
+              <button
+                type="button"
                 onClick={onMarkAllRead}
                 title="Mark all as read"
-                size="1"
-                variant="ghost"
-                color="gray"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <CheckCheck size={14} />
-              </IconButton>
+              </button>
             )}
-            <IconButton
+            <button
+              type="button"
               onClick={onRefresh}
               disabled={loading || refreshing}
-              size="1"
-              variant="ghost"
-              color="gray"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-            </IconButton>
+            </button>
           </Flex>
         </Flex>
         {/* Search */}
@@ -741,26 +739,27 @@ function CenterPane({
                 tabIndex={0}
                 onClick={() => onSelect(conv)}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(conv); } }}
-                className={`group w-full text-left px-3 py-2.5 border-b border-mission-control-border/30 border-l-2 transition-colors cursor-pointer ${
+                className={`group w-full text-left flex items-start gap-3 px-4 py-3 border-b border-mission-control-border/40 border-l-2 transition-colors cursor-pointer last:border-b-0 ${
                   selectedId === conv.id
-                    ? 'bg-mission-control-accent/10 border-l-mission-control-accent'
-                    : 'border-l-transparent hover:bg-mission-control-surface'
-                } ${!conv.is_read ? 'bg-mission-control-surface/30' : ''}`}
+                    ? 'bg-mission-control-accent/[0.12] border-l-[var(--mission-control-accent,var(--accent-9))]'
+                    : !conv.is_read
+                    ? 'bg-mission-control-accent/5 border-l-transparent hover:bg-mission-control-accent/8'
+                    : 'border-l-transparent hover:bg-mission-control-border/10'
+                }`}
               >
-                <div className="flex items-start gap-2 overflow-hidden w-full">
-                  {/* Unread dot */}
-                  <div className="mt-2 flex-shrink-0 w-2">
-                    {!conv.is_read && <div className="w-2 h-2 bg-mission-control-accent rounded-full" />}
+                {/* Unread dot — always takes space to keep alignment */}
+                  <div className="mt-1.5 flex-shrink-0 w-2">
+                    {!conv.is_read && <div className="w-2 h-2 rounded-full bg-mission-control-accent" />}
                   </div>
 
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <Flex align="center" gap="2" className="mb-0.5">
-                      <span className={`text-sm truncate flex-1 min-w-0 ${!conv.is_read ? 'font-bold' : 'font-medium'}`}>
+                      <span className={`text-sm truncate flex-1 min-w-0 ${!conv.is_read ? 'font-semibold text-mission-control-text' : 'font-medium text-mission-control-text/80'}`}>
                         {conv.name || conv.from || 'Unknown'}
                       </span>
-                      <span className={`text-xs tabular-nums flex-shrink-0 inline-flex items-center gap-0.5 ${
+                      <span className={`text-[10px] tabular-nums flex-shrink-0 inline-flex items-center gap-0.5 ${
                         Date.now() - new Date(conv.timestamp).getTime() > 3 * 24 * 60 * 60 * 1000
-                          ? 'text-warning'
+                          ? 'text-[var(--color-warning)]'
                           : 'text-mission-control-text-dim'
                       }`}>
                         {Date.now() - new Date(conv.timestamp).getTime() > 3 * 24 * 60 * 60 * 1000 && <Clock size={9} />}
@@ -768,11 +767,11 @@ function CenterPane({
                       </span>
                     </Flex>
                     {conv.subject && (
-                      <div className={`text-sm truncate ${!conv.is_read ? 'font-semibold' : 'text-mission-control-text/80'}`}>
+                      <div className={`text-xs text-mission-control-text-dim line-clamp-1 mt-0.5 ${!conv.is_read ? 'font-semibold text-mission-control-text' : ''}`}>
                         {conv.subject}
                       </div>
                     )}
-                    <p className="text-xs text-mission-control-text-dim/70 truncate mt-0.5">{conv.preview}</p>
+                    <p className="text-xs text-mission-control-text-dim/70 line-clamp-1 mt-0.5">{conv.preview}</p>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       <span className={`flex-shrink-0 ${platformColor(conv.platform)}`}>
                         {platformIcon(conv.platform, 10)}
@@ -790,88 +789,70 @@ function CenterPane({
                       )}
                       {conv.unread_count && conv.unread_count > 0 && (
                         <span
-                          className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-xs font-bold tabular-nums bg-[--accent-9] text-[--accent-contrast] rounded-full flex-shrink-0"
+                          className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold tabular-nums bg-mission-control-accent text-white rounded-full flex-shrink-0"
                           title={`${conv.unread_count} unread`}
                         >
                           {conv.unread_count > 999 ? '999+' : conv.unread_count}
                         </span>
                       )}
                       {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
-                        <span className="text-xs text-warning bg-warning-subtle rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
+                        <span className="text-xs text-[var(--color-warning)] bg-[var(--color-warning)]/10 rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
                           <Reply size={8} />
                           reply
                         </span>
                       )}
                       {conv.has_attachment && <Paperclip size={10} className="text-mission-control-text-dim flex-shrink-0" />}
                       {conv.is_starred && (
-                        <Star size={10} className="text-warning flex-shrink-0" fill="currentColor" />
+                        <Star size={10} className="text-[var(--color-warning)] flex-shrink-0" fill="currentColor" />
                       )}
                     </div>
                   </div>
 
                   {/* Action buttons */}
                   {conv.platform !== 'system' && (
-                    <div className="flex flex-col gap-0.5 flex-shrink-0 ml-1">
-                      <IconButton
+                    <div className="flex flex-col gap-0.5 flex-shrink-0 ml-auto pl-1">
+                      <button
+                        type="button"
                         onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
-                        size="1"
-                        variant="ghost"
-                        color={conv.is_starred ? 'yellow' : 'gray'}
-                       
                         title={conv.is_starred ? 'Unstar' : 'Star'}
-                        className={conv.is_starred ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'}
+                        className={`inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-mission-control-border/40 transition-colors ${conv.is_starred ? 'text-yellow-400' : 'text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-opacity'}`}
                       >
                         <Star size={14} fill={conv.is_starred ? 'currentColor' : 'none'} />
-                      </IconButton>
-                      <IconButton
+                      </button>
+                      <button
                         onClick={e => { e.stopPropagation(); onArchive(conv); }}
-                        size="1"
-                        variant="ghost"
-                        color="gray"
-                       
                         title="Archive"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100"
                       >
                         <Archive size={14} />
-                      </IconButton>
-                      <IconButton
+                      </button>
+                      <button
                         onClick={e => { e.stopPropagation(); onToggleRead(conv); }}
-                        size="1"
-                        variant="ghost"
-                        color="gray"
-                       
                         title={conv.is_read ? 'Mark unread' : 'Mark read'}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100"
                       >
                         {conv.is_read ? <MailOpen size={14} /> : <Check size={14} />}
-                      </IconButton>
+                      </button>
                     </div>
                   )}
-                </div>
               </div>
             ))}
             {hasMore && onLoadMore && (
               <Flex gap="2" px="2" py="2">
-                <Button
+                <button
                   onClick={onLoadMore}
-                  size="2"
-                  variant="ghost"
-                  color="gray"
-                  className="flex-1"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <ChevronDown size={14} />
                   Load more (+50)
-                </Button>
+                </button>
                 {onLoadAll && (
-                  <Button
+                  <button
                     onClick={onLoadAll}
-                    size="2"
-                    variant="ghost"
-                    color="gray"
-                    className="flex-1"
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     Load All
-                  </Button>
+                  </button>
                 )}
               </Flex>
             )}
@@ -947,11 +928,11 @@ function InboxDashboard({
             <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Unread</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
-            <div className="text-2xl font-bold tabular-nums text-error">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'urgent').length}</div>
+            <div className="text-2xl font-bold tabular-nums text-[var(--color-error)]">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'urgent').length}</div>
             <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Urgent</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
-            <div className="text-2xl font-bold tabular-nums text-warning">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
+            <div className="text-2xl font-bold tabular-nums text-[var(--color-warning)]">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
             <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Action</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
@@ -976,7 +957,7 @@ function InboxDashboard({
         {/* Priority Messages */}
         {priorityMessages.length > 0 && (
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
               <AlertTriangle size={12} />
               Needs Your Attention
             </h3>
@@ -992,7 +973,7 @@ function InboxDashboard({
                   >
                     <Flex align="start" gap="2">
                       <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
-                        analysis?.triage === 'urgent' ? 'bg-error' : 'bg-warning'
+                        analysis?.triage === 'urgent' ? 'bg-[var(--color-error)]' : 'bg-[var(--color-warning)]'
                       }`} />
                       <div className="flex-1 min-w-0">
                         <Flex align="center" gap="2" className="mb-0.5">
@@ -1021,7 +1002,7 @@ function InboxDashboard({
         {/* Suggested Tasks from Comms */}
         {allTasks.length > 0 && (
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
               <ListPlus size={12} />
               Suggested Tasks
             </h3>
@@ -1052,7 +1033,7 @@ function InboxDashboard({
           <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
             <Sparkles size={32} className="mb-3 text-mission-control-text-dim/30" />
             <p className="text-sm text-mission-control-text-dim">AI is analyzing your messages...</p>
-            <p className="text-xs text-mission-control-text-dim/50 mt-1">Select a message or wait for batch analysis</p>
+            <p className="text-xs text-mission-control-text-dim/70 mt-1">Select a message or wait for batch analysis</p>
           </div>
         )}
 
@@ -1308,9 +1289,9 @@ function RightPane({
   return (
     <div className="flex-1 flex flex-col bg-mission-control-bg min-w-0 text-left">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
-        <Flex align="center" justify="between" gap="3" className="mb-0.5">
-          <h2 className="font-bold text-base truncate min-w-0 flex-1">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0 bg-mission-control-surface">
+        <Flex align="center" justify="between" gap="3" className="mb-0.5 w-full">
+          <h2 className="text-sm font-semibold text-mission-control-text truncate min-w-0 flex-1">
             {conversation.subject || conversation.name || conversation.from || 'Message'}
           </h2>
           {onTriageWithAgent && (
@@ -1326,17 +1307,14 @@ function RightPane({
               Triage
             </Button>
           )}
-          <IconButton
+          <button
+            type="button"
             onClick={onClose}
-            size="2"
-            variant="ghost"
-            color="gray"
-           
-            className="flex-shrink-0"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0"
             title="Close"
           >
             <X size={16} />
-          </IconButton>
+          </button>
         </Flex>
         <Flex align="center" gap="2" className="text-sm text-mission-control-text-dim">
           <span className={platformColor(conversation.platform)}>
@@ -1356,20 +1334,20 @@ function RightPane({
 
       {/* AI Analysis Banner */}
       {!isSystem && aiAnalysis && (
-        <div className="px-4 py-3 border-b border-mission-control-border bg-gradient-to-r from-mission-control-surface to-mission-control-bg/50">
+        <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
           {/* Summary + Triage */}
           <Flex align="center" gap="2" className="mb-1.5">
             <Sparkles size={13} className="text-mission-control-accent flex-shrink-0" />
-            <span className={`text-xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-              aiAnalysis.triage === 'urgent' ? 'bg-error-subtle text-error' :
-              aiAnalysis.triage === 'action' ? 'bg-warning-subtle text-warning' :
-              aiAnalysis.triage === 'fyi' ? 'bg-info-subtle text-info' :
+            <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+              aiAnalysis.triage === 'urgent' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+              aiAnalysis.triage === 'action' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+              aiAnalysis.triage === 'fyi' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' :
               'bg-mission-control-bg/20 text-mission-control-text-dim'
             }`}>
               {TRIAGE_LABELS[aiAnalysis.triage]}
             </span>
             {!aiAnalysis.reply_needed && (
-              <span className="text-xs text-success bg-success-subtle px-1.5 py-0.5 rounded font-medium">
+              <span className="text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-1.5 py-0.5 rounded font-medium">
                 No reply needed
               </span>
             )}
@@ -1418,14 +1396,14 @@ function RightPane({
       )}
 
       {/* Thread / Message Body */}
-      <div ref={threadScrollRef} className="flex-1 overflow-y-auto px-5 py-3 text-left min-w-0">
+      <div ref={threadScrollRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-3 text-left min-w-0">
         {loadingThread || loadingBody ? (
           <div className="text-center text-mission-control-text-dim py-8 text-sm">Loading...</div>
         ) : isSystem ? (
           /* System activity detail */
           <div className="bg-mission-control-surface rounded-lg p-4 border border-mission-control-border">
             <Flex align="center" gap="2" className="mb-3 pb-3 border-b border-mission-control-border">
-              <ActivityIcon size={14} className="text-review" />
+              <ActivityIcon size={14} className="text-[var(--color-review)]" />
               <span className="font-semibold text-sm">{conversation.name || 'System'}</span>
               <span className="text-xs text-mission-control-text-dim ml-auto">{conversation.relativeTime}</span>
             </Flex>
@@ -1436,23 +1414,21 @@ function RightPane({
           <EmailBodyRenderer body={emailBody} metadata={emailMetadata} />
         ) : thread.length > 0 ? (
           /* Chat thread */
-          <div className="space-y-4">
+          <div className="space-y-3">
             {thread.map((msg, i) => (
               <Flex key={msg.id || i} justify={msg.fromMe ? 'end' : 'start'}>
-                <div className={`max-w-[75%] rounded-lg px-4 py-2.5 ${
+                <div className={`max-w-[75%] ${
                   msg.fromMe
-                    ? 'bg-mission-control-accent/20 border border-mission-control-accent/30'
-                    : 'bg-mission-control-surface border border-mission-control-border'
+                    ? 'bg-mission-control-accent text-white rounded-2xl rounded-br-sm px-4 py-2'
+                    : 'bg-mission-control-surface border border-mission-control-border rounded-2xl rounded-bl-sm px-4 py-2'
                 }`}>
-                  <Flex align="center" gap="2" className="mb-1">
-                    <span className="text-xs font-semibold">{msg.fromMe ? 'You' : msg.senderName || msg.sender}</span>
-                    <span className="text-xs tabular-nums text-mission-control-text-dim">{msg.timestamp}</span>
-                  </Flex>
+                  <div className="text-xs font-semibold mb-0.5 opacity-70">{msg.fromMe ? 'You' : msg.senderName || msg.sender}</div>
                   {isHtmlContent(msg.text)
                     ? /* SECURITY: sanitizeInlineHtml → sanitizeHtml (DOMPurify) strips all unsafe HTML/attrs */
                       <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(msg.text) }} />
-                    : <MarkdownMessage content={msg.text} />
+                    : <div className="text-sm leading-relaxed"><MarkdownMessage content={msg.text} /></div>
                   }
+                  <div className="text-[10px] text-mission-control-text-dim/60 mt-1">{msg.timestamp}</div>
                 </div>
               </Flex>
             ))}
@@ -1461,7 +1437,7 @@ function RightPane({
         ) : conversation.platform === 'telegram' ? (
           /* Telegram empty state — show preview while thread loads */
           <div className="bg-mission-control-surface rounded-lg p-4 border border-mission-control-border">
-            <Flex align="center" gap="2" className="mb-3 pb-3 border-b border-mission-control-border text-info">
+            <Flex align="center" gap="2" className="mb-3 pb-3 border-b border-mission-control-border text-[var(--color-info)]">
               <Send size={14} />
               <span className="font-semibold text-sm text-mission-control-text">{conversation.name || conversation.from}</span>
             </Flex>
@@ -1484,14 +1460,13 @@ function RightPane({
               <Sparkles size={16} className="text-mission-control-accent" />
               <span className="text-sm font-semibold">AI Assistant</span>
             </Flex>
-            <IconButton
+            <button
+              type="button"
               onClick={() => setShowAIPanel(false)}
-              size="1"
-              variant="ghost"
-              color="gray"
+              className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <X size={14} />
-            </IconButton>
+            </button>
           </Flex>
 
           {/* Suggested Replies */}
@@ -1608,28 +1583,30 @@ function RightPane({
 
       {/* Reply Box — not for system messages */}
       {!isSystem && (
-        <div className="px-5 py-3 border-t border-mission-control-border bg-mission-control-surface">
+        <div className="flex flex-col gap-2 px-4 py-3 border-t border-mission-control-border flex-shrink-0 bg-mission-control-surface">
           <Flex align="center" justify="between" className="mb-2">
             <span className="text-xs font-medium text-mission-control-text-dim">Reply</span>
             <Flex align="center" gap="2">
-              <Button
+              <button
                 onClick={() => setShowAIPanel(!showAIPanel)}
-                size="1"
-                variant={showAIPanel ? 'soft' : 'ghost'}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                  showAIPanel
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                }`}
               >
                 <Sparkles size={14} />
                 AI Assist
-              </Button>
-              <Button
+              </button>
+              <button
+                type="button"
                 onClick={generateReply}
                 disabled={generating}
-                size="1"
-                variant="ghost"
-                color="gray"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <Sparkles size={14} className={generating ? 'animate-spin' : ''} />
                 {generating ? 'Generating...' : 'Quick Draft'}
-              </Button>
+              </button>
             </Flex>
           </Flex>
           <Flex gap="2">
@@ -1652,14 +1629,13 @@ function RightPane({
             <span className="text-xs text-mission-control-text-dim">⌘+Enter to send</span>
             <Flex gap="2">
               {replyText && (
-                <Button
+                <button
+                  type="button"
                   onClick={() => setReplyText('')}
-                  size="2"
-                  variant="ghost"
-                  color="gray"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                 >
                   Discard
-                </Button>
+                </button>
               )}
               <Button
                 onClick={handleSend}
@@ -2434,7 +2410,7 @@ export default function CommsInbox3Pane() {
               loadingAccounts={loadingAccounts}
             />
           </div>
-          <div className="flex-1 bg-black/40" onClick={() => setMobileSidebarOpen(false)} />
+          <div className="flex-1 bg-black/60 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
         </div>
       )}
 

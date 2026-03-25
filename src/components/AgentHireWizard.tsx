@@ -3,7 +3,7 @@ import {
   X, ChevronRight, CheckCircle, Bot, Cpu, Loader2, User, Briefcase,
   Search, Calendar, Tag, FlaskConical,
 } from 'lucide-react';
-import { Button, IconButton, TextField, TextArea, Switch, Box, Flex } from '@radix-ui/themes';
+import { Button, TextField, TextArea, Switch, Box, Flex } from '@radix-ui/themes';
 import type { CatalogAgent } from '../types/catalog';
 import { catalogApi } from '../lib/api';
 import { useStore } from '../store/store';
@@ -21,9 +21,9 @@ const STEP_ORDER: Step[] = ['match', 'review', 'personalize', 'confirm', 'instal
 const PROGRESS_STEPS: Step[] = ['match', 'review', 'personalize', 'confirm'];
 
 const MODEL_BADGE: Record<string, { label: string; cls: string }> = {
-  opus:   { label: 'Opus',   cls: 'bg-review-subtle text-review border border-review-border' },
-  sonnet: { label: 'Sonnet', cls: 'bg-info-subtle text-info border border-info-border' },
-  haiku:  { label: 'Haiku',  cls: 'bg-warning-subtle text-warning border border-warning-border' },
+  opus:   { label: 'Opus',   cls: 'bg-[var(--color-review)]-subtle text-[var(--color-review)]' },
+  sonnet: { label: 'Sonnet', cls: 'bg-[var(--color-info)]/10 text-[var(--color-info)]' },
+  haiku:  { label: 'Haiku',  cls: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' },
 };
 
 export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWizardProps) {
@@ -87,10 +87,10 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
   return (
     <Flex align="center" justify="center" p="4" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm">
-      <Box className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-xl shadow-2xl overflow-hidden">
+      <Box className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden">
 
         {/* Header */}
-        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <Flex align="center" gap="3">
             <div className="w-10 h-10 rounded-lg bg-mission-control-surface border border-mission-control-border overflow-hidden flex items-center justify-center text-xl flex-shrink-0">
               {agent.avatar ? (
@@ -110,43 +110,64 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               )}
             </div>
             <div>
-              <h2 className="font-semibold text-base leading-tight">{agent.name}</h2>
+              <h2 className="text-base font-semibold leading-tight">{agent.name}</h2>
               <p className="text-xs text-mission-control-text-dim">{agent.role || 'Agent'}</p>
             </div>
           </Flex>
           {step !== 'installing' && (
-            <IconButton
+            <button
               type="button"
-              size="2"
-              variant="ghost"
-             
               onClick={onClose}
               aria-label="Close"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <X size={18} />
-            </IconButton>
+            </button>
           )}
-        </Flex>
+        </div>
 
         {/* Step progress indicator */}
         {currentProgressIndex >= 0 && (
-          <Flex align="center" gap="1" className="px-6 pt-4 pb-2">
-            {PROGRESS_STEPS.map((s, i) => (
-              <div key={s} className="flex items-center gap-1 flex-1">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold tabular-nums transition-colors flex-shrink-0 ${
-                  step === s
-                    ? 'bg-mission-control-accent text-white'
-                    : currentProgressIndex > i
-                      ? 'bg-success-subtle text-success'
-                      : 'bg-mission-control-border text-mission-control-text-dim'
-                }`}>
-                  {i + 1}
-                </div>
-                {i < PROGRESS_STEPS.length - 1 && <div className="flex-1 h-px bg-mission-control-border" />}
-              </div>
-            ))}
-          </Flex>
+          <div className="px-6 pt-5 pb-3">
+            <div className="flex items-center">
+              {PROGRESS_STEPS.map((s, i) => {
+                const isActive = step === s;
+                const isCompleted = currentProgressIndex > i;
+                const stepLabel = s.charAt(0).toUpperCase() + s.slice(1);
+                return (
+                  <div key={s} className="flex items-center flex-1 last:flex-none">
+                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold tabular-nums transition-colors transition-[background-color,border-color,color] ${
+                        isCompleted
+                          ? 'bg-[var(--mission-control-accent)] text-white'
+                          : isActive
+                            ? 'bg-transparent text-[var(--mission-control-accent)] border-2 border-[var(--mission-control-accent)] ring-2 ring-[var(--mission-control-accent)]/20'
+                            : 'bg-mission-control-border/20 text-mission-control-text-dim border border-mission-control-border'
+                      }`}>
+                        {isCompleted ? (
+                          <CheckCircle size={14} />
+                        ) : (
+                          <span>{i + 1}</span>
+                        )}
+                      </div>
+                      <span className={`text-[10px] font-medium ${isActive ? 'text-mission-control-text' : isCompleted ? 'text-[var(--mission-control-accent)]' : 'text-mission-control-text-dim'}`}>
+                        {stepLabel}
+                      </span>
+                    </div>
+                    {i < PROGRESS_STEPS.length - 1 && (
+                      <div className={`flex-1 h-px mx-2 mb-4 transition-[background-color] duration-300 ${
+                        isCompleted ? 'bg-[var(--mission-control-accent)]' : 'bg-mission-control-border'
+                      }`} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
+
+        {/* Step body */}
+        <div className="flex-1 overflow-y-auto">
 
         {/* ── Step 0: Match ── */}
         {step === 'match' && (
@@ -174,16 +195,16 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             {query.trim() && (
               <Flex align="start" gap="3" className={`p-3 rounded-lg mb-4 border ${
                 matchScore !== null && matchScore >= 50
-                  ? 'bg-success-subtle border-success-border'
-                  : 'bg-warning-subtle border-warning-border'
+                  ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30'
+                  : 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30'
               }`}>
                 {matchScore !== null && matchScore >= 50 ? (
-                  <CheckCircle size={16} className="text-success mt-0.5 flex-shrink-0" />
+                  <CheckCircle size={16} className="text-[var(--color-success)] mt-0.5 flex-shrink-0" />
                 ) : (
-                  <Bot size={16} className="text-warning mt-0.5 flex-shrink-0" />
+                  <Bot size={16} className="text-[var(--color-warning)] mt-0.5 flex-shrink-0" />
                 )}
                 <div>
-                  <p className={`text-sm font-medium ${matchScore !== null && matchScore >= 50 ? 'text-success' : 'text-warning'}`}>
+                  <p className={`text-sm font-medium ${matchScore !== null && matchScore >= 50 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'}`}>
                     {matchScore !== null && matchScore >= 50
                       ? `${agent.name} looks like a great fit`
                       : `${agent.name} may partially match`}
@@ -200,16 +221,16 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               size="2"
               variant="solid"
               onClick={() => setStep('review')}
-              style={{ width: '100%' }}
+              className="w-full"
             >
               Continue <ChevronRight size={16} />
             </Button>
             <Button
               type="button"
-              size="2"
               variant="ghost"
+              size="2"
               onClick={() => setStep('review')}
-              style={{ width: '100%', marginTop: '8px' }}
+              className="w-full mt-2"
             >
               Skip and review agent
             </Button>
@@ -225,10 +246,10 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
             {/* Badges */}
             <div className="flex flex-wrap gap-1.5 mb-4">
-              <span className="px-2 py-0.5 text-xs font-medium rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim uppercase tracking-wide">
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/30 text-mission-control-text-dim uppercase tracking-wide">
                 {agent.category}
               </span>
-              <span className={`px-2 py-0.5 text-xs font-medium rounded ${modelBadge.cls}`}>
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${modelBadge.cls}`}>
                 {modelBadge.label}
               </span>
             </div>
@@ -236,10 +257,10 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             {/* Capabilities */}
             {agent.capabilities.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-medium text-mission-control-text-dim mb-2">Capabilities</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Capabilities</p>
                 <div className="flex flex-wrap gap-1">
                   {agent.capabilities.map((cap, i) => (
-                    <span key={i} className="px-1.5 py-0.5 text-xs rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim">
+                    <span key={i} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/30 text-mission-control-text-dim">
                       {cap}
                     </span>
                   ))}
@@ -249,7 +270,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
             {/* Required APIs warning */}
             {agent.requiredApis.length > 0 && (
-              <Flex align="start" gap="2" className="p-3 rounded-lg bg-warning-subtle border border-warning-border text-warning text-xs mb-4">
+              <Flex align="start" gap="2" className="p-3 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-[var(--color-warning)] text-xs mb-4">
                 <Cpu size={13} className="flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium mb-0.5">Required APIs</p>
@@ -262,7 +283,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <Button
                 type="button"
                 size="2"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setStep('match')}
               >
                 Back
@@ -272,7 +293,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 size="2"
                 variant="solid"
                 onClick={() => setStep('personalize')}
-                style={{ flex: 1 }}
+                className="flex-1"
               >
                 Continue <ChevronRight size={16} />
               </Button>
@@ -289,8 +310,8 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
             {/* Role override */}
             <div className="mb-4">
-              <label className="flex items-center gap-1.5 text-xs font-medium text-mission-control-text-dim mb-1.5">
-                <Briefcase size={12} /> Their role on your team
+              <label className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1.5 flex items-center gap-1 block">
+                <Briefcase size={11} /> Their role on your team
               </label>
               <TextField.Root
                 value={role}
@@ -302,8 +323,8 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
             {/* Personality */}
             <div className="mb-4">
-              <label className="flex items-center gap-1.5 text-xs font-medium text-mission-control-text-dim mb-1.5">
-                <Bot size={12} /> Personality or working style
+              <label className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1.5 flex items-center gap-1 block">
+                <Bot size={11} /> Personality or working style
               </label>
               <TextArea
                 value={personality}
@@ -317,8 +338,8 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
             {/* User context */}
             <div className="mb-4">
-              <label className="flex items-center gap-1.5 text-xs font-medium text-mission-control-text-dim mb-1.5">
-                <User size={12} /> Your context for this agent
+              <label className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1.5 flex items-center gap-1 block">
+                <User size={11} /> Your context for this agent
               </label>
               <TextArea
                 value={userContext}
@@ -355,7 +376,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <Button
                 type="button"
                 size="2"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setStep('review')}
               >
                 Back
@@ -365,7 +386,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 size="2"
                 variant="solid"
                 onClick={() => setStep('confirm')}
-                style={{ flex: 1 }}
+                className="flex-1"
               >
                 Review &amp; Hire <ChevronRight size={15} />
               </Button>
@@ -379,7 +400,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             <p className="text-sm font-medium mb-4">Confirm hire details</p>
 
             {error && (
-              <div className="mb-4 p-3 rounded-lg bg-error-subtle border border-error-border text-error text-sm">
+              <div className="mb-4 p-3 rounded-lg bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)] text-sm">
                 {error}
               </div>
             )}
@@ -389,7 +410,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <Flex align="start" gap="3" className="px-4 py-3">
                 <Bot size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Agent</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Agent</p>
                   <p className="text-sm font-medium">{agent.name}</p>
                   <p className="text-xs text-mission-control-text-dim">{agent.description || agent.role || '—'}</p>
                 </div>
@@ -398,7 +419,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <Flex align="start" gap="3" className="px-4 py-3">
                 <Briefcase size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Role</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Role</p>
                   <p className="text-sm">{role || agent.role || 'Agent'}</p>
                 </div>
               </Flex>
@@ -407,10 +428,10 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 <Flex align="start" gap="3" className="px-4 py-3">
                   <Tag size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-1">Assigned tasks</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Assigned tasks</p>
                     <div className="flex flex-wrap gap-1">
                       {agent.capabilities.slice(0, 5).map((cap, i) => (
-                        <span key={i} className="px-1.5 py-0.5 text-xs rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim">
+                        <span key={i} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/30 text-mission-control-text-dim">
                           {cap}
                         </span>
                       ))}
@@ -422,16 +443,16 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <Flex align="start" gap="3" className="px-4 py-3">
                 <Calendar size={14} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Start date</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-0.5">Start date</p>
                   <p className="text-sm">{startDate}</p>
                 </div>
               </Flex>
               {/* Trial */}
               {trialMode && (
-                <Flex align="start" gap="3" className="px-4 py-3 bg-info-subtle/30">
-                  <FlaskConical size={14} className="text-info mt-0.5 flex-shrink-0" />
+                <Flex align="start" gap="3" className="px-4 py-3 bg-[var(--color-info)]/10">
+                  <FlaskConical size={14} className="text-[var(--color-info)] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-info mb-0.5">Trial mode</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)] mb-0.5">Trial mode</p>
                     <p className="text-sm text-mission-control-text-dim">7-day trial tag applied</p>
                   </div>
                 </Flex>
@@ -442,7 +463,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <Button
                 type="button"
                 size="2"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setStep('personalize')}
               >
                 Back
@@ -452,7 +473,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                 size="2"
                 variant="solid"
                 onClick={handleInstall}
-                style={{ flex: 1 }}
+                className="flex-1"
               >
                 <CheckCircle size={15} />
                 Confirm &amp; Hire
@@ -477,13 +498,13 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
         {/* ── Step: Done ── */}
         {step === 'done' && (
           <div className="px-6 py-10 flex flex-col items-center text-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-success-subtle border border-success-border flex items-center justify-center">
-              <CheckCircle size={32} className="text-success" />
+            <div className="w-16 h-16 rounded-2xl bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 flex items-center justify-center">
+              <CheckCircle size={32} className="text-[var(--color-success)]" />
             </div>
             <div>
               <p className="font-semibold text-lg mb-1">{agent.name} is hired!</p>
               {trialMode && (
-                <p className="text-xs text-info mb-1">7-day trial is active.</p>
+                <p className="text-xs text-[var(--color-info)] mb-1">7-day trial is active.</p>
               )}
               <p className="text-sm text-mission-control-text-dim">
                 Their workspace is ready at{' '}
@@ -503,6 +524,8 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             </Button>
           </div>
         )}
+
+        </div>{/* end step body */}
       </Box>
     </Flex>
   );

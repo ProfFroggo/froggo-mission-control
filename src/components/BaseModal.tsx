@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useCallback, ReactNode } from 'react';
 import { X } from 'lucide-react';
-import { IconButton, Button } from '@radix-ui/themes';
+import { Button } from '@radix-ui/themes';
 import { useFocusTrap } from '../hooks/useKeyboardNav';
 
 export interface BaseModalProps {
@@ -243,7 +243,7 @@ export default function BaseModal({
           aria-describedby={ariaDescribedby}
           tabIndex={-1}
           className={`
-            glass-modal rounded-xl w-full pointer-events-auto
+            glass-modal rounded-2xl w-full pointer-events-auto
             overflow-hidden flex flex-col shadow-2xl
             ${sizeClass}
             ${isClosing ? 'modal-content-exit' : 'modal-content-enter'}
@@ -256,18 +256,15 @@ export default function BaseModal({
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          {/* Floating Close Button - Enhanced visibility and responsive positioning */}
+          {/* Floating Close Button */}
           {showCloseButton && closeButtonPosition === 'floating' && (
-            <IconButton
+            <button
               onClick={handleClose}
-              size="2"
-              variant="soft"
-             
               aria-label={closeButtonLabel}
-              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 shadow-lg"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
             >
               <X size={16} />
-            </IconButton>
+            </button>
           )}
 
           {children}
@@ -322,16 +319,13 @@ export function BaseModalHeader({
         </div>
       </div>
       {showCloseButton && onClose && (
-        <IconButton
+        <button
           onClick={onClose}
-          size="2"
-          variant="ghost"
-         
           aria-label={closeButtonLabel}
-          className="flex-shrink-0"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
         >
           <X size={16} />
-        </IconButton>
+        </button>
       )}
     </div>
   );

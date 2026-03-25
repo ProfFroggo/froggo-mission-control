@@ -42,4 +42,5 @@ export const DEFERRED_CORE_MODULE_IMPORTS: Record<string, () => Promise<unknown>
   knowledge:   () => import('./knowledge'),
   projects:    () => import('./projects'),
   campaigns:   () => import('./campaigns'),
+  budget:      () => import('./budget'),
 };

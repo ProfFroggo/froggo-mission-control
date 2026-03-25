@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Save, RefreshCw, AlertTriangle, RotateCcw, Code, ChevronDown, ChevronRight } from 'lucide-react';
-import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
+import { Button, TextField, TextArea, Flex } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 
@@ -157,13 +157,13 @@ export default function ConfigTab() {
     <div className="space-y-6">
       {/* Issues Banner */}
       {issues.length > 0 && (
-        <div className="p-4 bg-warning-subtle border border-warning-border rounded-lg">
+        <div className="p-4 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg">
           <Flex align="center" gap="2" className="mb-2">
-            <AlertTriangle size={16} className="text-warning" />
-            <span className="font-medium text-warning">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
+            <AlertTriangle size={16} className="text-[var(--color-warning)]" />
+            <span className="font-medium text-[var(--color-warning)]">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
           </Flex>
           {issues.map((issue, i) => (
-            <div key={i} className="text-sm text-warning">{issue.path}: {issue.message}</div>
+            <div key={i} className="text-sm text-[var(--color-warning)]">{issue.path}: {issue.message}</div>
           ))}
         </div>
       )}
@@ -176,18 +176,25 @@ export default function ConfigTab() {
         <Button onClick={() => handleSave(true)} disabled={saving || !dirty} variant="soft" size="2">
           <RotateCcw size={16} /> Save & Restart
         </Button>
-        <Button onClick={loadConfig} variant="ghost" size="2">
+        <button
+          type="button"
+          onClick={loadConfig}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+        >
           <RefreshCw size={16} /> Reload
-        </Button>
+        </button>
         <div className="flex-1" />
-        <Button
+        <button
           onClick={() => setShowRaw(!showRaw)}
-          variant={showRaw ? 'soft' : 'ghost'}
-          size="2"
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+            showRaw
+              ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+              : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+          }`}
         >
           <Code size={16} /> Raw JSON
-        </Button>
-        {dirty && <span className="text-xs text-warning">• Unsaved changes</span>}
+        </button>
+        {dirty && <span className="text-xs text-[var(--color-warning)]">• Unsaved changes</span>}
       </Flex>
 
       {showRaw ? (

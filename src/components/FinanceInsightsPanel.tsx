@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, AlertTriangle, Lightbulb, Bell, Target, BarChart3, X, Loader2, RefreshCw, Zap } from 'lucide-react';
-import { Button, Flex, IconButton, Box } from '@radix-ui/themes';
+import { Button, Flex, Box } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { financeApi } from '../lib/api';
 
@@ -113,11 +113,11 @@ export default function FinanceInsightsPanel() {
   const getSeverityStyles = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-error-subtle border-error-border text-error';
+        return 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 text-[var(--color-error)]';
       case 'warning':
-        return 'bg-warning-subtle border-warning-border text-warning';
+        return 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30 text-[var(--color-warning)]';
       default:
-        return 'bg-info-subtle border-info-border text-info';
+        return 'bg-[var(--color-info)]/10 border-[var(--color-info)]/30 text-[var(--color-info)]';
     }
   };
 
@@ -150,20 +150,17 @@ export default function FinanceInsightsPanel() {
 
   if (error) {
     return (
-      <div className="bg-error-subtle border border-error-border rounded-lg p-4">
-        <Flex align="center" gap="2" className="text-error">
+      <div className="bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg p-4">
+        <Flex align="center" gap="2" className="text-[var(--color-error)]">
           <AlertTriangle className="w-5 h-5" />
           <span>Failed to load insights: {error}</span>
         </Flex>
-        <Button
-          size="1"
-          variant="ghost"
-          color="red"
+        <button
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mt-2"
           onClick={loadInsights}
-          className="mt-2"
         >
           Retry
-        </Button>
+        </button>
       </div>
     );
   }
@@ -182,13 +179,13 @@ export default function FinanceInsightsPanel() {
     <Box className="space-y-3">
       <Flex align="center" justify="between" className="mb-4">
         <h3 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
-          <Lightbulb className="w-5 h-5 text-warning" />
+          <Lightbulb className="w-5 h-5 text-[var(--color-warning)]" />
           AI Insights
-          <span className="px-2 py-0.5 text-xs bg-warning-subtle text-warning rounded-full">
+          <span className="px-2 py-0.5 text-xs bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full">
             {insights.length}
           </span>
           {insights.filter((i) => i.type === 'anomaly').length > 0 && (
-            <span className="px-2 py-0.5 text-xs bg-error-subtle text-error rounded-full flex items-center gap-1">
+            <span className="px-2 py-0.5 text-xs bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
               {insights.filter((i) => i.type === 'anomaly').length} anomal{insights.filter((i) => i.type === 'anomaly').length === 1 ? 'y' : 'ies'}
             </span>
@@ -239,15 +236,13 @@ export default function FinanceInsightsPanel() {
                 </div>
               </div>
             </div>
-            <IconButton
-              size="1"
-              variant="ghost"
-             
+            <button
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={() => dismissInsight(insight.id)}
               title="Dismiss insight"
             >
               <X className="w-4 h-4" />
-            </IconButton>
+            </button>
           </Flex>
         </div>
       ))}

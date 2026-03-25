@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, type ComponentType } from 'react';
-import { IconButton, Button, Box, Flex } from '@radix-ui/themes';
+import { IconButton, Box, Flex } from '@radix-ui/themes';
 import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
@@ -179,7 +179,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     )}
 
     <aside
-      className={`bg-mission-control-surface border-r border-mission-control-border flex flex-col transition-all duration-300 ease-in-out
+      className={`bg-mission-control-surface border-r border-mission-control-border flex flex-col transition-colors duration-300 ease-in-out
         fixed inset-y-0 left-0 z-40
         md:relative md:translate-x-0 md:z-0
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
@@ -188,26 +188,21 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       aria-label="Main navigation"
     >
       {/* Mobile close button inside the sidebar */}
-      <IconButton
+      <button
+        type="button"
         onClick={() => setMobileOpen(false)}
-        size="2"
-        variant="ghost"
-       
-        className="absolute top-3 right-3 md:hidden"
+        className="absolute top-3 right-3 md:hidden inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
         aria-label="Close navigation"
       >
         <X size={16} aria-hidden="true" />
-      </IconButton>
+      </button>
 
       {/* Search button */}
       <Box px="2" pt="3" pb="1">
-        <Button
+        <button
+          type="button"
           onClick={onOpenSearch}
-          variant="ghost"
-          color="gray"
-          size="2"
-         
-          className={`w-full ${expanded ? 'justify-start' : 'justify-center'}`}
+          className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50 ${expanded ? 'justify-start' : 'justify-center'}`}
           title={expanded ? undefined : 'Search (⌘K)'}
           aria-label="Search (⌘K)"
         >
@@ -220,7 +215,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               ⌘K
             </kbd>
           )}
-        </Button>
+        </button>
       </Box>
 
       {/* Navigation */}
@@ -252,10 +247,10 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                   key={id}
                   type="button"
                   onClick={() => handleNavigate(id)}
-                  className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-lg relative group transition-colors text-sm font-medium ${expanded ? '' : 'justify-center'} ${
+                  className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 relative group transition-colors text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50 ${expanded ? '' : 'justify-center'} ${
                     isActive
-                      ? 'bg-mission-control-accent/10 text-mission-control-accent'
-                      : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
+                      ? 'bg-mission-control-accent/12 text-mission-control-accent rounded-lg'
+                      : 'rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
                   }`}
                   title={expanded ? undefined : `${label} (${shortcut})`}
                   aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
@@ -274,7 +269,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                             position="inline"
                             variant={isActive ? 'secondary' : 'primary'}
                             size="sm"
-                            className={isActive ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'bg-mission-control-accent/20 text-mission-control-accent'}
+                            className="min-w-[18px] h-[18px] rounded-full text-[10px] font-bold tabular-nums flex items-center justify-center bg-mission-control-accent text-white px-1"
                           />
                         )}
                       </>
@@ -300,62 +295,53 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       <AgentActivityBar onNavigate={handleNavigate} expanded={expanded} />
 
       {/* Bottom section */}
-      <Box p="2" className="border-t border-mission-control-border space-y-1" role="group" aria-label="Settings">
+      <Box p="2" className="border-t border-mission-control-border mt-2 space-y-1" role="group" aria-label="Settings">
         {/* Action icons in a compact horizontal row */}
         <Flex align="center" justify={expanded ? 'between' : 'center'} gap="1" px="1">
           {/* Edit Panels - only visible when expanded */}
           {expanded && (
-            <IconButton
+            <button
+              type="button"
               onClick={openEditModal}
-              size="2"
-              variant="ghost"
-              color="gray"
-             
-              className="no-drag"
+              className="no-drag p-1.5 rounded-lg transition-colors text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
               title="Edit Panels (⌘⇧E)"
               aria-label="Edit Panels"
             >
               <SlidersHorizontal size={16} aria-hidden="true" />
-            </IconButton>
+            </button>
           )}
           {/* Help - only visible when expanded */}
           {expanded && onOpenHelp && (
-            <IconButton
+            <button
+              type="button"
               onClick={onOpenHelp}
-              size="2"
-              variant="ghost"
-              color="gray"
-             
-              className="no-drag"
+              className="no-drag p-1.5 rounded-lg transition-colors text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
               title="Help (⌘H)"
               aria-label="Help"
             >
               <HelpCircle size={16} aria-hidden="true" />
-            </IconButton>
+            </button>
           )}
           {/* Keyboard shortcuts — always visible */}
           {onOpenShortcuts && (
-            <IconButton
+            <button
+              type="button"
               onClick={onOpenShortcuts}
-              size="2"
-              variant="ghost"
-              color="gray"
-             
-              className="no-drag"
+              className="no-drag p-1.5 rounded-lg transition-colors text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
               title="Keyboard shortcuts (?)"
               aria-label="Keyboard shortcuts"
             >
               <Keyboard size={16} aria-hidden="true" />
-            </IconButton>
+            </button>
           )}
           {/* Settings - always visible */}
           <button
             type="button"
             onClick={() => handleNavigate('settings')}
-            className={`no-drag p-1.5 rounded-lg transition-colors ${
+            className={`no-drag p-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50 ${
               currentView === 'settings'
                 ? 'bg-mission-control-accent/10 text-mission-control-accent'
-                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
             }`}
             title="Settings (⌘,)"
             aria-label="Settings"
@@ -364,19 +350,16 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             <Settings size={16} aria-hidden="true" />
           </button>
           {/* Expand/Collapse - always visible */}
-          <IconButton
+          <button
+            type="button"
             onClick={() => setExpanded(!expanded)}
-            size="2"
-            variant="ghost"
-            color="gray"
-           
-            className="no-drag"
+            className="no-drag w-6 h-6 rounded-md flex items-center justify-center transition-colors text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
             title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
             aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
             aria-expanded={expanded}
           >
             {expanded ? <ChevronLeft size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
-          </IconButton>
+          </button>
         </Flex>
       </Box>
     </aside>

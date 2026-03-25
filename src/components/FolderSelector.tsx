@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Folder, Check, X } from 'lucide-react';
-import { IconButton, Box, Flex, Text, Heading } from '@radix-ui/themes';
+import { Box, Flex, Text, Heading } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface FolderSelectorProps {
@@ -102,13 +102,13 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
           </Box>
         </Flex>
         {onClose && (
-          <IconButton
+          <button
             onClick={onClose}
-            size="2"
-            variant="ghost"
+            aria-label="Close"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <X size={16} />
-          </IconButton>
+          </button>
         )}
       </Flex>
 

@@ -2,7 +2,7 @@
 // BudgetPanel — full-featured budget module: quarters, categories, invoices, AI chat
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Box, Flex, Button, IconButton, Select, TextField, TextArea, Checkbox } from '@radix-ui/themes';
+import { Box, Flex, Button, Select, TextField, TextArea, Checkbox } from '@radix-ui/themes';
 import {
   Wallet, Plus, Pencil, Trash2, X, RefreshCw, Upload, FileText, DollarSign,
   TrendingDown, Bot, AlertTriangle, CheckCircle, Clock, Ban,
@@ -52,9 +52,9 @@ const PALETTE = [
 ];
 
 const STATUS_CFG = {
-  pending:   { label: 'Pending',   icon: Clock,       cls: 'text-warning bg-warning/10 border-warning/30' },
-  paid:      { label: 'Paid',      icon: CheckCircle, cls: 'text-success bg-success/10 border-success/30' },
-  cancelled: { label: 'Cancelled', icon: Ban,         cls: 'text-error   bg-error/10   border-error/30'   },
+  pending:   { label: 'Pending',   icon: Clock,       cls: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30' },
+  paid:      { label: 'Paid',      icon: CheckCircle, cls: 'text-[var(--color-success)] bg-[var(--color-success)]/10 border-[var(--color-success)]/30' },
+  cancelled: { label: 'Cancelled', icon: Ban,         cls: 'text-[var(--color-error)]   bg-[var(--color-error)]/10   border-[var(--color-error)]/30'   },
 };
 
 const CHAINS = [
@@ -109,23 +109,25 @@ function StatCard({ label, value, sub, icon: Icon, accent }: {
   label: string; value: string; sub?: string; icon: React.ElementType; accent: string;
 }) {
   return (
-    <Flex align="start" gap="3" className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
-      <div className="p-2 rounded-lg shrink-0" style={{ backgroundColor: `${accent}20` }}>
-        <Icon size={16} style={{ color: accent }} />
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded-lg shrink-0" style={{ backgroundColor: `${accent}20` }}>
+          <Icon size={16} style={{ color: accent }} />
+        </div>
+        <div className="min-w-0">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-0.5">{label}</div>
+          <div className="text-2xl font-bold text-mission-control-text tabular-nums leading-tight">{value}</div>
+          {sub && <div className="text-xs text-mission-control-text-dim mt-0.5">{sub}</div>}
+        </div>
       </div>
-      <div className="min-w-0">
-        <div className="text-[11px] text-mission-control-text-dim font-medium uppercase tracking-wider mb-0.5">{label}</div>
-        <div className="text-lg font-semibold text-mission-control-text leading-none">{value}</div>
-        {sub && <div className="text-[11px] text-mission-control-text-dim mt-0.5">{sub}</div>}
-      </div>
-    </Flex>
+    </div>
   );
 }
 
 function ProgressBar({ value, color, className = '' }: { value: number; color: string; className?: string }) {
   return (
-    <div className={`h-1.5 rounded-full bg-mission-control-border overflow-hidden ${className}`}>
-      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(value, 100)}%`, backgroundColor: color }} />
+    <div className={`h-1.5 rounded-full bg-mission-control-border/40 overflow-hidden ${className}`}>
+      <div className="h-full rounded-full transition-colors duration-500" style={{ width: `${Math.min(value, 100)}%`, backgroundColor: color }} />
     </div>
   );
 }
@@ -191,9 +193,9 @@ function FileDropZone({ invoiceId, onUpload, onExtracted, existingFile, onRemove
   if (existingFile) {
     return (
       <Flex align="center" gap="2" className="p-2.5 rounded-lg border border-mission-control-border bg-mission-control-bg">
-        <FileText size={14} className="text-info shrink-0" />
+        <FileText size={14} className="text-[var(--color-info)] shrink-0" />
         <span className="flex-1 text-xs truncate text-mission-control-text">{existingFile}</span>
-        {onRemove && <IconButton type="button" variant="ghost" size="1" color="red" onClick={onRemove}><X size={13} /></IconButton>}
+        {onRemove && <button type="button" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={onRemove}><X size={13} /></button>}
       </Flex>
     );
   }
@@ -208,7 +210,7 @@ function FileDropZone({ invoiceId, onUpload, onExtracted, existingFile, onRemove
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) processFile(f); }}
-        className={`p-3 border-2 border-dashed rounded-lg cursor-pointer transition-all text-xs ${
+        className={`p-3 border-2 border-dashed rounded-lg cursor-pointer transition-colors text-xs ${
           dragging
             ? 'border-mission-control-accent bg-mission-control-accent/10'
             : 'border-mission-control-border/60 hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5'
@@ -217,12 +219,12 @@ function FileDropZone({ invoiceId, onUpload, onExtracted, existingFile, onRemove
         {extracting || uploading ? (
           <><Loader2 size={13} className="animate-spin text-mission-control-accent" /><span className="text-mission-control-accent">{extracting ? 'AI analyzing…' : 'Uploading…'}</span></>
         ) : (
-          <><Upload size={13} className="text-mission-control-text-dim" /><Sparkles size={11} className="text-warning" /><span className="text-mission-control-text-dim">Drop PDF/image or click — AI auto-fills fields</span></>
+          <><Upload size={13} className="text-mission-control-text-dim" /><Sparkles size={11} className="text-[var(--color-warning)]" /><span className="text-mission-control-text-dim">Drop PDF/image or click — AI auto-fills fields</span></>
         )}
       </Flex>
       {status && (
         <div className={`mt-1 text-[10px] px-2 py-1 rounded ${
-          status.type === 'success' ? 'bg-success/10 text-success' : status.type === 'error' ? 'bg-error/10 text-error' : 'bg-info/10 text-info'
+          status.type === 'success' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : status.type === 'error' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' : 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
         }`}>{status.msg}</div>
       )}
       <input ref={inputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp"
@@ -240,10 +242,10 @@ function PdfPreviewModal({ invoice, onClose }: { invoice: Invoice; onClose: () =
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col w-full max-w-4xl max-h-[90vh]">
+      <div className="relative bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl flex flex-col w-full max-w-4xl max-h-[90vh]">
         <Flex align="center" justify="between" className="px-5 py-3 border-b border-mission-control-border shrink-0">
           <Flex align="center" gap="2">
-            <FileText size={14} className="text-info" />
+            <FileText size={14} className="text-[var(--color-info)]" />
             <span className="text-sm font-medium text-mission-control-text">{invoice.file_name || invoice.title}</span>
           </Flex>
           <Flex align="center" gap="2">
@@ -253,9 +255,7 @@ function PdfPreviewModal({ invoice, onClose }: { invoice: Invoice; onClose: () =
             <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors">
               <ExternalLink size={11} /> Open
             </a>
-            <IconButton variant="ghost" size="1" onClick={onClose}>
-              <X size={15} />
-            </IconButton>
+            <button type="button" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={onClose}><X size={15} /></button>
           </Flex>
         </Flex>
         <div className="flex-1 overflow-hidden rounded-b-2xl min-h-[500px]">
@@ -276,13 +276,11 @@ function ModalWrap({ title, onClose, children, wide }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[90vh] w-full ${wide ? 'max-w-2xl' : 'max-w-md'}`}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl flex flex-col max-h-[90vh] w-full ${wide ? 'max-w-2xl' : 'max-w-md'}`}>
         <Flex align="center" justify="between" className="px-5 py-3.5 border-b border-mission-control-border shrink-0">
           <span className="font-semibold text-sm text-mission-control-text">{title}</span>
-          <IconButton variant="ghost" size="1" onClick={onClose}>
-            <X size={15} />
-          </IconButton>
+          <button type="button" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={onClose}><X size={15} /></button>
         </Flex>
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
       </div>
@@ -304,9 +302,9 @@ function ModalActions({ onClose, onSave, saving, label, danger }: {
 }) {
   return (
     <Flex justify="end" gap="2" className="mt-5 pt-4 border-t border-mission-control-border/50">
-      <Button variant="ghost" size="1" onClick={onClose}>
+      <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={onClose}>
         Cancel
-      </Button>
+      </button>
       <Button variant={danger ? 'soft' : 'solid'} color={danger ? 'red' : undefined} size="1" onClick={onSave} disabled={saving}>
         {saving && <Loader2 size={11} className="animate-spin" />}
         {label}
@@ -472,28 +470,24 @@ function CategoryModal({ data, quarterId, currency, onSave, onClose }: {
         {/* Preset picker */}
         {!isEdit && (
           <div>
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="1"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors text-[11px] text-mission-control-accent flex items-center gap-1"
               onClick={() => setShowPresets(p => !p)}
-              className="text-[11px] text-mission-control-accent flex items-center gap-1"
             >
               <Sparkles size={11} /> {showPresets ? 'Hide presets' : 'Start from a preset'}
-            </Button>
+            </button>
             {showPresets && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {CATEGORY_PRESETS.map(p => (
-                  <Button
+                  <button
                     key={p.name} type="button"
-                    variant="ghost"
-                    size="1"
                     onClick={() => applyPreset(p)}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-mission-control-border text-[11px] text-mission-control-text-dim"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex items-center gap-1.5 px-2 py-1 rounded-lg border border-mission-control-border text-[11px] text-mission-control-text-dim"
                   >
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
                     {p.name}
-                  </Button>
+                  </button>
                 ))}
               </div>
             )}
@@ -525,8 +519,8 @@ function CategoryModal({ data, quarterId, currency, onSave, onClose }: {
             <input type="color" value={form.color} onChange={e => setForm(p => ({ ...p, color: e.target.value }))}
               className="unstyled w-8 h-8 rounded cursor-pointer border border-mission-control-border" />
             {PALETTE.map(c => (
-              <IconButton key={c} type="button" variant="ghost" size="1" onClick={() => setForm(p => ({ ...p, color: c }))}
-                className={`w-5 h-5 rounded-full border-2 transition-all p-0 min-w-0 ${form.color === c ? 'border-white scale-110' : 'border-transparent'}`}
+              <button key={c} type="button" onClick={() => setForm(p => ({ ...p, color: c }))}
+                className={`inline-flex items-center justify-center w-5 h-5 rounded-full border-2 transition-colors p-0 min-w-0 ${form.color === c ? 'border-white scale-110' : 'border-transparent'}`}
                 style={{ backgroundColor: c }} />
             ))}
           </div>
@@ -540,9 +534,9 @@ function CategoryModal({ data, quarterId, currency, onSave, onClose }: {
               {form.tags.map(t => (
                 <span key={t} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border border-mission-control-accent/40 bg-mission-control-accent/10 text-mission-control-accent">
                   {t}
-                  <IconButton type="button" variant="ghost" size="1" onClick={() => removeTag(t)} className="leading-none w-3 h-3 min-w-0">
+                  <button type="button" className="inline-flex items-center justify-center leading-none w-3 h-3 min-w-0 rounded transition-colors text-mission-control-text-dim hover:text-mission-control-text" onClick={() => removeTag(t)}>
                     <X size={9} />
-                  </IconButton>
+                  </button>
                 </span>
               ))}
             </div>
@@ -560,10 +554,10 @@ function CategoryModal({ data, quarterId, currency, onSave, onClose }: {
           {/* Suggested tags */}
           <div className="flex flex-wrap gap-1 mt-1.5">
             {ALL_PRESET_TAGS.filter(t => !form.tags.includes(t) && (!tagInput || t.includes(tagInput.toLowerCase()))).slice(0, 12).map(t => (
-              <Button key={t} type="button" variant="ghost" size="1" onClick={() => addTag(t)}
-                className="px-1.5 py-0.5 rounded text-[10px] border border-mission-control-border text-mission-control-text-dim">
+              <button key={t} type="button" onClick={() => addTag(t)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors px-1.5 py-0.5 rounded text-[10px] border border-mission-control-border text-mission-control-text-dim">
                 + {t}
-              </Button>
+              </button>
             ))}
           </div>
         </div>
@@ -662,7 +656,7 @@ function InvoiceModal({ data, quarterId, currency, categories, allInvoices, onSa
         </Field>
 
         {dupWarning && (
-          <Flex align="center" gap="2" className="text-xs text-warning bg-warning/10 border border-warning/20 rounded-lg px-3 py-2">
+          <Flex align="center" gap="2" className="text-xs text-[var(--color-warning)] bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/20 rounded-lg px-3 py-2">
             <AlertTriangle size={11} /> {dupWarning}
           </Flex>
         )}
@@ -1233,14 +1227,11 @@ export default function BudgetPanel() {
     <div className="flex h-full flex-col bg-mission-control-bg overflow-hidden">
       {/* ── Header ── */}
       <div className="border-b border-mission-control-border bg-mission-control-surface shrink-0">
-        <Flex align="center" gap="3" className="px-6 py-4">
-          <div className="p-2 bg-mission-control-accent/20 rounded-lg shrink-0">
-            <Wallet size={20} className="text-mission-control-accent" />
-          </div>
-          <Box className="flex-1 min-w-0">
-            <h1 className="text-xl font-semibold text-mission-control-text">Budget</h1>
-            <p className="text-xs text-mission-control-text-dim">Quarter tracking, invoices &amp; finance analysis</p>
-          </Box>
+        <Flex align="center" justify="between" className="px-4 py-3">
+          <Flex align="center" gap="2">
+            <Wallet size={16} className="text-mission-control-accent" />
+            <span className="text-sm font-semibold text-mission-control-text">Budget</span>
+          </Flex>
 
           {quarters.length > 0 && (
             <Select.Root value={activeQuarterId || ''} onValueChange={val => setActiveQuarterId(val)}>
@@ -1255,16 +1246,16 @@ export default function BudgetPanel() {
 
           <Flex align="center" gap="2">
             {activeQuarterId && (
-              <IconButton variant="ghost" size="1" onClick={() => setQuarterModal({ mode: 'edit', data: activeQuarter || undefined })} title="Edit quarter">
+              <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => setQuarterModal({ mode: 'edit', data: activeQuarter || undefined })} title="Edit quarter">
                 <Pencil size={13} />
-              </IconButton>
+              </button>
             )}
-            <IconButton variant="ghost" size="1" onClick={() => load()} title="Refresh">
+            <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => load()} title="Refresh">
               <RefreshCw size={14} />
-            </IconButton>
-            <Button variant="ghost" size="1" onClick={() => { setImportModal(true); setImportPreview(null); setImportStatus(null); }} title="Import budget from Excel">
+            </button>
+            <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => { setImportModal(true); setImportPreview(null); setImportStatus(null); }} title="Import budget from Excel">
               <Upload size={12} /> Import
-            </Button>
+            </button>
             <Button variant="solid" size="1" onClick={() => setQuarterModal({ mode: 'create' })}>
               <Plus size={12} /> New Quarter
             </Button>
@@ -1272,17 +1263,17 @@ export default function BudgetPanel() {
         </Flex>
 
         {/* Tabs */}
-        <Flex className="px-6">
+        <div className="flex px-4">
           {tabItems.map(t => (
-            <Button key={t.id} variant="ghost" size="1" onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-3 py-2.5 font-medium border-b-2 -mb-px transition-colors rounded-none ${
+            <button key={t.id} type="button" onClick={() => setTab(t.id)}
+              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                 tab === t.id ? 'border-mission-control-accent text-mission-control-accent' : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
-              <t.icon size={12} /> {t.label}
-            </Button>
+              <t.icon size={13} /> {t.label}
+            </button>
           ))}
-        </Flex>
+        </div>
       </div>
 
       {/* ── Content ── */}
@@ -1305,19 +1296,19 @@ export default function BudgetPanel() {
                 <>
                   {/* Breadcrumb */}
                   <Flex align="center" justify="between">
-                    <Button variant="ghost" size="1" onClick={() => setDrillQuarterId(null)}>
+                    <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => setDrillQuarterId(null)}>
                       <ChevronLeft size={14} /> All Quarters
-                    </Button>
+                    </button>
                     <Flex align="center" gap="2">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                        drillQuarter.status === 'active' ? 'bg-success/10 text-success' : drillQuarter.status === 'closed' ? 'bg-muted-subtle text-muted' : 'bg-info/10 text-info'
+                        drillQuarter.status === 'active' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : drillQuarter.status === 'closed' ? 'bg-mission-control-border/40 text-mission-control-text-dim' : 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
                       }`}>{drillQuarter.status}</span>
-                      <IconButton variant="ghost" size="1" onClick={() => setQuarterModal({ mode: 'edit', data: drillQuarter })} title="Edit quarter">
+                      <button type="button" onClick={() => setQuarterModal({ mode: 'edit', data: drillQuarter })} title="Edit quarter" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                         <Pencil size={12} />
-                      </IconButton>
-                      <IconButton variant="ghost" size="1" color="red" onClick={() => setConfirmDelete({ type: 'quarter', id: drillQuarter.id, label: drillQuarter.name })} title="Delete quarter">
+                      </button>
+                      <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => setConfirmDelete({ type: 'quarter', id: drillQuarter.id, label: drillQuarter.name })} title="Delete quarter">
                         <Trash2 size={12} />
-                      </IconButton>
+                      </button>
                     </Flex>
                   </Flex>
 
@@ -1350,7 +1341,7 @@ export default function BudgetPanel() {
                       {dPlanned > 0 && (
                         <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
                           <Flex align="center" justify="between" className="text-xs mb-2">
-                            <span className="text-mission-control-text-dim font-medium">Budget Utilization</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Budget Utilization</span>
                             <span className="font-semibold" style={{ color: progressColor(dUsedPct) }}>{dUsedPct}%</span>
                           </Flex>
                           <ProgressBar value={dUsedPct} color={progressColor(dUsedPct)} />
@@ -1366,8 +1357,8 @@ export default function BudgetPanel() {
                       {drillChartData.length > 0 && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                           <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
-                            <div className="text-xs font-semibold text-mission-control-text mb-3 flex items-center gap-1.5">
-                              <BarChart3 size={13} className="text-mission-control-accent" /> Planned vs Actual
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-1.5">
+                              <BarChart3 size={11} className="text-mission-control-accent" /> Planned vs Actual
                             </div>
                             <ResponsiveContainer width="100%" height={180}>
                               <BarChart data={drillChartData} barGap={2} barCategoryGap="30%">
@@ -1383,8 +1374,8 @@ export default function BudgetPanel() {
                           </div>
                           {drillPieData.length > 0 && (
                             <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
-                              <div className="text-xs font-semibold text-mission-control-text mb-3 flex items-center gap-1.5">
-                                <PieChartIcon size={13} className="text-mission-control-accent" /> Spend Breakdown
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-1.5">
+                                <PieChartIcon size={11} className="text-mission-control-accent" /> Spend Breakdown
                               </div>
                               <ResponsiveContainer width="100%" height={180}>
                                 <RePieChart>
@@ -1404,7 +1395,7 @@ export default function BudgetPanel() {
                       {drillCategories.length > 0 && (
                         <div className="rounded-xl border border-mission-control-border bg-mission-control-surface">
                           <div className="px-4 py-3 border-b border-mission-control-border">
-                            <span className="text-xs font-semibold text-mission-control-text">Budget Allocation</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Budget Allocation</span>
                           </div>
                           <div className="divide-y divide-mission-control-border/50">
                             {drillCategories.map(cat => {
@@ -1442,20 +1433,20 @@ export default function BudgetPanel() {
                         <div className="rounded-xl border border-mission-control-border bg-mission-control-surface">
                           <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border">
                             <span className="text-xs font-semibold text-mission-control-text">Invoices ({drillInvoices.length})</span>
-                            <Button variant="ghost" size="1" onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('invoices'); setDrillQuarterId(null); }}>
+                            <button type="button" onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('invoices'); setDrillQuarterId(null); }} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                               View All <ChevronLeft size={10} className="rotate-180" />
-                            </Button>
+                            </button>
                           </Flex>
                           <div className="divide-y divide-mission-control-border/50 max-h-64 overflow-y-auto">
                             {drillInvoices.slice(0, 20).map(inv => (
                               <Flex key={inv.id} align="center" gap="3" className="px-4 py-2.5 text-xs">
-                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: inv.category_color || '#6366f160' }} />
+                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: inv.category_color || 'var(--mission-control-accent)' }} />
                                 <div className="flex-1 min-w-0">
                                   <div className="font-medium text-mission-control-text truncate">{inv.title}</div>
                                   {inv.vendor && <div className="text-[10px] text-mission-control-text-dim">{inv.vendor}</div>}
                                 </div>
                                 <span className="font-medium text-mission-control-text shrink-0">{fmt(inv.amount, inv.currency)}</span>
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium border shrink-0 ${STATUS_CFG[inv.status].cls}`}>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0 ${STATUS_CFG[inv.status].cls}`}>
                                   {STATUS_CFG[inv.status].label}
                                 </span>
                               </Flex>
@@ -1474,15 +1465,15 @@ export default function BudgetPanel() {
                         <Button variant="solid" size="1" onClick={() => { setActiveQuarterId(drillQuarter.id); setInvoiceModal({ mode: 'create' }); }}>
                           <Plus size={12} /> Add Invoice
                         </Button>
-                        <Button variant="ghost" size="1" onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('categories'); setCategoryModal({ mode: 'create' }); setDrillQuarterId(null); }}>
+                        <button type="button" onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('categories'); setCategoryModal({ mode: 'create' }); setDrillQuarterId(null); }} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                           <Plus size={12} /> Add Category
-                        </Button>
-                        <Button variant="ghost" size="1" onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('invoices'); setDrillQuarterId(null); }}>
+                        </button>
+                        <button type="button" onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('invoices'); setDrillQuarterId(null); }} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                           <FileText size={12} /> Manage Invoices
-                        </Button>
-                        <Button variant="ghost" size="1" onClick={() => setTab('chat')}>
+                        </button>
+                        <button type="button" onClick={() => setTab('chat')} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                           <Bot size={12} /> Finance Agent
-                        </Button>
+                        </button>
                       </div>
                     </>
                   )}
@@ -1515,8 +1506,8 @@ export default function BudgetPanel() {
                 {/* ── Year-by-year breakdown ── */}
                 {yearGroups.length > 1 && (
                   <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
-                    <div className="text-xs font-semibold text-mission-control-text mb-3 flex items-center gap-1.5">
-                      <BarChart3 size={13} className="text-mission-control-accent" /> Year by Year
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-1.5">
+                      <BarChart3 size={11} className="text-mission-control-accent" /> Year by Year
                     </div>
                     <div className="space-y-2.5">
                       {yearGroups.map(yg => {
@@ -1544,7 +1535,7 @@ export default function BudgetPanel() {
                       <div
                         key={q.id}
                         onClick={() => setDrillQuarterId(q.id)}
-                        className={`rounded-xl border bg-mission-control-surface p-4 cursor-pointer hover:border-mission-control-accent/50 transition-all group relative ${
+                        className={`rounded-xl border bg-mission-control-surface p-4 cursor-pointer hover:border-mission-control-accent/50 transition-colors group relative ${
                           q.id === activeQuarterId ? 'border-mission-control-accent/60' : 'border-mission-control-border'
                         }`}
                       >
@@ -1556,10 +1547,10 @@ export default function BudgetPanel() {
                               {q.id === activeQuarterId && (
                                 <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-mission-control-accent/15 text-mission-control-accent rounded-full">Current</span>
                               )}
-                              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${
-                                q.status === 'active' ? 'bg-success/10 text-success' :
-                                q.status === 'closed' ? 'bg-mission-control-border/60 text-mission-control-text-dim' :
-                                'bg-info/10 text-info'
+                              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                                q.status === 'active' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
+                                q.status === 'closed' ? 'bg-mission-control-border/40 text-mission-control-text-dim' :
+                                'bg-[var(--color-info)]/10 text-[var(--color-info)]'
                               }`}>{q.status}</span>
                             </div>
                             <p className="text-[10px] text-mission-control-text-dim mt-0.5">
@@ -1569,12 +1560,12 @@ export default function BudgetPanel() {
                             </p>
                           </div>
                           <Flex gap="1" className="shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <IconButton variant="ghost" size="1" onClick={e => { e.stopPropagation(); setActiveQuarterId(q.id); setQuarterModal({ mode: 'edit', data: q }); }} title="Edit">
+                            <button type="button" onClick={e => { e.stopPropagation(); setActiveQuarterId(q.id); setQuarterModal({ mode: 'edit', data: q }); }} title="Edit" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                               <Pencil size={11} />
-                            </IconButton>
-                            <IconButton variant="ghost" size="1" color="red" onClick={e => { e.stopPropagation(); setConfirmDelete({ type: 'quarter', id: q.id, label: q.name }); }} title="Delete">
+                            </button>
+                            <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={e => { e.stopPropagation(); setConfirmDelete({ type: 'quarter', id: q.id, label: q.name }); }} title="Delete">
                               <Trash2 size={11} />
-                            </IconButton>
+                            </button>
                           </Flex>
                         </Flex>
 
@@ -1590,7 +1581,7 @@ export default function BudgetPanel() {
                           </div>
                           <div>
                             <div className="text-[10px] text-mission-control-text-dim">Remaining</div>
-                            <div className={`text-xs font-semibold ${qRemaining < 0 ? 'text-error' : 'text-success'}`}>
+                            <div className={`text-xs font-semibold ${qRemaining < 0 ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'}`}>
                               {fmt(Math.abs(qRemaining), q.currency)}{qRemaining < 0 ? ' over' : ''}
                             </div>
                           </div>
@@ -1611,14 +1602,14 @@ export default function BudgetPanel() {
                   })}
 
                   {/* New Quarter card */}
-                  <Button
-                    variant="ghost"
+                  <button
+                    type="button"
                     onClick={() => setQuarterModal({ mode: 'create' })}
-                    className="rounded-xl border-2 border-dashed border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-surface/50 p-4 flex flex-col items-center justify-center gap-2 text-mission-control-text-dim hover:text-mission-control-text transition-all min-h-[160px] w-full h-full"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors rounded-xl border-2 border-dashed border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-surface/50 p-4 flex flex-col items-center justify-center gap-2 text-mission-control-text-dim hover:text-mission-control-text transition-colors min-h-[160px] w-full h-full"
                   >
                     <Plus size={24} />
                     <span className="text-sm font-medium">New Quarter</span>
-                  </Button>
+                  </button>
                 </div>
               </>
             )}
@@ -1638,7 +1629,7 @@ export default function BudgetPanel() {
             {globalDragging && (
               <div className="absolute inset-0 z-20 flex items-center justify-center bg-mission-control-bg/90 border-2 border-dashed border-mission-control-accent rounded-xl m-2">
                 <div className="text-center">
-                  <Sparkles size={32} className="text-warning mx-auto mb-2" />
+                  <Sparkles size={32} className="text-[var(--color-warning)] mx-auto mb-2" />
                   <div className="text-lg font-semibold text-mission-control-accent">Drop invoices here</div>
                   <div className="text-sm text-mission-control-text-dim">Gemini AI will auto-extract all fields</div>
                 </div>
@@ -1656,7 +1647,7 @@ export default function BudgetPanel() {
             )}
 
             {/* Toolbar */}
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-mission-control-border/50 bg-mission-control-surface/60 shrink-0 flex-wrap">
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-mission-control-border/50 bg-mission-control-surface shrink-0 flex-wrap">
               <div className="relative flex-1 min-w-32">
                 <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none z-10" />
                 <TextField.Root
@@ -1668,15 +1659,15 @@ export default function BudgetPanel() {
               </div>
 
               {/* Status filter */}
-              <Flex className="rounded-lg border border-mission-control-border overflow-hidden">
+              <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
                 {(['all', 'pending', 'paid', 'cancelled'] as const).map(f => (
-                  <Button key={f} variant="ghost" size="1" onClick={() => setStatusFilter(f)}
-                    className={`px-2 py-1 capitalize rounded-none transition-colors ${
-                      statusFilter === f ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                  <button key={f} type="button" onClick={() => setStatusFilter(f)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-colors ${
+                      statusFilter === f ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
                     }`}
-                  >{f}</Button>
+                  >{f}</button>
                 ))}
-              </Flex>
+              </div>
 
               {/* Category filter */}
               <Select.Root value={categoryFilter || '__all__'} onValueChange={val => setCategoryFilter(val === '__all__' ? '' : val)}>
@@ -1688,17 +1679,21 @@ export default function BudgetPanel() {
               </Select.Root>
 
               {/* All quarters toggle */}
-              <Button
-                variant={showAllQuarters ? 'soft' : 'ghost'}
-                size="1"
+              <button
+                type="button"
                 onClick={() => { setShowAllQuarters(p => !p); setSelectedIds(new Set()); }}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  showAllQuarters
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 {showAllQuarters ? 'All Time' : activeQuarter?.name || 'Quarter'}
-              </Button>
+              </button>
 
-              <Button variant="ghost" size="1" onClick={exportInvoicesCSV} title="Export to CSV">
+              <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={exportInvoicesCSV} title="Export to CSV">
                 <Download size={11} /> Export
-              </Button>
+              </button>
               <Button variant="solid" size="1" onClick={() => setInvoiceModal({ mode: 'create' })}>
                 <Plus size={11} /> Invoice
               </Button>
@@ -1711,13 +1706,13 @@ export default function BudgetPanel() {
                 <Flex gap="2" className="ml-auto">
                   <Button variant="soft" color="green" size="1" onClick={() => handleBulkStatus('paid')} disabled={bulkLoading}>Mark Paid</Button>
                   <Button variant="soft" color="yellow" size="1" onClick={() => handleBulkStatus('pending')} disabled={bulkLoading}>Mark Pending</Button>
-                  <Button variant="ghost" size="1" onClick={() => handleBulkStatus('cancelled')} disabled={bulkLoading}>Cancel</Button>
+                  <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => handleBulkStatus('cancelled')} disabled={bulkLoading}>Cancel</button>
                   <Button variant="soft" color="red" size="1" onClick={handleBulkDelete} disabled={bulkLoading}>
                     {bulkLoading ? <Loader2 size={10} className="animate-spin" /> : 'Delete'}
                   </Button>
-                  <IconButton variant="ghost" size="1" onClick={() => setSelectedIds(new Set())}>
+                  <button type="button" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => setSelectedIds(new Set())}>
                     <X size={10} />
-                  </IconButton>
+                  </button>
                 </Flex>
               </Flex>
             )}
@@ -1734,7 +1729,7 @@ export default function BudgetPanel() {
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-mission-control-surface border-b border-mission-control-border">
                     <tr>
-                      <th className="w-8 px-3 py-2 text-left">
+                      <th className="w-8 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
                         <Checkbox
                           checked={selectedIds.size === displayInvoices.length && displayInvoices.length > 0}
                           onCheckedChange={checked => setSelectedIds(checked ? new Set(displayInvoices.map(i => i.id)) : new Set())}
@@ -1742,16 +1737,16 @@ export default function BudgetPanel() {
                         />
                       </th>
                       {['Invoice', 'Vendor', 'Amount', 'Date', 'Category', 'Status', ''].map(h => (
-                        <th key={h} className="px-2 py-2 text-left font-medium text-mission-control-text-dim text-[10px] uppercase tracking-wider">{h}</th>
+                        <th key={h} className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-mission-control-border/30">
+                  <tbody>
                     {displayInvoices.map(inv => {
                       const S = STATUS_CFG[inv.status];
                       const explorerUrl = inv.tx_hash && inv.tx_chain ? getExplorerUrl(inv.tx_hash, inv.tx_chain) : null;
                       return (
-                        <tr key={inv.id} className={`hover:bg-mission-control-surface/50 transition-colors ${selectedIds.has(inv.id) ? 'bg-mission-control-accent/5' : ''}`}>
+                        <tr key={inv.id} className={`border-b border-mission-control-border/40 last:border-0 hover:bg-mission-control-border/10 transition-colors ${selectedIds.has(inv.id) ? 'bg-mission-control-accent/5' : ''}`}>
                           <td className="px-3 py-2">
                             <Checkbox
                               checked={selectedIds.has(inv.id)}
@@ -1764,17 +1759,17 @@ export default function BudgetPanel() {
                             {inv.invoice_number && <div className="text-[10px] text-mission-control-text-dim">#{inv.invoice_number}</div>}
                           </td>
                           <td className="px-2 py-2 text-mission-control-text-dim truncate max-w-[120px]">{inv.vendor || '—'}</td>
-                          <td className="px-2 py-2 font-medium text-mission-control-text whitespace-nowrap">
+                          <td className="px-2 py-2 font-medium text-mission-control-text whitespace-nowrap tabular-nums font-mono">
                             {fmt(inv.amount, inv.currency)}
                           </td>
                           <td className="px-2 py-2 text-mission-control-text-dim whitespace-nowrap">{fmtDate(inv.date)}</td>
                           <td className="px-2 py-2">
                             {inv.category_name ? (
                               <span className="flex items-center gap-1 text-[10px]">
-                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: inv.category_color || '#6366f1' }} />
+                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: inv.category_color || 'var(--mission-control-accent)' }} />
                                 <span className="truncate max-w-[80px]">{inv.category_name}</span>
                               </span>
-                            ) : <span className="text-mission-control-text-dim/50">—</span>}
+                            ) : <span className="text-mission-control-text-dim/70">—</span>}
                           </td>
                           <td className="px-2 py-2">
                             <Select.Root value={inv.status} onValueChange={val => handleInvoiceStatus(inv.id, val)}>
@@ -1789,9 +1784,9 @@ export default function BudgetPanel() {
                           <td className="px-2 py-2">
                             <Flex align="center" gap="1">
                               {inv.file_name && (
-                                <IconButton variant="ghost" size="1" onClick={() => setPdfPreview(inv)} title="View document">
+                                <button type="button" onClick={() => setPdfPreview(inv)} title="View document" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                                   <Eye size={11} />
-                                </IconButton>
+                                </button>
                               )}
                               {explorerUrl && (
                                 <a href={explorerUrl} target="_blank" rel="noopener noreferrer" title={`View on explorer: ${truncateHash(inv.tx_hash!)}`}
@@ -1799,12 +1794,12 @@ export default function BudgetPanel() {
                                   <Link2 size={11} />
                                 </a>
                               )}
-                              <IconButton variant="ghost" size="1" onClick={() => setInvoiceModal({ mode: 'edit', data: inv })}>
+                              <button type="button" onClick={() => setInvoiceModal({ mode: 'edit', data: inv })} className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                                 <Pencil size={11} />
-                              </IconButton>
-                              <IconButton variant="ghost" size="1" color="red" onClick={() => setConfirmDelete({ type: 'invoice', id: inv.id, label: inv.title })}>
+                              </button>
+                              <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => setConfirmDelete({ type: 'invoice', id: inv.id, label: inv.title })}>
                                 <Trash2 size={11} />
-                              </IconButton>
+                              </button>
                             </Flex>
                           </td>
                         </tr>
@@ -1816,10 +1811,10 @@ export default function BudgetPanel() {
             </div>
 
             {/* Footer stats */}
-            <Flex align="center" gap="4" className="shrink-0 px-4 py-2 border-t border-mission-control-border/50 bg-mission-control-surface/40 text-[10px] text-mission-control-text-dim">
+            <Flex align="center" gap="4" className="shrink-0 px-4 py-2 border-t border-mission-control-border/50 bg-mission-control-surface text-[10px] text-mission-control-text-dim">
               <span>{displayInvoices.length} invoices</span>
               <span>Total: <strong className="text-mission-control-text">{fmt(displayInvoices.filter(i => i.status !== 'cancelled').reduce((s, i) => s + i.amount, 0), currency)}</strong></span>
-              <span>Paid: <strong className="text-success">{fmt(displayInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0), currency)}</strong></span>
+              <span>Paid: <strong className="text-[var(--color-success)]">{fmt(displayInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0), currency)}</strong></span>
               <span className="ml-auto">Drop PDF/images to bulk-import with AI extraction</span>
             </Flex>
           </div>
@@ -1843,20 +1838,22 @@ export default function BudgetPanel() {
               const allTags = Array.from(new Set(categories.flatMap(c => c.tags || []))).sort();
               return (
                 <div className="flex flex-wrap gap-1.5 mb-4">
-                  <Button
-                    variant={!tagFilter ? 'solid' : 'ghost'}
-                    size="1"
+                  <button
+                    type="button"
                     onClick={() => setTagFilter('')}
-                    className="rounded-full"
-                  >All</Button>
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors ${
+                      !tagFilter ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                    }`}
+                  >All</button>
                   {allTags.map(t => (
-                    <Button
+                    <button
                       key={t}
-                      variant={tagFilter === t ? 'solid' : 'ghost'}
-                      size="1"
+                      type="button"
                       onClick={() => setTagFilter(tagFilter === t ? '' : t)}
-                      className="rounded-full"
-                    >{t}</Button>
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors ${
+                        tagFilter === t ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                      }`}
+                    >{t}</button>
                   ))}
                 </div>
               );
@@ -1892,8 +1889,8 @@ export default function BudgetPanel() {
                           <div className="text-[10px] text-mission-control-text-dim">{cat.invoice_count || 0} invoices</div>
                         </Box>
                         <Flex gap="1" className="shrink-0">
-                          <IconButton variant="ghost" size="1" onClick={() => setCategoryModal({ mode: 'edit', data: cat })} title="Edit"><Pencil size={11} /></IconButton>
-                          <IconButton variant="ghost" size="1" color="red" onClick={() => setConfirmDelete({ type: 'category', id: cat.id, label: cat.name })} title="Delete"><Trash2 size={11} /></IconButton>
+                          <button type="button" onClick={() => setCategoryModal({ mode: 'edit', data: cat })} title="Edit" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"><Pencil size={11} /></button>
+                          <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => setConfirmDelete({ type: 'category', id: cat.id, label: cat.name })} title="Delete"><Trash2 size={11} /></button>
                         </Flex>
                       </Flex>
 
@@ -1909,7 +1906,7 @@ export default function BudgetPanel() {
                         </div>
                         <div>
                           <div className="text-[10px] text-mission-control-text-dim">Remaining</div>
-                          <div className={`text-xs font-semibold ${remaining < 0 ? 'text-error' : 'text-success'}`}>{fmt(Math.abs(remaining), currency)}{remaining < 0 ? ' over' : ''}</div>
+                          <div className={`text-xs font-semibold ${remaining < 0 ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'}`}>{fmt(Math.abs(remaining), currency)}{remaining < 0 ? ' over' : ''}</div>
                         </div>
                       </div>
 
@@ -1917,8 +1914,8 @@ export default function BudgetPanel() {
                       <div>
                         <Flex justify="between" className="text-[10px] mb-1">
                           <span className="text-mission-control-text-dim">{usedP}% used</span>
-                          {usedP >= 100 && <span className="text-error font-medium">Over budget!</span>}
-                          {usedP >= 80 && usedP < 100 && <span className="text-warning font-medium">Caution</span>}
+                          {usedP >= 100 && <span className="text-[var(--color-error)] font-medium">Over budget!</span>}
+                          {usedP >= 80 && usedP < 100 && <span className="text-[var(--color-warning)] font-medium">Caution</span>}
                         </Flex>
                         <ProgressBar value={usedP} color={progressColor(usedP)} />
                       </div>
@@ -1926,8 +1923,8 @@ export default function BudgetPanel() {
                       {/* Paid / Pending split */}
                       {(paidAmt > 0 || pendingAmt > 0) && (
                         <Flex gap="3" className="text-[10px]">
-                          <span className="flex items-center gap-1 text-success"><CheckCircle size={9} /> {fmt(paidAmt, currency)} paid</span>
-                          <span className="flex items-center gap-1 text-warning"><Clock size={9} /> {fmt(pendingAmt, currency)} pending</span>
+                          <span className="flex items-center gap-1 text-[var(--color-success)]"><CheckCircle size={9} /> {fmt(paidAmt, currency)} paid</span>
+                          <span className="flex items-center gap-1 text-[var(--color-warning)]"><Clock size={9} /> {fmt(pendingAmt, currency)} pending</span>
                         </Flex>
                       )}
 
@@ -1947,7 +1944,7 @@ export default function BudgetPanel() {
                       {/* Top vendors */}
                       {topVendors.length > 0 && (
                         <div className="border-t border-mission-control-border/50 pt-2">
-                          <div className="text-[10px] text-mission-control-text-dim font-medium mb-1.5">Top Vendors</div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1.5">Top Vendors</div>
                           <div className="space-y-1">
                             {topVendors.map((v, vi) => {
                               const vPct = pct(v.amount, cat.actual || 1);
@@ -1970,15 +1967,16 @@ export default function BudgetPanel() {
                       {cat.tags && cat.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {cat.tags.map(t => (
-                            <Button
+                            <button
                               key={t}
-                              variant={tagFilter === t ? 'solid' : 'ghost'}
-                              size="1"
+                              type="button"
                               onClick={() => setTagFilter(tagFilter === t ? '' : t)}
-                              className="rounded-full px-1.5 py-0.5 text-[10px]"
+                              className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                                tagFilter === t ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                              }`}
                             >
                               {t}
-                            </Button>
+                            </button>
                           ))}
                         </div>
                       )}
@@ -1990,12 +1988,12 @@ export default function BudgetPanel() {
 
                       {/* View invoices action */}
                       <Flex align="center" justify="between" className="border-t border-mission-control-border/50 pt-2">
-                        <Button variant="ghost" size="1" onClick={() => { setCategoryFilter(cat.id); setTab('invoices'); }}>
+                        <button type="button" onClick={() => { setCategoryFilter(cat.id); setTab('invoices'); }} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                           <FileText size={10} /> View invoices
-                        </Button>
-                        <Button variant="ghost" size="1" onClick={() => { setActiveQuarterId(cat.quarter_id); setCategoryFilter(cat.id); setTab('invoices'); setInvoiceModal({ mode: 'create' }); }}>
+                        </button>
+                        <button type="button" onClick={() => { setActiveQuarterId(cat.quarter_id); setCategoryFilter(cat.id); setTab('invoices'); setInvoiceModal({ mode: 'create' }); }} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                           <Plus size={10} /> Add invoice
-                        </Button>
+                        </button>
                       </Flex>
                     </div>
                   );
@@ -2053,20 +2051,20 @@ export default function BudgetPanel() {
                 <p className="text-xs text-mission-control-text-dim">Upload an Excel or CSV file. AI will automatically extract budget categories and quarterly allocations.</p>
                 <div
                   onClick={() => importFileRef.current?.click()}
-                  className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-mission-control-border/60 rounded-xl cursor-pointer hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-all"
+                  className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-mission-control-border/60 rounded-xl cursor-pointer hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-colors"
                 >
                   {isImporting ? (
                     <><Loader2 size={24} className="animate-spin text-mission-control-accent" /><span className="text-sm text-mission-control-accent">{importStatus}</span></>
                   ) : (
                     <>
-                      <Flex align="center" gap="2"><Upload size={20} className="text-mission-control-text-dim" /><Sparkles size={16} className="text-warning" /></Flex>
+                      <Flex align="center" gap="2"><Upload size={20} className="text-mission-control-text-dim" /><Sparkles size={16} className="text-[var(--color-warning)]" /></Flex>
                       <div className="text-sm text-mission-control-text">Drop Excel file or click to browse</div>
                       <div className="text-xs text-mission-control-text-dim">Supports .xlsx, .xls, .csv — AI auto-extracts budget structure</div>
                     </>
                   )}
                 </div>
                 {importStatus && !isImporting && (
-                  <p className="text-xs text-error text-center">{importStatus}</p>
+                  <p className="text-xs text-[var(--color-error)] text-center">{importStatus}</p>
                 )}
                 <input ref={importFileRef} type="file" className="hidden" accept=".xlsx,.xls,.csv"
                   onChange={handleImportFile} />
@@ -2080,11 +2078,11 @@ export default function BudgetPanel() {
                   </div>
                   <Flex className="rounded-lg border border-mission-control-border overflow-hidden">
                     {(['quarterly', 'annual'] as const).map(m => (
-                      <Button key={m} variant="ghost" size="1" onClick={() => setImportMode(m)}
-                        className={`px-3 py-1.5 capitalize rounded-none transition-colors ${importMode === m ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+                      <button key={m} type="button" onClick={() => setImportMode(m)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors px-3 py-1.5 capitalize rounded-none ${importMode === m ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'}`}
                       >
                         {m === 'quarterly' ? `Quarterly (${importPreview.quarterlyView.length} quarters)` : `Annual (1 period)`}
-                      </Button>
+                      </button>
                     ))}
                   </Flex>
                 </Flex>
@@ -2116,9 +2114,9 @@ export default function BudgetPanel() {
                 )}
 
                 <Flex align="center" justify="end" gap="2" className="pt-1">
-                  <Button variant="ghost" size="1" onClick={() => setImportPreview(null)}>
+                  <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => setImportPreview(null)}>
                     Back
-                  </Button>
+                  </button>
                   <Button variant="solid" size="1" onClick={handleConfirmImport} disabled={isImporting}>
                     {isImporting ? <><Loader2 size={11} className="animate-spin" /> Importing…</> : <><CheckCircle size={11} /> Import Budget</>}
                   </Button>
@@ -2133,8 +2131,8 @@ export default function BudgetPanel() {
       {confirmDelete && (
         <ModalWrap title={`Delete ${confirmDelete.type}?`} onClose={() => setConfirmDelete(null)}>
           <div className="space-y-4">
-            <Flex align="start" gap="3" className="p-3 bg-error/5 border border-error/20 rounded-lg">
-              <AlertTriangle size={16} className="text-error shrink-0 mt-0.5" />
+            <Flex align="start" gap="3" className="p-3 bg-[var(--color-error)]/5 border border-[var(--color-error)]/20 rounded-lg">
+              <AlertTriangle size={16} className="text-[var(--color-error)] shrink-0 mt-0.5" />
               <div className="text-sm text-mission-control-text">
                 <strong>{confirmDelete.label}</strong> will be permanently deleted.
                 {confirmDelete.type === 'quarter' && ' This will also delete all categories and invoices in this quarter.'}

@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { Star, Plus, Edit, Trash2, Save, X, CheckCircle, Bot, Briefcase, Target, Users, Heart, ShoppingBag } from 'lucide-react';
-import { Button, IconButton, Select, TextField, TextArea, Spinner, Flex } from '@radix-ui/themes';
+import { Button, Select, TextField, TextArea, Spinner, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { settingsApi } from '../lib/api';
@@ -27,11 +27,11 @@ interface VipSender {
 }
 
 const CATEGORY_OPTIONS = [
-  { value: 'boss', label: 'Boss', icon: <ShoppingBag size={12} />, color: 'text-review' },
-  { value: 'client', label: 'Client', icon: <Briefcase size={12} />, color: 'text-info' },
-  { value: 'stakeholder', label: 'Stakeholder', icon: <Target size={12} />, color: 'text-warning' },
-  { value: 'team', label: 'Team', icon: <Users size={12} />, color: 'text-success' },
-  { value: 'family', label: 'Family', icon: <Heart size={12} />, color: 'text-error' },
+  { value: 'boss', label: 'Boss', icon: <ShoppingBag size={12} />, color: 'text-[var(--color-review)]' },
+  { value: 'client', label: 'Client', icon: <Briefcase size={12} />, color: 'text-[var(--color-info)]' },
+  { value: 'stakeholder', label: 'Stakeholder', icon: <Target size={12} />, color: 'text-[var(--color-warning)]' },
+  { value: 'team', label: 'Team', icon: <Users size={12} />, color: 'text-[var(--color-success)]' },
+  { value: 'family', label: 'Family', icon: <Heart size={12} />, color: 'text-[var(--color-error)]' },
 ];
 
 const TYPE_OPTIONS = [
@@ -190,15 +190,15 @@ export default function VIPSettingsPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-mission-control-bg">
+    <div className="h-full flex flex-col bg-mission-control-surface">
       {/* Header */}
-      <Flex align="center" justify="between" className="p-6 border-b border-mission-control-border/50">
+      <Flex align="center" justify="between" className="px-6 py-4 border-b border-mission-control-border/50">
         <div>
-          <h2 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
-            <Star className="text-warning" size={24} />
+          <h2 className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
+            <Star className="text-[var(--color-warning)]" size={16} />
             VIP Senders
           </h2>
-          <p className="text-sm text-mission-control-text-dim mt-1">
+          <p className="text-xs text-mission-control-text-dim mt-0.5">
             Manage important senders and priority boosts
           </p>
         </div>
@@ -208,31 +208,37 @@ export default function VIPSettingsPanel() {
           color="gray"
           size="2"
         >
-          <Plus size={16} />
+          <Plus size={14} />
           Add VIP
         </Button>
       </Flex>
 
       {/* Category Filter */}
-      <div className="flex gap-2 px-6 py-3 border-b border-mission-control-border/50 overflow-x-auto">
-        <Button
+      <div className="flex gap-1.5 px-4 py-3 border-b border-mission-control-border/50 overflow-x-auto">
+        <button
+          type="button"
           onClick={() => setCategoryFilter(null)}
-          variant={categoryFilter === null ? 'soft' : 'ghost'}
-          color="gray"
-          size="2"
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+            categoryFilter === null
+              ? 'bg-mission-control-accent/10 text-mission-control-accent'
+              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg'
+          }`}
         >
           All
-        </Button>
+        </button>
         {CATEGORY_OPTIONS.map(cat => (
-          <Button
+          <button
             key={cat.value}
+            type="button"
             onClick={() => setCategoryFilter(cat.value)}
-            variant={categoryFilter === cat.value ? 'soft' : 'ghost'}
-            color="gray"
-            size="2"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              categoryFilter === cat.value
+                ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg'
+            }`}
           >
             <span className="inline-flex items-center gap-1">{cat.icon} {cat.label}</span>
-          </Button>
+          </button>
         ))}
       </div>
 
@@ -256,7 +262,7 @@ export default function VIPSettingsPanel() {
             return (
               <div
                 key={vip.id}
-                className="bg-mission-control-bg/50 border border-mission-control-border/50 rounded-lg p-4 hover:border-mission-control-border transition-colors"
+                className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-border/80 transition-colors"
               >
                 {isEditing ? (
                   // Edit Form
@@ -314,7 +320,7 @@ export default function VIPSettingsPanel() {
                       <Button
                         onClick={() => handleUpdate(vip.id)}
                         variant="solid"
-                        color="violet"
+                        color="grass"
                         size="2"
                       >
                         <Save size={14} />
@@ -336,46 +342,44 @@ export default function VIPSettingsPanel() {
                   <div>
                     <Flex align="start" justify="between" className="mb-2">
                       <Flex align="center" gap="2">
-                        <Star className="text-warning" size={20} />
+                        <Star className="text-[var(--color-warning)]" size={20} />
                         <span className="text-lg font-semibold text-mission-control-text">{vip.label}</span>
                         <span className={`text-sm inline-flex items-center gap-1 ${catInfo.color}`}>
                           {catInfo.icon} {catInfo.label}
                         </span>
                         {vip.auto_detected === 1 && (
-                          <span className="text-xs px-2 py-0.5 bg-info-subtle text-info rounded inline-flex items-center gap-1">
+                          <span className="text-xs px-2 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded inline-flex items-center gap-1">
                             <Bot size={10} /> Auto
                           </span>
                         )}
                       </Flex>
                       <Flex gap="1">
-                        <IconButton
+                        <button
+                          type="button"
                           onClick={() => startEdit(vip)}
-                          variant="ghost"
-                          color="gray"
-                          size="2"
                           title="Edit"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
                           <Edit size={16} />
-                        </IconButton>
-                        <IconButton
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleRemove(vip.id, vip.label)}
-                          variant="ghost"
-                          color="red"
-                          size="2"
                           title="Remove"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
                         >
                           <Trash2 size={16} />
-                        </IconButton>
+                        </button>
                       </Flex>
                     </Flex>
 
                     <div className="space-y-1 text-sm">
                       <Flex align="center" gap="2" className="text-mission-control-text-dim">
-                        <span className="font-mono text-info">{vip.identifier}</span>
+                        <span className="font-mono text-[var(--color-info)]">{vip.identifier}</span>
                         <span className="text-mission-control-text-dim">({vip.identifier_type})</span>
                       </Flex>
                       <div className="text-mission-control-text-dim">
-                        Priority boost: <span className="text-warning font-semibold">+{vip.priority_boost}</span>
+                        Priority boost: <span className="text-[var(--color-warning)] font-semibold">+{vip.priority_boost}</span>
                       </div>
                       {vip.notes && (
                         <div className="text-mission-control-text-dim italic">{vip.notes}</div>
@@ -397,25 +401,24 @@ export default function VIPSettingsPanel() {
 
       {/* Add VIP Modal */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
             <Flex align="center" justify="between" className="mb-4">
               <h3 className="text-lg font-semibold text-mission-control-text">Add VIP Sender</h3>
-              <IconButton
+              <button
                 type="button"
                 onClick={resetForm}
-                variant="ghost"
-                color="gray"
-                size="2"
+                aria-label="Close"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <X size={20} />
-              </IconButton>
+              </button>
             </Flex>
 
             <div className="space-y-4">
               <div>
                 <label htmlFor="vip-identifier" className="block text-sm text-mission-control-text-dim mb-1">
-                  Identifier <span className="text-error">*</span>
+                  Identifier <span className="text-[var(--color-error)]">*</span>
                 </label>
                 <TextField.Root
                   id="vip-identifier"
@@ -445,7 +448,7 @@ export default function VIPSettingsPanel() {
 
               <div>
                 <label htmlFor="vip-label-add" className="block text-sm text-mission-control-text-dim mb-1">
-                  Label <span className="text-error">*</span>
+                  Label <span className="text-[var(--color-error)]">*</span>
                 </label>
                 <TextField.Root
                   id="vip-label-add"
@@ -508,7 +511,7 @@ export default function VIPSettingsPanel() {
                 <Button
                   onClick={handleAdd}
                   variant="solid"
-                  color="violet"
+                  color="grass"
                   size="2"
                   className="flex-1"
                 >

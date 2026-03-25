@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { X, Save, GitCompare, RotateCcw, Trash2, Loader2 } from 'lucide-react';
-import { Button, IconButton, Flex } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import { useWritingStore } from '../../store/writingStore';
 import { useVersionStore } from '../../store/versionStore';
 import VersionDiff from './VersionDiff';
@@ -98,16 +98,14 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
     <Flex direction="column" height="100%" className="w-80 bg-mission-control-surface border-l border-mission-control-border flex-shrink-0">
       {/* Header */}
       <Flex align="center" justify="between" className="px-3 py-2 border-b border-mission-control-border">
-        <h3 className="text-xs font-semibold text-mission-control-text uppercase tracking-wide">Versions</h3>
-        <IconButton
-          size="1"
-          variant="ghost"
-         
+        <h3 className="text-[10px] font-bold text-mission-control-text uppercase tracking-wide">Versions</h3>
+        <button
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           onClick={onClose}
           title="Close versions panel"
         >
           <X size={14} />
-        </IconButton>
+        </button>
       </Flex>
 
       {/* Save button */}
@@ -155,20 +153,16 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <IconButton
-                      size="1"
-                      variant="ghost"
-                     
+                    <button
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
                       onClick={() => handleCompare(v.id)}
                       disabled={diffLoading}
                       title="Compare with current"
                     >
                       <GitCompare size={13} />
-                    </IconButton>
-                    <IconButton
-                      size="1"
-                      variant="ghost"
-                     
+                    </button>
+                    <button
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       onClick={() => {
                         setRestoreTarget({ id: v.id, label: v.label });
                         restoreDialog.showConfirm({
@@ -181,11 +175,9 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                       title="Restore this version"
                     >
                       <RotateCcw size={13} />
-                    </IconButton>
-                    <IconButton
-                      size="1"
-                      variant="ghost"
-                     
+                    </button>
+                    <button
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       onClick={() => {
                         setDeleteTarget({ id: v.id, label: v.label });
                         deleteDialog.showConfirm({
@@ -198,7 +190,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                       title="Delete this version"
                     >
                       <Trash2 size={13} />
-                    </IconButton>
+                    </button>
                   </div>
                 </Flex>
               </div>

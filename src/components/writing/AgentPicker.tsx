@@ -1,5 +1,4 @@
 import { Pen, Search, Heart } from 'lucide-react';
-import { Button, Flex } from '@radix-ui/themes';
 
 const AGENTS = [
   { id: 'writer', name: 'Writer', Icon: Pen, description: 'Style, pacing, narrative' },
@@ -15,22 +14,26 @@ interface AgentPickerProps {
 
 export default function AgentPicker({ selected, onSelect, disabled }: AgentPickerProps) {
   return (
-    <Flex gap="1">
+    <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
       {AGENTS.map(({ id, name, Icon }) => {
         const isActive = selected === id;
         return (
-          <Button
+          <button
             key={id}
+            type="button"
             onClick={() => onSelect(id)}
             disabled={disabled}
-            size="1"
-            variant={isActive ? 'soft' : 'ghost'}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-50 ${
+              isActive
+                ? 'bg-mission-control-surface text-mission-control-accent shadow-sm'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+            }`}
           >
             <Icon className="w-3 h-3" />
             <span>{name}</span>
-          </Button>
+          </button>
         );
       })}
-    </Flex>
+    </div>
   );
 }

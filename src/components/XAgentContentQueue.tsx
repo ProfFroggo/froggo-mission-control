@@ -18,7 +18,7 @@ import {
   Square,
   Eye,
 } from 'lucide-react';
-import { Button, IconButton, Spinner, TextArea, Flex } from '@radix-ui/themes';
+import { Button, Spinner, TextArea, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ function PostPreview({ content }: PostPreviewProps) {
         </span>
       )}
       <div
-        className={`text-xs mt-2 text-right ${overLimit ? 'text-error' : 'text-mission-control-text-dim'}`}
+        className={`text-xs mt-2 text-right ${overLimit ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}
       >
         {overLimit ? `${Math.abs(remaining)} over limit` : `${remaining} remaining`}
       </div>
@@ -215,29 +215,27 @@ function DraftCard({
   return (
     <div
       className={`p-4 rounded-2xl border bg-mission-control-surface ${
-        selected ? 'border-info' : 'border-mission-control-border'
+        selected ? 'border-[var(--color-info)]' : 'border-mission-control-border'
       }`}
     >
       {/* Top row */}
       <Flex align="start" justify="between" gap="2" className="mb-2">
         <Flex align="center" gap="2">
           {!autoApprove && (
-            <IconButton
+            <button
+              type="button"
               onClick={onToggleSelect}
-              size="1"
-              variant="ghost"
-              color={selected ? 'indigo' : 'gray'}
-             
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               aria-label={selected ? 'Deselect draft' : 'Select draft'}
             >
               {selected ? (
-                <CheckSquare size={16} className="text-info" />
+                <CheckSquare size={16} className="text-[var(--color-info)]" />
               ) : (
                 <Square size={16} className="text-mission-control-text-dim" />
               )}
-            </IconButton>
+            </button>
           )}
-          <span className="px-2 py-0.5 text-xs rounded bg-info-subtle text-info">
+          <span className="px-2 py-0.5 text-xs rounded bg-[var(--color-info)]/10 text-[var(--color-info)]">
             {draft.topic}
           </span>
           <span className="text-xs text-mission-control-text-dim">
@@ -245,16 +243,17 @@ function DraftCard({
           </span>
         </Flex>
         <Flex align="center" gap="1">
-          <IconButton
+          <button
             onClick={() => setShowPreview(!showPreview)}
-            size="1"
-            variant={showPreview ? 'soft' : 'ghost'}
-            color={showPreview ? 'indigo' : 'gray'}
-
             title="Toggle preview"
+            className={`inline-flex items-center justify-center w-6 h-6 rounded transition-colors ${
+              showPreview
+                ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Eye size={13} />
-          </IconButton>
+          </button>
           <Bot size={14} className="text-mission-control-text-dim flex-shrink-0" />
         </Flex>
       </Flex>
@@ -277,7 +276,7 @@ function DraftCard({
       {/* Actions */}
       {autoApprove ? (
         <span className="text-xs flex items-center gap-1 text-mission-control-text-dim">
-          <Zap size={11} className="text-warning" />
+          <Zap size={11} className="text-[var(--color-warning)]" />
           Will auto-approve
         </span>
       ) : (
@@ -288,7 +287,7 @@ function DraftCard({
             variant="soft"
             color="green"
             size="1"
-            style={{ flex: 1 }}
+            className="flex-1"
           >
             <Check size={12} />
             {scheduling ? 'Scheduling...' : 'Approve'}
@@ -298,7 +297,7 @@ function DraftCard({
             variant="soft"
             color="yellow"
             size="1"
-            style={{ flex: 1 }}
+            className="flex-1"
           >
             <MessageSquare size={12} />
             Changes
@@ -308,7 +307,7 @@ function DraftCard({
             variant="soft"
             color="red"
             size="1"
-            style={{ flex: 1 }}
+            className="flex-1"
           >
             <X size={12} />
             Reject
@@ -339,14 +338,13 @@ function DraftCard({
             >
               {feedbackMode === 'changes' ? 'Send Feedback' : 'Reject Draft'}
             </Button>
-            <Button
+            <button
+              type="button"
               onClick={() => { setShowFeedback(false); setFeedbackText(''); }}
-              variant="ghost"
-              color="gray"
-              size="1"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Cancel
-            </Button>
+            </button>
           </Flex>
         </div>
       )}
@@ -544,12 +542,12 @@ export function XAgentContentQueue() {
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="2" className="mb-1">
-          <Bot size={20} className="text-info" />
+          <Bot size={20} className="text-[var(--color-info)]" />
           <h2 className="text-lg font-semibold text-mission-control-text">Agent Mode</h2>
           <span
             className={`px-2 py-0.5 text-xs rounded-full font-medium ${
               settings.enabled
-                ? 'bg-success-subtle text-success'
+                ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]'
                 : 'bg-mission-control-surface text-mission-control-text-dim'
             }`}
           >
@@ -570,21 +568,19 @@ export function XAgentContentQueue() {
               When ON, agents can auto-draft and schedule posts based on your brief.
             </div>
           </div>
-          <IconButton
+          <button
+            type="button"
             onClick={handleToggleAgentMode}
             disabled={saving}
-            size="2"
-            variant="ghost"
-            color={settings.enabled ? 'indigo' : 'gray'}
-           
+            className="inline-flex items-center justify-center rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors p-1"
             aria-label={settings.enabled ? 'Disable agent mode' : 'Enable agent mode'}
           >
             {settings.enabled ? (
-              <ToggleRight size={36} className="text-info" />
+              <ToggleRight size={36} className="text-[var(--color-info)]" />
             ) : (
               <ToggleLeft size={36} className="text-mission-control-text-dim" />
             )}
-          </IconButton>
+          </button>
         </Flex>
 
         {/* Content brief */}
@@ -632,32 +628,30 @@ export function XAgentContentQueue() {
         <Flex align="center" justify="between" className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface">
           <div>
             <Flex align="center" gap="2" className="mb-0.5">
-              <Zap size={14} className="text-warning" />
+              <Zap size={14} className="text-[var(--color-warning)]" />
               <span className="text-sm font-medium text-mission-control-text">Auto-approve drafts</span>
             </Flex>
             <p className="text-xs text-mission-control-text-dim">
               Approved drafts go directly to Scheduled without manual review.
             </p>
           </div>
-          <IconButton
+          <button
+            type="button"
             onClick={handleToggleAutoApprove}
             disabled={saving}
-            size="2"
-            variant="ghost"
-            color={settings.autoApprove ? 'yellow' : 'gray'}
-
+            className="inline-flex items-center justify-center rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors p-1"
             aria-label={settings.autoApprove ? 'Disable auto-approve' : 'Enable auto-approve'}
           >
             {settings.autoApprove ? (
-              <ToggleRight size={28} className="text-warning" />
+              <ToggleRight size={28} className="text-[var(--color-warning)]" />
             ) : (
               <ToggleLeft size={28} className="text-mission-control-text-dim" />
             )}
-          </IconButton>
+          </button>
         </Flex>
 
         {settings.autoApprove && (
-          <Flex align="start" gap="2" className="p-3 rounded-lg text-xs bg-warning-subtle text-warning">
+          <Flex align="start" gap="2" className="p-3 rounded-lg text-xs bg-[var(--color-warning)]/10 text-[var(--color-warning)]">
             <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
             <span>
               Auto-approve is ON — agent drafts will be scheduled without human review. Monitor the activity log regularly.
@@ -674,7 +668,7 @@ export function XAgentContentQueue() {
                 Upcoming Drafts
               </span>
               {pendingDrafts.length > 0 && (
-                <span className="px-2 py-0.5 text-xs rounded-full font-medium bg-info-subtle text-info">
+                <span className="px-2 py-0.5 text-xs rounded-full font-medium bg-[var(--color-info)]/10 text-[var(--color-info)]">
                   {pendingDrafts.length}
                 </span>
               )}
@@ -691,15 +685,14 @@ export function XAgentContentQueue() {
                   Approve selected ({pendingSelectedCount})
                 </Button>
               )}
-              <Button
+              <button
+                type="button"
                 onClick={loadDrafts}
-                variant="ghost"
-                color="gray"
-                size="1"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <RefreshCw size={12} />
                 Refresh
-              </Button>
+              </button>
             </Flex>
           </Flex>
 
@@ -740,9 +733,9 @@ export function XAgentContentQueue() {
               {approvedDrafts.map((draft) => (
                 <div
                   key={draft.id}
-                  className="flex items-start gap-3 p-3 rounded-lg border border-mission-control-border bg-mission-control-bg-alt opacity-75"
+                  className="flex items-start gap-3 p-3 rounded-lg border border-mission-control-border bg-mission-control-border/20 opacity-75"
                 >
-                  <Check size={14} className="text-success flex-shrink-0 mt-0.5" />
+                  <Check size={14} className="text-[var(--color-success)] flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm text-mission-control-text">{draft.content}</p>
                     <p className="text-xs text-mission-control-text-dim mt-1">{formatScheduledTime(draft.scheduledAt)}</p>

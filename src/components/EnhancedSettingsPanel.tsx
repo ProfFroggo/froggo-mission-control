@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
-import { Box, Flex, Button, IconButton, Select, TextField } from '@radix-ui/themes';
+import { Box, Flex, Button, Select, TextField } from '@radix-ui/themes';
 import {
   Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield,
   Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Search,
@@ -239,33 +239,49 @@ interface SectionProps {
   children: React.ReactNode;
   defaultOpen?: boolean;
   description?: string;
+  danger?: boolean;
 }
 
-function CollapsibleSection({ title, icon, children, defaultOpen = true, description }: SectionProps) {
+function CollapsibleSection({ title, icon, children, defaultOpen = true, description, danger = false }: SectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
+  const borderClass = danger ? 'border-[var(--color-error)]/20' : 'border-mission-control-border';
+  const headerBgClass = danger
+    ? 'bg-[var(--color-error)]/5'
+    : 'bg-mission-control-bg/50 hover:bg-mission-control-bg/80';
+  const titleClass = danger
+    ? 'text-[10px] font-bold uppercase tracking-wider text-[var(--color-error)]'
+    : 'text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim group-hover:text-mission-control-text transition-colors';
+
   return (
-    <section className="mb-6">
+    <div className={`bg-mission-control-surface border ${borderClass} rounded-xl overflow-hidden mb-4`}>
+      {/* Section header bar */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between mb-3 group"
+        className={`w-full flex items-center justify-between px-4 py-3 border-b ${borderClass} ${headerBgClass} transition-colors group`}
       >
-        <h2 className="text-heading-3 flex items-center gap-2 group-hover:text-mission-control-accent transition-colors">
-          {icon}
-          {title}
-        </h2>
-        {isOpen ? <ChevronDown size={16} className="text-mission-control-text-dim" /> : <ChevronRight size={16} className="text-mission-control-text-dim" />}
+        <div className="flex items-center gap-2">
+          <span className={titleClass}>
+            {title}
+          </span>
+          {icon && <span className="text-mission-control-text-dim opacity-60">{icon}</span>}
+          {description && (
+            <span className="text-[10px] text-mission-control-text-dim opacity-60 font-normal normal-case tracking-normal">
+              — {description}
+            </span>
+          )}
+        </div>
+        {isOpen
+          ? <ChevronDown size={14} className="text-mission-control-text-dim flex-shrink-0" />
+          : <ChevronRight size={14} className="text-mission-control-text-dim flex-shrink-0" />}
       </button>
-      {description && (
-        <p className="text-sm text-mission-control-text-dim mb-3">{description}</p>
-      )}
       {isOpen && (
-        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
+        <div className="p-4">
           {children}
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -275,15 +291,13 @@ function Tooltip({ text }: { text: string }) {
 
   return (
     <div className="relative inline-block">
-      <IconButton
-        variant="ghost"
-        color="gray"
-        size="1"
+      <button
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
+        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
       >
         <Info size={14} />
-      </IconButton>
+      </button>
       {show && (
         <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg shadow-lg text-xs whitespace-nowrap">
           {text}
@@ -373,17 +387,14 @@ function PlatformUpdateTab() {
             <div className="font-semibold text-mission-control-text">Mission Control</div>
             <div className="text-xs text-mission-control-text-dim">froggo-mission-control</div>
           </div>
-          <IconButton
+          <button
             onClick={() => checkVersion(true)}
             disabled={checking}
-            variant="ghost"
-            color="gray"
-            size="2"
             title="Check for updates"
-            className="ml-auto"
+            className="ml-auto inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <RefreshCw size={15} className={checking ? 'animate-spin' : ''} />
-          </IconButton>
+          </button>
         </Flex>
 
         {versionInfo ? (
@@ -401,9 +412,9 @@ function PlatformUpdateTab() {
             <Flex align="center" justify="between" className="text-sm">
               <span className="text-mission-control-text-dim">Status</span>
               {versionInfo.updateAvailable ? (
-                <span className="px-2 py-0.5 bg-warning-subtle text-warning rounded-full text-xs font-medium">Update available</span>
+                <span className="px-2 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full text-xs font-medium">Update available</span>
               ) : (
-                <span className="px-2 py-0.5 bg-success-subtle text-success rounded-full text-xs font-medium">Up to date</span>
+                <span className="px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full text-xs font-medium">Up to date</span>
               )}
             </Flex>
           </div>
@@ -415,7 +426,7 @@ function PlatformUpdateTab() {
       {/* Release notes */}
       {versionInfo?.releaseNotes && (
         <div className="p-4 bg-mission-control-surface rounded-lg border border-mission-control-border">
-          <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2">
+          <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">
             What&apos;s in v{versionInfo.latest}
           </div>
           <div className="text-sm text-mission-control-text whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
@@ -440,13 +451,13 @@ function PlatformUpdateTab() {
 
       {/* Live install log */}
       {updateLog.length > 0 && (
-        <div className="bg-black/60 rounded-lg border border-mission-control-border p-4 font-mono text-xs space-y-1 max-h-56 overflow-y-auto">
+        <div className="bg-mission-control-bg rounded-lg border border-mission-control-border p-4 font-mono text-xs space-y-1 max-h-56 overflow-y-auto">
           <Flex align="center" gap="2" className="text-mission-control-text-dim mb-2">
             <Terminal size={12} />
             <span>Install log</span>
           </Flex>
           {updateLog.filter(Boolean).map((line, i) => (
-            <div key={i} className="text-success/90">{line}</div>
+            <div key={i} className="text-[var(--color-success)]/90">{line}</div>
           ))}
           <div ref={logEndRef} />
         </div>
@@ -454,8 +465,8 @@ function PlatformUpdateTab() {
 
       {/* Result banner */}
       {updateResult && (
-        <div className={`p-4 rounded-lg border ${updateResult.success ? 'bg-success-subtle border-success-border' : 'bg-error-subtle border-error-border'}`}>
-          <div className={`font-medium text-sm ${updateResult.success ? 'text-success' : 'text-error'}`}>
+        <div className={`p-4 rounded-lg border ${updateResult.success ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30' : 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30'}`}>
+          <div className={`font-medium text-sm ${updateResult.success ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
             {updateResult.success ? 'Update complete' : 'Update failed'}
           </div>
           <div className="text-xs text-mission-control-text-dim mt-1">{updateResult.message}</div>
@@ -478,9 +489,9 @@ function PlatformUpdateTab() {
       )}
 
       {/* Manual install hint */}
-      <div className="p-4 bg-mission-control-surface/50 rounded-lg border border-mission-control-border">
-        <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2">Manual update</div>
-        <Flex align="center" gap="2" className="font-mono text-xs bg-black/40 rounded-lg px-3 py-2 text-mission-control-text-dim">
+      <div className="p-4 bg-mission-control-surface rounded-lg border border-mission-control-border">
+        <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Manual update</div>
+        <Flex align="center" gap="2" className="font-mono text-xs bg-mission-control-bg rounded-lg px-3 py-2 text-mission-control-text-dim">
           <Terminal size={11} />
           npm install -g froggo-mission-control@latest
         </Flex>
@@ -672,7 +683,7 @@ function SessionsManagementSection() {
                     <Flex align="center" gap="2">
                       <span className="text-sm font-medium text-mission-control-text truncate">{s.agentName}</span>
                       {s.compacted && (
-                        <span className="px-1.5 py-0.5 text-xs bg-info-subtle text-info rounded">compacted</span>
+                        <span className="px-1.5 py-0.5 text-xs bg-[var(--color-info)]/10 text-[var(--color-info)] rounded">compacted</span>
                       )}
                     </Flex>
                     <div className="text-xs text-mission-control-text-dim truncate">
@@ -685,26 +696,23 @@ function SessionsManagementSection() {
                     </Flex>
                   </Box>
                   <Flex align="center" gap="2" className="ml-2 flex-shrink-0">
-                    <IconButton
+                    <button
                       onClick={() => handleExport(s.key)}
                       disabled={exportingKey === s.key}
                       title="Export as markdown"
-                      variant="ghost"
-                      color="gray"
-                      size="1"
+                      className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Download size={14} />
-                    </IconButton>
-                    <IconButton
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleDelete(s.key)}
                       disabled={deletingKey === s.key}
                       title="Delete session"
-                      variant="ghost"
-                      color="red"
-                      size="1"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                     >
                       <Trash2 size={14} />
-                    </IconButton>
+                    </button>
                   </Flex>
                 </Flex>
               ))}
@@ -864,7 +872,7 @@ function AgentPlatformSection() {
     <CollapsibleSection title="Agent Platform" icon={<Bot size={16} />} description="Model defaults, dispatch, and concurrency">
       <div className="space-y-4">
         <div className="space-y-3">
-          <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Default models per agent tier</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 first:mt-0">Default models per agent tier</div>
           {(['lead', 'worker', 'trivial'] as const).map(tier => (
             <Flex key={tier} align="center" gap="3">
               <label className="text-sm font-medium text-mission-control-text capitalize w-16 shrink-0">{tier}</label>
@@ -883,15 +891,15 @@ function AgentPlatformSection() {
         <div className="border-t border-mission-control-border pt-3 space-y-3">
           <Flex align="center" justify="between">
             <div>
-              <div className="font-medium text-sm">Auto-dispatch tasks</div>
-              <div className="text-xs text-mission-control-text-dim">Automatically send tasks to agents when assigned</div>
+              <div className="text-sm font-medium text-mission-control-text">Auto-dispatch tasks</div>
+              <div className="text-xs text-mission-control-text-dim mt-0.5">Automatically send tasks to agents when assigned</div>
             </div>
             <Toggle checked={autoDispatch} onChange={setAutoDispatch} />
           </Flex>
           <Flex align="center" justify="between">
             <div>
-              <div className="font-medium text-sm">Pre-review gate (Clara)</div>
-              <div className="text-xs text-mission-control-text-dim">Clara reviews tasks before dispatch to agents</div>
+              <div className="text-sm font-medium text-mission-control-text">Pre-review gate (Clara)</div>
+              <div className="text-xs text-mission-control-text-dim mt-0.5">Clara reviews tasks before dispatch to agents</div>
             </div>
             <Toggle checked={preReview} onChange={setPreReview} />
           </Flex>
@@ -913,8 +921,8 @@ function AgentPlatformSection() {
               </Flex>
               <Flex align="center" justify="between" className="pl-4 border-l-2 border-mission-control-border">
                 <div>
-                  <div className="font-medium text-sm">Auto-dispatch after pre-review approval</div>
-                  <div className="text-xs text-mission-control-text-dim">Immediately dispatch agent when Clara approves</div>
+                  <div className="text-sm font-medium text-mission-control-text">Auto-dispatch after pre-review approval</div>
+                  <div className="text-xs text-mission-control-text-dim mt-0.5">Immediately dispatch agent when Clara approves</div>
                 </div>
                 <Toggle checked={claraAutoDispatch} onChange={setClaraAutoDispatch} />
               </Flex>
@@ -1013,14 +1021,14 @@ function TokenBudgetSection() {
           <div className="space-y-2">
             <Flex align="center" justify="between" className="text-sm">
               <span className="text-mission-control-text-dim">This month (30d)</span>
-              <span className={`tabular-nums ${isOver ? 'text-error font-semibold' : isWarn ? 'text-warning font-semibold' : 'text-mission-control-text'}`}>
+              <span className={`tabular-nums ${isOver ? 'text-[var(--color-error)] font-semibold' : isWarn ? 'text-[var(--color-warning)] font-semibold' : 'text-mission-control-text'}`}>
                 ${currentCost.toFixed(4)}{budget > 0 ? ` / $${budget.toFixed(2)}` : ''}
               </span>
             </Flex>
             {budget > 0 && (
               <div className="h-2 bg-mission-control-bg rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full transition-all duration-500"
+                  className="h-full rounded-full transition-colors duration-500"
                   style={{
                     width: `${Math.min(pct, 100)}%`,
                     backgroundColor: isOver ? 'var(--color-error)' : isWarn ? 'var(--color-warning)' : 'var(--mission-control-accent)',
@@ -1029,7 +1037,7 @@ function TokenBudgetSection() {
               </div>
             )}
             {(isWarn || isOver) && (
-              <Flex align="center" gap="2" className={`text-xs px-3 py-2 rounded-lg ${isOver ? 'bg-error-subtle text-error border border-error-border' : 'bg-warning-subtle text-warning border border-warning-border'}`}>
+              <Flex align="center" gap="2" className={`text-xs px-3 py-2 rounded-lg ${isOver ? 'bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/30' : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/30'}`}>
                 <AlertTriangle size={13} />
                 {isOver
                   ? `Budget exceeded (${pct.toFixed(0)}% used)`
@@ -1150,15 +1158,15 @@ function ApiKeysSection() {
       <div className="space-y-6">
         <Flex align="center" justify="between">
           <span className="text-xs text-mission-control-text-dim">{Object.keys(values).filter(k => values[k]).length} configured</span>
-          <Button onClick={() => setShowKeys(!showKeys)} variant="ghost" color="gray" size="1">
+          <button onClick={() => setShowKeys(!showKeys)} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
             {showKeys ? <EyeOff size={12} /> : <Eye size={12} />} {showKeys ? 'Hide all' : 'Show all'}
-          </Button>
+          </button>
         </Flex>
         {groups.map(group => {
           const providers = API_KEY_PROVIDERS.filter(p => p.group === group);
           return (
             <div key={group}>
-              <h4 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2">{group}</h4>
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 mt-6 first:mt-0">{group}</h4>
               <div className="space-y-2">
                 {providers.map(p => {
                   const hasValue = !!values[p.id]?.trim();
@@ -1176,7 +1184,7 @@ function ApiKeysSection() {
                           size="2"
                           className="w-full font-mono"
                         />
-                        {hasValue && <CheckCircle size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-success" />}
+                        {hasValue && <CheckCircle size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-success)]" />}
                       </Box>
                       <Button
                         onClick={() => doSave(p.id)}
@@ -1188,15 +1196,14 @@ function ApiKeysSection() {
                         {saving[p.id] ? <RefreshCw size={12} className="animate-spin" /> : 'Save'}
                       </Button>
                       {hasValue && (
-                        <IconButton
+                        <button
+                          type="button"
                           onClick={() => doDelete(p.id)}
-                          variant="ghost"
-                          color="red"
-                          size="1"
                           title="Remove key"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                         >
                           <Trash2 size={12} />
-                        </IconButton>
+                        </button>
                       )}
                     </Flex>
                   );
@@ -1274,12 +1281,13 @@ function DangerZoneSection() {
       icon={<AlertCircle size={16} />}
       description="Irreversible actions — proceed carefully"
       defaultOpen={false}
+      danger
     >
-      <div className="space-y-3">
-        <Flex align="center" justify="between" p="3" className="rounded-lg border border-mission-control-border bg-mission-control-bg">
+      <div className="space-y-0">
+        <Flex align="center" justify="between" className="py-3 border-b border-mission-control-border/40">
           <div>
-            <div className="text-sm font-medium">Clear completed tasks</div>
-            <div className="text-xs text-mission-control-text-dim">Permanently delete all tasks with status &quot;done&quot;</div>
+            <div className="text-sm font-medium text-mission-control-text">Clear completed tasks</div>
+            <div className="text-xs text-mission-control-text-dim mt-0.5">Permanently delete all tasks with status &quot;done&quot;</div>
           </div>
           <Button
             onClick={clearCompleted}
@@ -1292,10 +1300,10 @@ function DangerZoneSection() {
             {clearConfirm ? 'Confirm — clear all done tasks' : 'Clear completed'}
           </Button>
         </Flex>
-        <Flex align="center" justify="between" p="3" className="rounded-lg border border-mission-control-border bg-mission-control-bg">
+        <Flex align="center" justify="between" className="py-3 border-b border-mission-control-border/40">
           <div>
-            <div className="text-sm font-medium">Reset agent circuits</div>
-            <div className="text-xs text-mission-control-text-dim">Clears circuit breaker locks — allows locked agents to accept tasks again</div>
+            <div className="text-sm font-medium text-mission-control-text">Reset agent circuits</div>
+            <div className="text-xs text-mission-control-text-dim mt-0.5">Clears circuit breaker locks — allows locked agents to accept tasks again</div>
           </div>
           <Button
             onClick={resetCircuits}
@@ -1308,10 +1316,10 @@ function DangerZoneSection() {
             Reset circuits
           </Button>
         </Flex>
-        <Flex align="center" justify="between" p="3" className="rounded-lg border border-mission-control-border bg-mission-control-bg">
+        <Flex align="center" justify="between" className="py-3">
           <div>
-            <div className="text-sm font-medium">Export all data</div>
-            <div className="text-xs text-mission-control-text-dim">Download tasks and approvals as a JSON archive</div>
+            <div className="text-sm font-medium text-mission-control-text">Export all data</div>
+            <div className="text-xs text-mission-control-text-dim mt-0.5">Download tasks and approvals as a JSON archive</div>
           </div>
           <Button
             onClick={exportData}
@@ -1376,8 +1384,8 @@ function AutomationExecutionSection() {
       <div className="space-y-4">
         <Flex align="center" justify="between">
           <div>
-            <div className="font-medium text-sm">Enable automation execution</div>
-            <div className="text-xs text-mission-control-text-dim">Allow n8n automations and scheduled tasks to run</div>
+            <div className="text-sm font-medium text-mission-control-text">Enable automation execution</div>
+            <div className="text-xs text-mission-control-text-dim mt-0.5">Allow n8n automations and scheduled tasks to run</div>
           </div>
           <Toggle checked={automationEnabled} onChange={setAutomationEnabled} />
         </Flex>
@@ -1679,7 +1687,7 @@ export default function EnhancedSettingsPanel() {
           )}
         </div>
 
-        <div className="p-4">
+        <div className="p-4 max-w-2xl mx-auto">
 
         {/* Tab Content */}
         {activeTab === 'accounts' && !searchQuery && <ConnectedAccountsPanel />}
@@ -1705,7 +1713,7 @@ export default function EnhancedSettingsPanel() {
                     <Flex justify="between"><span>Vault</span><span className="text-mission-control-text-dim">~/mission-control/memory/</span></Flex>
                   </div>
                   <Flex align="center" gap="2" p="3" className="bg-mission-control-bg rounded-lg border border-mission-control-border">
-                    <span className={`w-3 h-3 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
+                    <span className={`w-3 h-3 rounded-full ${connected ? 'bg-[var(--color-success)] animate-pulse' : 'bg-[var(--color-error)]'}`} />
                     <span className="text-sm font-medium">{connected ? 'Connected' : 'Disconnected'}</span>
                     {connected && <span className="text-xs text-mission-control-text-dim ml-auto">Active</span>}
                   </Flex>
@@ -1756,8 +1764,8 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-4">
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Voice Responses</div>
-                      <div className="text-sm text-mission-control-text-dim">Read responses aloud</div>
+                      <div className="text-sm font-medium text-mission-control-text">Voice Responses</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Read responses aloud</div>
                     </div>
                     <Toggle
                       checked={settings.voiceEnabled}
@@ -1802,8 +1810,8 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-4">
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Auto Refresh</div>
-                      <div className="text-sm text-mission-control-text-dim">Automatically refresh sessions list</div>
+                      <div className="text-sm font-medium text-mission-control-text">Auto Refresh</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Automatically refresh sessions list</div>
                     </div>
                     <Toggle
                       checked={settings.autoRefresh}
@@ -1908,10 +1916,11 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="color-mode-select" className="block text-sm font-medium text-mission-control-text mb-2">Color Mode</label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
                       {(['dark', 'light', 'system'] as const).map((t) => (
-                        <Button
+                        <button
                           key={t}
+                          type="button"
                           onClick={() => {
                             setSettings(s => {
                               const newSettings = { ...s, theme: t };
@@ -1922,15 +1931,17 @@ export default function EnhancedSettingsPanel() {
                               return newSettings;
                             });
                           }}
-                          variant={settings.theme === t ? 'solid' : 'soft'}
-                          color={settings.theme === t ? 'grass' : 'gray'}
-                          size="2"
+                          className={`flex flex-1 items-center justify-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                            settings.theme === t
+                              ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                              : 'text-mission-control-text-dim hover:text-mission-control-text'
+                          }`}
                         >
-                          {t === 'dark' && <Moon size={16} />}
-                          {t === 'light' && <Sun size={16} />}
-                          {t === 'system' && <Monitor size={16} />}
+                          {t === 'dark' && <Moon size={14} />}
+                          {t === 'light' && <Sun size={14} />}
+                          {t === 'system' && <Monitor size={14} />}
                           {t.charAt(0).toUpperCase() + t.slice(1)}
-                        </Button>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -2030,21 +2041,19 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-2">
                   <Flex align="center" justify="between" mb="4">
                     <span className="text-sm text-mission-control-text-dim">Click any shortcut to edit</span>
-                    <Button
+                    <button
                       onClick={resetShortcuts}
-                      variant="ghost"
-                      color="gray"
-                      size="1"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     >
                       <RotateCcw size={14} />
                       Reset to Defaults
-                    </Button>
+                    </button>
                   </Flex>
                   {settings.keyboardShortcuts.map((shortcut) => (
-                    <Flex key={shortcut.id} align="center" justify="between" className="py-3 border-b border-mission-control-border last:border-0">
+                    <Flex key={shortcut.id} align="center" justify="between" className="py-3 border-b border-mission-control-border/40 last:border-0">
                       <Box className="flex-1">
-                        <div className="font-medium text-sm">{shortcut.name}</div>
-                        <div className="text-xs text-mission-control-text-dim">{shortcut.description}</div>
+                        <div className="text-sm font-medium text-mission-control-text">{shortcut.name}</div>
+                        <div className="text-xs text-mission-control-text-dim mt-0.5">{shortcut.description}</div>
                       </Box>
                       <Flex align="center" gap="2">
                         {editingShortcut === shortcut.id ? (
@@ -2100,8 +2109,8 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-4">
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Enable Caching</div>
-                      <div className="text-sm text-mission-control-text-dim">Cache responses for faster loading</div>
+                      <div className="text-sm font-medium text-mission-control-text">Enable Caching</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Cache responses for faster loading</div>
                     </div>
                     <Toggle
                       checked={settings.performance.enableCache}
@@ -2149,8 +2158,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Lazy Loading</div>
-                      <div className="text-sm text-mission-control-text-dim">Load content as needed</div>
+                      <div className="text-sm font-medium text-mission-control-text">Lazy Loading</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Load content as needed</div>
                     </div>
                     <Toggle
                       checked={settings.performance.enableLazyLoading}
@@ -2160,8 +2169,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Animations</div>
-                      <div className="text-sm text-mission-control-text-dim">Enable UI animations</div>
+                      <div className="text-sm font-medium text-mission-control-text">Animations</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Enable UI animations</div>
                     </div>
                     <Toggle
                       checked={settings.performance.animationsEnabled}
@@ -2171,8 +2180,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">List Virtualization</div>
-                      <div className="text-sm text-mission-control-text-dim">Render only visible items in long lists</div>
+                      <div className="text-sm font-medium text-mission-control-text">List Virtualization</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Render only visible items in long lists</div>
                     </div>
                     <Toggle
                       checked={settings.performance.enableVirtualization}
@@ -2232,8 +2241,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Auto Cleanup</div>
-                      <div className="text-sm text-mission-control-text-dim">Automatically delete old data</div>
+                      <div className="text-sm font-medium text-mission-control-text">Auto Cleanup</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Automatically delete old data</div>
                     </div>
                     <Toggle
                       checked={settings.data.autoCleanup}
@@ -2259,8 +2268,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Usage Analytics</div>
-                      <div className="text-sm text-mission-control-text-dim">Collect anonymous usage data</div>
+                      <div className="text-sm font-medium text-mission-control-text">Usage Analytics</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Collect anonymous usage data</div>
                     </div>
                     <Toggle
                       checked={settings.data.enableAnalytics}
@@ -2296,8 +2305,8 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-4">
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Reduce Motion</div>
-                      <div className="text-sm text-mission-control-text-dim">Minimize animations and transitions</div>
+                      <div className="text-sm font-medium text-mission-control-text">Reduce Motion</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Minimize animations and transitions</div>
                     </div>
                     <Toggle
                       checked={settings.accessibility.reduceMotion}
@@ -2307,8 +2316,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">High Contrast</div>
-                      <div className="text-sm text-mission-control-text-dim">Increase color contrast</div>
+                      <div className="text-sm font-medium text-mission-control-text">High Contrast</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Increase color contrast</div>
                     </div>
                     <Toggle
                       checked={settings.accessibility.highContrast}
@@ -2318,8 +2327,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Large Text</div>
-                      <div className="text-sm text-mission-control-text-dim">Use larger text sizes throughout</div>
+                      <div className="text-sm font-medium text-mission-control-text">Large Text</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Use larger text sizes throughout</div>
                     </div>
                     <Toggle
                       checked={settings.accessibility.largeText}
@@ -2329,8 +2338,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Screen Reader Optimized</div>
-                      <div className="text-sm text-mission-control-text-dim">Optimize for screen readers</div>
+                      <div className="text-sm font-medium text-mission-control-text">Screen Reader Optimized</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Optimize for screen readers</div>
                     </div>
                     <Toggle
                       checked={settings.accessibility.screenReaderOptimized}
@@ -2340,8 +2349,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Keyboard Navigation Hints</div>
-                      <div className="text-sm text-mission-control-text-dim">Show keyboard shortcuts in UI</div>
+                      <div className="text-sm font-medium text-mission-control-text">Keyboard Navigation Hints</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Show keyboard shortcuts in UI</div>
                     </div>
                     <Toggle
                       checked={settings.accessibility.keyboardNavigationHints}
@@ -2364,17 +2373,17 @@ export default function EnhancedSettingsPanel() {
                 description="Advanced settings for developers"
               >
                 <div className="space-y-4">
-                  <Flex align="start" gap="2" className="p-3 bg-warning-subtle border border-warning-border rounded-lg">
-                    <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-warning">
+                  <Flex align="start" gap="2" className="p-3 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg">
+                    <AlertTriangle size={16} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-[var(--color-warning)]">
                       These settings are for advanced users. Changing them may affect app stability.
                     </p>
                   </Flex>
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Developer Mode</div>
-                      <div className="text-sm text-mission-control-text-dim">Enable developer features</div>
+                      <div className="text-sm font-medium text-mission-control-text">Developer Mode</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Enable developer features</div>
                     </div>
                     <Toggle
                       checked={settings.developer.devMode}
@@ -2384,8 +2393,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Show Debug Info</div>
-                      <div className="text-sm text-mission-control-text-dim">Display debug information in UI</div>
+                      <div className="text-sm font-medium text-mission-control-text">Show Debug Info</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Display debug information in UI</div>
                     </div>
                     <Toggle
                       checked={settings.developer.showDebugInfo}
@@ -2396,8 +2405,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Experimental Features</div>
-                      <div className="text-sm text-mission-control-text-dim">Enable features in development</div>
+                      <div className="text-sm font-medium text-mission-control-text">Experimental Features</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Enable features in development</div>
                     </div>
                     <Toggle
                       checked={settings.developer.enableExperimentalFeatures}
@@ -2408,8 +2417,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Verbose Logging</div>
-                      <div className="text-sm text-mission-control-text-dim">Enable detailed console logs</div>
+                      <div className="text-sm font-medium text-mission-control-text">Verbose Logging</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Enable detailed console logs</div>
                     </div>
                     <Toggle
                       checked={settings.developer.verboseLogging}
@@ -2420,8 +2429,8 @@ export default function EnhancedSettingsPanel() {
 
                   <Flex align="center" justify="between">
                     <div>
-                      <div className="font-medium">Performance Metrics</div>
-                      <div className="text-sm text-mission-control-text-dim">Show render times and stats</div>
+                      <div className="text-sm font-medium text-mission-control-text">Performance Metrics</div>
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">Show render times and stats</div>
                     </div>
                     <Toggle
                       checked={settings.developer.showPerformanceMetrics}
@@ -2448,24 +2457,24 @@ export default function EnhancedSettingsPanel() {
                 description="Control automated external actions"
               >
                 <div className="space-y-4">
-                  <Flex align="start" gap="2" className="p-3 bg-error-subtle border border-error-border rounded-lg">
-                    <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-error">
+                  <Flex align="start" gap="2" className="p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
+                    <AlertTriangle size={16} className="text-[var(--color-error)] flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-[var(--color-error)]">
                       These settings control real external actions (tweets, emails, etc.). Use with caution.
                     </p>
                   </Flex>
 
-                  <Flex align="center" justify="between" p="4" className="bg-mission-control-bg rounded-lg border-2 border-mission-control-border">
+                  <Flex align="center" justify="between" className="py-3 border-b border-mission-control-border/40">
                     <div>
-                      <Flex align="center" gap="2" className="font-medium">
+                      <Flex align="center" gap="2" className="text-sm font-medium text-mission-control-text">
                         Kill Switch
                         {settings.externalActionsEnabled ? (
-                          <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded font-bold">LIVE</span>
+                          <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded font-bold">LIVE</span>
                         ) : (
-                          <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded font-bold">BLOCKED</span>
+                          <span className="text-xs px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded font-bold">BLOCKED</span>
                         )}
                       </Flex>
-                      <div className="text-sm text-mission-control-text-dim">
+                      <div className="text-xs text-mission-control-text-dim mt-0.5">
                         {settings.externalActionsEnabled
                           ? 'External actions will be executed when approved'
                           : 'All external actions blocked (safe mode)'}
@@ -2518,12 +2527,12 @@ export default function EnhancedSettingsPanel() {
                         />
                       </div>
 
-                      <Box p="4" className="bg-info-subtle border border-info-border rounded-lg">
+                      <Box p="4" className="bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg">
                         <Flex align="start" gap="2">
-                          <Bot size={20} className="text-info flex-shrink-0" />
+                          <Bot size={20} className="text-[var(--color-info)] flex-shrink-0" />
                           <Box className="flex-1">
-                            <div className="font-medium text-info mb-2">Smart Account Selection</div>
-                            <div className="text-sm text-info space-y-2">
+                            <div className="font-medium text-[var(--color-info)] mb-2">Smart Account Selection</div>
+                            <div className="text-sm text-[var(--color-info)] space-y-2">
                               <p>Mission Control intelligently chooses accounts based on context:</p>
                               <ul className="list-disc list-inside space-y-1 ml-2 text-xs">
                                 <li>Reply-to matching for email threads</li>
@@ -2555,7 +2564,7 @@ export default function EnhancedSettingsPanel() {
 
         {/* Actions */}
         {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform', 'sessions'].includes(activeTab) && (
-          <Flex gap="3" className="mt-8 sticky bottom-0 bg-mission-control-bg/95 backdrop-blur-sm pt-4 pb-2 border-t border-mission-control-border">
+          <Flex gap="3" className="mt-8 sticky bottom-0 bg-mission-control-surface pt-4 pb-2 border-t border-mission-control-border">
             <Button
               onClick={handleSave}
               variant="solid"

@@ -24,10 +24,10 @@ export default function ContextPanel() {
             type="button"
             key={key}
             onClick={() => setActiveTab(key)}
-            className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 text-[10px] font-medium border-b-2 -mb-px transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 text-[10px] font-bold uppercase tracking-wider border-b-2 -mb-px transition-colors ${
               activeTab === key
-                ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:bg-mission-control-border/30 hover:text-mission-control-text'
+                ? 'text-mission-control-accent border-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Icon size={12} />

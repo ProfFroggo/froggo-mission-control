@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { MessageSquare, Trash2 } from 'lucide-react';
-import { IconButton, Flex } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import { gateway } from '../../lib/gateway';
 import { buildMemoryContext, buildChapterContext, buildOutlineContext } from '../../lib/writingContext';
 import { useChatPaneStore, type ChatMessage as ChatMessageType } from '../../store/chatPaneStore';
@@ -166,24 +166,23 @@ export default function ChatPane() {
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-surface border-r border-mission-control-border dark">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
+      <div className="px-4 py-3 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
         <Flex align="center" gap="2">
           <MessageSquare size={14} className="text-mission-control-text-dim" />
-          <span className="text-xs font-medium text-mission-control-text-dim">
-            Chat{agentNames[selectedAgent] ? ` - ${agentNames[selectedAgent]}` : ''}
+          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+            Chat{agentNames[selectedAgent] ? ` — ${agentNames[selectedAgent]}` : ''}
           </span>
         </Flex>
         {messages.length > 0 && (
-          <IconButton
+          <button
+            type="button"
             onClick={handleClearChat}
-            size="1"
-            variant="ghost"
-           
             title="Clear conversation"
             aria-label="Clear conversation"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <Trash2 size={12} />
-          </IconButton>
+          </button>
         )}
       </div>
 
@@ -219,7 +218,7 @@ export default function ChatPane() {
         )}
         {/* Error display */}
         {error && (
-          <div className="text-sm text-error px-2 py-1 mb-2">{error}</div>
+          <div className="text-sm text-[var(--color-error)] px-2 py-1 mb-2">{error}</div>
         )}
         {/* Scroll sentinel */}
         <div ref={scrollRef} />

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw, X, Trash2, Edit2, AlertCircle, ExternalLink, Check, Mail, Copy, Repeat } from 'lucide-react';
-import { Button, Flex, IconButton, TextField, Select, TextArea, Checkbox } from '@radix-ui/themes';
+import { Button, Flex, TextField, Select, TextArea, Checkbox } from '@radix-ui/themes';
 import { useUserSettings } from '../store/userSettings';
 
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
@@ -433,7 +433,7 @@ export default function EpicCalendar({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
+      <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
         <Flex align="center" justify="between">
           <Flex align="center" gap="4">
             <div className="text-sm text-mission-control-text-dim">
@@ -443,43 +443,39 @@ export default function EpicCalendar({
 
           <Flex align="center" gap="3">
             {/* Refresh Button */}
-            <IconButton
+            <button
+              type="button"
               onClick={fetchEvents}
               disabled={loading}
-              size="2"
-              variant="ghost"
-             
               title="Refresh events"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            </IconButton>
+            </button>
 
             {/* Navigation */}
             <Flex align="center" gap="1">
-              <IconButton
+              <button
+                type="button"
                 onClick={() => navigateDate('prev')}
-                size="2"
-                variant="ghost"
-
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <ChevronLeft size={16} />
-              </IconButton>
-              <Button
+              </button>
+              <button
+                type="button"
                 onClick={() => navigateDate('today')}
-                size="2"
-                variant="ghost"
-
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 Today
-              </Button>
-              <IconButton
+              </button>
+              <button
+                type="button"
                 onClick={() => navigateDate('next')}
-                size="2"
-                variant="ghost"
-
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <ChevronRight size={16} />
-              </IconButton>
+              </button>
             </Flex>
 
             {/* View Switcher */}
@@ -570,19 +566,18 @@ export default function EpicCalendar({
       <div className="flex-1 overflow-auto">
         {/* Partial error banner - shows above calendar when some calendars fail */}
         {partialError && (
-          <Flex align="center" justify="between" px="4" py="2" className="bg-warning-subtle border-b border-warning-border">
+          <Flex align="center" justify="between" px="4" py="2" className="bg-[var(--color-warning)]/10 border-b border-[var(--color-warning)]/30">
             <Flex align="center" gap="2">
-              <AlertCircle size={14} className="text-warning" />
-              <span className="text-sm text-warning">{partialError}</span>
+              <AlertCircle size={14} className="text-[var(--color-warning)]" />
+              <span className="text-sm text-[var(--color-warning)]">{partialError}</span>
             </Flex>
-            <IconButton
+            <button
+              type="button"
               onClick={() => setPartialError(null)}
-              size="2"
-              variant="ghost"
-
+              className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <X size={14} />
-            </IconButton>
+            </button>
           </Flex>
         )}
 
@@ -596,8 +591,8 @@ export default function EpicCalendar({
         ) : error && events.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <Calendar size={32} className="mx-auto mb-4 text-error" />
-              <p className="text-error">{error}</p>
+              <Calendar size={32} className="mx-auto mb-4 text-[var(--color-error)]" />
+              <p className="text-[var(--color-error)]">{error}</p>
               <Button
                 onClick={fetchEvents}
                 size="2"
@@ -715,7 +710,7 @@ function EventCard({
   const { start, end, isAllDay } = getEventTime(event);
   const meetLink = event.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
   const primaryEmail = useUserSettings.getState().email;
-  const accountColor = event.account === primaryEmail ? 'bg-info' : 'bg-review';
+  const accountColor = event.account === primaryEmail ? 'bg-[var(--color-info)]' : 'bg-[var(--color-review)]';
   const resolvedColor = eventColorResolver?.(event);
   const displayColor = resolvedColor || accountColor;
 
@@ -727,7 +722,7 @@ function EventCard({
         draggable={canDrag}
         onDragStart={onDragStart ? (e) => onDragStart(e, event) : undefined}
         onDragEnd={onDragEnd}
-        className={`text-xs px-2 py-1 ${displayColor} text-white rounded mb-1 truncate ${canDrag ? 'cursor-move' : 'cursor-default'} hover:opacity-80 transition-all ${
+        className={`rounded-md px-1.5 py-0.5 text-[11px] truncate flex items-center gap-1 mb-0.5 ${displayColor} text-white ${canDrag ? 'cursor-move' : 'cursor-default'} hover:opacity-80 transition-colors ${
           isDragging ? 'opacity-50 scale-95' : ''
         }`}
         title={event.summary}
@@ -740,8 +735,8 @@ function EventCard({
         tabIndex={0}
         aria-label={`View event: ${event.summary}`}
       >
-        {!isAllDay && <span className="font-medium">{formatTime(start)} </span>}
-        {event.summary}
+        {!isAllDay && <span className="font-medium flex-shrink-0">{formatTime(start)} </span>}
+        <span className="truncate">{event.summary}</span>
       </div>
     );
   }
@@ -751,7 +746,7 @@ function EventCard({
       draggable={canDrag}
       onDragStart={onDragStart ? (e) => onDragStart(e, event) : undefined}
       onDragEnd={onDragEnd}
-      className={`bg-mission-control-surface rounded-lg border border-mission-control-border p-4 hover:border-mission-control-accent transition-all ${canDrag ? 'cursor-move' : 'cursor-default'} ${
+      className={`bg-mission-control-surface rounded-xl border border-mission-control-border p-4 hover:border-mission-control-accent transition-colors ${canDrag ? 'cursor-move' : 'cursor-default'} ${
         isDragging ? 'opacity-50 scale-95' : ''
       }`}
       onClick={(e) => {
@@ -868,11 +863,11 @@ function MonthView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border h-full flex flex-col">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col">
         {/* Day headers */}
         <div className="grid grid-cols-7 border-b border-mission-control-border">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center py-3 text-sm font-semibold text-mission-control-text-dim">
+            <div key={day} className="text-center py-3 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               {day}
             </div>
           ))}
@@ -891,12 +886,14 @@ function MonthView({
                 return (
                   <div
                     key={dayIdx}
-                    className={`border-r border-mission-control-border last:border-r-0 p-2 transition-all overflow-hidden min-h-[80px] ${
-                      !inCurrentMonth ? 'bg-mission-control-bg opacity-50' : ''
+                    className={`min-h-[80px] p-1.5 border-r border-b border-mission-control-border/30 last:border-r-0 transition-colors overflow-hidden ${
+                      !inCurrentMonth ? 'opacity-40' : ''
                     } ${
-                      isDragOver 
-                        ? 'bg-mission-control-accent/10 border-2 border-dashed border-mission-control-accent' 
-                        : 'hover:bg-mission-control-border/30 cursor-pointer'
+                      isToday && !isDragOver
+                        ? 'bg-mission-control-surface ring-2 ring-inset ring-[var(--mission-control-accent)]'
+                        : isDragOver
+                        ? 'bg-mission-control-accent/10 border-2 border-dashed border-mission-control-accent'
+                        : 'bg-mission-control-surface hover:bg-mission-control-border/20 cursor-pointer'
                     }`}
                     onDragOver={(e) => onDragOver(e, date)}
                     onDragLeave={onDragLeave}
@@ -911,8 +908,8 @@ function MonthView({
                     }}
                     aria-label={`Calendar cell for ${date.toLocaleDateString()}`}
                   >
-                    <div className={`text-sm font-medium mb-1 ${
-                      isToday ? 'bg-mission-control-accent text-white w-6 h-6 rounded-full flex items-center justify-center' : ''
+                    <div className={`text-xs mb-1 ${
+                      isToday ? 'text-mission-control-accent font-bold' : 'text-mission-control-text/70'
                     }`}>
                       {date.getDate()}
                     </div>
@@ -1004,10 +1001,10 @@ function WeekView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border h-full flex flex-col overflow-hidden">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col overflow-hidden">
         {/* Day headers */}
         <div className="grid grid-cols-8 border-b border-mission-control-border flex-shrink-0">
-          <div className="p-3 text-sm font-semibold text-mission-control-text-dim border-r border-mission-control-border">
+          <div className="p-3 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim border-r border-mission-control-border">
             Time
           </div>
           {weekDays.map(date => {
@@ -1016,14 +1013,14 @@ function WeekView({
               <div
                 key={date.toISOString()}
                 className={`text-center p-3 border-r border-mission-control-border last:border-r-0 ${
-                  isToday ? 'bg-mission-control-accent/10' : ''
+                  isToday ? 'bg-mission-control-accent/5 ring-t-2' : ''
                 }`}
               >
-                <div className="text-xs text-mission-control-text-dim">
+                <div className={`text-[10px] font-bold uppercase tracking-wider ${isToday ? 'text-mission-control-accent' : 'text-mission-control-text-dim'}`}>
                   {date.toLocaleDateString('en-US', { weekday: 'short' })}
                 </div>
-                <div className={`text-lg font-semibold ${
-                  isToday ? 'text-mission-control-accent' : ''
+                <div className={`text-lg font-semibold mt-0.5 ${
+                  isToday ? 'text-mission-control-accent' : 'text-mission-control-text/70'
                 }`}>
                   {date.getDate()}
                 </div>
@@ -1049,7 +1046,7 @@ function WeekView({
                 return (
                   <div
                     key={`${date.toISOString()}-${hour}`}
-                    className={`border-r border-mission-control-border last:border-r-0 p-1 transition-all ${
+                    className={`border-r border-mission-control-border last:border-r-0 p-1 transition-colors ${
                       isToday ? 'bg-mission-control-accent/5' : ''
                     } ${
                       isDragOver 
@@ -1149,7 +1146,7 @@ function DayView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border h-full flex flex-col overflow-hidden">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col overflow-hidden">
         {/* All-day events */}
         {allDayEvents.length > 0 && (
           <div className="border-b border-mission-control-border p-4 space-y-2 flex-shrink-0">
@@ -1190,7 +1187,7 @@ function DayView({
                   {hour === 0 ? '12:00 AM' : hour < 12 ? `${hour}:00 AM` : hour === 12 ? '12:00 PM' : `${hour - 12}:00 PM`}
                 </div>
                 <div 
-                  className={`flex-1 p-3 space-y-2 transition-all ${
+                  className={`flex-1 p-3 space-y-2 transition-colors ${
                     isDragOver 
                       ? 'bg-mission-control-accent/10 border-2 border-dashed border-mission-control-accent' 
                       : 'hover:bg-mission-control-border/30 cursor-pointer'
@@ -1344,30 +1341,28 @@ function EventDetailPopover({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
       <div className="relative bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-[360px] max-h-[90vh] overflow-y-auto">
         {/* Toolbar */}
         <Flex align="center" justify="end" gap="1" px="3" pt="3" className="pb-0">
-          <IconButton
+          <button
+            type="button"
             onClick={onEdit}
-            size="2"
-            variant="ghost"
-
             title="Edit event"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <Edit2 size={15} />
-          </IconButton>
-          <IconButton
+          </button>
+          <button
+            type="button"
             onClick={onDelete}
-            size="2"
-            variant="ghost"
-           
             title="Delete event"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Trash2 size={15} />
-          </IconButton>
+          </button>
           {event.htmlLink && (
             <a
               href={event.htmlLink}
@@ -1379,21 +1374,20 @@ function EventDetailPopover({
               <ExternalLink size={15} />
             </a>
           )}
-          <IconButton
+          <button
+            type="button"
             onClick={onClose}
-            size="2"
-            variant="ghost"
-           
             title="Close"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={15} />
-          </IconButton>
+          </button>
         </Flex>
 
         {/* Title + Date */}
         <div className="px-5 pb-3 pt-1">
           <Flex align="start" gap="3">
-            <div className="w-3 h-3 rounded-sm bg-info mt-1.5 flex-shrink-0" />
+            <div className="w-3 h-3 rounded-sm bg-[var(--color-info)] mt-1.5 flex-shrink-0" />
             <div>
               <h2 className="text-lg font-semibold leading-tight">{event.summary}</h2>
               <p className="text-sm text-mission-control-text-dim mt-0.5">{dateStr}</p>
@@ -1415,16 +1409,16 @@ function EventDetailPopover({
                 href={meetLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-info/10 border border-info/20 text-info rounded-lg hover:bg-info/20 transition-colors font-medium text-sm"
+                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/20 text-[var(--color-info)] rounded-lg hover:bg-[var(--color-info)]/20 transition-colors font-medium text-sm"
               >
                 <Video size={16} />
                 Join with Google Meet
               </a>
               <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
                 <span className="truncate flex-1">{meetLink.replace('https://', '')}</span>
-                <IconButton onClick={copyMeetLink} size="1" variant="ghost" title="Copy link" className="flex-shrink-0">
+                <button type="button" onClick={copyMeetLink} title="Copy link" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors flex-shrink-0">
                   <Copy size={11} />
-                </IconButton>
+                </button>
               </Flex>
             </div>
           )}
@@ -1476,8 +1470,8 @@ function EventDetailPopover({
                             <p className="text-[10px] text-mission-control-text-dim">Organizer</p>
                           )}
                         </div>
-                        {a.responseStatus === 'accepted' && <Check size={13} className="text-success flex-shrink-0" />}
-                        {a.responseStatus === 'declined' && <X size={13} className="text-error flex-shrink-0" />}
+                        {a.responseStatus === 'accepted' && <Check size={13} className="text-[var(--color-success)] flex-shrink-0" />}
+                        {a.responseStatus === 'declined' && <X size={13} className="text-[var(--color-error)] flex-shrink-0" />}
                       </Flex>
                     );
                   })}
@@ -1502,18 +1496,18 @@ function EventDetailPopover({
 
         {/* RSVP Footer */}
         {totalAttendees > 0 && (
-          <Flex align="center" gap="3" px="5" py="3" className="border-t border-mission-control-border bg-mission-control-bg/50 rounded-b-2xl">
+          <Flex align="center" gap="3" px="5" py="3" className="border-t border-mission-control-border bg-mission-control-bg rounded-b-2xl">
             <span className="text-xs text-mission-control-text-dim mr-auto">Going?</span>
             <Button size="1" variant="soft">
               <Check size={12} />
               Yes
             </Button>
-            <Button size="1" variant="ghost">
+            <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
               No
-            </Button>
-            <Button size="1" variant="ghost">
+            </button>
+            <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
               Maybe
-            </Button>
+            </button>
           </Flex>
         )}
       </div>
@@ -1626,7 +1620,7 @@ function EventModal({
   };
 
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-mission-control-border sticky top-0 bg-mission-control-surface z-10">
@@ -1643,14 +1637,13 @@ function EventModal({
               </>
             )}
           </h2>
-          <IconButton
+          <button
+            type="button"
             onClick={onClose}
-            size="2"
-            variant="ghost"
-           
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={20} />
-          </IconButton>
+          </button>
         </div>
 
         {/* Form */}
@@ -1658,7 +1651,7 @@ function EventModal({
           {/* Title */}
           <div>
             <label htmlFor="event-title" className="block text-sm font-medium mb-2">
-              Title <span className="text-error">*</span>
+              Title <span className="text-[var(--color-error)]">*</span>
             </label>
             <TextField.Root
               id="event-title"
@@ -1668,7 +1661,7 @@ function EventModal({
               size="2"
             />
             {errors.summary && (
-              <p className="text-sm text-error mt-1 flex items-center gap-1">
+              <p className="text-sm text-[var(--color-error)] mt-1 flex items-center gap-1">
                 <AlertCircle size={14} />
                 {errors.summary}
               </p>
@@ -1678,7 +1671,7 @@ function EventModal({
           {/* Account Selection */}
           <div>
             <label htmlFor="calendar-account" className="block text-sm font-medium mb-2">
-              Calendar Account <span className="text-error">*</span>
+              Calendar Account <span className="text-[var(--color-error)]">*</span>
             </label>
             <Select.Root
               value={formData.account}
@@ -1713,7 +1706,7 @@ function EventModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">
-                Start {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-error">*</span>
+                Start {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-[var(--color-error)]">*</span>
               </label>
               <TextField.Root
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
@@ -1724,7 +1717,7 @@ function EventModal({
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">
-                End {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-error">*</span>
+                End {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-[var(--color-error)]">*</span>
               </label>
               <TextField.Root
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
@@ -1733,7 +1726,7 @@ function EventModal({
                 size="2"
               />
               {errors.end && (
-                <p className="text-sm text-error mt-1 flex items-center gap-1">
+                <p className="text-sm text-[var(--color-error)] mt-1 flex items-center gap-1">
                   <AlertCircle size={14} />
                   {errors.end}
                 </p>
@@ -1776,30 +1769,25 @@ function EventModal({
           <Flex align="center" justify="between" pt="4" className="border-t border-mission-control-border">
             <div>
               {mode === 'edit' && (
-                <Button
+                <button
                   type="button"
                   onClick={handleDelete}
-                  size="2"
-                  variant="ghost"
-                  color="red"
-
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                 >
                   <Trash2 size={16} />
                   Delete Event
-                </Button>
+                </button>
               )}
             </div>
             <Flex align="center" gap="3">
-              <Button
+              <button
                 type="button"
                 onClick={onClose}
-                size="2"
-                variant="ghost"
-               
                 disabled={saving}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 Cancel
-              </Button>
+              </button>
               <Button
                 type="submit"
                 disabled={saving}
@@ -1835,11 +1823,11 @@ function DeleteConfirmDialog({
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[60] p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
       <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border max-w-md w-full p-6 shadow-2xl">
         <Flex align="start" gap="4" mb="4">
-          <div className="p-3 bg-error-subtle rounded-full">
-            <Trash2 size={24} className="text-error" />
+          <div className="p-3 bg-[var(--color-error)]/10 rounded-full">
+            <Trash2 size={24} className="text-[var(--color-error)]" />
           </div>
           <div>
             <h3 className="text-lg font-semibold mb-2">Delete Event</h3>
@@ -1850,14 +1838,13 @@ function DeleteConfirmDialog({
         </Flex>
 
         <Flex align="center" justify="end" gap="3">
-          <Button
+          <button
+            type="button"
             onClick={onCancel}
-            size="2"
-            variant="ghost"
-           
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             Cancel
-          </Button>
+          </button>
           <Button
             onClick={onConfirm}
             size="2"
@@ -1909,7 +1896,7 @@ function RescheduleConfirmDialog({
   };
 
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[60] p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
       <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border max-w-md w-full p-6 shadow-2xl">
         <Flex align="start" gap="4" mb="4">
           <div className="p-3 bg-mission-control-accent/10 rounded-full">
@@ -1937,19 +1924,18 @@ function RescheduleConfirmDialog({
         </Flex>
 
         <Flex align="center" justify="end" gap="3">
-          <Button
+          <button
+            type="button"
             onClick={onCancel}
-            size="2"
-            variant="ghost"
-           
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             Cancel
-          </Button>
+          </button>
           <Button
             onClick={onConfirm}
             size="2"
             variant="soft"
-           
+
           >
             Reschedule
           </Button>

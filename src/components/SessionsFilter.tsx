@@ -4,7 +4,7 @@
 // Review: 2026-02-17 - suppression retained, patterns are safe
 
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton, TextField, Checkbox, Flex } from '@radix-ui/themes';
+import { Button, TextField, Checkbox, Flex } from '@radix-ui/themes';
 import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle, ClipboardList, MessageCircle, Gamepad2, Monitor, Bot, Send as SendPlane } from 'lucide-react';
 import { useStore } from '../store/store';
 import { chatApi } from '../lib/api';
@@ -59,11 +59,11 @@ function SortableSession({ sessionKey, children }: { sessionKey: string; childre
 
 const CHANNELS: { id: ChannelFilter; label: string; icon: React.ReactNode; color: string }[] = [
   { id: 'all', label: 'All', icon: <ClipboardList size={14} />, color: 'text-mission-control-text' },
-  { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={14} />, color: 'text-success' },
-  { id: 'telegram', label: 'Telegram', icon: <SendPlane size={14} />, color: 'text-info' },
-  { id: 'discord', label: 'Discord', icon: <Gamepad2 size={14} />, color: 'text-review' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={14} />, color: 'text-[var(--color-success)]' },
+  { id: 'telegram', label: 'Telegram', icon: <SendPlane size={14} />, color: 'text-[var(--color-info)]' },
+  { id: 'discord', label: 'Discord', icon: <Gamepad2 size={14} />, color: 'text-[var(--color-review)]' },
   { id: 'webchat', label: 'Webchat', icon: <Monitor size={14} />, color: 'text-mission-control-text-dim' },
-  { id: 'agents', label: 'Agents', icon: <Bot size={14} />, color: 'text-warning' },
+  { id: 'agents', label: 'Agents', icon: <Bot size={14} />, color: 'text-[var(--color-warning)]' },
 ];
 
 export default function SessionsFilter() {
@@ -534,36 +534,39 @@ export default function SessionsFilter() {
             )}
           </h2>
           <Flex align="center" gap="2">
-            <IconButton
-              variant={showSnoozed ? 'ghost' : 'soft'}
-              color={showSnoozed ? 'gray' : 'blue'}
-              size="2"
+            <button
               onClick={() => setShowSnoozed(!showSnoozed)}
               title={showSnoozed ? 'Hide snoozed conversations' : 'Show snoozed conversations'}
               aria-label={showSnoozed ? 'Hide snoozed conversations' : 'Show snoozed conversations'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                !showSnoozed
+                  ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               <Moon size={16} />
-            </IconButton>
-            <IconButton
-              variant={bulkMode ? 'soft' : 'ghost'}
-              color={bulkMode ? 'grass' : 'gray'}
-              size="2"
+            </button>
+            <button
               onClick={toggleBulkMode}
               title={bulkMode ? 'Exit bulk mode' : 'Enter bulk mode'}
               aria-label={bulkMode ? 'Exit bulk mode' : 'Enter bulk mode'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                bulkMode
+                  ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {bulkMode ? <CheckSquare size={16} /> : <Square size={16} />}
-            </IconButton>
-            <IconButton
-              variant="ghost"
-              color="gray"
-              size="2"
+            </button>
+            <button
+              type="button"
               onClick={fetchSessions}
               title="Refresh"
               aria-label="Refresh sessions"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <RefreshCw size={16} />
-            </IconButton>
+            </button>
           </Flex>
         </Flex>
 
@@ -653,15 +656,14 @@ export default function SessionsFilter() {
             </TextField.Slot>
             {search && (
               <TextField.Slot side="right">
-                <IconButton
-                  variant="ghost"
-                  color="gray"
-                  size="1"
+                <button
+                  type="button"
                   onClick={() => setSearch('')}
                   aria-label="Clear search"
+                  className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                 >
                   <X size={14} />
-                </IconButton>
+                </button>
               </TextField.Slot>
             )}
           </TextField.Root>
@@ -670,13 +672,13 @@ export default function SessionsFilter() {
         {/* Channel Filter Pills */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {channelCounts.map((ch) => (
-            <Button
+            <button
               key={ch.id}
-              variant={filter === ch.id ? 'solid' : 'soft'}
-              color={filter === ch.id ? 'grass' : 'gray'}
-              size="1"
+              type="button"
               onClick={() => setFilter(ch.id)}
-              className="whitespace-nowrap rounded-full"
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors whitespace-nowrap ${
+                filter === ch.id ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               <span>{ch.icon}</span>
               <span>{ch.label}</span>
@@ -685,7 +687,7 @@ export default function SessionsFilter() {
                   {ch.count}
                 </span>
               )}
-            </Button>
+            </button>
           ))}
         </div>
       </div>
@@ -710,10 +712,10 @@ export default function SessionsFilter() {
             {/* Pinned Sessions Section */}
             {pinnedSessionsList.length > 0 && (
               <div className="bg-gradient-to-b from-mission-control-accent/5 to-transparent">
-                <div className="sticky top-0 z-10 px-4 py-2 bg-mission-control-surface/95 backdrop-blur-sm border-b border-mission-control-accent/20 flex items-center justify-between">
+                <div className="sticky top-0 z-10 px-4 py-2 bg-mission-control-surface border-b border-mission-control-accent/20 flex items-center justify-between">
                   <Flex align="center" gap="2">
                     <Pin size={14} className="text-mission-control-accent fill-current" />
-                    <span className="text-xs font-semibold text-mission-control-accent uppercase tracking-wide">
+                    <span className="text-[10px] font-bold text-mission-control-accent uppercase tracking-wide">
                       Pinned ({pinnedSessionsList.length}/10)
                     </span>
                   </Flex>
@@ -757,7 +759,7 @@ export default function SessionsFilter() {
                     <div className="text-2xl">{channelInfo.icon}</div>
                     <div className="flex-1 min-w-0">
                       <Flex align="center" gap="2" className="mb-1">
-                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-bg0'}`} />
+                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-[var(--color-success)]' : 'bg-mission-control-surface'}`} />
                         <span className="font-medium truncate">{getSessionName(session)}</span>
                         {pinnedSessions.has(session.key) && (
                           <span className="flex items-center gap-1 px-2 py-0.5 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-full text-xs">
@@ -766,19 +768,19 @@ export default function SessionsFilter() {
                           </span>
                         )}
                         {isMuted && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-warning-subtle text-warning border border-warning-border rounded-full text-xs">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/30 rounded-full text-xs">
                             <BellOff size={14} />
                             Muted
                           </span>
                         )}
                         {isSnoozeExpired && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-error-subtle text-error border border-error-border rounded-full text-xs animate-pulse">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/30 rounded-full text-xs animate-pulse">
                             <AlertCircle size={14} />
                             Reminder
                           </span>
                         )}
                         {isSnoozed && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-info-subtle text-info border border-info-border rounded-full text-xs">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 rounded-full text-xs">
                             <Moon size={14} />
                             Snoozed
                           </span>
@@ -820,58 +822,54 @@ export default function SessionsFilter() {
                       )}
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <IconButton
-                        variant="ghost"
-                        color={pinnedSessions.has(session.key) ? 'grass' : 'gray'}
-                        size="1"
+                      <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           togglePin(session.key);
                         }}
                         title={pinnedSessions.has(session.key) ? 'Unpin conversation' : 'Pin conversation'}
                         aria-label={pinnedSessions.has(session.key) ? 'Unpin conversation' : 'Pin conversation'}
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                       >
                         <Pin size={14} className={pinnedSessions.has(session.key) ? 'fill-current' : ''} />
-                      </IconButton>
-                      <IconButton
-                        variant="ghost"
-                        color={isSnoozeExpired ? 'red' : isSnoozed ? 'blue' : 'gray'}
-                        size="1"
+                      </button>
+                      <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowSnoozeModal({ key: session.key, name: getSessionName(session) });
                         }}
                         title={isSnoozed ? 'Update snooze' : isSnoozeExpired ? 'Expired reminder - click to manage' : 'Snooze conversation'}
                         aria-label="Snooze conversation"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                       >
                         {isSnoozeExpired ? <AlertCircle size={14} /> : <Moon size={14} />}
-                      </IconButton>
-                      <IconButton
-                        variant="ghost"
-                        color={isMuted ? 'orange' : 'gray'}
-                        size="1"
+                      </button>
+                      <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowNotificationSettings({ key: session.key, name: getSessionName(session) });
                         }}
                         title="Notification settings"
                         aria-label="Notification settings"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                       >
                         {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
-                      </IconButton>
-                      <IconButton
-                        variant="ghost"
-                        color="gray"
-                        size="1"
+                      </button>
+                      <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowFolderSelector(session.key);
                         }}
                         title="Assign to folders"
                         aria-label="Assign to folders"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Tag size={14} />
-                      </IconButton>
+                      </button>
                       <ArrowRight size={16} className="text-mission-control-text-dim mt-2" />
                     </div>
                   </Flex>
@@ -889,7 +887,7 @@ export default function SessionsFilter() {
           <>
             {pinnedSessionsList.length > 0 && (
               <div className="sticky top-0 z-10 px-4 py-2 bg-mission-control-surface border-b border-mission-control-border">
-                <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">
+                <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wide">
                   All Conversations ({unpinnedSessionsList.length})
                 </span>
               </div>
@@ -932,22 +930,22 @@ export default function SessionsFilter() {
                         <div className="text-2xl">{channelInfo.icon}</div>
                         <div className="flex-1 min-w-0">
                           <Flex align="center" gap="2" className="mb-1">
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-bg0'}`} />
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-[var(--color-success)]' : 'bg-mission-control-surface'}`} />
                             <span className="font-medium truncate">{getSessionName(session)}</span>
                             {isMuted && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-warning-subtle text-warning border border-warning-border rounded-full text-xs">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/30 rounded-full text-xs">
                                 <BellOff size={14} />
                                 Muted
                               </span>
                             )}
                             {isSnoozeExpired && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-error-subtle text-error border border-error-border rounded-full text-xs animate-pulse">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/30 rounded-full text-xs animate-pulse">
                                 <AlertCircle size={14} />
                                 Reminder
                               </span>
                             )}
                             {isSnoozed && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-info-subtle text-info border border-info-border rounded-full text-xs">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 rounded-full text-xs">
                                 <Moon size={14} />
                                 Snoozed
                               </span>
@@ -989,58 +987,54 @@ export default function SessionsFilter() {
                           )}
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <IconButton
-                            variant="ghost"
-                            color="gray"
-                            size="1"
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               togglePin(session.key);
                             }}
                             title="Pin conversation"
                             aria-label="Pin conversation"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                           >
                             <Pin size={14} />
-                          </IconButton>
-                          <IconButton
-                            variant="ghost"
-                            color={isSnoozeExpired ? 'red' : isSnoozed ? 'blue' : 'gray'}
-                            size="1"
+                          </button>
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowSnoozeModal({ key: session.key, name: getSessionName(session) });
                             }}
                             title={isSnoozed ? 'Update snooze' : isSnoozeExpired ? 'Expired reminder - click to manage' : 'Snooze conversation'}
                             aria-label="Snooze conversation"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                           >
                             {isSnoozeExpired ? <AlertCircle size={14} /> : <Moon size={14} />}
-                          </IconButton>
-                          <IconButton
-                            variant="ghost"
-                            color={isMuted ? 'orange' : 'gray'}
-                            size="1"
+                          </button>
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowNotificationSettings({ key: session.key, name: getSessionName(session) });
                             }}
                             title="Notification settings"
                             aria-label="Notification settings"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                           >
                             {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
-                          </IconButton>
-                          <IconButton
-                            variant="ghost"
-                            color="gray"
-                            size="1"
+                          </button>
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowFolderSelector(session.key);
                             }}
                             title="Assign to folders"
                             aria-label="Assign to folders"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                           >
                             <Tag size={14} />
-                          </IconButton>
+                          </button>
                           <ArrowRight size={16} className="text-mission-control-text-dim mt-2" />
                         </div>
                       </Flex>
@@ -1058,7 +1052,7 @@ export default function SessionsFilter() {
       {/* Folder Selector Modal */}
       {showFolderSelector && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowFolderSelector(null)}
           onKeyDown={(e) => handleKeyDown(e, () => setShowFolderSelector(null))}
           role="button"
@@ -1080,7 +1074,7 @@ export default function SessionsFilter() {
       {/* Folder Manager Modal */}
       {showFolderManager && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowFolderManager(false)}
           onKeyDown={(e) => handleKeyDown(e, () => setShowFolderManager(false))}
           role="button"
@@ -1088,7 +1082,7 @@ export default function SessionsFilter() {
           aria-label="Close modal"
         >
           <div
-            className="w-full max-w-3xl h-[80vh] bg-mission-control-surface rounded-lg shadow-xl overflow-hidden"
+            className="w-full max-w-3xl h-[80vh] bg-mission-control-surface rounded-2xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
@@ -1118,7 +1112,7 @@ export default function SessionsFilter() {
       {/* Bulk Folder Assignment Modal */}
       {showBulkFolderAssign && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowBulkFolderAssign(false)}
           onKeyDown={(e) => handleKeyDown(e, () => setShowBulkFolderAssign(false))}
           role="button"
@@ -1141,7 +1135,7 @@ export default function SessionsFilter() {
       {/* Snooze Modal */}
       {showSnoozeModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowSnoozeModal(null)}
           onKeyDown={(e) => handleKeyDown(e, () => setShowSnoozeModal(null))}
           role="button"

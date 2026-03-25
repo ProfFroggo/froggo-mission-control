@@ -31,8 +31,8 @@ export default function LibraryPanel() {
     <div className="h-full flex flex-col bg-mission-control-bg">
       {/* Header with Tabs */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
-        <div className="p-6 pb-0">
-          <Flex align="center" gap="3" className="mb-4">
+        <div className="px-4 py-3">
+          <Flex align="center" gap="3" className="mb-3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg">
               <FolderOpen size={24} className="text-mission-control-accent" />
             </div>
@@ -46,7 +46,7 @@ export default function LibraryPanel() {
         </div>
 
         {/* Tab Navigation */}
-        <Flex gap="1" className="px-6" role="tablist" aria-label="Library sections">
+        <Flex gap="1" className="px-4" role="tablist" aria-label="Library sections">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               type="button"

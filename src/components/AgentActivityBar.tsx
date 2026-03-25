@@ -57,14 +57,14 @@ export default function AgentActivityBar({ onNavigate, onTaskClick, expanded = t
 
   return (
     <div
-      className={`mx-2 mb-2 p-2 rounded-lg bg-mission-control-bg/60 border border-mission-control-border/60 ${
+      className={`mx-2 mb-2 p-2 rounded-xl bg-mission-control-surface border border-mission-control-border ${
         expanded ? '' : 'flex flex-col items-center gap-1.5'
       }`}
       title={expanded ? undefined : `${activeWork.length} agent${activeWork.length !== 1 ? 's' : ''} working`}
     >
       {expanded && (
         <Flex align="center" gap="2" className="mb-2 px-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-info animate-pulse flex-shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-info)] animate-pulse flex-shrink-0" />
           <span className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider">
             Live
           </span>
@@ -87,13 +87,13 @@ export default function AgentActivityBar({ onNavigate, onTaskClick, expanded = t
                 }
               }}
               title={`${agent.name}: ${task.title} (${elapsed})`}
-              className={`flex items-center gap-2 w-full rounded-lg transition-colors hover:bg-mission-control-border/50 ${
+              className={`flex items-center gap-2 w-full rounded-xl transition-colors hover:bg-mission-control-border/50 ${
                 expanded ? 'px-1 py-1' : 'p-0'
               }`}
             >
               <div className="relative flex-shrink-0">
                 <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-info animate-pulse ring-1 ring-mission-control-surface" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--color-info)] animate-pulse ring-1 ring-mission-control-surface" />
               </div>
               {expanded && (
                 <div className="flex-1 min-w-0 text-left">
@@ -101,7 +101,7 @@ export default function AgentActivityBar({ onNavigate, onTaskClick, expanded = t
                     <p className="text-[10px] font-medium text-mission-control-text truncate leading-tight">
                       {agent.name}
                     </p>
-                    <span className="text-[9px] text-mission-control-text-dim/70 flex-shrink-0 leading-tight">
+                    <span className="text-[10px] tabular-nums text-mission-control-text-dim flex-shrink-0 leading-tight">
                       {elapsed}
                     </span>
                   </Flex>

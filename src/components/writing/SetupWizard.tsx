@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Wand2, X, ArrowRight, BookOpen, BookText, Type, Loader2, CheckCircle, Sparkles } from 'lucide-react';
-import { Button, TextField, TextArea, Flex } from '@radix-ui/themes';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import { useWizardStore } from '../../store/wizardStore';
 import { getWizardAgent } from '../../lib/wizardPrompts';
 import WizardChat from './WizardChat';
@@ -73,7 +73,7 @@ export default function SetupWizard() {
           <div className="p-6 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-6">
             {/* Book type selector */}
             <div>
-              <span className="block text-xs font-medium text-mission-control-text-dim mb-2">
+              <span className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">
                 Book Type
               </span>
               <Flex gap="2">
@@ -81,15 +81,19 @@ export default function SetupWizard() {
                   const Icon = opt.icon;
                   const isSelected = selectedType === opt.key;
                   return (
-                    <Button
+                    <button
                       key={opt.key}
-                      size="2"
-                      variant={isSelected ? 'soft' : 'ghost'}
+                      type="button"
                       onClick={() => handleTypeSelect(opt.key, opt.agent)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                        isSelected
+                          ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                          : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                      }`}
                     >
                       <Icon size={16} />
                       {opt.label}
-                    </Button>
+                    </button>
                   );
                 })}
               </Flex>
@@ -107,29 +111,29 @@ export default function SetupWizard() {
 
             {/* Brain dump textarea */}
             <div>
-              <label htmlFor="brain-dump-textarea" className="block text-xs font-medium text-mission-control-text-dim mb-2">
+              <label htmlFor="brain-dump-textarea" className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">
                 Describe your book idea
               </label>
-              <TextArea
+              <textarea
                 id="brain-dump-textarea"
                 value={brainDump}
                 onChange={(e) => setBrainDump(e.target.value)}
                 rows={6}
                 placeholder="What's your book about? Pour out everything -- characters, themes, plot points, personal experiences, inspiration..."
-                style={{ minHeight: '120px', resize: 'vertical' }}
+                className="w-full min-h-[120px]"
               />
             </div>
 
             {/* Actions */}
             <Flex align="center" justify="between" className="pt-2">
-              <Button
-                size="2"
-                variant="ghost"
+              <button
+                type="button"
                 onClick={() => cancelWizard()}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <X size={14} />
                 Cancel
-              </Button>
+              </button>
               <Button
                 size="2"
                 variant="solid"
@@ -174,14 +178,14 @@ export default function SetupWizard() {
               <Wand2 size={12} />
               Generate Plan
             </Button>
-            <Button
-              size="1"
-              variant="ghost"
+            <button
+              type="button"
               onClick={() => cancelWizard()}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <X size={12} />
               Cancel
-            </Button>
+            </button>
           </Flex>
         </div>
 
@@ -222,7 +226,7 @@ export default function SetupWizard() {
     return (
       <div className="h-full flex items-center justify-center bg-mission-control-bg">
         <div className="text-center p-8">
-          <CheckCircle size={48} className="mx-auto text-success mb-4" />
+          <CheckCircle size={48} className="mx-auto text-[var(--color-success)] mb-4" />
           <p className="text-mission-control-text text-sm font-medium">Project created successfully!</p>
           <p className="text-mission-control-text-dim text-xs mt-1">Redirecting...</p>
         </div>

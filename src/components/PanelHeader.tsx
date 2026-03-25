@@ -17,7 +17,7 @@
 
 import React, { ReactNode, isValidElement } from 'react';
 import { LucideIcon } from 'lucide-react';
-import { Button, IconButton, Spinner, Badge, Flex, Box } from '@radix-ui/themes';
+import { Button, Spinner, Badge, Flex, Box } from '@radix-ui/themes';
 
 /** Renders an icon prop that may be a Lucide component (function or forwardRef object) or a pre-rendered ReactNode. */
 function renderIcon(Icon: LucideIcon | ReactNode, size: number, className: string) {
@@ -158,17 +158,16 @@ function renderActions(actions?: PanelHeaderAction[]) {
 
     if (!action.label && ActionIcon) {
       return (
-        <IconButton
+        <button
           key={index}
-          variant="ghost"
-          color="gray"
-          size="1"
+          type="button"
           onClick={action.onClick}
           disabled={action.disabled || action.loading}
           aria-label={action.kbd || `action-${index}`}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
         >
           {action.loading ? <Spinner size="1" /> : <ActionIcon size={14} />}
-        </IconButton>
+        </button>
       );
     }
 

@@ -11,7 +11,8 @@ import KnowledgeGraphPanel from './KnowledgeGraphPanel';
 import BrandAssetsPanel from './BrandAssetsPanel';
 import MarkdownMessage from './MarkdownMessage';
 // eslint-disable-next-line import/order
-import { Button, Flex, IconButton, TextField, Select, TextArea, Checkbox } from '@radix-ui/themes';
+import { Button, Flex, TextField, Select, TextArea, Checkbox } from '@radix-ui/themes';
+import { humanizeFilename } from '@/utils/formatting';
 
 const SCOPE_OPTIONS = [
   { value: 'all', label: 'Public' },
@@ -215,7 +216,7 @@ function highlightText(text: string, term: string): React.ReactNode {
         part.toLowerCase() === term.toLowerCase() ? (
           <mark
             key={i}
-            className="bg-warning/20 text-warning rounded-sm"
+            className="bg-[var(--color-warning)]/20 text-[var(--color-warning)] rounded-sm"
             style={{ background: 'var(--color-warning, #f59e0b33)', color: 'var(--color-warning, #f59e0b)' }}
           >
             {part}
@@ -391,18 +392,17 @@ function renderInline(text: string, allArticles: KBArticle[], onNavigate: (artic
       const target = allArticles.find(a => a.title.toLowerCase() === articleTitle.toLowerCase());
       if (target) {
         parts.push(
-          <Button
+          <button
             key={key++}
+            type="button"
             onClick={() => onNavigate(target)}
-            variant="ghost"
-            color="indigo"
-            size="1"
             title={`View article: ${target.title}`}
-            style={{ display: 'inline', padding: '0 2px', height: 'auto' }}
+            className="inline-flex items-center gap-0.5 px-0.5 text-mission-control-accent hover:underline transition-colors"
+            style={{ fontSize: 'inherit', lineHeight: 'inherit' }}
           >
-            <Link size={10} className="inline mr-0.5 opacity-70" />
+            <Link size={10} className="inline opacity-70" />
             {articleTitle}
-          </Button>
+          </button>
         );
       } else {
         parts.push(<span key={key++} className="text-mission-control-text-dim">{articleTitle}</span>);
@@ -428,7 +428,7 @@ function renderInline(text: string, allArticles: KBArticle[], onNavigate: (artic
           href={first.match[3]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-info hover:underline"
+          className="text-[var(--color-info)] hover:underline"
         >
           {first.match[2]}
         </a>
@@ -853,66 +853,66 @@ export default function KnowledgeBase() {
         {/* Reader */}
         <div className="flex flex-col flex-1 min-w-0 h-full">
           <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
-            <IconButton
+            <button
+              type="button"
               onClick={() => setViewing(null)}
-              variant="ghost"
-              color="gray"
-              size="2"
               aria-label="Back to list"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <ChevronLeft size={16} />
-            </IconButton>
+            </button>
             <div className="flex-1 min-w-0">
+              {/* Breadcrumb */}
+              <div className="flex items-center gap-1 text-[11px] text-mission-control-text-dim/70 mb-1">
+                <span>Knowledge Base</span>
+                <span>/</span>
+                <span className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5 capitalize">{viewing.category}</span>
+                <span>/</span>
+                <span className="text-mission-control-text/70 truncate max-w-[160px]">{viewing.title}</span>
+              </div>
               <h2 className="font-semibold text-mission-control-text truncate">{viewing.title}</h2>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="text-xs text-mission-control-text-dim capitalize flex items-center gap-1">
-                  <Tag size={10} />
-                  {viewing.category}
-                </span>
                 {viewing.scope && viewing.scope !== 'all' && (
-                  <span className="text-xs text-mission-control-text-dim">· {viewing.scope}</span>
+                  <span className="text-[11px] text-mission-control-text-dim/70">{viewing.scope}</span>
                 )}
                 {viewing.updatedAt && (
-                  <span className="text-xs text-mission-control-text-dim">
-                    · Updated {new Date(viewing.updatedAt).toLocaleDateString()}
+                  <span className="text-[11px] text-mission-control-text-dim/70">
+                    Updated {new Date(viewing.updatedAt).toLocaleDateString()}
                   </span>
                 )}
                 {viewing.createdBy && (
-                  <span className="text-xs text-mission-control-text-dim">· by {viewing.createdBy}</span>
+                  <span className="text-[11px] text-mission-control-text-dim/70">by {viewing.createdBy}</span>
                 )}
               </div>
             </div>
-            <IconButton
+            <button
+              type="button"
               onClick={() => setVersionsArticleId(viewing.id)}
-              variant="ghost"
-              color="gray"
-              size="2"
               aria-label="Version history"
               title="Version history"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <History size={14} />
-            </IconButton>
-            <IconButton
+            </button>
+            <button
+              type="button"
               onClick={() => toggleStar(viewing.id)}
-              variant="ghost"
-              color="gray"
-              size="2"
               aria-label={isStarred ? 'Unstar article' : 'Star article'}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
-              <Star size={14} fill={isStarred ? 'currentColor' : 'none'} className={isStarred ? 'text-warning' : ''} />
-            </IconButton>
-            <IconButton
+              <Star size={14} fill={isStarred ? 'currentColor' : 'none'} className={isStarred ? 'text-[var(--color-warning)]' : ''} />
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 setEditing({ ...viewing, tags: viewing.tags.join(', ') });
                 setViewing(null);
               }}
-              variant="ghost"
-              color="gray"
-              size="2"
               aria-label="Edit article"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <Edit2 size={14} />
-            </IconButton>
+            </button>
           </Flex>
 
           <div className="flex-1 overflow-y-auto p-5">
@@ -928,7 +928,7 @@ export default function KnowledgeBase() {
                       href={l.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block text-sm text-info hover:underline mb-1"
+                      className="block text-sm text-[var(--color-info)] hover:underline mb-1"
                     >
                       {l.title || l.url}
                     </a>
@@ -937,9 +937,9 @@ export default function KnowledgeBase() {
               )}
 
               {viewing.tags.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-1">
+                <div className="mt-4 flex flex-wrap gap-1.5">
                   {viewing.tags.map(t => (
-                    <span key={t} className="px-2 py-0.5 rounded-full bg-mission-control-surface text-xs text-mission-control-text-dim">
+                    <span key={t} className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5 text-mission-control-text-dim/70">
                       {t}
                     </span>
                   ))}
@@ -951,19 +951,17 @@ export default function KnowledgeBase() {
                   <p className="text-xs font-medium text-mission-control-text-dim mb-2">Related articles</p>
                   <div className="space-y-1.5">
                     {related.map(r => (
-                      <Button
+                      <button
                         key={r.id}
+                        type="button"
                         onClick={() => setViewing(r)}
-                        variant="ghost"
-                        color="gray"
-                        size="2"
-                        className="w-full justify-start"
+                        className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <BookOpen size={12} className="text-mission-control-text-dim shrink-0" />
                         <span className="text-sm text-mission-control-text truncate">{r.title}</span>
                         <span className="ml-auto text-xs text-mission-control-text-dim capitalize shrink-0">{r.category}</span>
                         <ChevronRight size={12} className="text-mission-control-text-dim shrink-0" />
-                      </Button>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -1004,15 +1002,14 @@ export default function KnowledgeBase() {
           <span className="font-semibold text-mission-control-text flex-1">
             {editing.id ? 'Edit Article' : 'New Article'}
           </span>
-          <IconButton
+          <button
+            type="button"
             onClick={() => setEditing(null)}
-            variant="ghost"
-            color="gray"
-            size="2"
             aria-label="Cancel"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={14} />
-          </IconButton>
+          </button>
           <Button
             onClick={save}
             size="2"
@@ -1054,7 +1051,7 @@ export default function KnowledgeBase() {
               </Select.Content>
             </Select.Root>
             <label className="flex items-center gap-2 px-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text cursor-pointer select-none">
-              <Pin size={13} className={editing.pinned ? 'text-warning' : 'text-mission-control-text-dim'} />
+              <Pin size={13} className={editing.pinned ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim'} />
               <Checkbox
                 checked={!!editing.pinned}
                 onCheckedChange={v => setEditing(prev => ({ ...prev, pinned: !!v }))}
@@ -1126,15 +1123,15 @@ export default function KnowledgeBase() {
         <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-mission-control-border rounded-xl px-5 py-4 shadow-xl w-80">
           <Flex align="center" gap="2" mb="3">
             {ingestError ? (
-              <XCircle size={16} className="text-error shrink-0" />
+              <XCircle size={16} className="text-[var(--color-error)] shrink-0" />
             ) : (
               <RefreshCw size={16} className="text-mission-control-accent animate-spin shrink-0" />
             )}
-            <span className="text-sm font-medium text-mission-control-text truncate">{ingestFileName}</span>
+            <span className="text-sm font-medium text-mission-control-text truncate">{humanizeFilename(ingestFileName)}</span>
           </Flex>
 
           {ingestError ? (
-            <p className="text-xs text-error">{ingestError}</p>
+            <p className="text-xs text-[var(--color-error)]">{ingestError}</p>
           ) : (
             <div className="space-y-2">
               {(['analyzing', 'rewriting', 'saving'] as const).map((step, i) => {
@@ -1147,7 +1144,7 @@ export default function KnowledgeBase() {
                 return (
                   <div key={step} className="flex items-center gap-2.5">
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      isDone ? 'bg-success' : isActive ? 'bg-mission-control-accent' : 'bg-mission-control-border'
+                      isDone ? 'bg-[var(--color-success)]' : isActive ? 'bg-mission-control-accent' : 'bg-mission-control-border'
                     }`}>
                       {isDone ? (
                         <Check size={11} className="text-white" />
@@ -1157,7 +1154,7 @@ export default function KnowledgeBase() {
                         <div className="w-2 h-2 bg-mission-control-text-dim/30 rounded-full" />
                       )}
                     </div>
-                    <span className={`text-xs ${isActive ? 'text-mission-control-text font-medium' : isDone ? 'text-success' : 'text-mission-control-text-dim'}`}>
+                    <span className={`text-xs ${isActive ? 'text-mission-control-text font-medium' : isDone ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim'}`}>
                       {labels[step]}
                     </span>
                   </div>
@@ -1170,9 +1167,9 @@ export default function KnowledgeBase() {
 
       {/* Ingest result toast */}
       {ingestResult && (
-        <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-success-border rounded-lg px-4 py-3 shadow-lg max-w-sm">
+        <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-[var(--color-success)]/30 rounded-lg px-4 py-3 shadow-lg max-w-sm">
           <Flex align="start" gap="2">
-            <CheckCircle size={16} className="text-success mt-0.5 flex-shrink-0" />
+            <CheckCircle size={16} className="text-[var(--color-success)] mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-mission-control-text">{ingestResult.title}</p>
               <p className="text-xs text-mission-control-text-dim mt-0.5">Added to {ingestResult.category}</p>
@@ -1182,9 +1179,9 @@ export default function KnowledgeBase() {
                 ))}
               </div>
             </div>
-            <IconButton onClick={() => setIngestResult(null)} variant="ghost" color="gray" size="1" className="flex-shrink-0">
+            <button type="button" onClick={() => setIngestResult(null)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0">
               <X size={14} />
-            </IconButton>
+            </button>
           </Flex>
         </div>
       )}
@@ -1238,17 +1235,15 @@ export default function KnowledgeBase() {
                       <p className="px-3 py-2 text-xs text-mission-control-text-dim">No templates available</p>
                     ) : (
                       apiTemplates.map(t => (
-                        <Button
+                        <button
                           key={t.id}
+                          type="button"
                           onClick={() => createFromTemplate(t.id)}
-                          variant="ghost"
-                          color="gray"
-                          size="1"
-                          className="w-full justify-start"
+                          className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
                           <FileText size={11} className="text-mission-control-text-dim shrink-0" />
                           {t.label}
-                        </Button>
+                        </button>
                       ))
                     )}
                   </div>
@@ -1280,26 +1275,24 @@ export default function KnowledgeBase() {
                 <Search size={13} />
               </TextField.Slot>
               <TextField.Slot side="right">
-                <IconButton
+                <button
+                  type="button"
                   onClick={() => setShowStarred(v => !v)}
-                  variant="ghost"
-                  color={showStarred ? 'amber' : 'gray'}
-                  size="1"
                   aria-label={showStarred ? 'Show all articles' : 'Show starred only'}
                   title={showStarred ? 'Showing starred only' : 'Filter by starred'}
+                  className={`inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-mission-control-border/40 transition-colors ${showStarred ? 'text-mission-control-text' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
                 >
                   <Star size={12} fill={showStarred ? 'currentColor' : 'none'} />
-                </IconButton>
+                </button>
                 {search && (
-                  <IconButton
+                  <button
+                    type="button"
                     onClick={() => { setSearch(''); setSearchCursor(-1); }}
-                    variant="ghost"
-                    color="gray"
-                    size="1"
                     aria-label="Clear search"
+                    className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                   >
                     <X size={12} />
-                  </IconButton>
+                  </button>
                 )}
               </TextField.Slot>
             </TextField.Root>
@@ -1532,94 +1525,84 @@ function ArticleCard({
 
   return (
     <div
-      className={`group rounded-lg bg-mission-control-surface border transition-colors cursor-pointer p-3 ${
+      className={`group rounded-xl bg-mission-control-surface border transition-colors cursor-pointer p-4 ${
         isKeyboardFocused
-          ? 'border-info/70 ring-1 ring-info/30'
-          : 'border-mission-control-border hover:border-info/40'
+          ? 'border-[var(--mission-control-accent)]/60 ring-1 ring-[var(--mission-control-accent)]/20'
+          : 'border-mission-control-border hover:border-[var(--mission-control-accent)]/30'
       }`}
       onClick={onView}
     >
-      <Flex align="start" justify="between" gap="2" className="mb-1.5">
+      <Flex align="start" justify="between" gap="2" className="mb-2">
         <Flex align="center" gap="2" className="min-w-0">
-          {article.pinned && <Pin size={11} className="text-warning shrink-0" />}
-          <span className="font-medium text-mission-control-text text-sm truncate">
+          {article.pinned && <Pin size={11} className="text-[var(--color-warning)] shrink-0" />}
+          <span className="text-sm font-semibold text-mission-control-text truncate">
             {highlightText(article.title, searchTerm)}
           </span>
         </Flex>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          <IconButton
-            size="1"
-            variant="ghost"
-            color={isStarred ? 'amber' : 'gray'}
-           
+          <button
+            type="button"
             onClick={e => { e.stopPropagation(); onToggleStar(); }}
             aria-label={isStarred ? 'Unstar article' : 'Star article'}
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors hover:bg-mission-control-border/40 ${isStarred ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
           >
             <Star size={12} fill={isStarred ? 'currentColor' : 'none'} />
-          </IconButton>
-          <IconButton
-            size="1"
-            variant="ghost"
-            color="gray"
-           
+          </button>
+          <button
+            type="button"
             onClick={e => { e.stopPropagation(); onVersionHistory(); }}
             aria-label="Version history"
             title="Version history"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <History size={12} />
-          </IconButton>
-          <IconButton
-            size="1"
-            variant="ghost"
-            color="gray"
-           
+          </button>
+          <button
+            type="button"
             onClick={e => { e.stopPropagation(); onTogglePin(); }}
             aria-label={article.pinned ? 'Unpin article' : 'Pin article'}
             title={article.pinned ? 'Unpin' : 'Pin — always inject into agent context'}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Pin size={12} />
-          </IconButton>
-          <IconButton
-            size="1"
-            variant="ghost"
-            color="gray"
-           
+          </button>
+          <button
+            type="button"
             onClick={e => { e.stopPropagation(); onEdit(); }}
             aria-label="Edit article"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Edit2 size={12} />
-          </IconButton>
-          <IconButton
-            size="1"
-            variant="ghost"
-            color="red"
-           
+          </button>
+          <button
+            type="button"
             onClick={e => { e.stopPropagation(); onDelete(); }}
             aria-label="Delete article"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Trash2 size={12} />
-          </IconButton>
+          </button>
         </div>
       </Flex>
-      <p className="text-xs text-mission-control-text-dim line-clamp-2 mb-2">
+      <p className="text-xs text-mission-control-text-dim/70 line-clamp-2 mb-3 leading-relaxed">
         {highlightText(excerpt, searchTerm)}
       </p>
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="px-1.5 py-0.5 rounded text-xs bg-mission-control-border text-mission-control-text-dim capitalize">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5 text-mission-control-text-dim/70 capitalize">
           {article.category}
         </span>
         {isStarred && (
-          <span className="px-1.5 py-0.5 rounded text-xs bg-warning text-warning flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-[var(--color-warning)]/10 text-[var(--color-warning)] flex items-center gap-1">
             <Star size={9} fill="currentColor" />
             Starred
           </span>
         )}
         {article.tags.slice(0, 3).map(t => (
-          <span key={t} className="px-1.5 py-0.5 rounded-full bg-mission-control-border text-xs text-mission-control-text-dim">
+          <span key={t} className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5 text-mission-control-text-dim/70">
             {t}
           </span>
         ))}
-        <span className="ml-auto flex items-center gap-2 text-xs text-mission-control-text-dim">
+        <span className="ml-auto flex items-center gap-2 text-[10px] text-mission-control-text-dim/70">
           <span className="flex items-center gap-0.5">
             <AlignLeft size={9} />
             {wc}w
@@ -1669,24 +1652,22 @@ function QuickCreateModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="relative w-full max-w-lg mx-4 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-2xl flex flex-col"
-        style={{ maxHeight: '90vh' }}
+        className="relative w-full max-w-lg mx-4 rounded-2xl bg-mission-control-surface border border-mission-control-border shadow-2xl flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
           <BookOpen size={16} className="text-mission-control-text-dim" />
           <span className="font-semibold text-mission-control-text flex-1 text-sm">New Article</span>
-          <IconButton
+          <button
+            type="button"
             onClick={onClose}
-            variant="ghost"
-            color="gray"
-            size="2"
             aria-label="Close"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={14} />
-          </IconButton>
+          </button>
         </Flex>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -1756,17 +1737,15 @@ function QuickCreateModal({
                   {ARTICLE_TEMPLATES.map(tmpl => {
                     const Icon = tmpl.icon;
                     return (
-                      <Button
+                      <button
                         key={tmpl.id}
+                        type="button"
                         onClick={() => applyTemplate(tmpl)}
-                        variant="ghost"
-                        color="gray"
-                        size="1"
-                        className="w-full justify-start"
+                        className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Icon size={12} className="text-mission-control-text-dim shrink-0" />
                         {tmpl.label}
-                      </Button>
+                      </button>
                     );
                   })}
                 </div>
@@ -1795,14 +1774,13 @@ function QuickCreateModal({
         </div>
 
         <Flex align="center" justify="end" gap="2" p="4" className="border-t border-mission-control-border">
-          <Button
+          <button
+            type="button"
             onClick={onClose}
-            variant="ghost"
-            color="gray"
-            size="2"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             Cancel
-          </Button>
+          </button>
           <Button
             onClick={onSave}
             disabled={!canSave}
@@ -1837,15 +1815,14 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
       <Flex align="center" gap="2" p="3" className="border-b border-mission-control-border">
         <History size={14} className="text-mission-control-text-dim" />
         <span className="text-sm font-medium text-mission-control-text flex-1">Version History</span>
-        <IconButton
+        <button
+          type="button"
           onClick={onClose}
-          variant="ghost"
-          color="gray"
-          size="1"
           aria-label="Close version history"
+          className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           <X size={13} />
-        </IconButton>
+        </button>
       </Flex>
 
       {/* Content preview pane */}
@@ -1855,14 +1832,13 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
             <span className="text-xs text-mission-control-text-dim">
               Preview — {new Date(previewVersion.editedAt).toLocaleString()}
             </span>
-            <Button
-              size="1"
-              variant="ghost"
-              color="gray"
+            <button
+              type="button"
               onClick={() => onPreview(null)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Close preview
-            </Button>
+            </button>
           </Flex>
           <div className="max-h-48 overflow-y-auto rounded bg-mission-control-surface border border-mission-control-border p-2 text-xs font-mono text-mission-control-text whitespace-pre-wrap">
             {displayContent.slice(0, 600)}{displayContent.length > 600 ? '...' : ''}
@@ -1894,29 +1870,30 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
         ) : (
           <div className="space-y-px px-2">
             {versions.map(v => (
-              <Button
+              <button
                 key={v.id}
                 onClick={() => onPreview(previewVersion?.id === v.id ? null : v)}
-                variant={previewVersion?.id === v.id ? 'soft' : 'ghost'}
-                color={previewVersion?.id === v.id ? 'indigo' : 'gray'}
-                size="1"
-                className="w-full justify-start"
+                className={`w-full flex flex-col items-start gap-0.5 px-3 py-2 rounded-md text-left transition-colors ${
+                  previewVersion?.id === v.id
+                    ? 'bg-mission-control-surface text-mission-control-accent shadow-sm'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+                }`}
               >
-                <Flex align="center" justify="between" gap="2">
+                <div className="flex items-center justify-between gap-2 w-full">
                   <span className="text-xs font-medium text-mission-control-text">
                     {new Date(v.editedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                   <span className="text-xs text-mission-control-text-dim">
                     {new Date(v.editedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                </Flex>
-                <Flex align="center" gap="2" className="mt-0.5">
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-xs text-mission-control-text-dim capitalize">{v.editedBy}</span>
                   {v.versionNote && (
                     <span className="text-xs text-mission-control-text-dim truncate opacity-70">· {v.versionNote}</span>
                   )}
-                </Flex>
-              </Button>
+                </div>
+              </button>
             ))}
           </div>
         )}

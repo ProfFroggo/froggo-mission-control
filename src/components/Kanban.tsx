@@ -27,13 +27,18 @@ import { safeStorage } from '../utils/safeStorage';
 import ConfirmDialog from './ConfirmDialog';
 import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
 import { useBreakpoint } from '../hooks/useBreakpoint';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
-  { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-error-subtle', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
-  { id: 'p1', label: 'High', color: 'text-warning', bg: 'bg-warning-subtle', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
-  { id: 'p2', label: 'Medium', color: 'text-info', bg: 'bg-info-subtle', icon: <Circle size={14} className="flex-shrink-0" /> },
-  { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-bg0/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
+  { id: 'p0', label: 'Urgent', color: 'text-[var(--color-error)]', bg: 'bg-[var(--color-error)]/10', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
+  { id: 'p1', label: 'High', color: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
+  { id: 'p2', label: 'Medium', color: 'text-[var(--color-info)]', bg: 'bg-[var(--color-info)]/10', icon: <Circle size={14} className="flex-shrink-0" /> },
+  { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
 ];
 
 // Format due date
@@ -56,11 +61,11 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
 
 const columns: { id: TaskStatus; title: string; color: string; iconColor: string; bg: string; icon: React.ReactNode }[] = [
   { id: 'todo',            title: 'To Do',            color: 'border-t-mission-control-text-dim', iconColor: 'text-mission-control-text-dim', bg: 'bg-mission-control-border/30', icon: <FileText size={14} /> },
-  { id: 'internal-review', title: 'Pre-review',  color: 'border-t-review',  iconColor: 'text-review',  bg: 'bg-review-subtle',  icon: <Search size={14} /> },
-  { id: 'in-progress',     title: 'In Progress',      color: 'border-t-info', iconColor: 'text-info', bg: 'bg-info-subtle', icon: <Zap size={14} /> },
-  { id: 'review',          title: 'Agent Review',     color: 'border-t-review',  iconColor: 'text-review',  bg: 'bg-review-subtle',  icon: <Bot size={14} /> },
-  { id: 'human-review',    title: 'Human Review',     color: 'border-t-warning', iconColor: 'text-warning', bg: 'bg-warning-subtle', icon: <User size={14} /> },
-  { id: 'done',            title: 'Done',             color: 'border-t-success', iconColor: 'text-success', bg: 'bg-success-subtle', icon: <CheckCircle size={14} /> },
+  { id: 'internal-review', title: 'Pre-review',  color: 'border-t-review',  iconColor: 'text-[var(--color-review)]',  bg: 'bg-[var(--color-review)]-subtle',  icon: <Search size={14} /> },
+  { id: 'in-progress',     title: 'In Progress',      color: 'border-t-info', iconColor: 'text-[var(--color-info)]', bg: 'bg-[var(--color-info)]/10', icon: <Zap size={14} /> },
+  { id: 'review',          title: 'Agent Review',     color: 'border-t-review',  iconColor: 'text-[var(--color-review)]',  bg: 'bg-[var(--color-review)]-subtle',  icon: <Bot size={14} /> },
+  { id: 'human-review',    title: 'Human Review',     color: 'border-t-warning', iconColor: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10', icon: <User size={14} /> },
+  { id: 'done',            title: 'Done',             color: 'border-t-success', iconColor: 'text-[var(--color-success)]', bg: 'bg-[var(--color-success)]/10', icon: <CheckCircle size={14} /> },
 ];
 
 type DueFilter = 'all' | 'overdue' | 'today' | 'this-week' | 'no-due-date';
@@ -139,7 +144,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     let interval: NodeJS.Timeout;
     
     const startPolling = () => {
-      interval = setInterval(loadTasksFromDB, 30000); // 30s (was 10s)
+      interval = setInterval(() => { if (document.hidden) return; loadTasksFromDB(); }, 60000); // 60s with visibility guard
     };
     
     const stopPolling = () => {
@@ -307,7 +312,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     }
   }, [showSortMenu]);
 
-  const updateColumnSetting = (columnId: TaskStatus, key: keyof ColumnSettings, value: any) => {
+  const updateColumnSetting = useCallback((columnId: TaskStatus, key: keyof ColumnSettings, value: any) => {
     setColumnSettings(prev => ({
       ...prev,
       [columnId]: {
@@ -315,9 +320,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         [key]: value,
       },
     }));
-  };
+  }, []);
 
-  const toggleColumnDropdown = (columnId: TaskStatus, dropdown: 'sort' | 'filter') => {
+  const toggleColumnDropdown = useCallback((columnId: TaskStatus, dropdown: 'sort' | 'filter') => {
     setColumnDropdowns(prev => ({
       ...prev,
       [columnId]: {
@@ -325,7 +330,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         [dropdown]: !prev[columnId][dropdown],
       },
     }));
-  };
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -607,15 +612,15 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     e.dataTransfer.setData('text/plain', taskId);
   }, []);
 
-  const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
+  const handleDragOver = useCallback((e: React.DragEvent, status: TaskStatus) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverColumn(status);
-  };
+  }, []);
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setDragOverColumn(null);
-  };
+  }, []);
 
   const handleDrop = async (e: React.DragEvent, status: TaskStatus) => {
     e.preventDefault();
@@ -667,11 +672,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     }
   }, [tasks]);
 
-  const handleAddTask = (status: TaskStatus) => {
+  const handleAddTask = useCallback((status: TaskStatus) => {
     if (onNewTask) { onNewTask(); return; }
     setModalStatus(status);
     setModalOpen(true);
-  };
+  }, [onNewTask]);
 
   const handleInlineAddSubmit = useCallback(() => {
     const title = inlineAddTitle.trim();
@@ -692,18 +697,18 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   }, [updateTask]);
 
   // Async operation wrappers with loading states
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
       await loadTasksFromDB();
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [loadTasksFromDB]);
 
-  const handleHealthCheck = () => {
+  const handleHealthCheck = useCallback(() => {
     setShowHealthCheck(true);
-  };
+  }, []);
 
   const handleDeleteTask = useCallback((taskId: string) => {
     setPendingDeleteTaskId(taskId);
@@ -776,7 +781,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     }
   }, [updateTask]);
 
-  const handleMoveTask = async (taskId: string, status: TaskStatus) => {
+  const handleMoveTask = useCallback(async (taskId: string, status: TaskStatus) => {
     setMovingTasks(prev => new Set(prev).add(taskId));
     try {
       await moveTask(taskId, status);
@@ -787,7 +792,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         return next;
       });
     }
-  };
+  }, [moveTask]);
 
   // Toggle a task's selection, with shift-click range support
   const handleToggleSelect = useCallback((taskId: string, shiftKey: boolean) => {
@@ -868,12 +873,12 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   }, [selectedIds, loadTasksFromDB]);
 
   // Mobile: swipe-to-navigate columns
-  const handleMobileTouchStart = (e: React.TouchEvent) => {
+  const handleMobileTouchStart = useCallback((e: React.TouchEvent) => {
     mobileTouchStartX.current = e.changedTouches[0].clientX;
     mobileTouchStartY.current = e.changedTouches[0].clientY;
-  };
+  }, []);
 
-  const handleMobileTouchEnd = (e: React.TouchEvent) => {
+  const handleMobileTouchEnd = useCallback((e: React.TouchEvent) => {
     const deltaX = e.changedTouches[0].clientX - mobileTouchStartX.current;
     const deltaY = e.changedTouches[0].clientY - mobileTouchStartY.current;
     if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
@@ -883,7 +888,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         setMobileColumnIndex(prev => Math.max(prev - 1, 0));
       }
     }
-  };
+  }, []);
 
   if (taskLoadError) {
     return (
@@ -910,17 +915,17 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <Flex align="center" gap="4" className="text-secondary mt-1">
               <span>{filteredTasks.length} tasks</span>
               {stats.inProgress > 0 && (
-                <span className="icon-text-tight text-warning">
+                <span className="icon-text-tight text-[var(--color-warning)]">
                   <Zap size={14} className="flex-shrink-0" /> {stats.inProgress} in progress
                 </span>
               )}
               {stats.urgent > 0 && (
-                <span className="icon-text-tight text-error">
+                <span className="icon-text-tight text-[var(--color-error)]">
                   <AlertTriangle size={14} className="flex-shrink-0" /> {stats.urgent} urgent
                 </span>
               )}
               {stats.overdue > 0 && (
-                <span className="icon-text-tight text-error">
+                <span className="icon-text-tight text-[var(--color-error)]">
                   <Clock size={14} className="flex-shrink-0" /> {stats.overdue} overdue
                 </span>
               )}
@@ -947,39 +952,45 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               </TextField.Slot>
             </TextField.Root>
 
-            <Button
-              variant={activeFiltersCount > 0 ? 'soft' : 'ghost'}
-              size="1"
+            <button
               onClick={() => setShowFilters(!showFilters)}
               aria-label="Filter tasks"
               aria-expanded={showFilters}
               aria-controls="kanban-filters-panel"
               aria-haspopup="true"
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                activeFiltersCount > 0
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+              }`}
             >
               <Filter size={16} className="flex-shrink-0" aria-hidden="true" />
               Filters
               {activeFiltersCount > 0 && (
-                <span className="px-1.5 py-0.5 bg-[--accent-9] text-[--accent-contrast] text-xs rounded-full flex-shrink-0 whitespace-nowrap">
+                <span className="px-1.5 py-0.5 bg-mission-control-accent/20 text-mission-control-accent text-xs rounded-full flex-shrink-0 whitespace-nowrap">
                   {activeFiltersCount}
                 </span>
               )}
-            </Button>
+            </button>
 
             <div className="relative">
-              <Button
+              <button
                 ref={sortTriggerRef}
-                variant={globalSort !== 'newest' ? 'soft' : 'ghost'}
-                size="1"
                 onClick={() => setShowSortMenu(v => !v)}
                 aria-label="Sort tasks"
                 aria-expanded={showSortMenu}
                 aria-haspopup="menu"
                 aria-controls="kanban-sort-menu"
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                  globalSort !== 'newest'
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                }`}
               >
                 <SortAsc size={16} className="flex-shrink-0" aria-hidden="true" />
                 Sort
                 <ChevronDown size={14} className="flex-shrink-0" aria-hidden="true" />
-              </Button>
+              </button>
               {showSortMenu && (
                 <div
                   id="kanban-sort-menu"
@@ -1018,17 +1029,19 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                   }}
                 >
                   {(Object.keys(GLOBAL_SORT_LABELS) as GlobalSortOption[]).map(opt => (
-                    <Button
+                    <button
                       key={opt}
                       role="menuitemradio"
                       aria-checked={globalSort === opt}
-                      variant={globalSort === opt ? 'soft' : 'ghost'}
-                      size="1"
                       onClick={() => { setGlobalSort(opt); setShowSortMenu(false); sortTriggerRef.current?.focus(); }}
-                      style={{ width: '100%', justifyContent: 'flex-start' }}
+                      className={`w-full flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-left transition-colors ${
+                        globalSort === opt
+                          ? 'bg-mission-control-surface text-mission-control-accent shadow-sm'
+                          : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+                      }`}
                     >
                       {GLOBAL_SORT_LABELS[opt]}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               )}
@@ -1039,16 +1052,15 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
             {/* Group 2: Utility actions */}
             <div className="relative">
-              <IconButton
-                variant="ghost"
-                size="1"
+              <button
                 onClick={() => setShowSaveViewDialog(v => !v)}
                 aria-label="Save current view"
                 aria-expanded={showSaveViewDialog}
                 aria-controls="kanban-save-view-panel"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Save size={16} aria-hidden="true" />
-              </IconButton>
+              </button>
               {showSaveViewDialog && (
                 <div id="kanban-save-view-panel" className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 w-64 p-3">
                   <p className="text-xs font-semibold text-mission-control-text-dim mb-2">Save current filters &amp; sort</p>
@@ -1062,45 +1074,42 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       if (e.key === 'Escape') setShowSaveViewDialog(false);
                     }}
                     placeholder="View name..."
-                    style={{ width: '100%', marginBottom: '0.5rem' }}
+                    className="w-full mb-2"
                   />
-                  <Button variant="solid" size="1" onClick={saveCurrentView} disabled={!newViewName.trim()} style={{ width: '100%', justifyContent: 'center' }}>
+                  <Button variant="solid" size="1" onClick={saveCurrentView} disabled={!newViewName.trim()} className="w-full justify-center">
                     Save
                   </Button>
                 </div>
               )}
             </div>
 
-            <IconButton
-              variant="ghost"
-              size="1"
+            <button
               onClick={handleRefresh}
               disabled={isRefreshing}
               aria-label="Refresh tasks"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <RefreshCw size={16} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-            </IconButton>
+            </button>
 
-            <IconButton
-              variant="ghost"
-              size="1"
+            <button
               onClick={handleHealthCheck}
               aria-label="Board health check"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <Stethoscope size={16} className="flex-shrink-0" aria-hidden="true" />
-            </IconButton>
+            </button>
 
             <div className="relative">
-              <IconButton
-                variant="ghost"
-                size="1"
+              <button
                 onClick={() => setShowJumpToTask(v => !v)}
                 aria-label="Jump to task"
                 aria-expanded={showJumpToTask}
                 aria-controls="kanban-jump-to-panel"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Hash size={16} aria-hidden="true" />
-              </IconButton>
+              </button>
               {showJumpToTask && (
                 <div id="kanban-jump-to-panel" className="absolute right-0 top-full mt-1 z-50 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg p-2 w-64">
                   <TextField.Root
@@ -1113,7 +1122,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       if (e.key === 'Escape') setShowJumpToTask(false);
                     }}
                     placeholder="Task ID or title..."
-                    style={{ width: '100%' }}
+                    className="w-full"
                   />
                   <p className="text-xs text-mission-control-text-dim mt-1.5 px-1">Press Enter to jump</p>
                 </div>
@@ -1188,9 +1197,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
               {/* Clear filters */}
               {activeFiltersCount > 0 && (
-                <Button variant="ghost" size="1" onClick={clearFilters} style={{ marginLeft: 'auto' }}>
-                  <X size={16} className="flex-shrink-0" /> Clear all
-                </Button>
+                <button onClick={clearFilters} className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                  <X size={14} className="flex-shrink-0" /> Clear all
+                </button>
               )}
             </div>
 
@@ -1199,14 +1208,16 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               <Flag size={14} className="text-mission-control-text-dim flex-shrink-0" />
               <span className="text-xs text-mission-control-text-dim font-medium mr-1">Priority:</span>
               {(['all', 'p0', 'p1', 'p2', 'p3'] as const).map(p => (
-                <Button
+                <button
                   key={p}
-                  variant={filters.priority === p ? 'soft' : 'ghost'}
-                  size="1"
+                  type="button"
                   onClick={() => setFilters(f => ({ ...f, priority: p }))}
+                  className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                    filters.priority === p ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}
                 >
                   {p === 'all' ? 'All' : p.toUpperCase()}
-                </Button>
+                </button>
               ))}
             </div>
 
@@ -1221,14 +1232,16 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 { id: 'this-week', label: 'Due this week' },
                 { id: 'no-due-date', label: 'No due date' },
               ] as { id: DueFilter; label: string }[]).map(opt => (
-                <Button
+                <button
                   key={opt.id}
-                  variant={filters.dueFilter === opt.id ? 'soft' : 'ghost'}
-                  size="1"
+                  type="button"
                   onClick={() => setFilters(f => ({ ...f, dueFilter: opt.id }))}
+                  className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                    filters.dueFilter === opt.id ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}
                 >
                   {opt.label}
-                </Button>
+                </button>
               ))}
             </div>
 
@@ -1240,26 +1253,28 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 {uniqueLabels.map(label => {
                   const isActive = filters.labels.includes(label);
                   return (
-                    <Button
+                    <button
                       key={label}
-                      variant={isActive ? 'soft' : 'ghost'}
-                      size="1"
+                      type="button"
                       onClick={() => setFilters(f => ({
                         ...f,
                         labels: isActive
                           ? f.labels.filter(l => l !== label)
                           : [...f.labels, label],
                       }))}
+                      className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                        isActive ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                      }`}
                     >
                       {label}
-                    </Button>
+                    </button>
                   );
                 })}
                 {filters.labels.length > 0 && (
-                  <Button variant="ghost" size="1" onClick={() => setFilters(f => ({ ...f, labels: [] }))}>
+                  <button type="button" onClick={() => setFilters(f => ({ ...f, labels: [] }))} className="px-2 py-0.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text border border-transparent hover:border-mission-control-border transition-colors flex items-center gap-1">
                     <X size={11} />
                     Clear
-                  </Button>
+                  </button>
                 )}
               </div>
             )}
@@ -1272,12 +1287,12 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <span className="text-xs text-mission-control-text-dim font-medium">Saved views:</span>
             {savedViews.map(view => (
               <Flex key={view.name} align="center" gap="1">
-                <Button variant="ghost" size="1" onClick={() => applySavedView(view)}>
+                <button onClick={() => applySavedView(view)} className="inline-flex items-center px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                   {view.name}
-                </Button>
-                <IconButton variant="ghost" size="1" onClick={() => deleteSavedView(view.name)} title="Delete saved view">
+                </button>
+                <button onClick={() => deleteSavedView(view.name)} title="Delete saved view" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                   <X size={10} />
-                </IconButton>
+                </button>
               </Flex>
             ))}
           </div>
@@ -1304,41 +1319,48 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       {/* Mobile column navigator */}
       {isMobile && !(!loading.tasks && filteredTasks.length === 0) && (
         <Flex align="center" justify="between" className="px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
-          <IconButton
-            variant="ghost"
-            size="1"
+          <button
             onClick={() => setMobileColumnIndex(prev => Math.max(prev - 1, 0))}
             disabled={mobileColumnIndex === 0}
             aria-label="Previous column"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ChevronLeft size={20} aria-hidden="true" />
-          </IconButton>
+          </button>
           <div className="flex flex-col items-center gap-1">
             <span className="text-sm font-medium text-mission-control-text">
               {columns[mobileColumnIndex]?.title ?? ''}
             </span>
             <Flex align="center" gap="1">
               {columns.map((_, i) => (
-                <IconButton key={i} variant={i === mobileColumnIndex ? 'solid' : 'ghost'} size="1" onClick={() => setMobileColumnIndex(i)} aria-label={`Go to column ${columns[i].title}`}>
-                  <span className={`block rounded-full ${i === mobileColumnIndex ? 'w-4 h-2' : 'w-2 h-2'}`} />
-                </IconButton>
+                <button
+                  key={i}
+                  onClick={() => setMobileColumnIndex(i)}
+                  aria-label={`Go to column ${columns[i].title}`}
+                  className={`flex items-center justify-center w-5 h-5 rounded transition-colors ${
+                    i === mobileColumnIndex
+                      ? 'text-mission-control-accent'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}
+                >
+                  <span className={`block rounded-full bg-current ${i === mobileColumnIndex ? 'w-4 h-2' : 'w-2 h-2'}`} />
+                </button>
               ))}
             </Flex>
           </div>
-          <IconButton
-            variant="ghost"
-            size="1"
+          <button
             onClick={() => setMobileColumnIndex(prev => Math.min(prev + 1, columns.length - 1))}
             disabled={mobileColumnIndex === columns.length - 1}
             aria-label="Next column"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ChevronRight size={20} aria-hidden="true" />
-          </IconButton>
+          </button>
         </Flex>
       )}
 
       <div
-        className={`flex-1 min-w-0 flex flex-nowrap gap-4 p-4 overflow-x-auto [overflow-scrolling:touch] [-webkit-overflow-scrolling:touch] ${!loading.tasks && filteredTasks.length === 0 ? 'hidden' : ''}`}
+        className={`flex-1 min-w-0 min-h-0 flex flex-nowrap gap-4 p-4 overflow-x-auto [overflow-scrolling:touch] [-webkit-overflow-scrolling:touch] ${!loading.tasks && filteredTasks.length === 0 ? 'hidden' : ''}`}
         onTouchStart={isMobile ? handleMobileTouchStart : undefined}
         onTouchEnd={isMobile ? handleMobileTouchEnd : undefined}
       >
@@ -1355,14 +1377,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <div
               key={column.id}
               data-column={column.id}
-              className={`flex-shrink-0 flex flex-col rounded-2xl border transition-all ${
+              className={`flex-shrink-0 h-full flex flex-col rounded-xl border transition-colors ${
                 isCollapsed ? 'w-12 min-w-[48px]' : 'w-96 min-w-[320px]'
               } ${
                 isDragOver
-                  ? 'border-mission-control-border bg-mission-control-accent/10 scale-[1.01] shadow-lg shadow-mission-control-accent/20'
+                  ? 'border-mission-control-border/50 bg-mission-control-accent/10 scale-[1.01] shadow-lg shadow-mission-control-accent/20'
                   : draggedTask
-                  ? 'border-mission-control-border bg-mission-control-surface/50'
-                  : 'border-mission-control-border bg-mission-control-surface'
+                  ? 'border-mission-control-border/50 bg-mission-control-bg/50'
+                  : 'border-mission-control-border/50 bg-mission-control-bg/50'
               }`}
               onDragOver={(e) => handleDragOver(e, column.id)}
               onDragLeave={handleDragLeave}
@@ -1371,99 +1393,132 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               aria-label={`${column.title} column`}
             >
               {/* Column Header */}
-              <div className={`p-3 border-b border-mission-control-border border-t-2 ${column.color} rounded-t-2xl`}>
-                <Flex align="center" justify="between" className={isCollapsed ? '' : 'mb-2'}>
-                  <div className={`icon-text ${isCollapsed ? 'flex-col gap-2' : ''}`}>
-                    <IconButton variant="ghost" size="1" onClick={() => toggleColumnCollapse(column.id)} title={isCollapsed ? 'Expand column' : 'Collapse column'}>
+              <div className={`flex items-center justify-between px-3 py-2.5 border-b border-mission-control-border/50 border-t-2 ${column.color} rounded-t-xl flex-shrink-0`}>
+                <div className={`icon-text ${isCollapsed ? 'flex-col gap-2' : ''}`}>
+                    <button onClick={() => toggleColumnCollapse(column.id)} title={isCollapsed ? 'Expand column' : 'Collapse column'} className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                       {isCollapsed ? <ChevronRight size={14} className="flex-shrink-0" /> : <ChevronDown size={14} className="flex-shrink-0" />}
-                    </IconButton>
+                    </button>
                     <span className={column.iconColor}>{column.icon}</span>
-                    {!isCollapsed && <h3 className="font-semibold text-sm">{column.title}</h3>}
-                    <span className={`text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full ${column.bg} ${column.iconColor}`} title={column.id === 'done' && taskCounts.totalArchived > 0 ? `${taskCounts.totalArchived} archived` : undefined}>
+                    {!isCollapsed && <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{column.title}</h3>}
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-mission-control-border/50 text-mission-control-text-dim tabular-nums" title={column.id === 'done' && taskCounts.totalArchived > 0 ? `${taskCounts.totalArchived} archived` : undefined}>
                       {column.id === 'done' && taskCounts.totalDone > columnTasks.length
                         ? `${columnTasks.length}/${taskCounts.totalDone}`
                         : columnTasks.length}
                     </span>
                   </div>
-                  {!isCollapsed && (column.id === 'done' ? (
-                    <IconButton variant="ghost" size="1" onClick={() => setShowArchiveConfirm(true)} disabled={isArchiving || columnTasks.length === 0} title="Archive all done tasks">
-                      <Archive size={16} className="flex-shrink-0" />
-                    </IconButton>
-                  ) : (
-                    <IconButton variant="ghost" size="1" onClick={() => handleAddTask(column.id)}>
-                      <Plus size={16} className="flex-shrink-0" />
-                    </IconButton>
-                  ))}
-                </Flex>
-
-                {/* Filter and Sort Controls */}
-                {!isCollapsed && <Flex align="center" gap="1">
-                  {/* Sort Dropdown */}
-                  <div className="relative">
-                    <IconButton variant={settings.sortBy !== 'newest' ? 'soft' : 'ghost'} size="1" onClick={() => toggleColumnDropdown(column.id, 'sort')} title="Sort">
-                      <ArrowDown size={14} className="flex-shrink-0" />
-                    </IconButton>
-                    {dropdowns.sort && (
-                      <div className="absolute top-full left-0 mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[180px]">
-                        <div className="p-1">
-                          <Button variant={settings.sortBy === 'newest' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'newest'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Newest First</Button>
-                          <Button variant={settings.sortBy === 'oldest' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'oldest'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Oldest First</Button>
-                          <Button variant={settings.sortBy === 'priority-asc' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-asc'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Priority: Low → High</Button>
-                          <Button variant={settings.sortBy === 'priority-desc' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-desc'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Priority: High → Low</Button>
-                          <Button variant={settings.sortBy === 'progress-asc' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-asc'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Progress: 0% → 100%</Button>
-                          <Button variant={settings.sortBy === 'progress-desc' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-desc'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Progress: 100% → 0%</Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Filter Dropdown */}
-                  <div className="relative">
-                    <IconButton variant={settings.filterAgent !== 'all' || settings.filterPriority !== 'all' ? 'soft' : 'ghost'} size="1" onClick={() => toggleColumnDropdown(column.id, 'filter')} title="Filter">
-                      <Filter size={14} className="flex-shrink-0" />
-                    </IconButton>
-                    {dropdowns.filter && (
-                      <div className="absolute top-full left-0 mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[180px]">
-                        <div className="p-2 border-b border-mission-control-border">
-                          <div className="text-xs font-semibold text-mission-control-text-dim mb-1">Agent</div>
-                          <Select.Root size="1" value={settings.filterAgent} onValueChange={(val) => updateColumnSetting(column.id, 'filterAgent', val)}>
-                            <Select.Trigger style={{ width: '100%' }} />
-                            <Select.Content>
-                              <Select.Item value="all">All Agents</Select.Item>
-                              <Select.Item value="unassigned">Unassigned</Select.Item>
-                              {agents.map(a => (
-                                <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>
-                              ))}
-                            </Select.Content>
-                          </Select.Root>
-                        </div>
-                        <div className="p-2">
-                          <div className="text-xs font-semibold text-mission-control-text-dim mb-1">Priority</div>
-                          <Select.Root size="1" value={settings.filterPriority} onValueChange={(val) => updateColumnSetting(column.id, 'filterPriority', val as TaskPriority | 'all')}>
-                            <Select.Trigger style={{ width: '100%' }} />
-                            <Select.Content>
-                              <Select.Item value="all">All Priorities</Select.Item>
-                              {PRIORITIES.map(p => (
-                                <Select.Item key={p.id} value={p.id}>{p.label}</Select.Item>
-                              ))}
-                            </Select.Content>
-                          </Select.Root>
-                        </div>
-                        {(settings.filterAgent !== 'all' || settings.filterPriority !== 'all') && (
-                          <div className="p-2 border-t border-mission-control-border">
-                            <Button variant="ghost" size="1" onClick={() => { updateColumnSetting(column.id, 'filterAgent', 'all'); updateColumnSetting(column.id, 'filterPriority', 'all'); }} style={{ width: '100%', justifyContent: 'center' }}>
-                              Clear Filters
-                            </Button>
+                  {!isCollapsed && (
+                    <div className="flex items-center gap-1">
+                      {/* Sort Dropdown */}
+                      <div className="relative">
+                        <button
+                          onClick={() => toggleColumnDropdown(column.id, 'sort')}
+                          title="Sort"
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded border text-xs transition-colors ${
+                            settings.sortBy !== 'newest'
+                              ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                              : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                          }`}
+                        >
+                          <ArrowDown size={14} className="flex-shrink-0" />
+                        </button>
+                        {dropdowns.sort && (
+                          <div className="absolute top-full right-0 mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[180px]">
+                            <div className="p-1">
+                              {(['newest', 'oldest', 'priority-asc', 'priority-desc', 'progress-asc', 'progress-desc'] as const).map((opt) => {
+                                const labels: Record<string, string> = {
+                                  'newest': 'Newest First',
+                                  'oldest': 'Oldest First',
+                                  'priority-asc': 'Priority: Low → High',
+                                  'priority-desc': 'Priority: High → Low',
+                                  'progress-asc': 'Progress: 0% → 100%',
+                                  'progress-desc': 'Progress: 100% → 0%',
+                                };
+                                return (
+                                  <button
+                                    key={opt}
+                                    onClick={() => { updateColumnSetting(column.id, 'sortBy', opt); toggleColumnDropdown(column.id, 'sort'); }}
+                                    className={`w-full flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-left transition-colors ${
+                                      settings.sortBy === opt
+                                        ? 'bg-mission-control-surface text-mission-control-accent shadow-sm'
+                                        : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+                                    }`}
+                                  >
+                                    {labels[opt]}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                </Flex>}
+
+                      {/* Filter Dropdown */}
+                      <div className="relative">
+                        <button
+                          onClick={() => toggleColumnDropdown(column.id, 'filter')}
+                          title="Filter"
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded border text-xs transition-colors ${
+                            settings.filterAgent !== 'all' || settings.filterPriority !== 'all'
+                              ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                              : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                          }`}
+                        >
+                          <Filter size={14} className="flex-shrink-0" />
+                        </button>
+                        {dropdowns.filter && (
+                          <div className="absolute top-full right-0 mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[180px]">
+                            <div className="p-2 border-b border-mission-control-border">
+                              <div className="text-xs font-semibold text-mission-control-text-dim mb-1">Agent</div>
+                              <Select.Root size="1" value={settings.filterAgent} onValueChange={(val) => updateColumnSetting(column.id, 'filterAgent', val)}>
+                                <Select.Trigger className="w-full" />
+                                <Select.Content>
+                                  <Select.Item value="all">All Agents</Select.Item>
+                                  <Select.Item value="unassigned">Unassigned</Select.Item>
+                                  {agents.map(a => (
+                                    <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>
+                                  ))}
+                                </Select.Content>
+                              </Select.Root>
+                            </div>
+                            <div className="p-2">
+                              <div className="text-xs font-semibold text-mission-control-text-dim mb-1">Priority</div>
+                              <Select.Root size="1" value={settings.filterPriority} onValueChange={(val) => updateColumnSetting(column.id, 'filterPriority', val as TaskPriority | 'all')}>
+                                <Select.Trigger className="w-full" />
+                                <Select.Content>
+                                  <Select.Item value="all">All Priorities</Select.Item>
+                                  {PRIORITIES.map(p => (
+                                    <Select.Item key={p.id} value={p.id}>{p.label}</Select.Item>
+                                  ))}
+                                </Select.Content>
+                              </Select.Root>
+                            </div>
+                            {(settings.filterAgent !== 'all' || settings.filterPriority !== 'all') && (
+                              <div className="p-2 border-t border-mission-control-border">
+                                <button onClick={() => { updateColumnSetting(column.id, 'filterAgent', 'all'); updateColumnSetting(column.id, 'filterPriority', 'all'); }} className="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors">
+                                  Clear Filters
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Add / Archive action */}
+                      {column.id === 'done' ? (
+                        <button onClick={() => setShowArchiveConfirm(true)} disabled={isArchiving || columnTasks.length === 0} title="Archive all done tasks" className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                          <Archive size={14} className="flex-shrink-0" />
+                        </button>
+                      ) : (
+                        <button onClick={() => handleAddTask(column.id)} title="Add task" className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+                          <Plus size={14} className="flex-shrink-0" />
+                        </button>
+                      )}
+                    </div>
+                  )}
               </div>
 
               {/* Tasks */}
-              {!isCollapsed && <div className="flex-1 min-w-0 p-2 space-y-2 overflow-y-auto min-h-0">
+              {!isCollapsed && <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
                 {isDragOver && (
                   <div className="w-full h-0.5 bg-mission-control-accent rounded-full mb-2 animate-pulse" />
                 )}
@@ -1659,11 +1714,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
           {/* Assign Agent */}
           <div className="relative">
-            <Button variant="ghost" size="1" onClick={() => setShowBulkAssign(v => !v)} disabled={isBulkUpdating || isBulkDeleting}>
+            <button onClick={() => setShowBulkAssign(v => !v)} disabled={isBulkUpdating || isBulkDeleting} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
               <UserCheck size={15} className="flex-shrink-0" />
               Assign Agent
               <ChevronDown size={13} className="flex-shrink-0" />
-            </Button>
+            </button>
             {showBulkAssign && (
               <>
                 <div
@@ -1678,10 +1733,10 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                   {agents.filter(a => !isProtectedAgent(a.id)).length === 0 ? (
                     <div className="px-4 py-3 text-sm text-mission-control-text-dim">No agents available</div>
                   ) : agents.filter(a => !isProtectedAgent(a.id)).map(a => (
-                    <Button key={a.id} variant="ghost" size="1" onClick={() => handleBulkAssign(a.id)} style={{ width: '100%', justifyContent: 'flex-start' }}>
+                    <button key={a.id} onClick={() => handleBulkAssign(a.id)} className="w-full inline-flex items-center gap-2 px-3 py-1.5 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors">
                       <AgentAvatar agentId={a.id} fallbackEmoji={a.avatar} size="xs" />
                       {a.name}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               </>
@@ -1697,9 +1752,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
           <div className="w-px h-5 bg-mission-control-border flex-shrink-0" />
 
           {/* Clear selection */}
-          <IconButton variant="ghost" size="1" onClick={() => { setSelectedIds(new Set()); setLastSelectedId(null); setShowBulkAssign(false); }} title="Clear selection (Esc)">
+          <button onClick={() => { setSelectedIds(new Set()); setLastSelectedId(null); setShowBulkAssign(false); }} title="Clear selection (Esc)" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
             <X size={16} className="flex-shrink-0" />
-          </IconButton>
+          </button>
         </div>
       )}
     </div>
@@ -1729,12 +1784,6 @@ interface TaskCardProps {
 }
 
 const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeSessions, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, onPoke, onTitleEdit, isDragging, isDeleting, isSpawning, isMoving, isSelected, isAnySelected, onToggleSelect }: TaskCardProps) {
-  const [showMenu, setShowMenu] = useState(false);
-  const [showAssign, setShowAssign] = useState(false);
-  const [showPriority, setShowPriority] = useState(false);
-  const [priorityBtnPos, setPriorityBtnPos] = useState<{top: number, left: number} | null>(null);
-  const [assignBtnPos, setAssignBtnPos] = useState<{top: number, left: number} | null>(null);
-  const [menuBtnPos, setMenuBtnPos] = useState<{top: number, left: number} | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -1743,9 +1792,6 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
   const [quickEditAnchor, setQuickEditAnchor] = useState<DOMRect | null>(null);
   const quickEditBtnRef = useRef<HTMLButtonElement>(null);
 
-  const priorityBtnRef = useRef<HTMLButtonElement>(null);
-  const assignBtnRef = useRef<HTMLButtonElement>(null);
-  const menuBtnRef = useRef<HTMLButtonElement>(null);
 
   // Focus edit input when entering edit mode
   useEffect(() => {
@@ -1810,7 +1856,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
     
     // 🟠 Orange: Silent agent - assigned but no activity logged
     if (!lastActivity) {
-      return { color: 'border-warning-border', description: 'Silent agent (no activity logged)' };
+      return { color: 'border-[var(--color-warning)]/30', description: 'Silent agent (no activity logged)' };
     }
     
     const now = Date.now();
@@ -1818,16 +1864,16 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
     
     // 🟢 Green: Active work in last 15 minutes
     if (minutesSinceActivity < 15) {
-      return { color: 'border-success-border', description: `Active (${Math.floor(minutesSinceActivity)}m ago)` };
+      return { color: 'border-[var(--color-success)]/30', description: `Active (${Math.floor(minutesSinceActivity)}m ago)` };
     }
     
     // 🟡 Yellow: Stale, no activity in 15-30 minutes
     if (minutesSinceActivity < 30) {
-      return { color: 'border-warning-border', description: `Stale (${Math.floor(minutesSinceActivity)}m ago)` };
+      return { color: 'border-[var(--color-warning)]/30', description: `Stale (${Math.floor(minutesSinceActivity)}m ago)` };
     }
     
     // 🔴 Red: Stuck/abandoned, no activity in 30+ minutes
-    return { color: 'border-error-border', description: `Stuck (${Math.floor(minutesSinceActivity)}m ago)` };
+    return { color: 'border-[var(--color-error)]/30', description: `Stuck (${Math.floor(minutesSinceActivity)}m ago)` };
   };
   
   // Subtask progress
@@ -1869,7 +1915,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       role="button"
       tabIndex={0}
       aria-label={`Task: ${task.title}, status: ${task.status}`}
-      className={`bg-mission-control-bg rounded-lg p-3 border-2 transition-all cursor-pointer group relative ${
+      className={`bg-mission-control-bg rounded-lg p-3 border-2 transition-colors duration-150 cursor-pointer group relative ${
         isDragging ? 'opacity-50 scale-105 rotate-2 shadow-lg' : ''
       } ${
         isDeleting || isMoving ? 'opacity-60 pointer-events-none' : ''
@@ -1877,85 +1923,58 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         isSelected
           ? 'border-mission-control-accent bg-mission-control-accent/5 shadow-[0_0_0_1px_var(--mc-accent)]'
           : task.status === 'in-progress'
-          ? 'border-success/60 bg-success-subtle shadow-[0_0_0_1px_var(--color-success-border)]'
+          ? 'border-[var(--color-success)]/60 bg-[var(--color-success)]/10 shadow-[0_0_0_1px_var(--color-success-border)]'
           : activityIndicator ? activityIndicator.color
-          : dueInfo?.isOverdue ? 'border-error-border bg-error-subtle'
-          : task.priority === 'p0' ? 'border-error-border'
-          : task.priority === 'p1' ? 'border-warning-border'
+          : dueInfo?.isOverdue ? 'border-[var(--color-error)]/30 bg-[var(--color-error)]/10'
+          : task.priority === 'p0' ? 'border-[var(--color-error)]/30'
+          : task.priority === 'p1' ? 'border-[var(--color-warning)]/30'
           : 'border-mission-control-border hover:border-mission-control-accent/50'
-      } hover:shadow-md hover:-translate-y-0.5`}
+      } hover:shadow-lg hover:-translate-y-0.5`}
       title={activityIndicator?.description}
     >
       {/* Top row: Checkbox + Priority + Title + Menu */}
       <Flex align="start" gap="2" mb="2">
-        {/* Selection checkbox — visible on hover or when any task is selected */}
+        {/* Selection checkbox — always rendered, visible on hover or when selected */}
         {onToggleSelect && (
-          <IconButton
-            variant="ghost"
-            size="1"
-            style={{ flexShrink: 0, marginTop: '2px', opacity: isAnySelected || isSelected ? 1 : 0 }}
+          <button
+            style={{ flexShrink: 0, marginTop: '2px' }}
             onClick={(e) => { e.stopPropagation(); onToggleSelect(task.id, e.shiftKey); }}
             title={isSelected ? 'Deselect task' : 'Select task (Shift+click for range)'}
             aria-label={isSelected ? 'Deselect task' : 'Select task'}
+            className={`inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ${isSelected || isAnySelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
           >
             {isSelected
               ? <CheckSquare size={15} className="text-mission-control-accent flex-shrink-0" />
               : <Square size={15} className="text-mission-control-text-dim flex-shrink-0" />
             }
-          </IconButton>
+          </button>
         )}
-        {/* Priority indicator */}
+        {/* Priority badge */}
         {priorityConfig && (
-          <div className="relative flex-shrink-0">
-            <IconButton
-              ref={priorityBtnRef}
-              variant="ghost"
-              size="1"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!showPriority && priorityBtnRef.current) {
-                  const rect = priorityBtnRef.current.getBoundingClientRect();
-                  setPriorityBtnPos({ top: rect.bottom + 4, left: rect.left });
-                }
-                setShowPriority(!showPriority);
-              }}
-              title={priorityConfig.label}
-            >
-              {priorityConfig.icon}
-            </IconButton>
-            
-            {/* Priority Picker Modal */}
-            {showPriority && priorityBtnPos && createPortal(
-              <>
-                <div 
-                  className="fixed inset-0 z-[100]" 
-                  onClick={() => setShowPriority(false)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setShowPriority(false); } }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Close priority dropdown"
-                />
-                <div 
-                  className="fixed bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl p-2 z-[101] min-w-[160px]"
-                  style={{ top: `${priorityBtnPos.top}px`, left: `${priorityBtnPos.left}px` }}
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
-                  role="presentation"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                onClick={(e) => e.stopPropagation()}
+                title={`Priority: ${priorityConfig.label}`}
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors ${priorityConfig.color} ${priorityConfig.bg} hover:opacity-80`}
+              >
+                {task.priority?.toUpperCase()}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Set Priority</DropdownMenuLabel>
+              {PRIORITIES.map(p => (
+                <DropdownMenuItem
+                  key={p.id}
+                  onClick={(e) => { e.stopPropagation(); onSetPriority(p.id); }}
+                  className={task.priority === p.id ? 'text-mission-control-accent' : ''}
                 >
-                  <div className="text-xs text-mission-control-text-dim mb-2 font-medium px-2">Set Priority</div>
-                  <div className="space-y-1">
-                    {PRIORITIES.map(p => (
-                      <Button key={p.id} variant={task.priority === p.id ? 'soft' : 'ghost'} size="1" onClick={() => { onSetPriority(p.id); setShowPriority(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
-                        <span className={p.color}>{p.icon}</span>
-                        {p.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </>,
-              document.body
-            )}
-          </div>
+                  <span className={p.color}>{p.icon}</span>
+                  {p.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         
         {/* Title */}
@@ -1973,7 +1992,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
               onBlur={commitEditTitle}
               onClick={e => e.stopPropagation()}
               size="1"
-              style={{ width: '100%' }}
+              className="w-full"
             />
           ) : (
             <div className="flex items-center gap-1 min-w-0">
@@ -1982,13 +2001,13 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
                 onDoubleClick={startEditTitle}
                 title="Double-click to edit"
               >{task.title}</h4>
-              <IconButton variant="ghost" size="1" onClick={startEditTitle} title="Edit title" style={{ opacity: 0 }}>
+              <button onClick={startEditTitle} title="Edit title" style={{ opacity: 0 }} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                 <Pencil size={11} />
-              </IconButton>
+              </button>
             </div>
           )}
           {task.updatedAt && (
-            <span className="text-xs text-mission-control-text-dim mt-0.5 tabular-nums">
+            <span className="text-[10px] text-mission-control-text-dim mt-0.5 tabular-nums">
               {(() => {
                 const diff = Date.now() - task.updatedAt;
                 if (diff < 60000) return 'just now';
@@ -2000,46 +2019,9 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           )}
         </div>
         
-        {/* Definition of Ready Indicators - show for todo/backlog tasks */}
-        {isTodoTask && !isReady && (
-          <div className="flex flex-wrap gap-1 mt-1" title={`Missing: ${missingCriteria.join(', ')}`}>
-            {!hasMinSubtasks && (
-              <span className="text-xs px-1.5 py-0.5 bg-warning-subtle text-warning rounded inline-flex items-center gap-0.5">
-                <AlertTriangle size={10} className="inline" /> {task.subtasks?.length || 0}/2 subtasks
-              </span>
-            )}
-            {!hasPriority && (
-              <span className="text-xs px-1.5 py-0.5 bg-error-subtle text-error rounded inline-flex items-center gap-0.5">
-                <AlertTriangle size={10} className="inline" /> No priority
-              </span>
-            )}
-            {!hasValidAssignment && (
-              <span className="text-xs px-1.5 py-0.5 bg-error-subtle text-error rounded inline-flex items-center gap-0.5">
-                <AlertTriangle size={10} className="inline" /> No valid assignee
-              </span>
-            )}
-            {!hasDescription && (
-              <span className="text-xs px-1.5 py-0.5 bg-warning-subtle text-warning rounded inline-flex items-center gap-0.5">
-                <AlertTriangle size={10} className="inline" /> Needs description
-              </span>
-            )}
-          </div>
-        )}
-        
-        {/* Ready badge for todo tasks that ARE ready */}
-        {isTodoTask && isReady && (
-          <div className="mt-1" title="Definition of Ready met">
-            <span className="text-xs px-1.5 py-0.5 bg-success-subtle text-success rounded inline-flex items-center gap-0.5">
-              <CheckCircle size={10} className="inline" /> Ready for Review
-            </span>
-          </div>
-        )}
-        
         {/* Quick-edit pencil button — visible on hover */}
-        <IconButton
+        <button
           ref={quickEditBtnRef}
-          variant="ghost"
-          size="1"
           style={{ flexShrink: 0, opacity: 0 }}
           onClick={(e) => {
             e.stopPropagation();
@@ -2050,61 +2032,99 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           }}
           title="Quick edit"
           aria-label="Quick edit task"
+          className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <Pencil size={14} className="flex-shrink-0" />
-        </IconButton>
+        </button>
 
-        <div className="relative flex-shrink-0">
-          <IconButton
-            ref={menuBtnRef}
-            variant="ghost"
-            size="1"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!showMenu && menuBtnRef.current) {
-                const rect = menuBtnRef.current.getBoundingClientRect();
-                setMenuBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
-              }
-              setShowMenu(!showMenu);
-            }}
-          >
-            <MoreHorizontal size={16} className="flex-shrink-0" />
-          </IconButton>
-          
-          {showMenu && menuBtnPos && createPortal(
-            <>
-              <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowMenu(false); } }} role="button" tabIndex={0} aria-label="Close menu" />
-              <div className="fixed bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl py-1 z-[101] min-w-40"
-                style={{ top: `${menuBtnPos.top}px`, left: `${menuBtnPos.left}px` }}>
-                <Button variant="ghost" size="1" onClick={(e) => { e.stopPropagation(); if (menuBtnPos) { setPriorityBtnPos({ top: menuBtnPos.top, left: menuBtnPos.left }); } setShowPriority(true); setShowMenu(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
-                  <Flag size={16} className="flex-shrink-0" /> Set Priority
-                </Button>
-                <Button variant="ghost" size="1" onClick={(e) => { e.stopPropagation(); if (menuBtnPos) { setAssignBtnPos({ top: menuBtnPos.top, left: menuBtnPos.left }); } setShowAssign(true); setShowMenu(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
-                  <Bot size={16} className="flex-shrink-0" /> Assign Agent
-                </Button>
-                <Button variant="ghost" size="1" onClick={(e) => { e.stopPropagation(); onPoke(); setShowMenu(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
-                  <Hand size={16} className="flex-shrink-0" /> Poke
-                </Button>
-                <hr className="my-1 border-mission-control-border" />
-                <Button variant="soft" color="red" size="1" onClick={(e) => { e.stopPropagation(); onDelete(); setShowMenu(false); }} disabled={isDeleting} style={{ width: '100%', justifyContent: 'flex-start' }}>
-                  {isDeleting ? <Spinner size={14} className="flex-shrink-0" /> : <Trash2 size={16} className="flex-shrink-0" />}
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </Button>
-              </div>
-            </>,
-            document.body
-          )}
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            >
+              <MoreHorizontal size={16} className="flex-shrink-0" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Flag size={14} className="flex-shrink-0" /> Set Priority
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {PRIORITIES.map(p => (
+                  <DropdownMenuItem key={p.id} onClick={(e) => { e.stopPropagation(); onSetPriority(p.id); }}>
+                    <span className={p.color}>{p.icon}</span> {p.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Bot size={14} className="flex-shrink-0" /> Assign Agent
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAssign(''); }}>
+                  <User size={14} className="flex-shrink-0 text-mission-control-text-dim" /> Unassigned
+                </DropdownMenuItem>
+                {agents.map(agent => (
+                  <DropdownMenuItem key={agent.id} onClick={(e) => { e.stopPropagation(); onAssign(agent.id); }}>
+                    <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" /> {agent.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPoke(); }}>
+              <Hand size={14} className="flex-shrink-0" /> Poke
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem destructive onClick={(e) => { e.stopPropagation(); onDelete(); }} disabled={isDeleting}>
+              {isDeleting ? <Spinner size={14} className="flex-shrink-0" /> : <Trash2 size={14} className="flex-shrink-0" />}
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </Flex>
 
-      {/* Agent status updates are shown in the Activities tab of the task detail panel, not here */}
+      {/* Definition of Ready Indicators — below title row to prevent layout squish */}
+      {isTodoTask && !isReady && (
+        <div className="flex flex-wrap gap-1 mb-2" title={`Missing: ${missingCriteria.join(', ')}`}>
+          {!hasMinSubtasks && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full inline-flex items-center gap-0.5">
+              <AlertTriangle size={10} className="inline" /> {task.subtasks?.length || 0}/2 subtasks
+            </span>
+          )}
+          {!hasPriority && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full inline-flex items-center gap-0.5">
+              <AlertTriangle size={10} className="inline" /> No priority
+            </span>
+          )}
+          {!hasValidAssignment && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full inline-flex items-center gap-0.5">
+              <AlertTriangle size={10} className="inline" /> No valid assignee
+            </span>
+          )}
+          {!hasDescription && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full inline-flex items-center gap-0.5">
+              <AlertTriangle size={10} className="inline" /> Needs description
+            </span>
+          )}
+        </div>
+      )}
+      {isTodoTask && isReady && (
+        <div className="mb-2">
+          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full inline-flex items-center gap-0.5">
+            <CheckCircle size={10} className="inline" /> Ready for Review
+          </span>
+        </div>
+      )}
 
       {/* Due date urgency badges — only show for incomplete tasks */}
       {task.dueDate && task.status !== 'done' && dueInfo && (() => {
         if (dueInfo.isOverdue) {
           return (
             <Flex align="center" gap="1" mb="2">
-              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-error bg-error-subtle border-error-border">
+              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-[var(--color-error)] bg-[var(--color-error)]/10 border-[var(--color-error)]/30">
                 <AlertTriangle size={10} />
                 {dueInfo.text}
               </span>
@@ -2114,7 +2134,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         if (dueInfo.isDueSoon) {
           return (
             <Flex align="center" gap="1" mb="2">
-              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-warning bg-warning-subtle border-warning-border">
+              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30">
                 <Clock size={10} />
                 Due in {dueInfo.text}
               </span>
@@ -2124,7 +2144,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         if (dueInfo.isDueThisWeek) {
           return (
             <Flex align="center" gap="1" mb="2">
-              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-warning bg-warning-subtle/50 border-warning-border/50">
+              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-[var(--color-warning)] bg-[var(--color-warning)]/10/50 border-[var(--color-warning)]/30/50">
                 <Calendar size={10} />
                 Due in {dueInfo.text}
               </span>
@@ -2136,20 +2156,20 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
 
       {/* Task description */}
       {task.description && (
-        <p className="text-xs text-mission-control-text-dim line-clamp-2 mt-1 mb-1">{task.description}</p>
+        <p className="text-xs text-mission-control-text-dim line-clamp-2 leading-relaxed mt-1 mb-1">{task.description}</p>
       )}
 
       {/* Task progress bar */}
       {typeof task.progress === 'number' && task.progress > 0 && (
-        <div className="mt-2 w-full bg-mission-control-bg rounded-full h-1 overflow-hidden">
-          <div className="h-full bg-mission-control-accent transition-all duration-500" style={{ width: `${task.progress}%` }} />
+        <div className="mt-2 w-full bg-mission-control-border rounded-full h-1.5 overflow-hidden">
+          <div className="h-full bg-mission-control-accent transition-colors duration-500 rounded-full" style={{ width: `${task.progress}%` }} />
         </div>
       )}
 
       {/* Awaiting Clara badge — shown on Pre-review column cards */}
       {task.status === 'internal-review' && (
-        <div className="icon-text-tight text-xs px-2 py-1 rounded mb-2 bg-review-subtle text-review">
-          <Clock size={12} className="no-shrink animate-pulse" />
+        <div className="icon-text-tight text-[10px] font-medium px-1.5 py-0.5 rounded-full mb-2 bg-[var(--color-review)]-subtle text-[var(--color-review)]">
+          <Clock size={10} className="no-shrink animate-pulse" />
           <span>Awaiting Clara</span>
           {task.reviewStatus === 'pre-review' && (
             <span className="ml-1 opacity-70">— reviewing…</span>
@@ -2159,14 +2179,14 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
 
       {/* Clara review status badge */}
       {task.reviewStatus && task.status !== 'internal-review' && (
-        <div className={`icon-text-tight text-xs px-2 py-1 rounded mb-2 ${
-          task.reviewStatus === 'approved' ? 'bg-success-subtle text-success' :
-          task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-error-subtle text-error' :
+        <div className={`icon-text-tight text-[10px] font-medium px-1.5 py-0.5 rounded-full mb-2 ${
+          task.reviewStatus === 'approved' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
+          task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
           'bg-mission-control-accent/10 text-mission-control-accent animate-pulse'
         }`}>
-          {task.reviewStatus === 'approved' ? <ShieldCheck size={12} className="no-shrink" /> :
-           task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? <ShieldX size={12} className="no-shrink" /> :
-           <ShieldAlert size={12} className="no-shrink" />}
+          {task.reviewStatus === 'approved' ? <ShieldCheck size={10} className="no-shrink" /> :
+           task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? <ShieldX size={10} className="no-shrink" /> :
+           <ShieldAlert size={10} className="no-shrink" />}
           <span>Clara: {task.reviewStatus === 'in-review' ? 'reviewing…' : task.reviewStatus}</span>
           {task.reviewNotes && (
             <span className="ml-1 opacity-70 truncate max-w-[120px]">— {task.reviewNotes}</span>
@@ -2177,14 +2197,14 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       {/* Subtask Progress */}
       {subtaskCount > 0 && (
         <div className="mb-2">
-          <div className="icon-text-tight text-xs text-mission-control-text-dim mb-1">
-            <CheckSquare size={14} className="flex-shrink-0" />
+          <div className="icon-text-tight text-[10px] text-mission-control-text-dim mb-1">
+            <CheckSquare size={12} className="flex-shrink-0" />
             <span className="tabular-nums">{completedSubtasks}/{subtaskCount}</span>
           </div>
-          <div className="h-1 bg-mission-control-surface rounded-full overflow-hidden">
-            <div 
-              className={`h-full transition-all duration-300 ${
-                subtaskProgress === 100 ? 'bg-success' : 'bg-mission-control-accent'
+          <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-colors duration-300 ${
+                subtaskProgress === 100 ? 'bg-[var(--color-success)]' : 'bg-mission-control-accent'
               }`}
               style={{ width: `${subtaskProgress}%` }}
             />
@@ -2193,31 +2213,31 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       )}
       
       {/* Bottom row: Project, Due date, Agent */}
-      <div className="flex items-center justify-between gap-2 text-xs min-w-0">
-        <div className="icon-text flex-1 min-w-0 overflow-hidden">
-          <span className="icon-text-tight px-2 py-0.5 bg-mission-control-surface rounded text-mission-control-text-dim no-shrink no-wrap">
-            <FolderOpen size={14} className="no-shrink" />
+      <div className="flex items-center justify-between gap-2 min-w-0">
+        <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden flex-wrap">
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/30 text-mission-control-text-dim flex-shrink-0 whitespace-nowrap">
+            <FolderOpen size={11} className="flex-shrink-0" />
             {task.project}
           </span>
-          
+
           {dueInfo && (
-            <span className={`icon-text-tight px-2 py-0.5 rounded no-shrink no-wrap ${
-              dueInfo.isOverdue ? 'bg-error-subtle text-error' :
-              dueInfo.isDueSoon ? 'bg-warning-subtle text-warning' :
-              dueInfo.isDueThisWeek ? 'bg-warning-subtle/50 text-warning' :
-              'bg-mission-control-surface text-mission-control-text-dim'
+            <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap ${
+              dueInfo.isOverdue ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+              dueInfo.isDueSoon ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+              dueInfo.isDueThisWeek ? 'bg-[var(--color-warning)]/10/50 text-[var(--color-warning)]' :
+              'bg-mission-control-border/30 text-mission-control-text-dim'
             }`}>
-              <Calendar size={14} className="no-shrink" />
+              <Calendar size={11} className="flex-shrink-0" />
               {dueInfo.text}
             </span>
           )}
         </div>
         
-        <div className="relative flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {assignedAgent ? (
-            <div className="flex items-center gap-1.5 no-shrink">
+            <>
               {task.status === 'in-progress' ? (
-                <span className="icon-badge-sm bg-success-subtle text-success animate-pulse" title="Agent working">
+                <span className="icon-badge-sm bg-[var(--color-success)]/10 text-[var(--color-success)] animate-pulse" title="Agent working">
                   <Zap size={14} className="no-shrink" />
                 </span>
               ) : canStart ? (
@@ -2225,73 +2245,49 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
                   {isSpawning ? <Spinner size={14} className="no-shrink" /> : <Play size={14} className="no-shrink" />}
                 </IconButton>
               ) : null}
-              <Button
-                ref={assignBtnRef}
-                variant="soft"
-                size="1"
-                title={assignedAgent?.name || task.assignedTo}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!showAssign && assignBtnRef.current) {
-                    const rect = assignBtnRef.current.getBoundingClientRect();
-                    setAssignBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
-                  }
-                  setShowAssign(true);
-                }}
-              >
-                <AgentAvatar
-                  agentId={assignedAgent.id}
-                  fallbackEmoji={assignedAgent.avatar}
-                  size="xs"
-                  status={getAgentStatus()}
-                />
-              </Button>
-            </div>
-          ) : (
-            <IconButton
-              ref={assignBtnRef}
-              variant="ghost"
-              size="1"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!showAssign && assignBtnRef.current) {
-                  const rect = assignBtnRef.current.getBoundingClientRect();
-                  setAssignBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
-                }
-                setShowAssign(true);
-              }}
-            >
-              <User size={14} className="no-shrink" />
-            </IconButton>
-          )}
-          
-          {/* Assign Agent Modal */}
-          {showAssign && assignBtnPos && createPortal(
-            <>
-              <div className="fixed inset-0 z-[100]" onClick={() => setShowAssign(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowAssign(false); } }} role="button" tabIndex={0} aria-label="Close assign dropdown" />
-              <div 
-                className="fixed bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl p-2 z-[101] min-w-[160px]"
-                style={{ top: `${assignBtnPos.top}px`, left: `${assignBtnPos.left}px` }}
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => e.stopPropagation()}
-                role="presentation"
-              >
-                <div className="text-xs text-mission-control-text-dim mb-2 font-medium px-2">Assign to agent</div>
-                <div className="space-y-1">
-                  <Button variant={!task.assignedTo ? 'soft' : 'ghost'} size="1" onClick={() => { onAssign(''); setShowAssign(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
-                    <User size={16} className="text-mission-control-text-dim" />
-                    Unassigned
-                  </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    title={assignedAgent?.name || task.assignedTo}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center rounded transition-opacity hover:opacity-80"
+                  >
+                    <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="xs" status={getAgentStatus()} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Assign to agent</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAssign(''); }}>
+                    <User size={14} className="flex-shrink-0 text-mission-control-text-dim" /> Unassigned
+                  </DropdownMenuItem>
                   {agents.map(agent => (
-                    <Button key={agent.id} variant={task.assignedTo === agent.id ? 'soft' : 'ghost'} size="1" onClick={() => { onAssign(agent.id); setShowAssign(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
-                      <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
-                      {agent.name}
-                    </Button>
+                    <DropdownMenuItem key={agent.id} onClick={(e) => { e.stopPropagation(); onAssign(agent.id); }}
+                      className={task.assignedTo === agent.id ? 'text-mission-control-accent' : ''}>
+                      <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" /> {agent.name}
+                    </DropdownMenuItem>
                   ))}
-                </div>
-              </div>
-            </>,
-            document.body
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                >
+                  <User size={14} className="no-shrink" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Assign to agent</DropdownMenuLabel>
+                {agents.map(agent => (
+                  <DropdownMenuItem key={agent.id} onClick={(e) => { e.stopPropagation(); onAssign(agent.id); }}>
+                    <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" /> {agent.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>

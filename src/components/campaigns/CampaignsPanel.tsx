@@ -2,7 +2,7 @@
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton, TextField, Flex, Box } from '@radix-ui/themes';
+import { Button, TextField, Flex, Box } from '@radix-ui/themes';
 import {
   Megaphone, Plus, Search, RefreshCw, AlertCircle, LayoutGrid, List
 } from 'lucide-react';
@@ -119,9 +119,9 @@ export default function CampaignsPanel() {
   }
 
   return (
-    <Flex direction="column" height="100%" className="bg-mission-control-bg0">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Header */}
-      <Flex align="center" justify="between" px="6" py="4" className="border-b border-mission-control-border bg-mission-control-surface">
+      <Flex align="center" justify="between" px="4" py="3" className="border-b border-mission-control-border bg-mission-control-surface">
         <Flex align="center" gap="3">
           <Box p="2" className="bg-mission-control-accent/20 rounded-lg">
             <Megaphone size={24} className="text-mission-control-accent" />
@@ -137,36 +137,33 @@ export default function CampaignsPanel() {
           </div>
         </Flex>
         <Flex align="center" gap="2">
-          <IconButton
+          <button
+            type="button"
             onClick={() => load(false)}
             disabled={refreshing}
-            size="2"
-            variant="ghost"
-           
             title="Refresh"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50"
           >
             <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
-          </IconButton>
-          <Flex align="center" className="rounded-lg border border-mission-control-border overflow-hidden">
-            <IconButton
+          </button>
+          <div className="flex items-center rounded-lg border border-mission-control-border overflow-hidden">
+            <button
+              type="button"
               onClick={() => setViewMode('grid')}
-              size="2"
-              variant={viewMode === 'grid' ? 'solid' : 'ghost'}
-              radius="none"
               title="Grid view"
+              className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
             >
               <LayoutGrid size={14} />
-            </IconButton>
-            <IconButton
+            </button>
+            <button
+              type="button"
               onClick={() => setViewMode('list')}
-              size="2"
-              variant={viewMode === 'list' ? 'solid' : 'ghost'}
-              radius="none"
               title="List view"
+              className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
             >
               <List size={14} />
-            </IconButton>
-          </Flex>
+            </button>
+          </div>
           <Button
             onClick={() => setShowCreateWizard(true)}
             size="2"
@@ -178,11 +175,12 @@ export default function CampaignsPanel() {
       </Flex>
 
       {/* Filters */}
-      <Flex direction="column" gap="2" px="6" py="3" className="border-b border-mission-control-border">
-        {/* Search + status tabs */}
+      <Flex direction="column" gap="2" px="4" py="3" className="border-b border-mission-control-border">
+        {/* Search + status segment */}
         <Flex align="center" gap="3">
           <Box className="flex-1 max-w-xs">
             <TextField.Root
+              aria-label="Search campaigns"
               placeholder="Search campaigns..."
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -193,39 +191,45 @@ export default function CampaignsPanel() {
               </TextField.Slot>
             </TextField.Root>
           </Box>
-          <Flex align="center" gap="1">
+          <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
             {STATUS_FILTERS.map(f => (
-              <Button
+              <button
                 key={f.value}
+                type="button"
                 onClick={() => setStatusFilter(f.value)}
-                size="1"
-                variant={statusFilter === f.value ? 'solid' : 'ghost'}
-                radius="full"
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  statusFilter === f.value
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+                }`}
               >
                 {f.label}
-              </Button>
+              </button>
             ))}
-          </Flex>
+          </div>
         </Flex>
 
         {/* Type filters */}
-        <Flex align="center" gap="1" className="flex-wrap">
+        <div className="flex items-center flex-wrap gap-1.5">
           {TYPE_FILTERS.map(f => (
-            <Button
+            <button
               key={f.value}
+              type="button"
               onClick={() => setTypeFilter(f.value)}
-              size="1"
-              variant={typeFilter === f.value ? 'soft' : 'outline'}
-              radius="full"
+              className={`px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors ${
+                typeFilter === f.value
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/30'
+              }`}
             >
               {f.label}
-            </Button>
+            </button>
           ))}
-        </Flex>
+        </div>
       </Flex>
 
       {/* Content */}
-      <Box px="6" py="4" className="flex-1 overflow-y-auto">
+      <Box px="4" py="4" className="flex-1 overflow-y-auto">
         {loading && (
           <Flex align="center" justify="center" py="9">
             <Spinner size={24} />
@@ -233,7 +237,7 @@ export default function CampaignsPanel() {
         )}
 
         {error && !loading && (
-          <Flex align="center" gap="2" px="4" py="3" className="bg-error-subtle border border-error/30 rounded-lg text-error text-sm">
+          <Flex align="center" gap="2" px="4" py="3" className="bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg text-[var(--color-error)] text-sm">
             <AlertCircle size={15} />
             {error}
           </Flex>
@@ -241,8 +245,10 @@ export default function CampaignsPanel() {
 
         {!loading && !error && filtered.length === 0 && (
           search || statusFilter || typeFilter ? (
-            <div className="text-center py-16 text-mission-control-text-dim text-sm">
-              No campaigns matching your filters
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search size={32} className="text-mission-control-text-dim mb-3 opacity-50" />
+              <p className="text-sm font-medium text-mission-control-text-dim">No campaigns match your filters</p>
+              <p className="text-xs text-mission-control-text-dim mt-1 opacity-70">Try adjusting your search or filter criteria</p>
             </div>
           ) : (
             <EmptyCampaigns onNew={() => setShowCreateWizard(true)} />

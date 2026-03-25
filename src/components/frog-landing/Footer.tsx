@@ -42,7 +42,7 @@ export function Footer() {
 
           {/* Page nav */}
           <nav aria-label="Footer navigation">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--frog-moss)] mb-3 text-center sm:text-left">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-[var(--frog-moss)] mb-3 text-center sm:text-left">
               On this page
             </h3>
             <ul className="space-y-2">
@@ -61,7 +61,7 @@ export function Footer() {
 
           {/* External resources */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--frog-moss)] mb-3 text-center sm:text-left">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-[var(--frog-moss)] mb-3 text-center sm:text-left">
               Resources
             </h3>
             <ul className="space-y-2">

@@ -498,31 +498,32 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
   const progressPct = totalSteps > 0 ? Math.round((doneCount / totalSteps) * 100) : 0;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-      <button className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default" onClick={handleClose} type="button" aria-label="Close" />
-      <div className={`relative w-full max-w-lg bg-mission-control-bg border border-mission-control-accent/30 rounded-xl shadow-2xl shadow-mission-control-accent/10 flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+      <button className="absolute inset-0 w-full h-full cursor-default border-0 outline-none" onClick={handleClose} type="button" aria-label="Close" />
+      <div className={`relative w-full max-w-lg bg-mission-control-bg border border-mission-control-accent/30 rounded-2xl shadow-2xl shadow-mission-control-accent/10 flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
 
         {/* Header */}
-        <Flex align="center" gap="3" className="p-4 border-b border-mission-control-border">
-          <div className="w-10 h-10 rounded-full bg-mission-control-accent/20 flex items-center justify-center text-mission-control-accent">
-            <GraduationCap size={22} />
-          </div>
-          <div className="flex-1">
-            <h2 className="font-bold text-mission-control-text">HR — Agent Creator</h2>
-            <p className="text-xs text-mission-control-accent">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-mission-control-text">HR — Agent Creator</h2>
+            <p className="text-xs text-mission-control-text-dim mt-0.5">
               {stage === 'creating'
                 ? creationDone ? 'Onboarding complete!' : creationError ? 'Onboarding failed' : 'Launching new agent...'
                 : 'Building your next team member'}
             </p>
           </div>
-          <IconButton onClick={handleClose} variant="ghost" color="gray" size="2">
-            <X size={18} />
-          </IconButton>
-        </Flex>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
 
         {/* Creating stage */}
         {stage === 'creating' && pendingConfig && (
-          <div className="flex-1 overflow-y-auto p-4 min-h-[300px]">
+          <div className="flex-1 overflow-y-auto px-6 py-4 min-h-[300px]">
             {/* Agent card */}
             <Flex align="center" gap="3" className="mb-4">
               <div className="w-12 h-12 rounded-full overflow-hidden border border-mission-control-accent/40 flex items-center justify-center bg-mission-control-accent/20 flex-shrink-0">
@@ -549,7 +550,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                 </Flex>
                 <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${creationError ? 'bg-error' : 'bg-mission-control-accent'}`}
+                    className={`h-full rounded-full transition-colors duration-500 ${creationError ? 'bg-[var(--color-error)]' : 'bg-mission-control-accent'}`}
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -559,24 +560,24 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
             {/* Steps list */}
             <div className="space-y-2">
               {creationSteps.map((step) => (
-                <div key={step.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all duration-300 ${
+                <div key={step.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-colors duration-300 ${
                   step.status === 'running'  ? 'bg-mission-control-accent/5 border-mission-control-accent/30' :
-                  step.status === 'done'     ? 'bg-success-subtle border-success-border' :
+                  step.status === 'done'     ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30' :
                   step.status === 'skipped'  ? 'bg-mission-control-surface/30 border-mission-control-border opacity-60' :
-                  step.status === 'error'    ? 'bg-error-subtle border-error-border' :
+                  step.status === 'error'    ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30' :
                   'bg-mission-control-surface/50 border-mission-control-border'
                 }`}>
                   <div className="flex-shrink-0 mt-0.5">
                     {step.status === 'running'  && <Loader2 size={16} className="text-mission-control-accent animate-spin" />}
-                    {step.status === 'done'     && <CheckCircle size={16} className="text-success" />}
+                    {step.status === 'done'     && <CheckCircle size={16} className="text-[var(--color-success)]" />}
                     {step.status === 'skipped'  && <Circle size={16} className="text-mission-control-text-dim" />}
-                    {step.status === 'error'    && <XCircle size={16} className="text-error" />}
+                    {step.status === 'error'    && <XCircle size={16} className="text-[var(--color-error)]" />}
                     {step.status === 'pending'  && <Circle size={16} className="text-mission-control-border" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium ${
-                      step.status === 'done'    ? 'text-success' :
-                      step.status === 'error'   ? 'text-error' :
+                      step.status === 'done'    ? 'text-[var(--color-success)]' :
+                      step.status === 'error'   ? 'text-[var(--color-error)]' :
                       step.status === 'running' ? 'text-mission-control-accent' :
                       step.status === 'skipped' ? 'text-mission-control-text-dim' :
                       'text-mission-control-text-dim'
@@ -606,8 +607,8 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
 
             {/* Error banner */}
             {creationError && (
-              <div className="mt-4 p-3 bg-error-subtle border border-error-border rounded-lg">
-                <div className="text-sm text-error font-medium">Onboarding failed</div>
+              <div className="mt-4 p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
+                <div className="text-sm text-[var(--color-error)] font-medium">Onboarding failed</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">{creationError}</div>
               </div>
             )}
@@ -617,7 +618,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
 
         {/* Chat stage */}
         {stage === 'chat' && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px]">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-[300px]">
             {messages.map((msg, i) => (
               <Flex key={i} justify={msg.role === 'user' ? 'end' : 'start'}>
                 {msg.role === 'hr' && (
@@ -627,7 +628,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                 )}
                 <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
                   msg.role === 'user'
-                    ? 'bg-info-subtle text-info rounded-br-md'
+                    ? 'bg-[var(--color-info)]/10 text-[var(--color-info)] rounded-br-md'
                     : 'bg-mission-control-surface text-mission-control-text rounded-bl-md'
                 }`}>
                   {msg.content.split(/(\*\*[^*]+\*\*)/).map((part, j) =>
@@ -692,15 +693,15 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
         )}
 
         {/* Input / action bar */}
-        <div className="p-3 border-t border-mission-control-border">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
           {stage === 'creating' && creationDone ? (
-            <Button onClick={handleClose} variant="solid" color="grass" size="2" className="w-full">
+            <Button onClick={handleClose} variant="solid" size="2" className="w-full">
               <Check size={16} /> Done — View Agents
             </Button>
           ) : stage === 'creating' && creationError ? (
-            <Flex gap="2">
-              <Button onClick={() => { setStage('chat'); setCreationSteps([]); setCreationError(null); }} variant="soft" color="gray" size="2" className="flex-1">Back</Button>
-              <Button onClick={() => pendingConfig && startCreation(pendingConfig)} variant="solid" color="grass" size="2" className="flex-1">Retry</Button>
+            <Flex gap="2" className="w-full">
+              <Button onClick={() => { setStage('chat'); setCreationSteps([]); setCreationError(null); }} variant="ghost" size="2" className="flex-1">Back</Button>
+              <Button onClick={() => pendingConfig && startCreation(pendingConfig)} variant="solid" size="2" className="flex-1">Retry</Button>
             </Flex>
           ) : stage === 'creating' ? (
             <Flex align="center" justify="center" gap="2" className="py-2 text-sm text-mission-control-text-dim">

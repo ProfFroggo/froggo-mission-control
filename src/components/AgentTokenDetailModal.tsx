@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { X, TrendingUp, BarChart3, DollarSign, PiggyBank } from 'lucide-react';
-import { Button, IconButton, Box, Flex } from '@radix-ui/themes';
+import { Box, Flex } from '@radix-ui/themes';
 import { getAgentTheme } from '../utils/agentThemes';
 import { analyticsApi } from '../lib/api';
 
@@ -202,7 +202,7 @@ export default function AgentTokenDetailModal({
     <Flex
       align="center"
       justify="center"
-      className="fixed inset-0 bg-black/50 z-50"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
       onClick={handleBackdropClick}
       onKeyDown={handleBackdropClick}
       role="button"
@@ -211,49 +211,46 @@ export default function AgentTokenDetailModal({
     >
       <Flex
         direction="column"
-        className="bg-mission-control-bg border border-mission-control-border rounded-xl w-[640px] max-h-[85vh] shadow-2xl"
+        className="bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl w-[640px] max-h-[85vh]"
         onClick={handleInnerClick}
         onKeyDown={handleInnerClick}
         role="presentation"
       >
         {/* Header */}
-        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border flex-shrink-0">
-          <Flex align="center" gap="3">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.color }} />
-            <div>
-              <h3 className="text-base font-semibold text-mission-control-text">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-mission-control-text">
+              <span className="inline-flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: theme.color }} />
                 {agent.charAt(0).toUpperCase() + agent.slice(1)}
-              </h3>
-              <p className="text-xs text-mission-control-text-dim">Token Usage & Cost</p>
-            </div>
-          </Flex>
-          <Flex align="center" gap="2">
+              </span>
+            </h2>
+            <p className="text-xs text-mission-control-text-dim mt-0.5">Token Usage & Cost</p>
+          </div>
+          <div className="flex items-center gap-2">
             {onOpenBudgets && (
-              <Button
-                size="1"
-                variant="ghost"
+              <button
                 onClick={() => { onClose(); onOpenBudgets(); }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <PiggyBank size={13} />
                 Set Budget
-              </Button>
+              </button>
             )}
-            <IconButton
+            <button
               onClick={onClose}
-              size="2"
-              variant="ghost"
-
               aria-label="Close"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
-              <X size={20} />
-            </IconButton>
-          </Flex>
-        </Flex>
+              <X size={16} />
+            </button>
+          </div>
+        </div>
 
         <div className="flex-1 overflow-y-auto">
           {/* 30-day cost trend */}
-          <div className="px-5 pt-5 pb-3">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2">
+          <div className="px-6 pt-5 pb-3">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
               <TrendingUp size={12} />
               30-day cost trend
             </div>
@@ -262,20 +259,20 @@ export default function AgentTokenDetailModal({
 
           {/* Comparison to team average */}
           {agentCostPerDay > 0 && (
-            <div className="px-5 pb-3">
+            <div className="px-6 pb-3">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 flex items-center gap-3 text-sm">
-                <DollarSign size={16} className="text-warning shrink-0" />
+                <DollarSign size={16} className="text-[var(--color-warning)] shrink-0" />
                 <span>
                   This agent costs{' '}
-                  <strong className="text-warning">${agentCostPerDay.toFixed(4)}/day</strong>
+                  <strong className="text-[var(--color-warning)]">${agentCostPerDay.toFixed(4)}/day</strong>
                   {teamAvgCostPerDay > 0 && (
                     <>
                       {' '}vs team avg{' '}
                       <strong>${teamAvgCostPerDay.toFixed(4)}/day</strong>
                       {agentCostPerDay > teamAvgCostPerDay ? (
-                        <span className="text-error"> (+{(((agentCostPerDay - teamAvgCostPerDay) / teamAvgCostPerDay) * 100).toFixed(0)}%)</span>
+                        <span className="text-[var(--color-error)]"> (+{(((agentCostPerDay - teamAvgCostPerDay) / teamAvgCostPerDay) * 100).toFixed(0)}%)</span>
                       ) : (
-                        <span className="text-success"> ({(((agentCostPerDay - teamAvgCostPerDay) / teamAvgCostPerDay) * 100).toFixed(0)}%)</span>
+                        <span className="text-[var(--color-success)]"> ({(((agentCostPerDay - teamAvgCostPerDay) / teamAvgCostPerDay) * 100).toFixed(0)}%)</span>
                       )}
                     </>
                   )}
@@ -286,8 +283,8 @@ export default function AgentTokenDetailModal({
 
           {/* Cost per task table */}
           {sessionLog.length > 0 && (
-            <div className="px-5 pb-3">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2">
+            <div className="px-6 pb-3">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
                 <BarChart3 size={12} />
                 Recent calls
               </div>
@@ -315,16 +312,16 @@ export default function AgentTokenDetailModal({
                         <td className="py-2 px-3 text-mission-control-text-dim">
                           {truncateModel(entry.model)}
                         </td>
-                        <td className="py-2 px-3 text-right text-info tabular-nums">
+                        <td className="py-2 px-3 text-right text-[var(--color-info)] tabular-nums">
                           {entry.input_tokens.toLocaleString()}
                         </td>
-                        <td className="py-2 px-3 text-right text-review tabular-nums">
+                        <td className="py-2 px-3 text-right text-[var(--color-review)] tabular-nums">
                           {entry.output_tokens.toLocaleString()}
                         </td>
-                        <td className="py-2 px-3 text-right text-success font-medium tabular-nums">
+                        <td className="py-2 px-3 text-right text-[var(--color-success)] font-medium tabular-nums">
                           {entry.total_tokens.toLocaleString()}
                         </td>
-                        <td className="py-2 px-3 text-right text-warning tabular-nums">
+                        <td className="py-2 px-3 text-right text-[var(--color-warning)] tabular-nums">
                           ${entry.cost.toFixed(4)}
                         </td>
                       </tr>
@@ -352,8 +349,8 @@ export default function AgentTokenDetailModal({
 
         {/* Footer Summary */}
         {!loading && sessionLog.length > 0 && (
-          <div className="p-4 border-t border-mission-control-border bg-mission-control-surface/50">
-            <div className="grid grid-cols-4 gap-4 text-center">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+            <div className="grid grid-cols-4 gap-4 text-center w-full">
               <div>
                 <div className="text-xs text-mission-control-text-dim mb-1">Total Calls</div>
                 <div className="text-lg font-semibold tabular-nums">{totalCalls}</div>
@@ -366,13 +363,13 @@ export default function AgentTokenDetailModal({
               )}
               <div>
                 <div className="text-xs text-mission-control-text-dim mb-1">Total Tokens</div>
-                <div className="text-lg font-semibold text-success tabular-nums">
+                <div className="text-lg font-semibold text-[var(--color-success)] tabular-nums">
                   {totalTokens.toLocaleString()}
                 </div>
               </div>
               <div>
                 <div className="text-xs text-mission-control-text-dim mb-1">Total Cost</div>
-                <div className="text-lg font-semibold text-warning tabular-nums">
+                <div className="text-lg font-semibold text-[var(--color-warning)] tabular-nums">
                   ${totalCost.toFixed(4)}
                 </div>
               </div>

@@ -111,7 +111,7 @@ export default function XPlanThreadComposer() {
     <Flex direction="column" height="100%" p="5" className="bg-mission-control-bg">
       <div className="mb-6">
         <Flex align="center" gap="2" className="mb-2">
-          <FileText className="w-5 h-5 text-info" />
+          <FileText className="w-5 h-5 text-[var(--color-info)]" />
           <h3 className="text-lg font-semibold text-mission-control-text">Create Content Plan</h3>
         </Flex>
         <p className="text-sm text-mission-control-text-dim">
@@ -139,7 +139,7 @@ export default function XPlanThreadComposer() {
                 </Select.Content>
               </Select.Root>
               {selectedResearchId && (
-                <div className="mt-2 p-3 bg-mission-control-bg-alt rounded-lg">
+                <div className="mt-2 p-3 bg-mission-control-border/20 rounded-lg">
                   <p className="text-xs text-mission-control-text-dim">
                     {researchIdeas.find(i => i.id === selectedResearchId)?.description.slice(0, 200)}
                     {(researchIdeas.find(i => i.id === selectedResearchId)?.description.length || 0) > 200 ? '...' : ''}
@@ -152,7 +152,7 @@ export default function XPlanThreadComposer() {
             {/* Title */}
             <div>
               <label htmlFor="content-title" className="block text-sm font-medium text-mission-control-text mb-2">
-                Content Title <span className="text-error">*</span>
+                Content Title <span className="text-[var(--color-error)]">*</span>
               </label>
               <TextField.Root
                 id="content-title"
@@ -168,7 +168,7 @@ export default function XPlanThreadComposer() {
             {/* Content Type */}
             <div>
               <span className="block text-sm font-medium text-mission-control-text mb-2">
-                Content Type <span className="text-error">*</span>
+                Content Type <span className="text-[var(--color-error)]">*</span>
               </span>
               <div className="grid grid-cols-2 gap-2">
                 {CONTENT_TYPES.map((type) => (
@@ -178,8 +178,8 @@ export default function XPlanThreadComposer() {
                     onClick={() => setContentType(type.value)}
                     className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-colors ${
                       contentType === type.value
-                        ? 'border-info bg-info/20 text-mission-control-text'
-                        : 'border-mission-control-border bg-mission-control-bg-alt text-mission-control-text-dim hover:border-mission-control-border/80'
+                        ? 'border-[var(--color-info)] bg-[var(--color-info)]/20 text-mission-control-text'
+                        : 'border-mission-control-border bg-mission-control-border/20 text-mission-control-text-dim hover:border-mission-control-border/80'
                     }`}
                     disabled={submitting}
                   >
@@ -193,7 +193,7 @@ export default function XPlanThreadComposer() {
             {/* Thread Length */}
             <div>
               <span className="block text-sm font-medium text-mission-control-text mb-2">
-                Thread Length <span className="text-error">*</span>
+                Thread Length <span className="text-[var(--color-error)]">*</span>
               </span>
               <div className="grid grid-cols-3 gap-2">
                 {THREAD_LENGTHS.map((length) => (
@@ -203,8 +203,8 @@ export default function XPlanThreadComposer() {
                     onClick={() => setThreadLength(length.value)}
                     className={`px-4 py-2 rounded-lg border-2 transition-colors ${
                       threadLength === length.value
-                        ? 'border-info bg-info/20 text-mission-control-text'
-                        : 'border-mission-control-border bg-mission-control-bg-alt text-mission-control-text-dim hover:border-mission-control-border/80'
+                        ? 'border-[var(--color-info)] bg-[var(--color-info)]/20 text-mission-control-text'
+                        : 'border-mission-control-border bg-mission-control-border/20 text-mission-control-text-dim hover:border-mission-control-border/80'
                     }`}
                     disabled={submitting}
                   >
@@ -217,7 +217,7 @@ export default function XPlanThreadComposer() {
             {/* Description/Outline */}
             <div>
               <label htmlFor="content-outline" className="block text-sm font-medium text-mission-control-text mb-2">
-                Content Outline <span className="text-error">*</span>
+                Content Outline <span className="text-[var(--color-error)]">*</span>
               </label>
               <TextArea
                 id="content-outline"

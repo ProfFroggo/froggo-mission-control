@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import {
   ChevronUp, ChevronDown, Trash2, Plus, ChevronRight, ChevronDown as Expand, X, Save, Users,
 } from 'lucide-react';
-import { Button, IconButton, Heading, Text, Spinner, Select, TextField, TextArea } from '@radix-ui/themes';
+import { Button, Heading, Text, Spinner, Select, TextField, TextArea } from '@radix-ui/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -73,28 +73,14 @@ interface FieldProps {
 }
 function Field({ label, children }: FieldProps) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
         {label}
       </label>
       {children}
     </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: '6px 10px',
-  borderRadius: 6,
-  border: '1px solid var(--mission-control-border)',
-  backgroundColor: 'var(--mission-control-surface)',
-  color: 'var(--mission-control-text)',
-  fontSize: 13,
-  width: '100%',
-  boxSizing: 'border-box',
-};
-
-const selectClassName = 'w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent cursor-pointer';
-const textareaStyle: React.CSSProperties = { ...inputStyle, resize: 'vertical', minHeight: 60 };
 
 interface ConfigEditorProps {
   step: AutomationStepDef;
@@ -199,37 +185,34 @@ function ConfigEditor({ step, onChange }: ConfigEditorProps) {
             </Select.Root>
           </Field>
           <Field label="Assign to (Agent ID)">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Users size={13} style={{ color: 'var(--mission-control-text-dim)', flexShrink: 0 }} />
-              <TextField.Root style={{ flex: 1 }} value={c.assignTo ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('assignTo', e.target.value)} placeholder="coder, designer, growth-director..." />
+            <div className="flex items-center gap-1.5">
+              <Users size={13} className="text-mission-control-text-dim flex-shrink-0" />
+              <TextField.Root className="flex-1" value={c.assignTo ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('assignTo', e.target.value)} placeholder="coder, designer, growth-director..." />
             </div>
           </Field>
           <Field label="Subtasks">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="flex flex-col gap-1.5">
               {subtasks.map((st, i) => (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--mission-control-border)', background: 'var(--mission-control-bg)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--mission-control-text-dim)', width: 16, flexShrink: 0 }}>{i + 1}</span>
+                <div key={i} className="flex flex-col gap-1 px-2.5 py-2 rounded-xl border border-mission-control-border bg-mission-control-bg">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-bold text-mission-control-text-dim w-4 flex-shrink-0">{i + 1}</span>
                     <TextField.Root
-                      style={{ flex: 1 }}
+                      className="flex-1"
                       value={st.title}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSubtask(i, 'title', e.target.value)}
                       placeholder={`Subtask ${i + 1} title`}
                     />
-                    <IconButton
+                    <button
                       type="button"
-                      variant="ghost"
-                      color="red"
-                      size="1"
                       onClick={() => removeSubtask(i)}
                       title="Remove subtask"
-                      style={{ flexShrink: 0 }}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors flex-shrink-0"
                     >
                       <Trash2 size={13} />
-                    </IconButton>
+                    </button>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 20 }}>
-                    <Users size={11} style={{ color: 'var(--mission-control-text-dim)', flexShrink: 0 }} />
+                  <div className="flex items-center gap-1 pl-5">
+                    <Users size={11} className="text-mission-control-text-dim flex-shrink-0" />
                     <TextField.Root
                       value={st.assignedTo}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSubtask(i, 'assignedTo', e.target.value)}
@@ -292,45 +275,17 @@ function StepRow({ step, index, total, onMove, onDelete, onChangeType, onChangeC
   const [expanded, setExpanded] = useState(true);
 
   return (
-    <div
-      style={{
-        border: '1px solid var(--mission-control-border)',
-        borderRadius: 10,
-        background: 'var(--mission-control-surface)',
-        overflow: 'hidden',
-      }}
-    >
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
       {/* Header */}
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '10px 14px',
-          cursor: 'pointer',
-          userSelect: 'none',
-        }}
+        className="flex items-center gap-2 px-3.5 py-2.5 cursor-pointer select-none"
         onClick={() => setExpanded(e => !e)}
       >
-        <span
-          style={{
-            flexShrink: 0,
-            width: 22,
-            height: 22,
-            borderRadius: 6,
-            background: 'var(--mission-control-accent)',
-            color: 'white',
-            fontSize: 11,
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
+        <span className="w-6 h-6 rounded-full bg-mission-control-accent/10 text-mission-control-accent text-xs font-bold flex items-center justify-center flex-shrink-0">
           {index + 1}
         </span>
 
-        <div style={{ flex: 1, maxWidth: 220 }} onClick={e => e.stopPropagation()}>
+        <div className="flex-1 max-w-[220px]" onClick={e => e.stopPropagation()}>
           <Select.Root value={step.type} onValueChange={val => { onChangeType(step.id, val as StepType); }}>
             <Select.Trigger />
             <Select.Content>
@@ -341,49 +296,44 @@ function StepRow({ step, index, total, onMove, onDelete, onChangeType, onChangeC
           </Select.Root>
         </div>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <IconButton
-            variant="ghost" size="1"
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ${index === 0 ? 'opacity-30' : ''}`}
             onClick={e => { e.stopPropagation(); onMove(index, -1); }}
             disabled={index === 0}
             title="Move up"
-            style={{ opacity: index === 0 ? 0.3 : 1 }}
           >
             <ChevronUp size={14} />
-          </IconButton>
-          <IconButton
-            variant="ghost" size="1"
+          </button>
+          <button
+            type="button"
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ${index === total - 1 ? 'opacity-30' : ''}`}
             onClick={e => { e.stopPropagation(); onMove(index, 1); }}
             disabled={index === total - 1}
             title="Move down"
-            style={{ opacity: index === total - 1 ? 0.3 : 1 }}
           >
             <ChevronDown size={14} />
-          </IconButton>
-          <IconButton
-            variant="ghost" color="red" size="1"
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
             onClick={e => { e.stopPropagation(); onDelete(step.id); }}
             title="Delete step"
           >
             <Trash2 size={14} />
-          </IconButton>
-          {expanded ? <Expand size={14} style={{ color: 'var(--mission-control-text-dim)' }} /> : <ChevronRight size={14} style={{ color: 'var(--mission-control-text-dim)' }} />}
+          </button>
+          {expanded ? <Expand size={14} className="text-mission-control-text-dim" /> : <ChevronRight size={14} className="text-mission-control-text-dim" />}
         </div>
       </div>
 
       {/* Config */}
       {expanded && (
         <div
-          style={{
-            padding: '0 14px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 10,
-            borderTop: '1px solid var(--mission-control-border)',
-          }}
+          className="px-3.5 pb-3.5 flex flex-col gap-2.5 border-t border-mission-control-border"
           onClick={e => e.stopPropagation()}
         >
-          <div style={{ paddingTop: 10 }}>
+          <div className="pt-2.5">
             <ConfigEditor step={step} onChange={cfg => onChangeConfig(step.id, cfg)} />
           </div>
         </div>
@@ -392,45 +342,22 @@ function StepRow({ step, index, total, onMove, onDelete, onChangeType, onChangeC
   );
 }
 
-const btnIcon: React.CSSProperties = {
-  background: 'transparent',
-  border: 'none',
-  cursor: 'pointer',
-  padding: 4,
-  borderRadius: 4,
-  color: 'var(--mission-control-text-dim)',
-  display: 'flex',
-  alignItems: 'center',
-};
-
 // ─── JSON Preview ─────────────────────────────────────────────────────────────
 
 function JsonPreview({ steps }: { steps: AutomationStepDef[] }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ border: '1px solid var(--mission-control-border)', borderRadius: 8, overflow: 'hidden' }}>
-      <Button
-        variant="ghost"
+    <div className="border border-mission-control-border rounded-lg overflow-hidden">
+      <button
+        type="button"
         onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--mission-control-surface)', justifyContent: 'flex-start', height: 'auto' }}
+        className="inline-flex items-start gap-1.5 w-full px-3.5 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
       >
         {open ? <Expand size={12} /> : <ChevronRight size={12} />}
         Preview JSON
-      </Button>
+      </button>
       {open && (
-        <pre
-          style={{
-            margin: 0,
-            padding: '12px 14px',
-            background: 'var(--mission-control-bg)',
-            color: 'var(--mission-control-text)',
-            fontSize: 11,
-            overflowX: 'auto',
-            maxHeight: 240,
-            overflowY: 'auto',
-            lineHeight: 1.5,
-          }}
-        >
+        <pre className="m-0 px-3.5 py-3 bg-mission-control-bg text-mission-control-text text-[11px] overflow-x-auto max-h-60 overflow-y-auto leading-[1.5]">
           {JSON.stringify(steps, null, 2)}
         </pre>
       )}
@@ -497,85 +424,55 @@ export default function AutomationStepBuilder({ automationId, initialSteps = [],
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 60,
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'flex-end',
-        background: 'var(--black-a4)',
-      }}
+      className="fixed inset-0 z-[60] flex items-start justify-end bg-[var(--black-a4)]"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        style={{
-          width: 480,
-          height: '100%',
-          background: 'var(--mission-control-bg)',
-          borderLeft: '1px solid var(--mission-control-border)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflowY: 'auto',
-        }}
+        className="w-[480px] h-full bg-mission-control-bg border-l border-mission-control-border flex flex-col overflow-y-auto"
       >
         {/* Header */}
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '20px 24px',
-            borderBottom: '1px solid var(--mission-control-border)',
-            position: 'sticky',
-            top: 0,
-            background: 'var(--mission-control-bg)',
-            zIndex: 1,
-          }}
+          className="flex items-center justify-between px-6 py-5 border-b border-mission-control-border sticky top-0 bg-mission-control-bg z-[1]"
         >
           <div>
             <Heading size="4" weight="medium">Step Builder</Heading>
-            <Text size="1" style={{ color: 'var(--mission-control-text-dim)' }}>
+            <Text size="1" className="text-mission-control-text-dim">
               {steps.length} step{steps.length !== 1 ? 's' : ''}
             </Text>
           </div>
-          <IconButton variant="ghost" size="2" onClick={onClose}><X size={18} /></IconButton>
+          <button type="button" onClick={onClose} className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"><X size={18} /></button>
         </div>
 
         {/* Steps */}
-        <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="flex-1 px-6 py-5 flex flex-col gap-2.5">
           {steps.length === 0 && (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '40px 20px',
-                color: 'var(--mission-control-text-dim)',
-                fontSize: 13,
-                border: '2px dashed var(--mission-control-border)',
-                borderRadius: 10,
-              }}
-            >
+            <div className="text-center text-[13px] text-mission-control-text-dim rounded-[10px] px-5 py-10 border-2 border-dashed border-mission-control-border">
               No steps yet. Add your first step below.
             </div>
           )}
 
           {steps.map((step, i) => (
-            <StepRow
-              key={step.id}
-              step={step}
-              index={i}
-              total={steps.length}
-              onMove={moveStep}
-              onDelete={deleteStep}
-              onChangeType={changeType}
-              onChangeConfig={changeConfig}
-            />
+            <div key={step.id}>
+              <StepRow
+                step={step}
+                index={i}
+                total={steps.length}
+                onMove={moveStep}
+                onDelete={deleteStep}
+                onChangeType={changeType}
+                onChangeConfig={changeConfig}
+              />
+              {i < steps.length - 1 && (
+                <div className="w-px h-4 bg-mission-control-border mx-auto" />
+              )}
+            </div>
           ))}
 
           <Button
-            variant="outline"
+            variant="ghost"
+            size="2"
             onClick={addStep}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', width: '100%', height: 'auto' }}
+            className="w-full justify-center"
           >
             <Plus size={16} /> Add step
           </Button>
@@ -585,25 +482,16 @@ export default function AutomationStepBuilder({ automationId, initialSteps = [],
 
         {/* Footer */}
         <div
-          style={{
-            padding: '16px 24px',
-            borderTop: '1px solid var(--mission-control-border)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            position: 'sticky',
-            bottom: 0,
-            background: 'var(--mission-control-bg)',
-          }}
+          className="px-6 py-4 border-t border-mission-control-border flex flex-col gap-2 sticky bottom-0 bg-mission-control-bg"
         >
           {error && (
-            <p style={{ fontSize: 13, color: 'var(--error)', margin: 0 }}>{error}</p>
+            <p className="text-[13px] text-[var(--color-error)] m-0">{error}</p>
           )}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="outline" onClick={onClose} style={{ flex: 1 }}>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button variant="solid" onClick={handleSave} disabled={saving} style={{ flex: 2 }}>
+            <Button variant="solid" onClick={handleSave} disabled={saving} className="flex-[2]">
               {saving ? <Spinner size="1" /> : <Save size={14} />}
               {saving ? 'Saving...' : 'Save steps'}
             </Button>

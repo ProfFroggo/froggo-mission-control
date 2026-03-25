@@ -74,7 +74,7 @@ export default function ResponsiveTable<T extends Record<string, any>>({
             {columns.map((col) => (
               <th
                 key={col.key}
-                className="px-4 py-3 text-left text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide whitespace-nowrap"
+                className="px-4 py-3 text-left text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wide whitespace-nowrap"
               >
                 {col.label}
               </th>

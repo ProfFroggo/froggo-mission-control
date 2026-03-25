@@ -5,6 +5,7 @@
  * Migrated to Radix Themes layout primitives.
  */
 
+import React from 'react';
 import { LucideIcon, Inbox, CheckCircle, Search, FolderOpen, Bell, Layout, Wallet, Package, AlertCircle } from 'lucide-react';
 import { ReactNode } from 'react';
 import { Button } from '@radix-ui/themes';
@@ -108,7 +109,7 @@ const PADDING_CLASSES: Record<'sm' | 'md' | 'lg', string> = {
   lg: 'py-16 px-8',
 };
 
-export default function EmptyState(props: EmptyStateProps) {
+const EmptyState = React.memo(function EmptyState(props: EmptyStateProps) {
   const isPreset = 'type' in props && props.type !== undefined;
 
   const {
@@ -161,13 +162,16 @@ export default function EmptyState(props: EmptyStateProps) {
     : '';
 
   const iconClass = isError
-    ? 'text-error opacity-70'
+    ? 'text-[var(--color-error)] opacity-70'
     : variant === 'global'
     ? 'text-mission-control-accent opacity-60'
     : 'text-mission-control-text-dim opacity-40';
 
-  const titleClass = isError ? 'text-error' : 'text-mission-control-text';
-  const descClass = isError ? 'text-error/70' : 'text-mission-control-text-dim';
+  const titleClass = isError ? 'text-[var(--color-error)]' : 'text-mission-control-text';
+  const descClass = isError ? 'text-[var(--color-error)]/70' : 'text-mission-control-text-dim';
+
+  const containerSize = effectiveSize === 'sm' ? 'w-10 h-10' : effectiveSize === 'lg' ? 'w-14 h-14' : 'w-12 h-12';
+  const containerIconSize = effectiveSize === 'sm' ? iconSize - 8 : iconSize - 16;
 
   return (
     <div
@@ -176,23 +180,35 @@ export default function EmptyState(props: EmptyStateProps) {
       aria-live="polite"
     >
       {Icon && (
-        <Icon
-          size={iconSize}
-          className={iconClass}
-          aria-hidden="true"
-        />
+        <div
+          className={`${containerSize} rounded-xl flex items-center justify-center ${
+            isError
+              ? 'bg-[var(--color-error)]/10'
+              : variant === 'global'
+              ? 'bg-mission-control-accent/10'
+              : 'bg-mission-control-border/30'
+          }`}
+        >
+          <Icon
+            size={containerIconSize}
+            className={iconClass}
+            aria-hidden="true"
+          />
+        </div>
       )}
 
-      <p className={`text-sm font-semibold ${titleClass}`}>{title}</p>
+      <p className={`text-sm font-semibold mt-3 ${titleClass}`}>{title}</p>
 
       {desc && (
-        <p className={`text-xs max-w-xs ${descClass}`}>{desc}</p>
+        <p className={`text-xs mt-1 max-w-[240px] text-center ${descClass}`}>{desc}</p>
       )}
 
       {renderAction()}
     </div>
   );
-}
+});
+
+export default EmptyState;
 
 /**
  * Pre-configured empty state presets for common scenarios

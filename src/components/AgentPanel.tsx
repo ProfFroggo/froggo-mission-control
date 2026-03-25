@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, BarChart3, Settings, Library, AlertTriangle, Activity, Search, Trophy } from 'lucide-react';
+import VirtualList from './VirtualList';
 import { useEventBus } from '../lib/useEventBus';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -198,24 +199,38 @@ export default function AgentPanel() {
     }
   };
 
+  const totalTokens = useMemo(
+    () => gatewaySessions.reduce((sum, s) => sum + (s.totalTokens || 0), 0),
+    [gatewaySessions]
+  );
+
   const realSubagents = gatewaySessions.filter(s => s.type === 'subagent');
   const activeSubagents = realSubagents.filter(s => s.isActive);
 
   const statusConfig: Record<Agent['status'], { color: string; label: string; pulse?: boolean; hideDot?: boolean }> = {
     // online / active → green with pulse
-    active:     { color: 'bg-success',               label: 'Active',    pulse: true },
+    active:     { color: 'bg-[var(--color-success)]',               label: 'Active',    pulse: true },
     // busy / working / in-progress → amber, solid (no pulse)
-    busy:       { color: 'bg-warning',               label: 'Working…' },
+    busy:       { color: 'bg-[var(--color-warning)]',               label: 'Working…' },
     // idle / offline → gray, no pulse
     idle:       { color: 'bg-mission-control-border', label: 'Idle' },
-    offline:    { color: 'bg-mission-control-bg0',   label: 'Offline',   hideDot: true },
-    suspended:  { color: 'bg-error',                 label: 'Suspended', hideDot: true },
-    archived:   { color: 'bg-mission-control-bg0',   label: 'Archived',  hideDot: true },
+    offline:    { color: 'bg-mission-control-surface',   label: 'Offline',   hideDot: true },
+    suspended:  { color: 'bg-[var(--color-error)]',                 label: 'Suspended', hideDot: true },
+    archived:   { color: 'bg-mission-control-surface',   label: 'Archived',  hideDot: true },
     draft:      { color: 'bg-mission-control-border', label: 'Draft',    hideDot: true },
-    disabled:   { color: 'bg-error',                 label: 'Stopped',   hideDot: true },
+    disabled:   { color: 'bg-[var(--color-error)]',                 label: 'Stopped',   hideDot: true },
   };
 
-  const getAgentTasks = (agentId: string) => tasks.filter(t => t.assignedTo === agentId && t.status !== 'done');
+  const tasksByAgent = useMemo(() => {
+    const map = new Map<string, typeof tasks>();
+    tasks.forEach(t => {
+      if (t.status === 'done') return;
+      if (!t.assignedTo) return;
+      if (!map.has(t.assignedTo)) map.set(t.assignedTo, []);
+      map.get(t.assignedTo)!.push(t);
+    });
+    return map;
+  }, [tasks]);
 
   const AGENT_ROLES: Record<string, string> = {
     'mission-control': 'orchestrator',
@@ -226,24 +241,27 @@ export default function AgentPanel() {
 
   // Skip phantom/legacy agents — use exclusion so new agents auto-appear
   const PHANTOM_AGENTS = ['main', 'chat-agent'];
-  const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
-  
-  // Remove duplicates by ID (in case store has dupes)
-  const uniqueAgents = Array.from(new Map(realAgents.map(a => [a.id, a])).values());
-  
-  // Split into main agents and workers
-  const mainAgents = uniqueAgents.filter(a => !a.id.startsWith('worker-'));
-  const workerAgents = agents.filter(a => a.id.startsWith('worker-'));
+
+  const { uniqueAgents, mainAgents, workerAgents } = useMemo(() => {
+    const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
+    // Remove duplicates by ID (in case store has dupes)
+    const unique = Array.from(new Map(realAgents.map(a => [a.id, a])).values());
+    // Split into main agents and workers
+    const main = unique.filter(a => !a.id.startsWith('worker-'));
+    const workers = agents.filter(a => a.id.startsWith('worker-'));
+    return { uniqueAgents: unique, mainAgents: main, workerAgents: workers };
+  }, [agents]);
 
   // Client-side search filter — applied to core agents list
-  const searchQuery = agentSearch.trim().toLowerCase();
-  const filteredMainAgents = searchQuery
-    ? mainAgents.filter(a =>
-        a.name.toLowerCase().includes(searchQuery) ||
-        (a.description || '').toLowerCase().includes(searchQuery) ||
-        (a.capabilities || []).some(c => c.toLowerCase().includes(searchQuery))
-      )
-    : mainAgents;
+  const filteredMainAgents = useMemo(() => {
+    const searchQuery = agentSearch.trim().toLowerCase();
+    if (!searchQuery) return mainAgents;
+    return mainAgents.filter(a =>
+      a.name.toLowerCase().includes(searchQuery) ||
+      (a.description || '').toLowerCase().includes(searchQuery) ||
+      (a.capabilities || []).some(c => c.toLowerCase().includes(searchQuery))
+    );
+  }, [mainAgents, agentSearch]);
 
   if (initialLoading) {
     return (
@@ -307,21 +325,11 @@ export default function AgentPanel() {
                 <RefreshCw size={15} className={isRefreshing ? 'animate-spin' : ''} />
               </IconButton>
             )}
-            {view === 'active' && (
-              <Button
-                type="button"
-                variant="solid"
-                size="2"
-                onClick={() => setShowCreateModal(true)}
-              >
-                <Plus size={15} /> New Agent
-              </Button>
-            )}
           </div>
         </Flex>
 
         {/* View tabs */}
-        <Box mb="5" className="border-b border-mission-control-border">
+        <Box mb="5">
           <TabNav
             tabs={[
               { id: 'active',      label: 'Active',      icon: Bot      },
@@ -371,16 +379,15 @@ export default function AgentPanel() {
             <h2 className="icon-text text-heading-3 mb-4">
               <BarChart3 size={18} className="flex-shrink-0" /> Performance
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(() => {
-                const totalTokens = gatewaySessions.reduce((sum, s) => sum + (s.totalTokens || 0), 0);
                 const activeAgentCount = agents.filter(a => a.status === 'active' || a.status === 'busy').length;
                 const formatTokens = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n);
                 return [
-                  { val: activeAgentCount, label: 'Active Agents', color: 'text-success' },
-                  { val: activeSubagents.length, label: 'Active Sub-Agents', color: 'text-warning' },
-                  { val: gatewaySessions.length, label: 'Total Sessions', color: 'text-info' },
-                  { val: formatTokens(totalTokens), label: 'Total Tokens', color: 'text-review' },
+                  { val: activeAgentCount, label: 'Active Agents', color: 'text-[var(--color-success)]' },
+                  { val: activeSubagents.length, label: 'Active Sub-Agents', color: 'text-[var(--color-warning)]' },
+                  { val: gatewaySessions.length, label: 'Total Sessions', color: 'text-[var(--color-info)]' },
+                  { val: formatTokens(totalTokens), label: 'Total Tokens', color: 'text-[var(--color-review)]' },
                 ];
               })().map((s, i) => (
                 <div key={i} className="rounded-lg border border-mission-control-border p-4">
@@ -403,7 +410,7 @@ export default function AgentPanel() {
         {/* Core Agents — Profile Card Grid */}
         <div className="mb-6">
           <Flex align="center" justify="between" className="mb-4">
-            <h2 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-widest">Core Agents</h2>
+            <h2 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Core Agents</h2>
           </Flex>
 
           {/* Search / filter bar */}
@@ -431,14 +438,16 @@ export default function AgentPanel() {
               size="md"
             />
           ) : filteredMainAgents.length === 0 ? (
-            <div className="py-10 text-center text-sm text-mission-control-text-dim">
-              No agents match &ldquo;{agentSearch}&rdquo;
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search size={32} className="text-mission-control-text-dim mb-3 opacity-50" />
+              <p className="text-sm font-medium text-mission-control-text-dim">No agents match &ldquo;{agentSearch}&rdquo;</p>
+              <p className="text-xs text-mission-control-text-dim mt-1 opacity-70">Try a different name, role, or capability</p>
             </div>
           ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredMainAgents.map((agent) => {
               const theme = getTheme(agent.id);
-              const agentTasks = getAgentTasks(agent.id);
+              const agentTasks = tasksByAgent.get(agent.id) ?? [];
               const currentTask = tasks.find(t => t.id === agent.currentTaskId);
               const sc = statusConfig[agent.status];
               // Hide dot when: no current task, task is done/review, or status says hideDot
@@ -448,7 +457,7 @@ export default function AgentPanel() {
               return (
                 <div
                   key={agent.id}
-                  className={`group relative rounded-2xl border border-mission-control-border transition-all duration-200 hover:-translate-y-0.5 hover:bg-mission-control-surface/50 cursor-pointer flex flex-col`}
+                  className={`group relative rounded-xl border bg-mission-control-surface transition-colors duration-150 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer flex flex-col ${selectedAgent === agent.id ? 'border-mission-control-accent bg-[var(--mission-control-accent)]/5' : 'border-mission-control-border'}`}
                 >
                   {/* Full-card button — covers background/inactive areas for mouse + keyboard access.
                       z-[1] puts it above static content (which is z-auto) so pointer events on
@@ -456,7 +465,7 @@ export default function AgentPanel() {
                       to sit above this button. Settings button keeps its existing z-10. */}
                   <button
                     type="button"
-                    className="absolute inset-0 z-[1] rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-success"
+                    className="absolute inset-0 z-[1] rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-success"
                     onClick={() => setManagingAgent({ id: agent.id, name: agent.name })}
                     aria-label={`Open ${agent.name} management`}
                   />
@@ -465,63 +474,54 @@ export default function AgentPanel() {
                   <div className="absolute top-0 left-4 right-4 h-0.5 rounded-b" style={{ backgroundColor: theme.color }} />
 
                   {/* Settings icon — top-right, hover reveal */}
-                  <IconButton
+                  <button
                     type="button"
-                    size="1"
-                    variant="ghost"
-                   
                     onClick={(e) => { e.stopPropagation(); setManagingAgent({ id: agent.id, name: agent.name }); }}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all z-10"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-colors z-10 inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     title="Manage agent"
                     aria-label={`Manage ${agent.name}`}
                   >
                     <Settings size={12} />
-                  </IconButton>
+                  </button>
 
-                  <div className="p-4 flex flex-col flex-1">
+                  <div className="p-3 flex flex-col flex-1">
 
                     {/* Header: avatar + name + status dot */}
-                    <Flex align="start" gap="3" className="mb-3">
+                    <Flex align="start" gap="3">
                       {/* Avatar */}
                       <AvatarWithFallback agentId={agent.id} agentName={agent.name} themeRing={theme.ring} themeBg={theme.bg} themeText={theme.text} themeColor={theme.color}>
-                        {showDot && <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-mission-control-bg ${sc.color} ${sc.pulse ? 'animate-pulse' : ''}`} />}
+                        {showDot && <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-mission-control-bg ${sc.color} ${sc.pulse ? 'agent-dot-pulse' : ''}`} />}
                       </AvatarWithFallback>
 
                       {/* Name + role */}
                       <div className="flex-1 min-w-0 pt-0.5">
                         <Flex align="center" gap="2" className="mb-0.5">
-                          <h3 className="font-semibold text-sm leading-normal truncate">{agent.name}</h3>
+                          <h3 className="text-sm font-semibold text-mission-control-text truncate" title={agent.name}>{agent.name}</h3>
                           {/* Only show non-idle status badges — idle is conveyed by Available below */}
                           {(agent.status === 'busy' || agent.status === 'disabled' || agent.status === 'suspended' || agent.status === 'archived' || agent.status === 'draft') && (
-                            <Badge
-                              color={agent.status === 'busy' ? 'orange' : agent.status === 'disabled' ? 'red' : agent.status === 'suspended' ? 'red' : agent.status === 'archived' ? 'gray' : 'gray'}
-                              variant="soft"
-                              size="1"
-                              className="flex-shrink-0 uppercase"
-                            >
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                              agent.status === 'busy'
+                                ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
+                                : 'bg-mission-control-border/50 text-mission-control-text-dim'
+                            }`}>
                               {sc.label}
-                            </Badge>
+                            </span>
                           )}
                           {circuitOpenAgents.has(agent.id) && (
-                            <Badge color="red" variant="soft" size="1" className="flex-shrink-0">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 bg-[var(--color-error)]/10 text-[var(--color-error)]">
                               <AlertTriangle size={9} /> Circuit open
-                            </Badge>
+                            </span>
                           )}
                         </Flex>
                         <div className="flex items-center gap-1.5">
                           <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
-                          {agent.status === 'idle' && !currentTask && agentTasks.length === 0 && (
-                            <span className="flex-shrink-0 flex items-center gap-0.5 text-xs text-success font-medium">
-                              <CheckCircle size={9} />Available
-                            </span>
-                          )}
                           {currentTask && (
-                            <span className="flex-shrink-0 flex items-center gap-0.5 text-xs text-warning">
+                            <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] text-[var(--color-warning)]">
                               <Zap size={9} /><span className="truncate max-w-20">{currentTask.title}</span>
                             </span>
                           )}
                           {!currentTask && agentTasks.length > 0 && (
-                            <span className="flex-shrink-0 flex items-center gap-0.5 text-xs text-mission-control-text-dim">
+                            <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] tabular-nums text-mission-control-text-dim">
                               <Clock size={9} />{agentTasks.length} queued
                             </span>
                           )}
@@ -530,20 +530,6 @@ export default function AgentPanel() {
                     </Flex>
 
 
-                    {/* Start/Stop + Soul link — relative z-[2] lifts above cover button */}
-                    <div className={`flex items-center gap-1.5 mt-auto pt-2 border-t border-mission-control-border relative z-[2]`}>
-                      {agent.status === 'idle' && agentTasks.length > 0 && (
-                        <Button type="button" variant="solid" size="1" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}>
-                          <Play size={11} /> Start
-                        </Button>
-                      )}
-                      {agent.status === 'busy' && agent.sessionKey && (
-                        <Button type="button" variant="surface" color="red" size="1" onClick={(e) => { e.stopPropagation(); updateAgentStatus(agent.id, 'idle'); }}>
-                          <Square size={11} /> Stop
-                        </Button>
-                      )}
-                      <div className="flex-1" />
-                    </div>
 
                   </div>
                 </div>
@@ -556,87 +542,179 @@ export default function AgentPanel() {
         {/* Sub-Agents */}
         {realSubagents.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-widest mb-3">
+            <h2 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-3">
               Sub-Agents ({activeSubagents.length} active / {realSubagents.length} total)
             </h2>
-            <div className="space-y-2">
-              {realSubagents.map((session) => (
-                <div key={session.key}
-                  className={`rounded-lg border p-3 flex items-center gap-3 overflow-hidden ${
-                    session.isActive ? 'border-success-border bg-success-subtle' : 'border-mission-control-border bg-mission-control-surface'
-                  }`}>
-                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-mission-control-surface border border-mission-control-border flex items-center justify-center">
-                    <Bot size={16} className="text-info" />
-                  </div>
-                  <div className="flex-fill">
-                    <div className="icon-text min-w-0">
-                      <span className="font-medium session-name flex-shrink truncate">{session.displayName}</span>
-                      {session.label && (
-                        <span className="text-xs px-1.5 py-0.5 bg-info-subtle text-info border border-info-border rounded-lg no-shrink no-wrap">
-                          {session.label}
-                        </span>
-                      )}
-                      <span className={`w-2 h-2 rounded-full no-shrink ${session.isActive ? 'bg-success animate-pulse' : 'bg-mission-control-bg0'}`} />
-                      {session.isActive && <span className="text-xs text-success no-shrink no-wrap">Active</span>}
+            {realSubagents.length >= 50 ? (
+              <div style={{ height: Math.min(realSubagents.length * 68, 400) }}>
+                <VirtualList
+                  items={realSubagents}
+                  itemHeight={68}
+                  overscan={3}
+                  renderItem={(session) => (
+                    <div
+                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-mission-control-border/20 transition-colors cursor-pointer mb-2"
+                    >
+                      <AvatarWithFallback
+                        agentId={session.key}
+                        agentName={session.displayName}
+                        themeRing={getTheme(session.key).ring}
+                        themeBg={getTheme(session.key).bg}
+                        themeText={getTheme(session.key).text}
+                        themeColor={getTheme(session.key).color}
+                        className="w-8 h-8 rounded-lg"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-xs font-medium text-mission-control-text truncate" title={session.displayName}>{session.displayName}</span>
+                          {session.label && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 bg-mission-control-border/50 text-mission-control-text-dim whitespace-nowrap">
+                              {session.label}
+                            </span>
+                          )}
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${session.isActive ? 'bg-[var(--color-success)] agent-dot-pulse' : 'bg-mission-control-surface'}`} />
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px] tabular-nums text-mission-control-text-dim overflow-hidden">
+                          <span className="flex-shrink-0">{session.model?.split('/').pop() || 'unknown'}</span>
+                          <span className="flex-shrink-0 max-w-[120px] truncate">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</span>
+                          <span className="truncate flex-1 min-w-0" title={session.key}>{session.key}</span>
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                        session.isActive ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-mission-control-border/50 text-mission-control-text-dim'
+                      }`}>
+                        {session.isActive ? 'Running' : 'Idle'}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-mission-control-text-dim overflow-hidden">
-                      <span className="no-shrink">{session.model?.split('/').pop() || 'unknown'}</span>
-                      <span className="no-shrink no-wrap tabular-nums">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</span>
-                      <span className="truncate flex-1 min-w-0" title={session.key}>{session.key}</span>
+                  )}
+                />
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {realSubagents.map((session) => (
+                  <div key={session.key}
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-mission-control-border/20 transition-colors cursor-pointer">
+                    <AvatarWithFallback
+                      agentId={session.key}
+                      agentName={session.displayName}
+                      themeRing={getTheme(session.key).ring}
+                      themeBg={getTheme(session.key).bg}
+                      themeText={getTheme(session.key).text}
+                      themeColor={getTheme(session.key).color}
+                      className="w-8 h-8 rounded-lg"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-xs font-medium text-mission-control-text truncate" title={session.displayName}>{session.displayName}</span>
+                        {session.label && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 bg-mission-control-border/50 text-mission-control-text-dim whitespace-nowrap">
+                            {session.label}
+                          </span>
+                        )}
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${session.isActive ? 'bg-[var(--color-success)] agent-dot-pulse' : 'bg-mission-control-surface'}`} />
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] tabular-nums text-mission-control-text-dim overflow-hidden">
+                        <span className="flex-shrink-0">{session.model?.split('/').pop() || 'unknown'}</span>
+                        <span className="flex-shrink-0 max-w-[120px] truncate">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</span>
+                        <span className="truncate flex-1 min-w-0" title={session.key}>{session.key}</span>
+                      </div>
                     </div>
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                      session.isActive ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-mission-control-border/50 text-mission-control-text-dim'
+                    }`}>
+                      {session.isActive ? 'Running' : 'Idle'}
+                    </span>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wide rounded-lg ${
-                    session.isActive ? 'text-success border border-success-border' : 'text-mission-control-text-dim border border-mission-control-border'
-                  }`}>
-                    {session.isActive ? 'Running' : 'Idle'}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Workers */}
         {workerAgents.length > 0 && (
           <div>
-            <h2 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-widest mb-3">
+            <h2 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-3">
               Workers ({workerAgents.length})
             </h2>
-            <div className="space-y-2">
-              {workerAgents.map((agent) => (
-                <div key={agent.id} className="rounded-lg border border-mission-control-border p-3 flex items-center gap-3 overflow-hidden min-h-[56px] hover:bg-mission-control-surface/50 transition-colors">
-                  <AvatarWithFallback
-                    agentId={agent.id}
-                    agentName={agent.name}
-                    themeRing={getTheme(agent.id).ring}
-                    themeBg={getTheme(agent.id).bg}
-                    themeText={getTheme(agent.id).text}
-                    themeColor={getTheme(agent.id).color}
-                    className="w-8 h-8 rounded-lg"
-                  />
-                  <div className="flex-fill">
-                    <div className="icon-text min-w-0">
-                      <span className="font-medium agent-name flex-1 min-w-0 truncate">{agent.name}</span>
-                      {(agent.status === 'active' || agent.status === 'busy') && <span className={`w-2 h-2 rounded-full no-shrink ${statusConfig[agent.status].color}`} />}
+            {workerAgents.length >= 50 ? (
+              <div style={{ height: Math.min(workerAgents.length * 64, 400) }}>
+                <VirtualList
+                  items={workerAgents}
+                  itemHeight={64}
+                  overscan={3}
+                  renderItem={(agent) => (
+                    <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-mission-control-border/20 transition-colors cursor-pointer mb-2">
+                      <AvatarWithFallback
+                        agentId={agent.id}
+                        agentName={agent.name}
+                        themeRing={getTheme(agent.id).ring}
+                        themeBg={getTheme(agent.id).bg}
+                        themeText={getTheme(agent.id).text}
+                        themeColor={getTheme(agent.id).color}
+                        className="w-8 h-8 rounded-lg"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-xs font-medium text-mission-control-text truncate" title={agent.name}>{agent.name}</span>
+                          {(agent.status === 'active' || agent.status === 'busy') && <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusConfig[agent.status].color}`} />}
+                        </div>
+                        <p className="text-[10px] text-mission-control-text-dim truncate">{agent.description}</p>
+                      </div>
+                      {agent.status === 'disabled' ? (
+                        <Button type="button" variant="surface" size="1" onClick={() => handleAgentStart(agent.id)} title="Re-enable agent for dispatcher">
+                          <Play size={12} /> Enable
+                        </Button>
+                      ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
+                        <Button type="button" variant="surface" color="red" size="1" onClick={() => handleAgentStop(agent.id, agent.name)} title="Disable agent — dispatcher will stop spawning it">
+                          <StopCircle size={12} /> Disable
+                        </Button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)]">
+                          <CheckCircle size={10} /> Done
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
-                  </div>
-                  {agent.status === 'disabled' ? (
-                    <Button type="button" variant="surface" size="1" onClick={() => handleAgentStart(agent.id)} title="Re-enable agent for dispatcher">
-                      <Play size={12} /> Enable
-                    </Button>
-                  ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
-                    <Button type="button" variant="surface" color="red" size="1" onClick={() => handleAgentStop(agent.id, agent.name)} title="Disable agent — dispatcher will stop spawning it">
-                      <StopCircle size={12} /> Disable
-                    </Button>
-                  ) : (
-                    <span className="text-xs text-success">
-                      <CheckCircle size={14} className="inline mr-1" /> Done
-                    </span>
                   )}
-                </div>
-              ))}
-            </div>
+                />
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {workerAgents.map((agent) => (
+                  <div key={agent.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-mission-control-border/20 transition-colors cursor-pointer">
+                    <AvatarWithFallback
+                      agentId={agent.id}
+                      agentName={agent.name}
+                      themeRing={getTheme(agent.id).ring}
+                      themeBg={getTheme(agent.id).bg}
+                      themeText={getTheme(agent.id).text}
+                      themeColor={getTheme(agent.id).color}
+                      className="w-8 h-8 rounded-lg"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-xs font-medium text-mission-control-text truncate" title={agent.name}>{agent.name}</span>
+                        {(agent.status === 'active' || agent.status === 'busy') && <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusConfig[agent.status].color}`} />}
+                      </div>
+                      <p className="text-[10px] text-mission-control-text-dim truncate">{agent.description}</p>
+                    </div>
+                    {agent.status === 'disabled' ? (
+                      <Button type="button" variant="surface" size="1" onClick={() => handleAgentStart(agent.id)} title="Re-enable agent for dispatcher">
+                        <Play size={12} /> Enable
+                      </Button>
+                    ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
+                      <Button type="button" variant="surface" color="red" size="1" onClick={() => handleAgentStop(agent.id, agent.name)} title="Disable agent — dispatcher will stop spawning it">
+                        <StopCircle size={12} /> Disable
+                      </Button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)]">
+                        <CheckCircle size={10} /> Done
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

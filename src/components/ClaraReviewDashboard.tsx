@@ -21,7 +21,7 @@ import {
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { useEventBus } from '../lib/useEventBus';
-import { Button, IconButton, TextArea, Flex } from '@radix-ui/themes';
+import { Button, TextArea, Flex } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -49,9 +49,9 @@ interface Insights {
 // ── Priority badge ─────────────────────────────────────────────────────────────
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  p0: { label: 'Urgent', color: 'text-error', icon: <AlertTriangle size={12} className="flex-shrink-0" /> },
-  p1: { label: 'High', color: 'text-warning', icon: <ArrowUp size={12} className="flex-shrink-0" /> },
-  p2: { label: 'Medium', color: 'text-info', icon: <Circle size={12} className="flex-shrink-0" /> },
+  p0: { label: 'Urgent', color: 'text-[var(--color-error)]', icon: <AlertTriangle size={12} className="flex-shrink-0" /> },
+  p1: { label: 'High', color: 'text-[var(--color-warning)]', icon: <ArrowUp size={12} className="flex-shrink-0" /> },
+  p2: { label: 'Medium', color: 'text-[var(--color-info)]', icon: <Circle size={12} className="flex-shrink-0" /> },
   p3: { label: 'Low', color: 'text-mission-control-text-dim', icon: <ArrowDown size={12} className="flex-shrink-0" /> },
 };
 
@@ -71,9 +71,9 @@ function GateRow({ passed, label }: { passed: boolean; label: string }) {
   return (
     <Flex align="center" gap="2" className="text-sm">
       {passed ? (
-        <CheckCircle2 size={14} className="text-success flex-shrink-0" />
+        <CheckCircle2 size={14} className="text-[var(--color-success)] flex-shrink-0" />
       ) : (
-        <XCircle size={14} className="text-error flex-shrink-0" />
+        <XCircle size={14} className="text-[var(--color-error)] flex-shrink-0" />
       )}
       <span className={passed ? 'text-mission-control-text' : 'text-mission-control-text-dim line-through'}>
         {label}
@@ -89,13 +89,13 @@ function StatsBar({ insights }: { insights: Insights | null }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <StatCard label="Pending review" value={insights.pendingReview} icon={<Clock size={16} />} />
-      <StatCard label="Approved today" value={insights.approvedToday} icon={<ShieldCheck size={16} />} accent="text-success" />
-      <StatCard label="Rejected today" value={insights.rejectedToday} icon={<ShieldX size={16} />} accent="text-error" />
+      <StatCard label="Approved today" value={insights.approvedToday} icon={<ShieldCheck size={16} />} accent="text-[var(--color-success)]" />
+      <StatCard label="Rejected today" value={insights.rejectedToday} icon={<ShieldX size={16} />} accent="text-[var(--color-error)]" />
       <StatCard
         label="30d approval rate"
         value={`${insights.approvalRate}%`}
         icon={<BarChart3 size={16} />}
-        accent={insights.approvalRate >= 70 ? 'text-success' : 'text-warning'}
+        accent={insights.approvalRate >= 70 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'}
       />
     </div>
   );
@@ -210,19 +210,18 @@ function ReviewCard({
             <span>{timeAgo}</span>
           </Flex>
         </div>
-        <IconButton
+        <button
+          type="button"
           onClick={() => setExpanded(e => !e)}
-          variant="ghost"
-          size="2"
-         
           aria-label={expanded ? 'Collapse' : 'Expand'}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </IconButton>
+        </button>
       </Flex>
 
       {/* Gate checklist — always visible */}
-      <div className="border-t border-mission-control-border px-4 py-3 bg-mission-control-bg0/40 space-y-1.5">
+      <div className="border-t border-mission-control-border px-4 py-3 bg-mission-control-surface/40 space-y-1.5">
         <GateRow passed={gate1} label="Gate 1: Agent assigned" />
         <GateRow passed={gate2} label="Gate 2: Planning notes present" />
         <GateRow passed={gate3} label="Gate 3: At least 1 subtask" />
@@ -230,10 +229,10 @@ function ReviewCard({
 
       {/* Expanded details */}
       {expanded && (
-        <div className="border-t border-mission-control-border px-4 py-3 bg-mission-control-bg0/20">
+        <div className="border-t border-mission-control-border px-4 py-3 bg-mission-control-surface/20">
           {task.planningNotes ? (
             <div>
-              <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-1">
+              <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                 Planning Notes
               </div>
               <p className="text-xs text-mission-control-text whitespace-pre-wrap line-clamp-6">
@@ -471,17 +470,17 @@ export default function ClaraReviewDashboard() {
 
       {/* Agents needing support */}
       {insights && insights.agentsNeedingSupport.length > 0 && (
-        <div className="rounded-lg border border-warning/30 bg-warning-subtle p-4">
+        <div className="rounded-lg border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10 p-4">
           <Flex align="center" gap="2" className="mb-3">
-            <AlertTriangle size={14} className="text-warning flex-shrink-0" />
-            <h3 className="text-sm font-medium text-warning">Agents with repeated rejections (last 7d)</h3>
+            <AlertTriangle size={14} className="text-[var(--color-warning)] flex-shrink-0" />
+            <h3 className="text-sm font-medium text-[var(--color-warning)]">Agents with repeated rejections (last 7d)</h3>
           </Flex>
           <div className="flex flex-wrap gap-2">
             {insights.agentsNeedingSupport.map(agent => (
               <Flex key={agent.agentId} align="center" gap="2" className="px-3 py-1.5 rounded-full bg-mission-control-surface border border-mission-control-border text-xs">
                 <AgentAvatar agentId={agent.agentId} size="xs" />
                 <span className="text-mission-control-text">{agent.name}</span>
-                <span className="text-error font-medium">{agent.rejectionCount}x rejected</span>
+                <span className="text-[var(--color-error)] font-medium">{agent.rejectionCount}x rejected</span>
               </Flex>
             ))}
           </div>
@@ -495,7 +494,7 @@ export default function ClaraReviewDashboard() {
           <div className="space-y-2">
             {insights.topRejectionReasons.map((r, i) => (
               <Flex key={i} align="start" gap="3" className="text-xs">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-error/20 text-error font-bold flex items-center justify-center">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[var(--color-error)]/20 text-[var(--color-error)] font-bold flex items-center justify-center">
                   {r.count}
                 </span>
                 <span className="text-mission-control-text-dim leading-snug">{r.reason}</span>

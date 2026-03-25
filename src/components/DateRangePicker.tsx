@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Calendar, X } from 'lucide-react';
-import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Flex, TextField } from '@radix-ui/themes';
 
 export interface DateRange {
   start: Date;
@@ -100,16 +100,14 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
           <div className="absolute right-0 top-full mt-2 w-96 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl z-50 p-4" role="listbox" aria-label="Date range options">
             <Flex align="center" justify="between" className="mb-4">
               <h3 className="font-semibold">Select Date Range</h3>
-              <IconButton
+              <button
+                type="button"
                 onClick={() => setIsOpen(false)}
                 aria-label="Close date range picker"
-                variant="ghost"
-                color="gray"
-                size="2"
-
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <X size={16} />
-              </IconButton>
+              </button>
             </Flex>
 
             {presets && (
@@ -117,16 +115,14 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
                 <div className="text-sm text-mission-control-text-dim mb-2">Quick Presets</div>
                 <div className="grid grid-cols-2 gap-2">
                   {PRESETS.map((preset) => (
-                    <Button
+                    <button
                       key={preset.label}
+                      type="button"
                       onClick={() => applyPreset(preset)}
-                      variant="ghost"
-                      color="gray"
-                      size="2"
-                      className="justify-start"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors justify-start"
                     >
                       {preset.label}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               </div>

@@ -115,24 +115,24 @@ export const SHADOW = {
  */
 export const SEMANTIC_COLORS = {
   success: {
-    text: 'text-success',
-    bg: 'bg-success-subtle',
-    border: 'border-success-border',
+    text: 'text-[var(--color-success)]',
+    bg: 'bg-[var(--color-success)]-subtle',
+    border: 'border-[var(--color-success)]-border',
   },
   error: {
-    text: 'text-error',
-    bg: 'bg-error-subtle',
-    border: 'border-error-border',
+    text: 'text-[var(--color-error)]',
+    bg: 'bg-[var(--color-error)]-subtle',
+    border: 'border-[var(--color-error)]-border',
   },
   warning: {
-    text: 'text-warning',
-    bg: 'bg-warning-subtle',
-    border: 'border-warning-border',
+    text: 'text-[var(--color-warning)]',
+    bg: 'bg-[var(--color-warning)]-subtle',
+    border: 'border-[var(--color-warning)]-border',
   },
   info: {
-    text: 'text-info',
-    bg: 'bg-info-subtle',
-    border: 'border-info-border',
+    text: 'text-[var(--color-info)]',
+    bg: 'bg-[var(--color-info)]-subtle',
+    border: 'border-[var(--color-info)]-border',
   },
   primary: {
     text: 'text-mission-control-accent',
@@ -167,9 +167,9 @@ export const CHANNEL_COLORS = {
     border: 'border-review-border',
   },
   agents: {
-    text: 'text-warning',
-    bg: 'bg-warning-subtle',
-    border: 'border-warning-border',
+    text: 'text-[var(--color-warning)]',
+    bg: 'bg-[var(--color-warning)]-subtle',
+    border: 'border-[var(--color-warning)]-border',
   },
 } as const;
 
@@ -179,21 +179,21 @@ export const CHANNEL_COLORS = {
  */
 export const PRIORITY_COLORS = {
   p0: {
-    text: 'text-error',
-    bg: 'bg-error-subtle',
-    border: 'border-error-border',
+    text: 'text-[var(--color-error)]',
+    bg: 'bg-[var(--color-error)]-subtle',
+    border: 'border-[var(--color-error)]-border',
     label: 'Urgent',
   },
   p1: {
-    text: 'text-warning',
-    bg: 'bg-warning-subtle',
-    border: 'border-warning-border',
+    text: 'text-[var(--color-warning)]',
+    bg: 'bg-[var(--color-warning)]-subtle',
+    border: 'border-[var(--color-warning)]-border',
     label: 'High',
   },
   p2: {
-    text: 'text-warning',
-    bg: 'bg-warning-subtle',
-    border: 'border-warning-border',
+    text: 'text-[var(--color-warning)]',
+    bg: 'bg-[var(--color-warning)]-subtle',
+    border: 'border-[var(--color-warning)]-border',
     label: 'Medium',
   },
   p3: {
@@ -210,14 +210,14 @@ export const PRIORITY_COLORS = {
  */
 export const STATUS_COLORS = {
   todo: {
-    text: 'text-info',
-    bg: 'bg-info-subtle',
+    text: 'text-[var(--color-info)]',
+    bg: 'bg-[var(--color-info)]-subtle',
     border: 'border-l-blue-500',
     emoji: '📝',
   },
   'in-progress': {
-    text: 'text-warning',
-    bg: 'bg-warning-subtle',
+    text: 'text-[var(--color-warning)]',
+    bg: 'bg-[var(--color-warning)]-subtle',
     border: 'border-l-yellow-500',
     emoji: '⚡',
   },
@@ -228,20 +228,20 @@ export const STATUS_COLORS = {
     emoji: '🤖',
   },
   'human-review': {
-    text: 'text-warning',
-    bg: 'bg-warning-subtle',
+    text: 'text-[var(--color-warning)]',
+    bg: 'bg-[var(--color-warning)]-subtle',
     border: 'border-l-orange-500',
     emoji: '👤',
   },
   done: {
-    text: 'text-success',
-    bg: 'bg-success-subtle',
+    text: 'text-[var(--color-success)]',
+    bg: 'bg-[var(--color-success)]-subtle',
     border: 'border-l-green-500',
     emoji: '✅',
   },
   failed: {
-    text: 'text-error',
-    bg: 'bg-error-subtle',
+    text: 'text-[var(--color-error)]',
+    bg: 'bg-[var(--color-error)]-subtle',
     border: 'border-l-red-500',
     emoji: '❌',
   },
@@ -269,7 +269,7 @@ export function getCardPadding(size: keyof typeof CARD_PADDING = 'md'): string {
  * Get transition classes
  */
 export function getTransition(duration: keyof typeof DURATION = 'normal', easing: keyof typeof EASING = 'out'): string {
-  return `transition-all duration-${DURATION[duration]} ${EASING[easing]}`;
+  return `transition-colors duration-${DURATION[duration]} ${EASING[easing]}`;
 }
 
 /**

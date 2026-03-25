@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronRight, Zap, Code, AlertTriangle, Check } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import React, { useState } from 'react';
+import { ChevronDown, Zap, Code, AlertTriangle, Check } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 
 interface ContentBlockProps {
@@ -10,12 +9,16 @@ interface ContentBlockProps {
     name?: string;
     input?: any;
     id?: string;
+    is_error?: boolean;
   };
   index: number;
+  streaming?: boolean;
   onArtifactOpen?: (lang: string, code: string) => void;
 }
 
-export default function ContentBlock({ block, index: _index, onArtifactOpen }: ContentBlockProps) {
+const PREVIEW_LENGTH = 80;
+
+const ContentBlock = React.memo(function ContentBlock({ block, index: _index, streaming, onArtifactOpen }: ContentBlockProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Text blocks - render normally
@@ -23,28 +26,41 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
     return <MarkdownMessage content={block.text || ''} onArtifactOpen={onArtifactOpen} />;
   }
 
-  // Thinking blocks - collapsible with icon (skip empty ones)
+  // Thinking blocks - collapsible with info accent
   if (block.type === 'thinking') {
-    if (!block.text?.trim()) return null;
+    if (!streaming && !block.text?.trim()) return null;
+    const preview = !isExpanded && block.text && block.text.length > PREVIEW_LENGTH
+      ? `${block.text.slice(0, PREVIEW_LENGTH)}…`
+      : '';
     return (
-      <div className="my-3 border border-mission-control-border/50 rounded-lg bg-mission-control-bg/30 overflow-hidden">
-        <Button
+      <div className="my-3 border-l-2 border-l-[var(--color-info)] bg-mission-control-bg rounded-lg overflow-hidden">
+        <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          variant="ghost"
-          size="1"
-          radius="none"
-          className="w-full px-3 py-2 justify-start"
+          className="flex items-center gap-1.5 w-full px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/20 transition-colors justify-start"
         >
-          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          <Zap size={14} className="text-violet-500" />
+          <ChevronDown
+            size={14}
+            className={`transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+          />
+          <Zap size={14} className="text-[var(--color-info)] flex-shrink-0" />
           <span className="text-xs font-medium text-mission-control-text-dim">
             Thinking...
           </span>
-          <span className="ml-auto text-[10px] text-mission-control-text-dim/60">
-            {block.text?.length || 0} chars
-          </span>
-        </Button>
-        {isExpanded && (
+          {!isExpanded && preview && (
+            <span className="text-[10px] text-mission-control-text-dim/60 truncate flex-1 text-left ml-1">
+              {preview}
+            </span>
+          )}
+          {streaming ? (
+            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--color-info)] animate-pulse flex-shrink-0" />
+          ) : (
+            <span className="ml-auto text-[10px] text-mission-control-text-dim/60 flex-shrink-0">
+              {block.text?.length || 0} chars
+            </span>
+          )}
+        </button>
+        {isExpanded && block.text && (
           <div className="px-4 py-3 border-t border-mission-control-border/50 text-xs text-mission-control-text-dim leading-relaxed whitespace-pre-wrap font-mono">
             {block.text}
           </div>
@@ -53,31 +69,47 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
     );
   }
 
-  // Tool use blocks - show tool name and input
+  // Tool use blocks - warning accent
   if (block.type === 'tool_use') {
+    const inputPreview = !isExpanded && block.input
+      ? JSON.stringify(block.input).slice(0, PREVIEW_LENGTH)
+      : '';
     return (
-      <div className="my-3 border border-info/30 rounded-lg bg-info/5 overflow-hidden">
-        <Button
+      <div className="my-3 border-l-2 border-l-[var(--color-warning)] bg-mission-control-bg rounded-lg overflow-hidden">
+        <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          variant="ghost"
-          size="1"
-          radius="none"
-          className="w-full px-3 py-2 justify-start"
+          className="flex items-center gap-1.5 w-full px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/20 transition-colors justify-start"
         >
-          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          <Code size={14} className="text-info" />
-          <span className="text-xs font-medium text-info">
+          <ChevronDown
+            size={14}
+            className={`transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+          />
+          <Code size={14} className="text-[var(--color-warning)] flex-shrink-0" />
+          <span className="text-xs font-medium text-[var(--color-warning)]">
             {block.name || 'tool'}
           </span>
-          {block.id && (
-            <span className="ml-auto text-[10px] text-mission-control-text-dim/60 font-mono">
-              {block.id.slice(0, 8)}
+          {!isExpanded && inputPreview && (
+            <span className="text-[10px] text-mission-control-text-dim/60 truncate flex-1 text-left ml-1">
+              {inputPreview}
             </span>
           )}
-        </Button>
+          {streaming ? (
+            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-[var(--color-info)] bg-[var(--color-info)]/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+              <span className="w-1 h-1 rounded-full bg-[var(--color-info)] animate-pulse flex-shrink-0" />
+              Running...
+            </span>
+          ) : (
+            block.id && (
+              <span className="ml-auto text-[10px] text-mission-control-text-dim/60 font-mono flex-shrink-0">
+                {block.id.slice(0, 8)}
+              </span>
+            )
+          )}
+        </button>
         {isExpanded && (
-          <div className="px-4 py-3 border-t border-info/30">
-            <div className="text-[10px] text-mission-control-text-dim/60 uppercase tracking-wide mb-1">
+          <div className="px-4 py-3 border-t border-mission-control-border/50">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">
               Input
             </div>
             <pre className="text-xs bg-mission-control-bg rounded p-2 overflow-x-auto font-mono">
@@ -89,36 +121,42 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
     );
   }
 
-  // Tool result blocks
+  // Tool result blocks — success or error accent
   if (block.type === 'tool_result') {
-    const isError = block.text?.includes('error') || block.text?.includes('Error');
+    const isError = block.is_error || block.text?.includes('error') || block.text?.includes('Error');
+    const accentClass = isError
+      ? 'border-l-[var(--color-error)]'
+      : 'border-l-[var(--color-success)]';
+    const iconColorClass = isError ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]';
+    const textPreview = !isExpanded && block.text
+      ? block.text.slice(0, PREVIEW_LENGTH)
+      : '';
     return (
-      <div className={`my-3 border rounded-lg overflow-hidden ${
-        isError
-          ? 'border-error/30 bg-error'
-          : 'border-success/30 bg-success'
-      }`}>
-        <Button
+      <div className={`my-3 border-l-2 ${accentClass} bg-mission-control-bg rounded-lg overflow-hidden`}>
+        <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          variant="ghost"
-          size="1"
-          radius="none"
-          className="w-full px-3 py-2 justify-start"
+          className="flex items-center gap-1.5 w-full px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/20 transition-colors justify-start"
         >
-          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          <span className={`text-xs font-medium ${
-            isError ? 'text-error' : 'text-success'
-          }`}>
-            {isError ? <span className="inline-flex items-center gap-1"><AlertTriangle size={14} /> Error</span> : <span className="inline-flex items-center gap-1"><Check size={14} /> Result</span>}
+          <ChevronDown
+            size={14}
+            className={`transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+          />
+          <span className={`inline-flex items-center gap-1 text-xs font-medium flex-shrink-0 ${iconColorClass}`}>
+            {isError ? <AlertTriangle size={14} /> : <Check size={14} />}
+            {isError ? 'Error' : 'Result'}
           </span>
-          <span className="ml-auto text-[10px] text-mission-control-text-dim/60">
+          {!isExpanded && textPreview && (
+            <span className="text-[10px] text-mission-control-text-dim/60 truncate flex-1 text-left ml-1">
+              {textPreview}
+            </span>
+          )}
+          <span className="ml-auto text-[10px] text-mission-control-text-dim/60 flex-shrink-0">
             {block.text?.length || 0} chars
           </span>
-        </Button>
+        </button>
         {isExpanded && (
-          <div className={`px-4 py-3 border-t ${
-            isError ? 'border-error/30' : 'border-success/30'
-          }`}>
+          <div className="px-4 py-3 border-t border-mission-control-border/50">
             <pre className="text-xs bg-mission-control-bg rounded p-2 overflow-x-auto font-mono whitespace-pre-wrap">
               {block.text}
             </pre>
@@ -136,4 +174,6 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
       </div>
     </div>
   );
-}
+});
+
+export default ContentBlock;

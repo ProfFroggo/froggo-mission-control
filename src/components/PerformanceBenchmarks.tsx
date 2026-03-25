@@ -11,7 +11,7 @@ import {
   Minus,
   RefreshCw,
 } from 'lucide-react';
-import { Button, IconButton, Flex } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import {
   LineChart,
   Line,
@@ -180,13 +180,13 @@ export default function PerformanceBenchmarks() {
       return (
         <ArrowUp
           size={16}
-          className={positive ? 'text-success' : 'text-error'}
+          className={positive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}
         />
       );
     return (
       <ArrowDown
         size={16}
-        className={positive ? 'text-error' : 'text-success'}
+        className={positive ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'}
       />
     );
   };
@@ -238,65 +238,59 @@ export default function PerformanceBenchmarks() {
             ))}
           </div>
 
-          <IconButton
+          <button
+            type="button"
             onClick={loadBenchmarks}
-            size="2"
-            variant="ghost"
-           
             title="Refresh"
             aria-label="Refresh"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <RefreshCw size={16} />
-          </IconButton>
+          </button>
         </Flex>
       </Flex>
 
       {/* Comparison Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {metrics.map((metric) => (
-          <div
-            key={metric.label}
-            className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4"
-          >
-            <div className="text-sm text-mission-control-text-dim mb-1">{metric.label}</div>
-            <Flex align="baseline" gap="2" className="mb-2">
-              <span className="text-2xl font-bold tabular-nums">
-                {metric.current.toLocaleString()}
-              </span>
-              <span className="text-sm text-mission-control-text-dim">{metric.unit}</span>
-            </Flex>
-            <Flex align="center" gap="2">
-              {getTrendIcon(metric.trend, metric.positive)}
-              <span
-                className={`text-sm font-medium ${
-                  metric.trend === 'up'
-                    ? metric.positive
-                      ? 'text-success'
-                      : 'text-error'
-                    : metric.trend === 'down'
-                    ? metric.positive
-                      ? 'text-error'
-                      : 'text-success'
-                    : 'text-mission-control-text-dim'
-                }`}
-              >
-                <span className="tabular-nums">{metric.change > 0 ? '+' : ''}
-                {metric.change.toLocaleString()} ({metric.changePercent > 0 ? '+' : ''}
-                {metric.changePercent.toFixed(1)}%)</span>
-              </span>
-            </Flex>
-            <div className="text-xs text-mission-control-text-dim mt-1">
-              vs previous period
+        {metrics.map((metric) => {
+          const deltaColor =
+            metric.trend === 'up'
+              ? metric.positive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'
+              : metric.trend === 'down'
+              ? metric.positive ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'
+              : 'text-mission-control-text-dim';
+          const deltaSign = metric.changePercent > 0 ? '+' : '';
+          return (
+            <div
+              key={metric.label}
+              className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4"
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">{metric.label}</div>
+              <Flex align="baseline" gap="1.5" className="mb-2">
+                <span className="text-2xl font-bold tabular-nums text-mission-control-text">
+                  {metric.current.toLocaleString()}
+                </span>
+                <span className="text-sm text-mission-control-text-dim">{metric.unit}</span>
+              </Flex>
+              <Flex align="center" gap="1.5">
+                {getTrendIcon(metric.trend, metric.positive)}
+                <span className={`text-xs font-medium tabular-nums ${deltaColor}`}>
+                  {deltaSign}{metric.changePercent.toFixed(1)}%
+                </span>
+              </Flex>
+              <div className="text-[10px] text-mission-control-text-dim/70 mt-1">
+                vs previous period
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Trend Charts */}
       <div className="space-y-6">
         {/* Tasks Completed Trend */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-          <h3 className="font-semibold mb-4">Tasks Completed Trend</h3>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4">Tasks Completed Trend</div>
           <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={benchmarks}>
@@ -326,7 +320,7 @@ export default function PerformanceBenchmarks() {
 
         {/* Completion Rate Trend */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-          <h3 className="font-semibold mb-4">Completion Rate Trend</h3>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4">Completion Rate Trend</div>
           <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={benchmarks}>
@@ -358,7 +352,7 @@ export default function PerformanceBenchmarks() {
         {/* Average Time & Total Hours */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-            <h3 className="font-semibold mb-4">Avg Completion Time</h3>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4">Avg Completion Time</div>
             <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={benchmarks}>
@@ -386,7 +380,7 @@ export default function PerformanceBenchmarks() {
           </div>
 
           <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-            <h3 className="font-semibold mb-4">Total Hours Logged</h3>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4">Total Hours Logged</div>
             <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={benchmarks}>
@@ -417,10 +411,10 @@ export default function PerformanceBenchmarks() {
 
       {/* Insights */}
       <div className="mt-6 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-        <h3 className="font-semibold mb-4 flex items-center gap-2">
-          <Calendar size={16} className="text-mission-control-accent" />
+        <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4 flex items-center gap-2">
+          <Calendar size={12} className="text-mission-control-accent" />
           Period Insights
-        </h3>
+        </div>
         <div className="space-y-3">
           {metrics.map((metric) => {
             const isPositive =
@@ -435,9 +429,9 @@ export default function PerformanceBenchmarks() {
                 key={metric.label}
                 className={`p-3 rounded-lg ${
                   isPositive
-                    ? 'bg-success-subtle border border-success-border'
+                    ? 'bg-[var(--color-success)]/10 border border-[var(--color-success)]/30'
                     : isNegative
-                    ? 'bg-error-subtle border border-error-border'
+                    ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30'
                     : 'bg-mission-control-bg border border-mission-control-border'
                 }`}
               >
@@ -448,9 +442,9 @@ export default function PerformanceBenchmarks() {
                     <span
                       className={
                         isPositive
-                          ? 'text-success'
+                          ? 'text-[var(--color-success)]'
                           : isNegative
-                          ? 'text-error'
+                          ? 'text-[var(--color-error)]'
                           : 'text-mission-control-text-dim'
                       }
                     >
@@ -459,7 +453,7 @@ export default function PerformanceBenchmarks() {
                         : metric.trend === 'down'
                         ? 'Decreased'
                         : 'Stable'}{' '}
-                      by <span className="tabular-nums">{Math.abs(metric.changePercent).toFixed(1)}%</span>
+                      by <span className="tabular-nums font-mono">{Math.abs(metric.changePercent).toFixed(1)}%</span>
                     </span>
                   </Flex>
                 </Flex>

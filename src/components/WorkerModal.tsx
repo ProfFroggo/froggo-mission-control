@@ -326,7 +326,7 @@ Be conversational, friendly, and help design an effective agent.`;
 
   return (
     <div
-      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 ${
+      className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
       }`}
       onClick={handleClose}
@@ -334,53 +334,51 @@ Be conversational, friendly, and help design an effective agent.`;
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
-        className={`glass-modal rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col ${
+        className={`bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-mission-control-border">
-          <Flex align="center" justify="between" className="mb-4">
-            <Flex align="center" gap="3">
-              <Bot className="text-[--accent-11]" size={24} />
-              <h2 className="text-xl font-semibold">Create Worker Agent</h2>
-            </Flex>
-            <IconButton onClick={handleClose} variant="ghost" color="gray" size="2" aria-label="Close modal">
-              <X size={16} />
-            </IconButton>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
+            <Bot className="text-[--accent-11]" size={20} />
+            <span className="text-base font-semibold">Create Worker Agent</span>
           </Flex>
+          <button onClick={handleClose} aria-label="Close modal" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
 
-          {/* Mode Selector */}
-          <Flex gap="2">
-            <Button
-              onClick={() => setMode('chat')}
+        {/* Mode Selector */}
+        <div className="px-6 py-3 border-b border-mission-control-border flex-shrink-0">
+          <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+            <button
               type="button"
               aria-pressed={mode === 'chat'}
               aria-label="Chat with Mission Control mode"
-              variant={mode === 'chat' ? 'solid' : 'outline'}
-              color="gray"
-              size="3"
-              className="flex-1"
+              onClick={() => setMode('chat')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                mode === 'chat' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               <MessageSquare size={16} />
               <span className="font-medium">Chat with Mission Control</span>
               <Sparkles size={14} className={mode === 'chat' ? 'animate-pulse' : 'opacity-50'} />
-            </Button>
-            <Button
-              onClick={() => setMode('manual')}
+            </button>
+            <button
               type="button"
               aria-pressed={mode === 'manual'}
               aria-label="Manual entry mode"
-              variant={mode === 'manual' ? 'solid' : 'outline'}
-              color="gray"
-              size="3"
-              className="flex-1"
+              onClick={() => setMode('manual')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                mode === 'manual' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               <Edit3 size={16} />
               <span className="font-medium">Manual Entry</span>
-            </Button>
-          </Flex>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -472,7 +470,7 @@ Be conversational, friendly, and help design an effective agent.`;
                       )}
                       <Flex align="center" gap="2">
                         <strong>Model:</strong>
-                        <span className="px-2 py-0.5 bg-info-subtle text-info rounded text-xs font-medium">
+                        <span className="px-2 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded text-xs font-medium">
                           {extractedData.model === 'opus' ? 'Claude Opus 4' : 'Claude Sonnet 4.5'}
                         </span>
                       </Flex>
@@ -528,11 +526,11 @@ Be conversational, friendly, and help design an effective agent.`;
             </div>
           ) : (
             // Manual Mode
-            <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
+            <form onSubmit={handleManualSubmit} className="px-6 py-4 space-y-4 overflow-y-auto h-full">
               {/* Name & Role */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="worker-name" className="block text-sm text-mission-control-text-dim mb-1">Worker Name *</label>
+                <div className="space-y-1">
+                  <label htmlFor="worker-name" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Worker Name *</label>
                   <TextField.Root
                     id="worker-name"
                     size="2"
@@ -543,8 +541,8 @@ Be conversational, friendly, and help design an effective agent.`;
                     placeholder="e.g., Twitter Content Scheduler"
                   />
                 </div>
-                <div>
-                  <label htmlFor="worker-role" className="block text-sm text-mission-control-text-dim mb-1">Role/Title</label>
+                <div className="space-y-1">
+                  <label htmlFor="worker-role" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Role/Title</label>
                   <TextField.Root
                     id="worker-role"
                     size="2"
@@ -558,8 +556,8 @@ Be conversational, friendly, and help design an effective agent.`;
               </div>
 
               {/* Task Description */}
-              <div>
-                <label htmlFor="worker-task-description" className="block text-sm text-mission-control-text-dim mb-1">Task Description *</label>
+              <div className="space-y-1">
+                <label htmlFor="worker-task-description" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Task Description *</label>
                 <TextArea
                   id="worker-task-description"
                   variant="soft"
@@ -572,8 +570,8 @@ Be conversational, friendly, and help design an effective agent.`;
               </div>
 
               {/* Capabilities */}
-              <div>
-                <label htmlFor="worker-capabilities" className="block text-sm text-mission-control-text-dim mb-1">Capabilities</label>
+              <div className="space-y-1">
+                <label htmlFor="worker-capabilities" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Capabilities</label>
                 <TextField.Root
                   id="worker-capabilities"
                   size="2"
@@ -587,33 +585,38 @@ Be conversational, friendly, and help design an effective agent.`;
               </div>
 
               {/* Model Selection */}
-              <div>
-                <span className="block text-sm text-mission-control-text-dim mb-1">Model</span>
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-mission-control-text-dim mb-1 block">Model</span>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {MODEL_OPTIONS.map((opt) => (
-                    <Button
+                    <button
                       key={opt.id}
                       type="button"
                       onClick={() => setModel(opt.id as 'sonnet' | 'opus')}
                       aria-pressed={model === opt.id}
-                      variant={model === opt.id ? 'soft' : 'outline'}
-                      color="gray"
-                      size="3"
-                      className="p-3 rounded-lg text-left h-auto flex-col items-start"
+                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg border text-left transition-colors outline-none ${
+                        model === opt.id
+                          ? 'bg-mission-control-accent/10 border-mission-control-accent ring-1 ring-mission-control-accent/40'
+                          : 'border-mission-control-border hover:border-mission-control-accent/30 hover:bg-mission-control-border/10'
+                      }`}
                     >
-                      <Flex align="center" gap="2" className="mb-1">
-                        {model === opt.id && <CheckCircle size={16} className="text-[--accent-11]" />}
-                        <span className="font-medium text-sm">{opt.label}</span>
-                      </Flex>
-                      <p className="text-xs text-mission-control-text-dim">{opt.description}</p>
-                    </Button>
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        model === opt.id ? 'border-mission-control-accent' : 'border-mission-control-border'
+                      }`}>
+                        {model === opt.id && <div className="w-2 h-2 rounded-full bg-mission-control-accent" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-mission-control-text">{opt.label}</div>
+                        <p className="text-xs text-mission-control-text-dim/70 mt-0.5">{opt.description}</p>
+                      </div>
+                    </button>
                   ))}
                 </div>
               </div>
 
               {/* Submit */}
-              <Flex justify="end" gap="3" className="pt-4 border-t border-mission-control-border">
-                <Button type="button" onClick={handleClose} variant="soft" color="gray" size="2">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-mission-control-border">
+                <Button type="button" onClick={handleClose} variant="ghost" color="gray" size="2">
                   Cancel
                 </Button>
                 <Button
@@ -625,7 +628,7 @@ Be conversational, friendly, and help design an effective agent.`;
                   <Zap size={16} />
                   Create &amp; Start
                 </Button>
-              </Flex>
+              </div>
             </form>
           )}
         </div>

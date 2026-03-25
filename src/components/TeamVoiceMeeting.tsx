@@ -880,7 +880,7 @@ Respond as ${agentName(agentId)}:`;
         return (
           <div
             key={`bar-${i}`}
-            className="rounded-full transition-all duration-75"
+            className="rounded-full transition-colors duration-75"
             style={{
               width: 3,
               height: `${Math.max(15, h * 100)}%`,
@@ -908,8 +908,8 @@ Respond as ${agentName(agentId)}:`;
             <p className="text-sm text-mission-control-text-dim">
               {isActive ? (
                 <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-2 h-2 rounded-full bg-error animate-pulse" />
-                  <span className="text-error font-medium">LIVE</span>
+                  <span className="inline-block w-2 h-2 rounded-full bg-[var(--color-error)] animate-pulse" />
+                  <span className="text-[var(--color-error)] font-medium">LIVE</span>
                   <Clock size={11} className="ml-1" />
                   <span className="font-mono">{formatDuration(callDurationSecs)}</span>
                 </span>
@@ -922,39 +922,47 @@ Respond as ${agentName(agentId)}:`;
 
         <Flex align="center" gap="2">
           {/* Push-to-talk toggle */}
-          <Button
+          <button
             onClick={() => setPushToTalkMode(v => !v)}
-            size="1"
-            variant={pushToTalkMode ? 'soft' : 'ghost'}
             title={pushToTalkMode ? 'Push-to-talk ON — hold Space to speak' : 'Enable push-to-talk mode'}
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors ${
+              pushToTalkMode
+                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+            }`}
           >
             <Mic size={11} />
             PTT
-          </Button>
+          </button>
 
           {/* Participants panel toggle */}
-          <Button
+          <button
             onClick={() => setShowParticipants(v => !v)}
-            size="1"
-            variant={showParticipants ? 'soft' : 'ghost'}
             title="Toggle participant list"
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors ${
+              showParticipants
+                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+            }`}
           >
             <Users size={11} />
             {room.agents.length + 1}
             {showParticipants ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-          </Button>
+          </button>
 
           {/* Recording toggle */}
-          <Button
+          <button
             onClick={() => setIsRecording(v => !v)}
-            size="1"
-            variant={isRecording ? 'solid' : 'ghost'}
-            color={isRecording ? 'red' : undefined}
             title={isRecording ? 'Stop recording' : 'Start recording'}
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors ${
+              isRecording
+                ? 'bg-destructive/10 border-destructive/30 text-destructive'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+            }`}
           >
             {isRecording ? <StopCircle size={11} /> : <Circle size={11} />}
             {isRecording ? 'Recording' : 'Record'}
-          </Button>
+          </button>
 
           {/* Turn mode */}
           <Select.Root
@@ -971,27 +979,28 @@ Respond as ${agentName(agentId)}:`;
 
           {/* Device settings */}
           <div className="relative" ref={deviceSettingsRef}>
-            <IconButton
+            <button
               onClick={() => setShowDeviceSettings(v => !v)}
-              size="2"
-              variant={showDeviceSettings ? 'soft' : 'ghost'}
-             
               title="Audio device settings"
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                showDeviceSettings
+                  ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               <SlidersHorizontal size={16} />
-            </IconButton>
+            </button>
             {showDeviceSettings && (
               <div className="absolute right-0 top-full mt-1 z-50 w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-4 space-y-4">
                 <Flex align="center" justify="between">
                   <span className="text-xs font-semibold text-mission-control-text">Audio Devices</span>
-                  <IconButton
+                  <button
+                    type="button"
                     onClick={() => setShowDeviceSettings(false)}
-                    size="1"
-                    variant="ghost"
-                   
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     <XIcon size={14} />
-                  </IconButton>
+                  </button>
                 </Flex>
 
                 {/* Microphone */}
@@ -1004,7 +1013,7 @@ Respond as ${agentName(agentId)}:`;
                     onValueChange={val => setMicDeviceId(val === '__default__' ? '' : val)}
                     size="1"
                   >
-                    <Select.Trigger style={{ width: '100%' }} />
+                    <Select.Trigger className="w-full" />
                     <Select.Content>
                       <Select.Item value="__default__">System default</Select.Item>
                       {micDevices.map(d => (
@@ -1026,7 +1035,7 @@ Respond as ${agentName(agentId)}:`;
                     onValueChange={val => setSpeakerDeviceId(val === '__default__' ? '' : val)}
                     size="1"
                   >
-                    <Select.Trigger style={{ width: '100%' }} />
+                    <Select.Trigger className="w-full" />
                     <Select.Content>
                       <Select.Item value="__default__">System default</Select.Item>
                       {speakerDevices.map(d => (
@@ -1046,15 +1055,13 @@ Respond as ${agentName(agentId)}:`;
 
           {/* Volume */}
           <Flex align="center" gap="1">
-            <IconButton
+            <button
+              type="button"
               onClick={() => { setMuted(!muted); if (!muted) { stopSpeaking(); window.speechSynthesis.cancel(); } }}
-              size="2"
-              variant="ghost"
-             
-              color={muted ? 'red' : undefined}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${muted ? 'text-[var(--color-error)] hover:bg-mission-control-surface' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
             >
               {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-            </IconButton>
+            </button>
             <input
               type="range"
               min="0"
@@ -1068,36 +1075,34 @@ Respond as ${agentName(agentId)}:`;
 
           {/* Download transcript */}
           {transcript.length > 0 && (
-            <IconButton
+            <button
+              type="button"
               onClick={downloadTranscript}
-              size="2"
-              variant="ghost"
-             
+              className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               title="Download transcript"
             >
               <Download size={16} />
-            </IconButton>
+            </button>
           )}
 
           {/* Back to text */}
-          <IconButton
+          <button
+            type="button"
             onClick={() => {
               if (isActive) { setShowEndConfirm(true); } else { onEndVoice(); }
             }}
-            size="2"
-            variant="ghost"
-           
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             title="Switch to text"
           >
             <MessageSquare size={16} />
-          </IconButton>
+          </button>
         </Flex>
       </Flex>
 
       {/* Recording banner */}
       {isRecording && (
-        <Flex align="center" justify="center" gap="2" className="px-4 py-1.5 bg-error-subtle border-b border-error-border text-error text-xs font-medium">
-          <div className="w-2 h-2 rounded-full bg-error animate-pulse" />
+        <Flex align="center" justify="center" gap="2" className="px-4 py-1.5 bg-[var(--color-error)]/10 border-b border-[var(--color-error)]/30 text-[var(--color-error)] text-xs font-medium">
+          <div className="w-2 h-2 rounded-full bg-[var(--color-error)] animate-pulse" />
           Meeting is being recorded
         </Flex>
       )}
@@ -1106,7 +1111,7 @@ Respond as ${agentName(agentId)}:`;
       {showParticipants && (
         <div className="border-b border-mission-control-border bg-mission-control-surface/60 px-4 py-3">
           <Flex align="center" justify="between" className="mb-2">
-            <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Participants</span>
+            <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Participants</span>
             {isActive && (
               <Button
                 onClick={muteAllAgents}
@@ -1145,10 +1150,10 @@ Respond as ${agentName(agentId)}:`;
                   <span className="text-sm text-mission-control-text flex-1">{agent?.name || id}</span>
                   <Flex align="center" gap="2">
                     {isSpeaking && (
-                      <span className="text-xs text-success">Speaking</span>
+                      <span className="text-xs text-[var(--color-success)]">Speaking</span>
                     )}
                     {isProcessing && !isSpeaking && (
-                      <span className="text-xs text-warning">Thinking</span>
+                      <span className="text-xs text-[var(--color-warning)]">Thinking</span>
                     )}
                     {isQueued && !isProcessing && (
                       <span className="text-xs text-mission-control-text-dim">Queued</span>
@@ -1156,16 +1161,14 @@ Respond as ${agentName(agentId)}:`;
                     {!isSpeaking && !isProcessing && !isQueued && (
                       <span className="text-xs text-mission-control-text-dim">Listening</span>
                     )}
-                    <IconButton
+                    <button
+                      type="button"
                       onClick={() => toggleAgentMute(id)}
-                      size="1"
-                      variant="ghost"
-                     
-                      color={isAgentMuted ? 'red' : undefined}
+                      className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${isAgentMuted ? 'text-[var(--color-error)] hover:bg-mission-control-surface' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
                       title={isAgentMuted ? 'Unmute agent' : 'Mute agent'}
                     >
                       {isAgentMuted ? <MicOff size={12} /> : <Mic size={12} />}
-                    </IconButton>
+                    </button>
                   </Flex>
                 </Flex>
               );
@@ -1206,7 +1209,7 @@ Respond as ${agentName(agentId)}:`;
           return (
             <div key={id} className="flex flex-col items-center gap-1 flex-shrink-0">
               <div className="relative">
-                <div className={`transition-all ${isSpeaking ? 'scale-110' : ''}`}>
+                <div className={`transition-colors ${isSpeaking ? 'scale-110' : ''}`}>
                   <AgentAvatar agentId={id} size="md" ring={isSpeaking} />
                 </div>
                 {/* Speaking pulse */}
@@ -1215,7 +1218,7 @@ Respond as ${agentName(agentId)}:`;
                 )}
                 {/* Processing dot */}
                 {isProcessing && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-warning border-2 border-mission-control-bg animate-pulse" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--color-warning)] border-2 border-mission-control-bg animate-pulse" />
                 )}
                 {/* Queued dot */}
                 {isQueued && !isProcessing && (
@@ -1241,16 +1244,14 @@ Respond as ${agentName(agentId)}:`;
       </div>
 
       {/* Transcript / Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4">
         {transcript.length === 0 && !isActive && (
           <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
-            <div className="flex -space-x-3 mb-4">
-              {room.agents.slice(0, 4).map(id => (
-                <AgentAvatar key={id} agentId={id} size="lg" ring />
-              ))}
+            <div className="w-10 h-10 rounded-full bg-mission-control-accent/10 flex items-center justify-center mb-3">
+              <Users size={20} className="text-mission-control-accent" />
             </div>
-            <p className="text-lg font-medium text-mission-control-text mb-1">Voice Team Meeting</p>
-            <p className="text-sm text-center max-w-xs mb-2">
+            <p className="text-sm font-medium text-mission-control-text mb-1">Voice Team Meeting</p>
+            <p className="text-sm text-center max-w-xs mb-2 text-mission-control-text-dim">
               Start a voice meeting with {room.agents.map(id => agentName(id)).join(', ')}
             </p>
             <p className="text-xs opacity-70">
@@ -1259,10 +1260,10 @@ Respond as ${agentName(agentId)}:`;
           </div>
         )}
 
-        {transcript.map(entry => {
+        {transcript.map((entry, idx) => {
           if (entry.speaker === 'system') {
             return (
-              <div key={entry.id} className="text-center">
+              <div key={entry.id} className="flex justify-center my-2">
                 <span className="text-xs text-mission-control-text-dim bg-mission-control-border/50 px-3 py-1 rounded-full">
                   {entry.content} • {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
@@ -1274,39 +1275,41 @@ Respond as ${agentName(agentId)}:`;
           const theme = !isUser ? getAgentTheme(entry.speaker) : null;
           const agent = !isUser ? agents.find(a => a.id === entry.speaker) : null;
           const isCurrSpeaking = speakingAgent === entry.speaker;
+          const prev = idx > 0 ? transcript[idx - 1] : null;
+          const isNewSpeaker = !prev || prev.speaker !== entry.speaker;
 
           return (
-            <div key={entry.id} className={`flex gap-2.5 ${isUser ? 'flex-row-reverse' : ''}`}>
-              {isUser ? (
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 mt-0.5">
-                  K
-                </div>
-              ) : (
-                <div className="relative flex-shrink-0 mt-0.5">
-                  <AgentAvatar agentId={entry.speaker} size="sm" />
-                  {isCurrSpeaking && (
-                    <div className={`absolute inset-0 rounded-full border-2 ${theme?.border} animate-pulse`} />
-                  )}
+            <div key={entry.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'} ${isNewSpeaker ? 'mt-6' : 'mt-2'}`}>
+              {!isUser && (
+                <div className={`flex-shrink-0 mr-2 ${isNewSpeaker ? '' : 'invisible'}`}>
+                  <div className="relative">
+                    <AgentAvatar agentId={entry.speaker} size="sm" />
+                    {isCurrSpeaking && (
+                      <div className={`absolute inset-0 rounded-full border-2 ${theme?.border} animate-pulse`} />
+                    )}
+                  </div>
                 </div>
               )}
               <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
-                <span className={`text-[10px] font-medium mb-0.5 px-1 ${isUser ? 'text-mission-control-accent' : (theme?.text || 'text-mission-control-text-dim')}`}>
-                  {isUser ? 'Kevin' : (agent?.name || entry.speaker)}
-                  {entry.type === 'voice' && ' 🎤'}
-                </span>
-                <div className={`px-3 py-2 rounded-2xl ${
-                  isUser
-                    ? 'bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] text-white rounded-tr-sm'
-                    : `bg-mission-control-surface border ${theme?.border || 'border-mission-control-border'} rounded-tl-sm`
-                }`}>
-                  {isUser ? (
-                    <p className="text-sm">{entry.content}</p>
-                  ) : (
+                {isNewSpeaker && (
+                  <span className={`text-xs font-medium mb-1 px-1 ${isUser ? 'text-mission-control-accent' : (theme?.text || 'text-[var(--color-success)]')}`}>
+                    {isUser ? 'Kevin' : (agent?.name || entry.speaker)}
+                  </span>
+                )}
+                {isUser ? (
+                  <div
+                    className="text-sm px-4 py-2.5 rounded-[18px_18px_4px_18px] text-mission-control-text"
+                    style={{ background: 'color-mix(in srgb, var(--mission-control-accent) 11%, transparent)', border: '1px solid color-mix(in srgb, var(--mission-control-accent) 18%, transparent)' }}
+                  >
+                    <p>{entry.content}</p>
+                  </div>
+                ) : (
+                  <div className="text-sm text-mission-control-text">
                     <MarkdownMessage content={entry.content} />
-                  )}
-                </div>
-                <span className="text-[10px] text-mission-control-text-dim mt-0.5 px-1">
-                  {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </div>
+                )}
+                <span className="text-[11px] tabular-nums text-mission-control-text-dim/70 mt-1 px-1">
+                  {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
             </div>
@@ -1315,22 +1318,32 @@ Respond as ${agentName(agentId)}:`;
 
         {/* Partial transcript */}
         {partialTranscript && (
-          <Flex gap="2" justify="end">
-            <div className="max-w-[75%] rounded-2xl px-3 py-2 bg-mission-control-accent/30 text-white/70">
-              <p className="text-sm italic">{partialTranscript}…</p>
+          <div className="flex justify-end mt-2">
+            <div
+              className="max-w-[75%] text-sm px-4 py-2.5 rounded-[18px_18px_4px_18px] text-mission-control-text opacity-60 italic"
+              style={{ background: 'color-mix(in srgb, var(--mission-control-accent) 11%, transparent)', border: '1px solid color-mix(in srgb, var(--mission-control-accent) 18%, transparent)' }}
+            >
+              <p>{partialTranscript}…</p>
             </div>
-          </Flex>
+          </div>
         )}
 
         {/* Processing indicator */}
         {processingAgent && !speakingAgent && (
-          <Flex gap="2" align="center">
-            <AgentAvatar agentId={processingAgent} size="xs" />
-            <Flex align="center" gap="2" className="bg-mission-control-surface border border-mission-control-border rounded-2xl px-4 py-2">
-              <Loader2 size={14} className="animate-spin text-mission-control-accent" />
-              <span className="text-xs text-mission-control-text-dim">{agentName(processingAgent)} is thinking…</span>
-            </Flex>
-          </Flex>
+          <div className="flex justify-start mt-6">
+            <div className="mr-2 flex-shrink-0">
+              <AgentAvatar agentId={processingAgent} size="xs" />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">{agentName(processingAgent)}</span>
+              <Flex gap="1" align="center" className="py-1">
+                <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="text-xs text-mission-control-text-dim ml-1">thinking...</span>
+              </Flex>
+            </div>
+          </div>
         )}
 
         <div ref={messagesEndRef} />
@@ -1377,7 +1390,7 @@ Respond as ${agentName(agentId)}:`;
           {isActive && (
             <>
               {/* Mic toggle / interrupt */}
-              <IconButton
+              <button
                 onClick={() => {
                   if (canInterrupt && speakingAgent) {
                     // Interrupt: cancel TTS, clear queue, start listening immediately
@@ -1396,38 +1409,39 @@ Respond as ${agentName(agentId)}:`;
                   }
                 }}
                 disabled={!canInterrupt && (!!processingAgent && !speakingAgent)}
-                size="4"
-                variant={listening ? 'solid' : 'soft'}
-                color={canInterrupt && speakingAgent ? 'red' : undefined}
-                radius="full"
                 title={canInterrupt && speakingAgent ? 'Interrupt agent' : listening ? 'Stop listening' : 'Start listening'}
+                className={`inline-flex items-center justify-center w-14 h-14 rounded-full transition-colors ${
+                  listening
+                    ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+                }`}
               >
                 {listening ? <Mic size={20} /> : <MicOff size={20} />}
-              </IconButton>
+              </button>
 
               {/* Interrupt / stop all */}
-              <IconButton
+              <button
+                type="button"
                 onClick={interruptAll}
                 disabled={!speakingAgent && !processingAgent && speakQueue.length === 0}
-                size="3"
-                variant="ghost"
-                radius="full"
+                className="inline-flex items-center justify-center w-10 h-10 rounded-full text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-30"
                 title="Stop all speaking"
               >
                 <Square size={18} />
-              </IconButton>
+              </button>
 
               {/* Screen share */}
-              <IconButton
+              <button
                 onClick={toggleScreenShare}
-                size="3"
-                variant={screenSharing ? 'solid' : 'ghost'}
-                color={screenSharing ? 'blue' : undefined}
-                radius="full"
                 title={screenSharing ? 'Stop screen share' : 'Share screen'}
+                className={`inline-flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
+                  screenSharing
+                    ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+                }`}
               >
                 {screenSharing ? <MonitorOff size={18} /> : <Monitor size={18} />}
-              </IconButton>
+              </button>
             </>
           )}
 

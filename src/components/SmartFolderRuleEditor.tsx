@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Check, X, Zap, Info, ChevronDown, Save, TestTube } from 'lucide-react';
-import { Button, IconButton, TextField, Select, TextArea, Switch, Flex } from '@radix-ui/themes';
+import { Button, TextField, Select, TextArea, Switch, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import {
   RuleConditionType,
@@ -219,15 +219,15 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
           </div>
         </Flex>
         <Flex align="center" gap="2">
-          <Button
-            size="2"
-            variant="ghost"
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
             onClick={testRule}
             disabled={testing || !rule.conditions || rule.conditions.length === 0}
           >
             <TestTube size={14} />
             Test Rule
-          </Button>
+          </button>
           <Button
             size="2"
             variant="solid"
@@ -238,9 +238,14 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
             {saving ? 'Saving...' : 'Save'}
           </Button>
           {onClose && (
-            <IconButton size="2" variant="ghost" onClick={onClose} aria-label="Close">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              onClick={onClose}
+              aria-label="Close"
+            >
               <X size={16} />
-            </IconButton>
+            </button>
           )}
         </Flex>
       </Flex>
@@ -273,14 +278,14 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
         <div className="card p-4 space-y-4">
           <Flex align="center" justify="between">
             <h3 className="font-semibold">Rule Configuration</h3>
-            <Button
-              size="2"
-              variant="ghost"
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={() => setShowTemplates(!showTemplates)}
             >
               <ChevronDown size={14} className={`transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
               Templates
-            </Button>
+            </button>
           </Flex>
 
           {/* Templates Dropdown */}
@@ -288,18 +293,17 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
             <div className="p-3 bg-mission-control-bg rounded-lg border border-mission-control-border space-y-2">
               <div className="text-xs font-medium text-mission-control-text-dim mb-2">Quick Templates:</div>
               {RULE_TEMPLATES.map((template, idx) => (
-                <Button
+                <button
                   key={idx}
-                  size="2"
-                  variant="ghost"
+                  type="button"
+                  className="inline-flex flex-col items-start w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() => applyTemplate(template)}
-                  style={{ width: '100%', justifyContent: 'flex-start' }}
                 >
                   <div className="text-sm font-medium">{template.name}</div>
                   <div className="text-xs text-mission-control-text-dim mt-1">
                     {template.conditions?.map(c => `${c.type}: ${c.value}`).join(' ' + (template.operator || 'AND') + ' ')}
                   </div>
-                </Button>
+                </button>
               ))}
             </div>
           )}
@@ -334,24 +338,30 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
           {/* Operator */}
           <div>
             <span className="block text-sm font-medium mb-2">Match Conditions</span>
-            <Flex gap="3">
-              <Button
-                size="2"
-                variant={rule.operator === 'AND' ? 'solid' : 'ghost'}
+            <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+              <button
+                type="button"
                 onClick={() => setRule({ ...rule, operator: 'AND' })}
-                style={{ flex: 1 }}
+                className={`flex flex-1 items-center justify-center px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  rule.operator === 'AND'
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 AND (All conditions)
-              </Button>
-              <Button
-                size="2"
-                variant={rule.operator === 'OR' ? 'solid' : 'ghost'}
+              </button>
+              <button
+                type="button"
                 onClick={() => setRule({ ...rule, operator: 'OR' })}
-                style={{ flex: 1 }}
+                className={`flex flex-1 items-center justify-center px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  rule.operator === 'OR'
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 OR (Any condition)
-              </Button>
-            </Flex>
+              </button>
+            </div>
           </div>
 
           {/* Enabled Toggle */}
@@ -396,7 +406,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
                           onValueChange={(value) => updateCondition(idx, { type: value as RuleConditionType })}
                           size="2"
                         >
-                          <Select.Trigger style={{ width: '100%', marginBottom: '8px' }} />
+                          <Select.Trigger className="w-full mb-2" />
                           <Select.Content>
                             {CONDITION_TYPES.map((type) => (
                               <Select.Item key={type.value} value={type.value}>
@@ -443,17 +453,15 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
                       </div>
 
                       {/* Remove Button */}
-                      <IconButton
-                        size="2"
-                        variant="ghost"
-
-                        color="red"
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         onClick={() => removeCondition(idx)}
                         title="Remove condition"
                         aria-label="Remove condition"
                       >
                         <Trash2 size={16} />
-                      </IconButton>
+                      </button>
                     </Flex>
                   </div>
                 );
@@ -512,8 +520,8 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
               <div
                 className={`p-3 rounded-lg border ${
                   testResult
-                    ? 'bg-success-subtle border-success-border text-success'
-                    : 'bg-warning-subtle border-warning-border text-warning'
+                    ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]'
+                    : 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30 text-[var(--color-warning)]'
                 }`}
               >
                 <Flex align="center" gap="2" className="text-sm font-medium">
@@ -527,20 +535,19 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
 
         {/* Danger Zone */}
         {rule.id && (
-          <div className="card p-4 border-error-border">
-            <h3 className="font-semibold text-error mb-2">Danger Zone</h3>
+          <div className="card p-4 border-[var(--color-error)]/30">
+            <h3 className="font-semibold text-[var(--color-error)] mb-2">Danger Zone</h3>
             <p className="text-sm text-mission-control-text-dim mb-3">
               Deleting this rule will make the folder manual-only. Existing assignments will remain.
             </p>
-            <Button
-              size="2"
-              variant="ghost"
-              color="red"
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={handleDelete}
             >
               <Trash2 size={14} />
               Delete Rule
-            </Button>
+            </button>
           </div>
         )}
       </div>

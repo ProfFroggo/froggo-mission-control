@@ -19,7 +19,7 @@ export const DropdownMenuContent = React.forwardRef<
       className={cn(
         'z-50 min-w-[10rem] overflow-hidden rounded-xl',
         'bg-mission-control-surface',
-        'border border-mission-control-border shadow-md',
+        'border border-mission-control-border shadow-xl',
         'p-1',
         'data-[state=open]:animate-scale-in data-[state=open]:animate-fade-in',
         className
@@ -40,7 +40,7 @@ export const DropdownMenuItem = React.forwardRef<
       'relative flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-3 py-2 text-sm outline-none transition-colors',
       'focus:bg-mission-control-border/40',
       destructive
-        ? 'text-error focus:bg-error/10 focus:text-error'
+        ? 'text-[var(--color-error)] focus:bg-[var(--color-error)]/10 focus:text-[var(--color-error)]'
         : 'text-mission-control-text',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
       inset && 'pl-8',
@@ -83,7 +83,7 @@ export const DropdownMenuLabel = React.forwardRef<
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn(
-      'px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-mission-control-text-dim/60',
+      'px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim',
       inset && 'pl-8',
       className
     )}
@@ -98,7 +98,7 @@ export const DropdownMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Separator
     ref={ref}
-    className={cn('-mx-1 my-1 h-px bg-mission-control-border', className)}
+    className={cn('-mx-1 my-1 h-px bg-mission-control-border/50', className)}
     {...props}
   />
 ));
@@ -119,7 +119,7 @@ export const DropdownMenuSubTrigger = React.forwardRef<
     {...props}
   >
     {children}
-    <ChevronRight size={14} className="ml-auto text-mission-control-text-dim/50" />
+    <ChevronRight size={14} className="ml-auto text-mission-control-text-dim/70" />
   </DropdownMenuPrimitive.SubTrigger>
 ));
 DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName;
@@ -133,7 +133,7 @@ export const DropdownMenuSubContent = React.forwardRef<
     className={cn(
       'z-50 min-w-[8rem] overflow-hidden rounded-xl',
       'bg-mission-control-surface',
-      'border border-glass-border-strong shadow-glass-lg p-1',
+      'border border-mission-control-border shadow-xl p-1',
       'data-[state=open]:animate-scale-in',
       className
     )}
@@ -143,5 +143,5 @@ export const DropdownMenuSubContent = React.forwardRef<
 DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName;
 
 export function DropdownMenuShortcut({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
-  return <span className={cn('ml-auto text-[11px] text-mission-control-text-dim/40 tracking-widest', className)} {...props} />;
+  return <span className={cn('ml-auto text-[11px] text-mission-control-text-dim/60 tracking-widest', className)} {...props} />;
 }

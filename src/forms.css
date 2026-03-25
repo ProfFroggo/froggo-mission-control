@@ -5,19 +5,19 @@
 
 /* ==================== BASE INPUT STYLES ==================== */
 
-/* Text inputs, textareas, and selects */
+/* Text inputs, textareas, and selects — excludes Radix-managed inputs */
 .mission-control-input,
-input[type="text"]:not(.unstyled),
-input[type="email"]:not(.unstyled),
-input[type="password"]:not(.unstyled),
-input[type="search"]:not(.unstyled),
-input[type="number"]:not(.unstyled),
-input[type="date"]:not(.unstyled),
-input[type="datetime-local"]:not(.unstyled),
-input[type="time"]:not(.unstyled),
-input[type="url"]:not(.unstyled),
-textarea:not(.unstyled),
-select:not(.unstyled) {
+input[type="text"]:not(.unstyled):not(.rt-TextFieldInput),
+input[type="email"]:not(.unstyled):not(.rt-TextFieldInput),
+input[type="password"]:not(.unstyled):not(.rt-TextFieldInput),
+input[type="search"]:not(.unstyled):not(.rt-TextFieldInput),
+input[type="number"]:not(.unstyled):not(.rt-TextFieldInput),
+input[type="date"]:not(.unstyled):not(.rt-TextFieldInput),
+input[type="datetime-local"]:not(.unstyled):not(.rt-TextFieldInput),
+input[type="time"]:not(.unstyled):not(.rt-TextFieldInput),
+input[type="url"]:not(.unstyled):not(.rt-TextFieldInput),
+textarea:not(.unstyled):not(.rt-TextAreaInput),
+select:not(.unstyled):not(.rt-SelectTrigger) {
   width: 100%;
   padding: 0.625rem 0.875rem; /* 10px 14px */
   font-size: 0.875rem; /* 14px */
@@ -27,18 +27,18 @@ select:not(.unstyled) {
   border: 1px solid var(--mission-control-border);
   border-radius: 0.5rem; /* 8px */
   outline: none;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
   font-family: var(--mission-control-font);
 }
 
 /* Textarea specific */
-textarea:not(.unstyled) {
+textarea:not(.unstyled):not(.rt-TextAreaInput) {
   resize: vertical;
   min-height: 80px;
 }
 
 /* Select specific */
-select:not(.unstyled) {
+select:not(.unstyled):not(.rt-SelectTrigger) {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a1a1aa' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -50,9 +50,9 @@ select:not(.unstyled) {
 
 /* Focus state */
 .mission-control-input:focus,
-input:not(.unstyled):focus,
-textarea:not(.unstyled):focus,
-select:not(.unstyled):focus {
+input:not(.unstyled):not(.rt-TextFieldInput):focus,
+textarea:not(.unstyled):not(.rt-TextAreaInput):focus,
+select:not(.unstyled):not(.rt-SelectTrigger):focus {
   border-color: var(--mission-control-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--mission-control-accent) 15%, transparent);
   background: color-mix(in srgb, var(--mission-control-surface) 97%, var(--mission-control-accent));
@@ -60,17 +60,17 @@ select:not(.unstyled):focus {
 
 /* Hover state */
 .mission-control-input:hover:not(:disabled):not(:focus),
-input:not(.unstyled):hover:not(:disabled):not(:focus),
-textarea:not(.unstyled):hover:not(:disabled):not(:focus),
-select:not(.unstyled):hover:not(:disabled):not(:focus) {
+input:not(.unstyled):not(.rt-TextFieldInput):hover:not(:disabled):not(:focus),
+textarea:not(.unstyled):not(.rt-TextAreaInput):hover:not(:disabled):not(:focus),
+select:not(.unstyled):not(.rt-SelectTrigger):hover:not(:disabled):not(:focus) {
   border-color: color-mix(in srgb, var(--mission-control-border) 60%, var(--mission-control-text));
 }
 
 /* Disabled state */
 .mission-control-input:disabled,
-input:not(.unstyled):disabled,
-textarea:not(.unstyled):disabled,
-select:not(.unstyled):disabled {
+input:not(.unstyled):not(.rt-TextFieldInput):disabled,
+textarea:not(.unstyled):not(.rt-TextAreaInput):disabled,
+select:not(.unstyled):not(.rt-SelectTrigger):disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background: color-mix(in srgb, var(--mission-control-surface) 95%, var(--mission-control-bg));
@@ -78,33 +78,33 @@ select:not(.unstyled):disabled {
 
 /* Error state */
 .mission-control-input.error,
-input.error:not(.unstyled),
-textarea.error:not(.unstyled),
-select.error:not(.unstyled) {
+input.error:not(.unstyled):not(.rt-TextFieldInput),
+textarea.error:not(.unstyled):not(.rt-TextAreaInput),
+select.error:not(.unstyled):not(.rt-SelectTrigger) {
   border-color: var(--color-error);
   background: color-mix(in srgb, var(--mission-control-surface) 97%, var(--color-error));
 }
 
 .mission-control-input.error:focus,
-input.error:not(.unstyled):focus,
-textarea.error:not(.unstyled):focus,
-select.error:not(.unstyled):focus {
+input.error:not(.unstyled):not(.rt-TextFieldInput):focus,
+textarea.error:not(.unstyled):not(.rt-TextAreaInput):focus,
+select.error:not(.unstyled):not(.rt-SelectTrigger):focus {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 15%, transparent);
 }
 
 /* Success state */
 .mission-control-input.success,
-input.success:not(.unstyled),
-textarea.success:not(.unstyled),
-select.success:not(.unstyled) {
+input.success:not(.unstyled):not(.rt-TextFieldInput),
+textarea.success:not(.unstyled):not(.rt-TextAreaInput),
+select.success:not(.unstyled):not(.rt-SelectTrigger) {
   border-color: var(--mission-control-accent);
   background: color-mix(in srgb, var(--mission-control-surface) 97%, var(--mission-control-accent));
 }
 
 /* Placeholder text */
 .mission-control-input::placeholder,
-input:not(.unstyled)::placeholder,
-textarea:not(.unstyled)::placeholder {
+input:not(.unstyled):not(.rt-TextFieldInput)::placeholder,
+textarea:not(.unstyled):not(.rt-TextAreaInput)::placeholder {
   color: var(--mission-control-text-dim);
 }
 
@@ -133,7 +133,7 @@ textarea:not(.unstyled)::placeholder {
   border-radius: 0.5rem; /* 8px */
   cursor: pointer;
   outline: none;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
   font-family: var(--mission-control-font);
   white-space: nowrap;
 }
@@ -243,12 +243,19 @@ textarea:not(.unstyled)::placeholder {
   margin-bottom: 1rem;
 }
 
+/* Highlight label when any child input has focus — zero-JS micro-interaction */
+.mission-control-form-group:focus-within .mission-control-form-label {
+  color: var(--mission-control-accent);
+  transition: color 0.15s ease;
+}
+
 .mission-control-form-label {
   display: block;
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--mission-control-text);
+  transition: color 0.15s ease;
 }
 
 .mission-control-form-label.required::after {
@@ -390,7 +397,7 @@ input[type="radio"]:disabled:not(.unstyled) {
   border: 1px solid var(--mission-control-border);
   border-radius: 0.25rem;
   background: var(--mission-control-surface);
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -524,18 +531,19 @@ input[type="radio"]:disabled:not(.unstyled) {
 
 /* Blinking cursor — matches platform accent color */
 @keyframes mission-control-cursor-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0; }
 }
 
 .streaming-cursor {
   display: inline-block;
   width: 2px;
-  height: 1em;
+  height: 0.9em;
   background-color: var(--mission-control-accent);
   vertical-align: text-bottom;
-  margin-left: 1px;
-  animation: mission-control-cursor-blink 1s step-end infinite;
+  margin-left: 2px;
+  border-radius: 1px;
+  animation: mission-control-cursor-blink 0.9s ease-in-out infinite;
 }
 
 /* Subtle fade-in for new text chunks during streaming */

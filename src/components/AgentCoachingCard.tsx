@@ -1,11 +1,11 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import {
   TrendingUp, TrendingDown, Minus, Lightbulb,
   CheckCircle2, AlertTriangle, RefreshCw, Zap,
   CalendarDays, Share2, Target,
 } from 'lucide-react';
-import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Flex, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 type Period = '7d' | '30d' | '90d';
@@ -57,7 +57,7 @@ function ScoreRing({ score }: { score: number }) {
   const radius = 44;
   const circumference = 2 * Math.PI * radius;
   const filled = (score / 100) * circumference;
-  const color = score >= 75 ? 'var(--success)' : score >= 45 ? 'var(--warning)' : 'var(--error)';
+  const color = score >= 75 ? 'var(--color-success)' : score >= 45 ? 'var(--color-warning)' : 'var(--color-error)';
 
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: 112, height: 112 }}>
@@ -80,7 +80,7 @@ function ScoreRing({ score }: { score: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-bold tabular-nums" style={{ color }}>{score}</span>
-        <span className="text-xs text-mission-control-text-dim uppercase tracking-wider">score</span>
+        <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">score</span>
       </div>
     </div>
   );
@@ -104,10 +104,10 @@ function SuccessSparkline({ points }: { points: number[] }) {
   const last = points[points.length - 1];
   const prev = points[points.length - 2];
   const color = last > prev
-    ? 'var(--success)'
+    ? 'var(--color-success)'
     : last < prev
-    ? 'var(--error)'
-    : 'var(--warning)';
+    ? 'var(--color-error)'
+    : 'var(--color-warning)';
 
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-label="Success rate trend sparkline">
@@ -147,10 +147,10 @@ function CoachingCardSkeleton() {
   );
 }
 
-function WeekCard({ weekNum, actions }: { weekNum: number; actions: string[] }) {
+const WeekCard = memo(function WeekCard({ weekNum, actions }: { weekNum: number; actions: string[] }) {
   const labels = ['Foundation', 'Practice', 'Measure', 'Sustain'];
   return (
-    <div className="rounded-lg border border-mission-control-border bg-mission-control-bg p-3 space-y-2">
+    <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-3 space-y-2 hover:border-mission-control-accent/20 transition-colors">
       <Flex align="center" gap="2">
         <CalendarDays size={11} className="text-mission-control-text-dim flex-shrink-0" />
         <span className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider">
@@ -173,7 +173,7 @@ function WeekCard({ weekNum, actions }: { weekNum: number; actions: string[] }) 
       )}
     </div>
   );
-}
+});
 
 function formatDuration(ms: number): string {
   if (!ms) return '—';
@@ -200,7 +200,7 @@ function buildSparklinePoints(data: ReviewData): number[] {
   ].map(Math.round);
 }
 
-export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingCardProps) {
+const AgentCoachingCard = memo(function AgentCoachingCard({ agentId, agentName }: AgentCoachingCardProps) {
   const [period, setPeriod] = useState<Period>('30d');
   const [data, setData] = useState<ReviewData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -316,9 +316,9 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
   const TrendIcon = data?.trend === 'improving' ? TrendingUp
     : data?.trend === 'declining' ? TrendingDown
     : Minus;
-  const trendColor = data?.trend === 'improving' ? 'text-success'
-    : data?.trend === 'declining' ? 'text-error'
-    : 'text-warning';
+  const trendColor = data?.trend === 'improving' ? 'text-[var(--color-success)]'
+    : data?.trend === 'declining' ? 'text-[var(--color-error)]'
+    : 'text-[var(--color-warning)]';
 
   return (
     <div className="space-y-5">
@@ -342,37 +342,33 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
         </div>
         <Flex align="center" gap="1">
           {data && (
-            <IconButton
+            <button
               type="button"
-              size="2"
-              variant="ghost"
-             
               title="Copy report to clipboard"
               aria-label="Share performance report"
               onClick={handleShareReport}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <Share2 size={14} />
-            </IconButton>
+            </button>
           )}
-          <IconButton
+          <button
             type="button"
-            size="2"
-            variant="ghost"
-           
             disabled={loading}
             title="Refresh review"
             aria-label="Refresh performance review"
             onClick={() => void fetchReview(period)}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </IconButton>
+          </button>
         </Flex>
       </Flex>
 
       {loading && !data && <CoachingCardSkeleton />}
 
       {error && !loading && (
-        <Flex align="center" gap="2" className="rounded-lg border border-error-border bg-error-subtle p-4 text-sm text-error">
+        <Flex align="center" gap="2" className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 p-4 text-sm text-[var(--color-error)]">
           <AlertTriangle size={14} className="flex-shrink-0" />
           {error}
         </Flex>
@@ -381,7 +377,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
       {data && (
         <>
           {/* Score + trend + top metrics */}
-          <Flex align="center" gap="6" className="rounded-2xl border border-mission-control-border bg-mission-control-bg p-5">
+          <Flex align="center" gap="6" className="rounded-xl border border-mission-control-border bg-mission-control-surface p-5">
             <ScoreRing score={data.score} />
             <div className="flex-1 space-y-2">
               <Flex align="center" gap="2">
@@ -391,40 +387,40 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
               </Flex>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <div className="text-lg font-bold tabular-nums text-success">{data.metrics.tasksCompleted}</div>
-                  <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wide">Done</div>
+                  <div className="text-lg font-bold tabular-nums text-[var(--color-success)]">{data.metrics.tasksCompleted}</div>
+                  <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Done</div>
                 </div>
                 <div>
-                  <div className="text-lg font-bold tabular-nums text-warning">{data.metrics.successRate}%</div>
-                  <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wide">Success</div>
+                  <div className="text-lg font-bold tabular-nums text-[var(--color-warning)]">{data.metrics.successRate}%</div>
+                  <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Success</div>
                 </div>
                 <div>
-                  <div className="text-lg font-bold tabular-nums text-info">{formatDuration(data.metrics.avgDurationMs)}</div>
-                  <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wide">Avg time</div>
+                  <div className="text-lg font-bold tabular-nums text-[var(--color-info)]">{formatDuration(data.metrics.avgDurationMs)}</div>
+                  <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Avg time</div>
                 </div>
               </div>
               <Flex align="center" gap="2" className="text-[11px] text-mission-control-text-dim pt-1">
-                <Zap size={11} className="text-warning flex-shrink-0" />
+                <Zap size={11} className="text-[var(--color-warning)] flex-shrink-0" />
                 <span>{formatTokens(data.metrics.totalTokens)} tokens</span>
                 <span className="text-mission-control-border mx-0.5">/</span>
-                <span className="text-warning">${data.metrics.totalCostUsd.toFixed(4)}</span>
+                <span className="text-[var(--color-warning)]">${data.metrics.totalCostUsd.toFixed(4)}</span>
               </Flex>
             </div>
           </Flex>
 
           {/* Success rate sparkline */}
           {sparkPoints.length >= 2 && (
-            <div className="rounded-2xl border border-mission-control-border bg-mission-control-bg px-4 py-3">
+            <div className="rounded-xl border border-mission-control-border bg-mission-control-surface px-4 py-3">
               <Flex align="center" justify="between">
-                <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
                   Success rate — 5-week trend
                 </span>
                 <span className="text-xs font-bold tabular-nums" style={{
                   color: sparkPoints[sparkPoints.length - 1] > sparkPoints[sparkPoints.length - 2]
-                    ? 'var(--success)'
+                    ? 'var(--color-success)'
                     : sparkPoints[sparkPoints.length - 1] < sparkPoints[sparkPoints.length - 2]
-                    ? 'var(--error)'
-                    : 'var(--warning)',
+                    ? 'var(--color-error)'
+                    : 'var(--color-warning)',
                 }}>
                   {sparkPoints[sparkPoints.length - 1]}%
                 </span>
@@ -437,12 +433,12 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
 
           {/* Strengths */}
           {data.strengths.length > 0 && (
-            <div className="rounded-2xl border border-success-border bg-success-subtle p-4">
-              <h4 className="text-xs font-semibold text-success uppercase tracking-wider mb-3">Strengths</h4>
+            <div className="rounded-xl border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 p-4">
+              <h4 className="text-[10px] font-bold text-[var(--color-success)] uppercase tracking-wider mb-3">Strengths</h4>
               <ul className="space-y-1.5">
                 {data.strengths.map((s, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
-                    <CheckCircle2 size={14} className="text-success flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 size={14} className="text-[var(--color-success)] flex-shrink-0 mt-0.5" />
                     <span>{s}</span>
                   </li>
                 ))}
@@ -452,12 +448,12 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
 
           {/* Areas for improvement */}
           {data.improvements.length > 0 && (
-            <div className="rounded-2xl border border-warning-border bg-warning-subtle p-4">
-              <h4 className="text-xs font-semibold text-warning uppercase tracking-wider mb-3">Areas for Improvement</h4>
+            <div className="rounded-xl border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10 p-4">
+              <h4 className="text-[10px] font-bold text-[var(--color-warning)] uppercase tracking-wider mb-3">Areas for Improvement</h4>
               <ul className="space-y-1.5">
                 {data.improvements.map((s, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
-                    <AlertTriangle size={14} className="text-warning flex-shrink-0 mt-0.5" />
+                    <AlertTriangle size={14} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
                     <span>{s}</span>
                   </li>
                 ))}
@@ -467,12 +463,12 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
 
           {/* Recommendations */}
           {data.recommendations.length > 0 && (
-            <div className="rounded-2xl border border-info-border bg-info-subtle p-4">
-              <h4 className="text-xs font-semibold text-info uppercase tracking-wider mb-3">Recommendations</h4>
+            <div className="rounded-xl border border-[var(--color-info)]/30 bg-[var(--color-info)]/10 p-4">
+              <h4 className="text-[10px] font-bold text-[var(--color-info)] uppercase tracking-wider mb-3">Recommendations</h4>
               <ul className="space-y-1.5">
                 {data.recommendations.map((s, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
-                    <Lightbulb size={14} className="text-info flex-shrink-0 mt-0.5" />
+                    <Lightbulb size={14} className="text-[var(--color-info)] flex-shrink-0 mt-0.5" />
                     <span>{s}</span>
                   </li>
                 ))}
@@ -481,8 +477,8 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
           )}
 
           {/* Skill gaps */}
-          <div className="rounded-2xl border border-mission-control-border p-4">
-            <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-3">Skill Gaps</h4>
+          <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
+            <h4 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-3">Skill Gaps</h4>
             {data.skillGaps.length === 0 ? (
               <p className="text-sm text-mission-control-text-dim">
                 No recurring rejection patterns detected{data.metrics.tasksRejected === 0 ? ' — no rejected tasks this period' : ''}.
@@ -493,50 +489,46 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                   {data.skillGaps.map((gap) => (
                     <span
                       key={gap.pattern}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-error-subtle text-error border border-error-border"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/30"
                     >
                       <AlertTriangle size={11} />
                       {gap.pattern}
-                      <span className="ml-0.5 px-1 py-0.5 rounded-full bg-error/20 text-[10px] font-bold">{gap.count}x</span>
+                      <span className="ml-0.5 px-1 py-0.5 rounded-full bg-[var(--color-error)]/20 text-[10px] font-bold">{gap.count}x</span>
                     </span>
                   ))}
                 </div>
-                <Button
+                <button
                   type="button"
-                  size="2"
-                  variant="ghost"
-                  className="mt-1 w-full"
+                  className="mt-1 w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() => {
                     showToast('success', 'Training scheduled', `${agentName} has been queued for skill coaching`);
                   }}
                 >
                   Train on this
-                </Button>
+                </button>
               </div>
             )}
           </div>
 
           {/* 4-Week Coaching Plan */}
-          <div className="rounded-2xl border border-mission-control-border p-4 space-y-4">
+          <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4 space-y-4">
             <Flex align="center" justify="between">
               <Flex align="center" gap="2">
                 <Target size={14} className="text-mission-control-text-dim" />
-                <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+                <h4 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
                   4-Week Coaching Plan
                 </h4>
               </Flex>
-              <IconButton
+              <button
                 type="button"
-                size="2"
-                variant="ghost"
-               
                 disabled={planLoading}
                 title="Refresh coaching plan"
                 aria-label="Refresh coaching plan"
                 onClick={() => void refreshPlan()}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={12} className={planLoading ? 'animate-spin' : ''} />
-              </IconButton>
+              </button>
             </Flex>
 
             {/* Focus goal input */}
@@ -546,7 +538,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
               </label>
               <Flex align="center" gap="2">
                 <TextField.Root
-                  size="2"
+                  size="1"
                   className="flex-1"
                   value={focusInput}
                   onChange={e => setFocusInput(e.target.value)}
@@ -556,8 +548,8 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                 />
                 <Button
                   type="button"
-                  size="2"
-                  variant="solid"
+                  size="1"
+                  variant="soft"
                   disabled={focusSaving}
                   className="flex-shrink-0"
                   onClick={() => void saveFocus()}
@@ -597,4 +589,6 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
       )}
     </div>
   );
-}
+});
+
+export default AgentCoachingCard;

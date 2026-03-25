@@ -22,16 +22,16 @@ interface Props {
 }
 
 const complexityColors: Record<string, string> = {
-  simple: 'bg-success-subtle text-success',
-  medium: 'bg-review-subtle text-review',
-  complex: 'bg-error-subtle text-error',
+  simple: 'bg-[var(--color-success)]/10 text-[var(--color-success)]',
+  medium: 'bg-[var(--color-review)]-subtle text-[var(--color-review)]',
+  complex: 'bg-[var(--color-error)]/10 text-[var(--color-error)]',
 };
 
 const agentColors: Record<string, string> = {
-  coder: 'bg-info/20 text-info',
-  'senior-coder': 'bg-review/20 text-review',
-  designer: 'bg-[var(--color-review)]/20 text-[var(--color-review)]',
-  writer: 'bg-success-subtle text-success',
+  coder: 'bg-[var(--color-info)]/20 text-[var(--color-info)]',
+  'senior-coder': 'bg-mission-control-border/30 text-mission-control-text-dim',
+  designer: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]',
+  writer: 'bg-[var(--color-success)]/10 text-[var(--color-success)]',
   researcher: 'bg-[var(--color-info)]/20 text-[var(--color-info)]',
 };
 
@@ -72,7 +72,7 @@ export default function SpecPreviewPanel({
   return (
     <div className="flex flex-col h-full bg-mission-control-bg">
       {/* Header with tabs */}
-      <div className="px-4 py-3 border-b border-mission-control-border">
+      <div className="px-4 py-3 border-b border-mission-control-border flex-shrink-0">
         <Flex align="center" justify="between" className="mb-3">
           <h2 className="text-base font-semibold text-mission-control-text flex items-center gap-2">
             <Package size={18} />
@@ -122,7 +122,7 @@ export default function SpecPreviewPanel({
       </div>
 
       {/* Action buttons */}
-      <div className="px-5 py-4 border-t border-mission-control-border flex gap-3">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-t border-mission-control-border flex-shrink-0">
         <Button
           size="2"
           variant="solid"
@@ -156,14 +156,14 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
 
       {/* Section checklist */}
       <div>
-        <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2">
+        <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">
           Sections
         </h3>
         <div className="space-y-1.5">
           {sectionProgress.map(s => (
             <Flex key={s.id} align="center" gap="2" className="text-sm">
               {s.complete ? (
-                <CheckCircle2 size={16} className="text-success" />
+                <CheckCircle2 size={16} className="text-[var(--color-success)]" />
               ) : (
                 <Circle size={16} className="text-mission-control-border" />
               )}
@@ -181,10 +181,10 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* Manifest preview */}
       {spec.id && (
         <div>
-          <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Code2 size={13} /> manifest.json
           </h3>
-          <pre className="bg-mission-control-bg0 text-success text-xs p-3 rounded-lg overflow-x-auto font-mono">
+          <pre className="bg-mission-control-surface text-[var(--color-success)] text-xs p-3 rounded-lg overflow-x-auto font-mono">
 {JSON.stringify({
   id: spec.id,
   name: spec.name,
@@ -201,7 +201,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* Component wireframes */}
       {((spec.views?.length ?? 0) > 0 || (spec.components?.length ?? 0) > 0) && (
         <div>
-          <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Layers size={13} /> Components & Views
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -224,19 +224,19 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* Dependencies / Services */}
       {((spec.services?.length ?? 0) > 0 || (spec.externalApis?.length ?? 0) > 0) && (
         <div>
-          <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Database size={13} /> Dependencies
           </h3>
           <ul className="space-y-1">
             {spec.services?.map(s => (
               <li key={s.id} className="text-sm text-mission-control-text flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-info" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-info)]" />
                 {s.name} <span className="text-mission-control-text-dim text-xs">({s.type})</span>
               </li>
             ))}
             {spec.externalApis?.map(api => (
               <li key={api} className="text-sm text-mission-control-text flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-review" />
+                <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent" />
                 {api}
               </li>
             ))}
@@ -247,7 +247,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* IPC channels */}
       {((spec.ipcChannels?.handle?.length ?? 0) + (spec.ipcChannels?.on?.length ?? 0) > 0) && (
         <div>
-          <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2">
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">
             IPC Channels
           </h3>
           <div className="flex flex-wrap gap-1.5">
@@ -268,7 +268,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* Settings */}
       {(spec.settings?.length ?? 0) > 0 && (
         <div>
-          <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Settings size={13} /> Settings
           </h3>
           <ul className="space-y-1">
@@ -284,12 +284,12 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* Permissions */}
       {(spec.permissions?.length ?? 0) > 0 && (
         <div>
-          <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Shield size={13} /> Permissions
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {spec.permissions?.map(p => (
-              <span key={p} className="text-[10px] px-2 py-0.5 rounded-full bg-review-subtle text-review font-medium">
+              <span key={p} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/30 text-mission-control-text-dim">
                 {p}
               </span>
             ))}
@@ -325,7 +325,7 @@ function WireframeTab({ wireframe, spec, onRegenerate }: { wireframe: string; sp
   return (
     <div className="p-5 space-y-4">
       <Flex align="center" justify="between">
-        <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+        <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
           {spec.name || 'Module'} Layout
         </h3>
         {onRegenerate && (
@@ -340,15 +340,8 @@ function WireframeTab({ wireframe, spec, onRegenerate }: { wireframe: string; sp
         )}
       </Flex>
       <div
-        className="wireframe-preview-container"
-        style={{
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          maxHeight: '480px',
-          background: 'var(--mission-control-bg)',
-          borderRadius: '8px',
-          padding: '16px',
-        }}
+        className="wireframe-preview-container bg-mission-control-bg rounded-xl p-4 overflow-y-auto overflow-x-hidden font-mono text-sm"
+        style={{ maxHeight: '480px' }}
       >
         <div
           className="wireframe-canvas"
@@ -379,7 +372,7 @@ function TasksTab({ liveTasks }: { liveTasks: LiveTask[] }) {
   return (
     <div className="p-5 space-y-3">
       <Flex align="center" justify="between">
-        <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+        <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
           Build Plan ({liveTasks.length} tasks)
         </h3>
       </Flex>

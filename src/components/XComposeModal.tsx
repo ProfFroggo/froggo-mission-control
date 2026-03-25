@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
-import { IconButton, Flex } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import XPublishComposer from './XPublishComposer';
 
 interface XComposeModalProps {
@@ -30,27 +30,27 @@ export default function XComposeModal({ open, onClose }: XComposeModalProps) {
     <Flex justify="end" className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Drawer */}
       <div className="relative w-full max-w-2xl h-full bg-mission-control-bg border-l border-mission-control-border shadow-2xl flex flex-col animate-slide-in-right">
         {/* Header */}
-        <Flex align="center" justify="between" className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
-          <h2 className="text-sm font-semibold text-mission-control-text">New Post</h2>
-          <IconButton
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <h2 className="text-base font-semibold text-mission-control-text">New Post</h2>
+          <button
+            type="button"
             onClick={onClose}
-            variant="ghost"
-            color="gray"
-            size="2"
+            aria-label="Close"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={18} />
-          </IconButton>
-        </Flex>
+          </button>
+        </div>
 
         {/* Composer */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           <XPublishComposer onPostSuccess={onClose} />
         </div>
       </div>

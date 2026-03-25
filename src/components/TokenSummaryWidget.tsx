@@ -151,9 +151,9 @@ export default function TokenSummaryWidget() {
 
       {/* Status indicator */}
       <div className={`mt-3 pt-3 border-t border-mission-control-border flex items-center gap-2 text-xs ${
-        status === 'good' ? 'text-success' :
-        status === 'warning' ? 'text-warning' :
-        'text-error'
+        status === 'good' ? 'text-[var(--color-success)]' :
+        status === 'warning' ? 'text-[var(--color-warning)]' :
+        'text-[var(--color-error)]'
       }`}>
         {status === 'good' ? (
           <>

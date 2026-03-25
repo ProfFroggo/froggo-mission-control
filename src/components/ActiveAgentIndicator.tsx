@@ -106,13 +106,13 @@ export default function ActiveAgentIndicator({
     <div className={`flex items-center gap-1.5 ${className}`}>
       <Flex align="center" justify="center" className="relative">
         {/* Pulsing outer ring */}
-        <div className={`absolute ${dotSize} bg-success-subtle rounded-full animate-ping`} />
+        <div className={`absolute ${dotSize} bg-[var(--color-success)]/10 rounded-full animate-ping`} />
         {/* Solid inner dot */}
-        <div className={`relative ${dotSize} bg-success rounded-full`} />
+        <div className={`relative ${dotSize} bg-[var(--color-success)] rounded-full`} />
       </Flex>
       
       {showLabel && agentName && (
-        <span className="text-xs text-success font-medium">
+        <span className="text-xs text-[var(--color-success)] font-medium">
           {agentName} working
         </span>
       )}

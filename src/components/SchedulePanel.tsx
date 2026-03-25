@@ -76,7 +76,7 @@ export default function SchedulePanel() {
   return (
     <Flex direction="column" height="100%">
       {/* Header + Tabs */}
-      <div className="border-b border-mission-control-border bg-mission-control-surface">
+      <div className="bg-mission-control-surface">
         <PanelHeader
           icon={Calendar}
           title="Schedule"
@@ -88,6 +88,7 @@ export default function SchedulePanel() {
           activeTab={activeTab}
           onTabChange={(id) => setActiveTab(id as ScheduleTab)}
           paddingX="px-4"
+          border={false}
         />
       </div>
 

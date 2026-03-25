@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { Send } from 'lucide-react';
-import { Flex, IconButton, TextArea } from '@radix-ui/themes';
+import { Flex, TextArea } from '@radix-ui/themes';
 import { useChatPaneStore } from '../../store/chatPaneStore';
 import AgentPicker from './AgentPicker';
 
@@ -54,17 +54,16 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           disabled={disabled}
           style={{ flex: 1, resize: 'none' }}
         />
-        <IconButton
+        <button
+          type="button"
           onClick={handleSendClick}
           disabled={disabled || !input.trim()}
-          size="3"
-          variant="ghost"
-         
           title="Send message"
           aria-label="Send message"
+          className="inline-flex items-center justify-center w-9 h-9 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Send size={20} />
-        </IconButton>
+        </button>
       </Flex>
     </div>
   );

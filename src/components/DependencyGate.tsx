@@ -66,7 +66,7 @@ export function DependencyGate({ children }: Props) {
               <Flex direction="column" gap="2">
                 {criticalMissing.map(r => (
                   <Flex key={r.path} direction="column" gap="1">
-                    <Text size="2" weight="medium" className="text-error">{r.label}</Text>
+                    <Text size="2" weight="medium" className="text-[var(--color-error)]">{r.label}</Text>
                     <Text size="1" className="text-mission-control-text-dim font-mono break-all">{r.path}</Text>
                   </Flex>
                 ))}
@@ -88,13 +88,13 @@ export function DependencyGate({ children }: Props) {
               >
                 Retry
               </Button>
-              <Button
+              <button
+                type="button"
                 onClick={() => setDismissed(true)}
-                size="2"
-                variant="ghost"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 Continue anyway
-              </Button>
+              </button>
             </Flex>
           </Flex>
         </Flex>

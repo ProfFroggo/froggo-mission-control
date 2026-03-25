@@ -19,7 +19,7 @@ import {
   Zap,
   HelpCircle,
 } from 'lucide-react';
-import { Button, IconButton, Spinner, TextField, Flex } from '@radix-ui/themes';
+import { Button, Spinner, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import MarkdownMessage from './MarkdownMessage';
 
@@ -102,13 +102,12 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="border border-mission-control-border rounded-lg bg-mission-control-surface overflow-hidden">
+    <div className="border border-mission-control-border rounded-xl bg-mission-control-surface overflow-hidden hover:border-mission-control-accent/20 transition-colors">
       {/* Card header */}
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="3">
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
-            style={{ background: 'var(--color-info-subtle)', color: 'var(--color-info)' }}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border border-mission-control-border flex-shrink-0 bg-[var(--color-info)]/10 text-[var(--color-info)]"
           >
             {data.handle[0].toUpperCase()}
           </div>
@@ -141,7 +140,7 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
             href={`https://x.com/${data.handle}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-info hover:underline flex items-center gap-1"
+            className="text-xs text-[var(--color-info)] hover:underline flex items-center gap-1"
           >
             <ExternalLink size={12} />
           </a>
@@ -153,15 +152,14 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
           >
             {expanded ? 'Less' : 'Tweets'}
           </Button>
-          <IconButton
+          <button
+            type="button"
             onClick={() => onRemove(data.handle)}
             aria-label={`Remove @${data.handle}`}
-            variant="ghost"
-            color="red"
-            size="1"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={16} />
-          </IconButton>
+          </button>
         </Flex>
       </Flex>
 
@@ -173,14 +171,14 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
         </div>
         <div className="px-3">
           <div className="text-base font-semibold text-mission-control-text flex items-center justify-center gap-1">
-            <Heart size={12} className="text-error" />
+            <Heart size={12} className="text-[var(--color-error)]" />
             {formatNumber(data.totalLikes)}
           </div>
           <div className="text-xs text-mission-control-text-dim mt-0.5">total likes</div>
         </div>
         <div className="px-3">
           <div className="text-base font-semibold text-mission-control-text flex items-center justify-center gap-1">
-            <Repeat2 size={12} className="text-info" />
+            <Repeat2 size={12} className="text-[var(--color-info)]" />
             {formatNumber(data.totalRetweets)}
           </div>
           <div className="text-xs text-mission-control-text-dim mt-0.5">total retweets</div>
@@ -383,22 +381,20 @@ export function XCompetitorTracker() {
           <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
             <Flex align="center" justify="between" className="mb-2">
               <Flex align="center" gap="2">
-                <FileText size={14} className="text-info" />
+                <FileText size={14} className="text-[var(--color-info)]" />
                 <span className="text-sm font-medium text-mission-control-text">{latestReport.title}</span>
               </Flex>
               <Flex align="center" gap="2">
                 <span className="text-[10px] text-mission-control-text-dim">
                   {new Date(latestReport.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
-                <Button
+                <button
                   onClick={() => setShowReport(!showReport)}
-                  variant="ghost"
-                  color="blue"
-                  size="1"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   {showReport ? 'Collapse' : 'View Report'}
-                </Button>
-                <IconButton
+                </button>
+                <button
                   onClick={() => {
                     const blob = new Blob([latestReport.content], { type: 'text/markdown' });
                     const url = URL.createObjectURL(blob);
@@ -408,13 +404,11 @@ export function XCompetitorTracker() {
                     a.click();
                     URL.revokeObjectURL(url);
                   }}
-                  variant="ghost"
-                  color="gray"
-                  size="1"
                   title="Download report"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <Download size={13} />
-                </IconButton>
+                </button>
               </Flex>
             </Flex>
             {!showReport && <p className="text-xs text-mission-control-text-dim">{latestReport.summary}</p>}
@@ -501,15 +495,13 @@ export function XCompetitorTracker() {
               <span className="text-sm font-medium text-mission-control-text">
                 Tracked accounts ({handles.length})
               </span>
-              <Button
+              <button
                 onClick={handleRefresh}
-                variant="ghost"
-                color="gray"
-                size="1"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <RefreshCw size={12} />
                 Load data
-              </Button>
+              </button>
             </Flex>
             <div className="flex flex-wrap gap-2">
               {handles.map(h => (
@@ -520,9 +512,13 @@ export function XCompetitorTracker() {
                   className="px-2.5 py-1 rounded-full text-xs border border-mission-control-border text-mission-control-text"
                 >
                   @{h}
-                  <IconButton onClick={() => handleRemove(h)} size="1" variant="ghost" aria-label={`Remove @${h}`}>
+                  <button
+                    onClick={() => handleRemove(h)}
+                    aria-label={`Remove @${h}`}
+                    className="inline-flex items-center justify-center w-4 h-4 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                  >
                     <X size={12} />
-                  </IconButton>
+                  </button>
                 </Flex>
               ))}
             </div>
@@ -547,9 +543,13 @@ export function XCompetitorTracker() {
           >
             <AlertCircle size={16} />
             {error}
-            <Button onClick={handleRefresh} size="1" variant="ghost" style={{ marginLeft: 'auto' }}>
+            <button
+              onClick={handleRefresh}
+              style={{ marginLeft: 'auto' }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            >
               Retry
-            </Button>
+            </button>
           </Flex>
         )}
 
@@ -563,16 +563,14 @@ export function XCompetitorTracker() {
                   Competitor Analysis ({competitors.length})
                 </span>
               </Flex>
-              <Button
+              <button
                 onClick={handleRefresh}
                 disabled={loading}
-                variant="ghost"
-                color="gray"
-                size="1"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={12} />
                 Refresh
-              </Button>
+              </button>
             </Flex>
             <div className="space-y-3">
               {competitors.map(c => (

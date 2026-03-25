@@ -9,7 +9,7 @@ import {
   ChevronDown, ShieldAlert, ShieldCheck, Check, Flag,
   Activity, Calendar, BookOpen
 } from 'lucide-react';
-import { Button, IconButton, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
+import { Button, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
 import { getProjectIcon } from './projectIcons';
 import { projectsApi, agentApi } from '../../lib/api';
 import type { Project, ProjectMember, ProjectFile, ProjectMilestone } from '../../types/projects';
@@ -38,9 +38,9 @@ const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
 ];
 
 const STATUS_CONFIG = {
-  active:    { label: 'Active',    color: 'text-success',  bg: 'bg-success-subtle' },
-  paused:    { label: 'Paused',    color: 'text-warning',  bg: 'bg-warning-subtle' },
-  completed: { label: 'Completed', color: 'text-info',     bg: 'bg-info-subtle' },
+  active:    { label: 'Active',    color: 'text-[var(--color-success)]',  bg: 'bg-[var(--color-success)]/10' },
+  paused:    { label: 'Paused',    color: 'text-[var(--color-warning)]',  bg: 'bg-[var(--color-warning)]/10' },
+  completed: { label: 'Completed', color: 'text-[var(--color-info)]',     bg: 'bg-[var(--color-info)]/10' },
   archived:  { label: 'Archived',  color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface' },
 } as const;
 
@@ -79,7 +79,7 @@ function ProgressRing({
         cy={size / 2}
         r={r}
         fill="none"
-        stroke="var(--color-border, var(--gray-4))"
+        stroke="var(--mission-control-border)"
         strokeWidth={stroke}
       />
       <circle
@@ -162,9 +162,9 @@ function OverviewTab({
   }, [project.id]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-5 space-y-5">
+    <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5">
       {/* Goal + Ring */}
-      <Flex align="start" gap="5" p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+      <Flex align="start" gap="5" p="4" className="bg-mission-control-surface border border-mission-control-border rounded-xl">
         <div className="flex flex-col items-center gap-1">
           <div className="relative">
             <ProgressRing percent={progress} size={72} stroke={6} color={project.color} />
@@ -180,7 +180,7 @@ function OverviewTab({
         <div className="flex-1 min-w-0">
           <Flex align="center" gap="2" className="mb-1">
             <Target size={13} className="text-mission-control-text-dim flex-shrink-0" />
-            <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Goal</span>
+            <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Goal</span>
           </Flex>
           <p className="text-sm text-mission-control-text leading-relaxed">
             {project.goal || <span className="text-mission-control-text-dim italic">No goal set — add one in settings.</span>}
@@ -189,7 +189,7 @@ function OverviewTab({
             onClick={onDispatch}
             size="1"
             variant="soft"
-            style={{ marginTop: 'var(--space-3)' }}
+            className="mt-3"
           >
             <Bot size={12} /> Dispatch Agent
           </Button>
@@ -199,7 +199,7 @@ function OverviewTab({
       {/* Team */}
       {members.length > 0 && (
         <div>
-          <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Team</h3>
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Team</h3>
           <div className="grid grid-cols-2 gap-2">
             {members.map(m => (
               <div key={m.agentId} className="flex items-center gap-2.5 p-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg">
@@ -220,7 +220,7 @@ function OverviewTab({
 
       {/* Recent Activity */}
       <div>
-        <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Recent Activity</h3>
+        <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Recent Activity</h3>
         {activityLoading ? (
           <Flex align="center" justify="center" className="py-6"><Spinner size={14} /></Flex>
         ) : activity.length === 0 ? (
@@ -313,14 +313,13 @@ function MilestonesSection({ project }: { project: Project }) {
   return (
     <div>
       <Flex align="center" justify="between" className="mb-2">
-        <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Milestones</h3>
-        <Button
+        <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Milestones</h3>
+        <button
           onClick={() => setAdding(v => !v)}
-          size="1"
-          variant="ghost"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <Plus size={11} /> Add
-        </Button>
+        </button>
       </Flex>
 
       {adding && (
@@ -345,17 +344,16 @@ function MilestonesSection({ project }: { project: Project }) {
               disabled={saving || !newTitle.trim()}
               size="1"
               variant="soft"
-              style={{ flex: 1 }}
+              className="flex-1"
             >
               {saving ? 'Saving...' : 'Add'}
             </Button>
-            <Button
+            <button
               onClick={() => { setAdding(false); setNewTitle(''); setNewDue(''); }}
-              size="1"
-              variant="ghost"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Cancel
-            </Button>
+            </button>
           </Flex>
         </div>
       )}
@@ -367,33 +365,38 @@ function MilestonesSection({ project }: { project: Project }) {
       ) : (
         <div className="relative pl-3 space-y-0">
           {/* Vertical timeline line */}
-          <div className="absolute left-0 top-2 bottom-2 w-px bg-mission-control-border" />
+          <div className="absolute left-0 top-2 bottom-2 w-px bg-mission-control-border/50" />
           {milestones.map((ms, i) => {
             const overdue = ms.dueDate && !ms.completed && ms.dueDate < Date.now();
             return (
-              <div key={ms.id} className="relative flex items-start gap-2.5 py-2">
+              <div key={ms.id} className="relative flex items-start gap-3 pb-4">
                 {/* Node */}
                 <button
                   type="button"
                   onClick={() => handleToggle(ms)}
-                  className="relative z-10 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all"
+                  className="relative z-10 flex-shrink-0 w-3 h-3 rounded-full border-2 flex items-center justify-center transition-colors -ml-1.5 mt-1"
                   style={{
-                    borderColor: ms.completed ? project.color : 'var(--color-border, var(--gray-4))',
-                    backgroundColor: ms.completed ? project.color : 'var(--color-bg, var(--color-background))',
-                    marginLeft: -8,
+                    borderColor: ms.completed
+                      ? 'var(--color-success)'
+                      : overdue
+                        ? 'var(--color-warning)'
+                        : 'var(--mission-control-border)',
+                    backgroundColor: ms.completed
+                      ? 'var(--color-success)'
+                      : 'var(--mission-control-bg)',
                   }}
                   title={ms.completed ? 'Mark incomplete' : 'Mark complete'}
                 >
-                  {ms.completed && <Check size={8} className="text-white" />}
+                  {ms.completed && <Check size={6} className="text-white" />}
                 </button>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs leading-snug ${ms.completed ? 'line-through text-mission-control-text-dim' : 'text-mission-control-text'}`}>
+                  <p className={`text-sm font-medium leading-snug ${ms.completed ? 'line-through text-mission-control-text-dim' : 'text-mission-control-text'}`}>
                     {ms.title}
                   </p>
                   {ms.dueDate && (
-                    <p className={`text-xs mt-0.5 flex items-center gap-1 ${overdue ? 'text-error' : 'text-mission-control-text-dim'}`}>
-                      <Calendar size={9} />
-                      {new Date(ms.dueDate).toLocaleDateString()}
+                    <p className={`text-[10px] tabular-nums mt-0.5 flex items-center gap-1 ${overdue ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim'}`}>
+                      <Calendar size={8} />
+                      {new Date(ms.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       {overdue && ' — overdue'}
                     </p>
                   )}
@@ -403,16 +406,13 @@ function MilestonesSection({ project }: { project: Project }) {
                     </p>
                   )}
                 </div>
-                <IconButton
+                <button
                   onClick={() => handleDelete(ms)}
-                  size="1"
-                  variant="ghost"
-                 
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors opacity-50"
                   title="Delete milestone"
-                  style={{ opacity: 0.5 }}
                 >
                   <X size={10} />
-                </IconButton>
+                </button>
               </div>
             );
           })}
@@ -475,7 +475,7 @@ function ContextEditor({ project }: { project: Project }) {
   return (
     <div className="space-y-1.5">
       <Flex align="center" justify="between">
-        <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">CONTEXT.md</h3>
+        <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">CONTEXT.md</h3>
         <span className="text-xs text-mission-control-text-dim">
           {saving ? 'Saving...' : lastSaved ? `Saved ${formatTimeAgo(lastSaved)}` : ''}
         </span>
@@ -493,7 +493,7 @@ function ContextEditor({ project }: { project: Project }) {
           rows={10}
           placeholder="# Project Context&#10;&#10;Describe the project context, constraints, and background here..."
           size="1"
-          style={{ fontFamily: 'monospace', lineHeight: '1.6', resize: 'vertical' }}
+          className="font-mono leading-relaxed resize-y"
         />
       )}
     </div>
@@ -504,7 +504,7 @@ function ContextEditor({ project }: { project: Project }) {
 
 function OverviewSidebar({ project }: { project: Project }) {
   return (
-    <div className="w-72 flex-shrink-0 border-l border-mission-control-border overflow-y-auto p-5 space-y-6">
+    <div className="w-72 flex-shrink-0 min-h-0 border-l border-mission-control-border overflow-y-auto p-5 space-y-6">
       <MilestonesSection project={project} />
       <ContextEditor project={project} />
     </div>
@@ -640,7 +640,7 @@ function AutomationsTab({ project }: { project: Project }) {
       {showForm && (
         <div className="max-w-2xl mx-auto w-full px-4 py-3 bg-mission-control-surface/50 border-b border-mission-control-border space-y-2">
           <Select.Root value={newType} onValueChange={setNewType} size="1">
-            <Select.Trigger style={{ width: '100%' }} />
+            <Select.Trigger className="w-full" />
             <Select.Content>
               <Select.Item value="task">Task reminder</Select.Item>
               <Select.Item value="report">Report generation</Select.Item>
@@ -667,17 +667,16 @@ function AutomationsTab({ project }: { project: Project }) {
               disabled={saving || !newContent.trim()}
               size="1"
               variant="soft"
-              style={{ flex: 1 }}
+              className="flex-1"
             >
               {saving ? 'Saving...' : 'Save'}
             </Button>
-            <Button
+            <button
               onClick={() => setShowForm(false)}
-              size="1"
-              variant="ghost"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Cancel
-            </Button>
+            </button>
           </Flex>
         </div>
       )}
@@ -702,9 +701,9 @@ function AutomationsTab({ project }: { project: Project }) {
                   </p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  item.status === 'done' ? 'bg-success-subtle text-success' :
-                  item.status === 'failed' ? 'bg-error-subtle text-error' :
-                  'bg-info-subtle text-info'
+                  item.status === 'done' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
+                  item.status === 'failed' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+                  'bg-[var(--color-info)]/10 text-[var(--color-info)]'
                 }`}>
                   {item.status}
                 </span>
@@ -793,9 +792,9 @@ function ApprovalsTab({ project }: { project: Project }) {
         const hasNote = (feedback[a.id] || '').trim().length > 0;
         const taskTitle = tasks.find((t: { id: string; title?: string } & { id: string }) => t.id === (a.metadata?.taskId as string | undefined))?.['title'] as string | undefined;
         return (
-          <div key={a.id} className="px-5 py-4 space-y-3 border-l-2 border-warning/40">
+          <div key={a.id} className="px-5 py-4 space-y-3 border-l-2 border-[var(--color-warning)]/40">
             <Flex align="start" gap="2">
-              <Zap size={13} className="text-warning mt-0.5 shrink-0" />
+              <Zap size={13} className="text-[var(--color-warning)] mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium">{a.title}</div>
                 <Flex align="center" gap="2" className="mt-0.5 text-xs text-mission-control-text-dim">
@@ -818,7 +817,7 @@ function ApprovalsTab({ project }: { project: Project }) {
               placeholder="Optional feedback or notes..."
               rows={2}
               size="2"
-              style={{ resize: 'none' }}
+              className="resize-none"
             />
             <Flex gap="2">
               <Button
@@ -827,7 +826,7 @@ function ApprovalsTab({ project }: { project: Project }) {
                 size="2"
                 variant="soft"
                 color="green"
-                style={{ flex: 1 }}
+                className="flex-1"
               >
                 {isBusy ? <Spinner size={12} /> : <Check size={12} />}
                 {hasNote ? 'Approve with Feedback' : 'Approve & Continue'}
@@ -838,7 +837,7 @@ function ApprovalsTab({ project }: { project: Project }) {
                 size="2"
                 variant="soft"
                 color="red"
-                style={{ flex: 1 }}
+                className="flex-1"
               >
                 {isBusy ? <Spinner size={12} /> : <X size={12} />}
                 {hasNote ? 'Reject with Reason' : 'Reject'}
@@ -857,9 +856,8 @@ const StableIframe = memo(function StableIframe({ src, title }: { src: string; t
   return (
     <iframe
       src={src}
-      className="w-full h-full border border-mission-control-border rounded-lg bg-mission-control-surface"
+      className="w-full h-full border border-mission-control-border rounded-lg bg-mission-control-surface min-h-[500px]"
       title={title}
-      style={{ minHeight: 500 }}
     />
   );
 }, (prev, next) => prev.src === next.src);
@@ -952,7 +950,7 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Left: File list */}
-      <div className={`${selectedFile ? 'w-72' : 'flex-1'} border-r border-mission-control-border overflow-y-auto shrink-0 transition-all`}>
+      <div className={`${selectedFile ? 'w-72' : 'flex-1'} border-r border-mission-control-border overflow-y-auto shrink-0 transition-colors`}>
         <div className="divide-y divide-mission-control-border/50">
           {files.map(file => {
             const Icon = fileIcon(file.type);
@@ -999,13 +997,12 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
               <p className="text-sm font-medium text-mission-control-text truncate">{selectedFile.name}</p>
               <p className="text-xs text-mission-control-text-dim">{formatBytes(selectedFile.size)} · {selectedFile.type}</p>
             </div>
-            <IconButton
+            <button
               onClick={() => setSelectedFile(null)}
-              size="1"
-              variant="ghost"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <X size={14} />
-            </IconButton>
+            </button>
           </Flex>
 
           {/* Preview */}
@@ -1144,16 +1141,14 @@ function FilesTab({ project }: { project: Project }) {
         </button>
         {activeSection === 'files' && (
           <div className="ml-auto flex items-center gap-2">
-            <IconButton
+            <button
               onClick={load}
               disabled={loading}
-              size="1"
-              variant="ghost"
-             
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               title="Refresh files"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            </IconButton>
+            </button>
             <label className="flex items-center gap-1 px-2.5 py-1 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors cursor-pointer">
               <Upload size={12} /> {uploading ? 'Uploading...' : 'Upload'}
               <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
@@ -1176,7 +1171,7 @@ function FilesTab({ project }: { project: Project }) {
               onChange={e => setMemoryQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleMemorySearch()}
               size="2"
-              style={{ flex: 1 }}
+              className="flex-1"
             />
             <Button
               onClick={handleMemorySearch}
@@ -1190,7 +1185,7 @@ function FilesTab({ project }: { project: Project }) {
           <div className="flex-1 overflow-y-auto">
             {memoryUnavailable ? (
               <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-                <p className="text-sm text-warning font-medium mb-1">Search unavailable</p>
+                <p className="text-sm text-[var(--color-warning)] font-medium mb-1">Search unavailable</p>
                 <p className="text-xs text-mission-control-text-dim">
                   Install qmd for full-text search, or ensure ripgrep is available.
                 </p>
@@ -1260,23 +1255,18 @@ function ProjectSettings({
   if (!editing) {
     return (
       <div className="absolute right-0 top-full mt-1 w-48 bg-mission-control-bg border border-mission-control-border rounded-lg shadow-xl z-20 py-1 overflow-hidden">
-        <Button
+        <button
           onClick={() => setEditing(true)}
-          size="2"
-          variant="ghost"
-          style={{ width: '100%', justifyContent: 'flex-start' }}
+          className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <Edit3 size={14} /> Edit details
-        </Button>
-        <Button
+        </button>
+        <button
           onClick={handleArchive}
-          size="2"
-          variant="ghost"
-          color="red"
-          style={{ width: '100%', justifyContent: 'flex-start' }}
+          className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-[var(--color-error)] hover:text-[var(--color-error)]/80 hover:bg-mission-control-surface transition-colors"
         >
           <Trash2 size={14} /> Archive project
-        </Button>
+        </button>
       </div>
     );
   }
@@ -1298,7 +1288,7 @@ function ProjectSettings({
           onChange={e => setGoal(e.target.value)}
           rows={3}
           size="2"
-          style={{ resize: 'none' }}
+          className="resize-none"
         />
       </div>
       <Flex gap="2">
@@ -1307,17 +1297,16 @@ function ProjectSettings({
           disabled={saving}
           size="1"
           variant="soft"
-          style={{ flex: 1 }}
+          className="flex-1"
         >
           {saving ? 'Saving...' : 'Save'}
         </Button>
-        <Button
+        <button
           onClick={() => setEditing(false)}
-          size="1"
-          variant="ghost"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           Cancel
-        </Button>
+        </button>
       </Flex>
     </div>
   );
@@ -1448,20 +1437,18 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
   const availableAgents = agents.filter(a => !memberAgentIds.has(a.id) && a.status !== 'archived');
 
   return (
-    <Flex direction="column" height="100%" className="bg-mission-control-bg0">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Workspace Header */}
       <div className="bg-mission-control-surface border-b border-mission-control-border">
         {/* Breadcrumb + members + actions */}
         <Flex align="center" justify="between" px="4" py="2" className="">
           <Flex align="center" gap="2" className="min-w-0">
-            <Button
+            <button
               onClick={onBack}
-              size="1"
-              variant="ghost"
-              style={{ flexShrink: 0 }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0"
             >
               <ArrowLeft size={14} /> Projects
-            </Button>
+            </button>
             <span className="text-mission-control-text-dim flex-shrink-0">/</span>
             <span className="text-sm font-medium text-mission-control-text flex items-center gap-1.5 truncate">
               {(() => { const BcIcon = getProjectIcon(project.emoji); return <BcIcon size={14} style={{ color: project.color }} />; })()}
@@ -1481,14 +1468,13 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                 />
               ))}
             </Flex>
-            <Button
+            <button
               onClick={() => setShowMemberPanel(v => !v)}
-              size="1"
-              variant="ghost"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <Users size={12} /> {members.length}
               <ChevronDown size={10} />
-            </Button>
+            </button>
             <div className="w-px h-4 bg-mission-control-border" />
             <Button
               onClick={() => setShowDispatch(true)}
@@ -1498,14 +1484,12 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
               <Bot size={13} /> Dispatch Agent
             </Button>
             <div className="relative">
-              <IconButton
+              <button
                 onClick={() => setShowSettings(v => !v)}
-                size="2"
-                variant="ghost"
-               
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <Settings size={15} />
-              </IconButton>
+              </button>
               {showSettings && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowSettings(false)} />
@@ -1528,14 +1512,12 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                 <div key={m.agentId} className="flex items-center gap-1.5 bg-mission-control-surface border border-mission-control-border rounded-full px-2 py-1">
                   <AgentAvatar agentId={m.agentId} size="xs" />
                   <span className="text-xs text-mission-control-text">{(m as any).agentName || m.agentId}</span>
-                  <IconButton
+                  <button
                     onClick={() => handleRemoveMember(m.agentId)}
-                    size="1"
-                    variant="ghost"
-                    radius="full"
+                    className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                   >
                     <X size={10} />
-                  </IconButton>
+                  </button>
                 </div>
               ))}
               {availableAgents.length > 0 && (
@@ -1560,7 +1542,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
         )}
 
         {/* Tab navigation */}
-        <div className="flex border-t border-mission-control-border overflow-x-auto">
+        <div className="flex border-t border-mission-control-border px-4 flex-shrink-0 overflow-x-auto">
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (
@@ -1568,7 +1550,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                 type="button"
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
                   activeTab === tab.id
                     ? 'border-mission-control-accent text-mission-control-accent'
                     : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'

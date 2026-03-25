@@ -15,7 +15,7 @@ import {
   Calendar,
   RefreshCw,
 } from 'lucide-react';
-import { Button, IconButton, Badge, TextArea, Spinner, Flex } from '@radix-ui/themes';
+import { Button, Badge, TextArea, Spinner, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -146,7 +146,7 @@ function PostCard({ post, onClick, onDragStart }: PostCardProps) {
       draggable
       onDragStart={onDragStart}
       onClick={onClick}
-      className="rounded-lg p-2 cursor-pointer border transition-all hover:opacity-90 active:scale-95"
+      className="rounded-lg p-1.5 cursor-pointer border transition-opacity hover:opacity-90 active:scale-95"
       style={{
         background: colors.bg,
         borderColor: colors.border,
@@ -154,16 +154,14 @@ function PostCard({ post, onClick, onDragStart }: PostCardProps) {
         borderStyle: 'solid',
       }}
     >
-      <p
-        className="text-xs leading-relaxed mb-1.5 line-clamp-3 text-mission-control-text"
-      >
+      <p className="text-[10px] font-medium truncate leading-relaxed mb-1 text-mission-control-text">
         {preview}
       </p>
       <Flex align="center" justify="between" gap="1">
-        <span className="text-xs" style={{ color: colors.text }}>
+        <span className="text-[10px] font-medium" style={{ color: colors.text }}>
           {statusLabel(post.status)}
         </span>
-        <span className="text-xs text-mission-control-text-dim">
+        <span className="text-[10px] text-mission-control-text-dim tabular-nums">
           {formatTime(post.scheduledAt)}
         </span>
       </Flex>
@@ -191,42 +189,36 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
     >
       <div className="flex-1" />
       <div
-        className="w-96 h-full border-l overflow-y-auto shadow-xl flex flex-col"
-        style={{
-          background: 'var(--mission-control-bg)',
-          borderColor: 'var(--mission-control-border)',
-        }}
+        className="w-96 h-full border-l border-mission-control-border overflow-y-auto shadow-xl flex flex-col bg-mission-control-bg"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <Flex
           align="center"
           justify="between"
-          className="p-4 border-b"
-          style={{ borderColor: 'var(--mission-control-border)' }}
+          className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0"
         >
           <Flex align="center" gap="2">
-            <FileText size={16} className="text-info" />
+            <FileText size={16} className="text-[var(--color-info)]" />
             <span className="text-sm font-semibold text-mission-control-text">
               Post Detail
             </span>
           </Flex>
-          <IconButton
+          <button
+            type="button"
             onClick={onClose}
-            variant="ghost"
-            color="gray"
-            size="1"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={16} />
-          </IconButton>
+          </button>
         </Flex>
 
         <div className="flex-1 p-4 space-y-4">
           {/* Status badge */}
           <Flex align="center" gap="2">
             <span
-              className="px-3 py-1 rounded-full text-xs font-medium"
-              style={{ background: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+              style={{ background: colors.bg, color: colors.text, borderColor: colors.border }}
             >
               {statusLabel(post.status)}
             </span>
@@ -243,26 +235,14 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
 
           {/* Content */}
           <div>
-            <div className="text-xs font-medium mb-1.5 text-mission-control-text-dim">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">
               Content
             </div>
-            <p
-              className="text-sm leading-relaxed p-3 rounded-lg border"
-              style={{
-                color: 'var(--mission-control-text)',
-                background: 'var(--mission-control-surface)',
-                borderColor: 'var(--mission-control-border)',
-              }}
-            >
+            <p className="text-sm leading-relaxed p-3 rounded-lg border border-mission-control-border bg-mission-control-surface text-mission-control-text">
               {post.content}
             </p>
             <div
-              className="text-xs mt-1 text-right"
-              style={{
-                color: post.content.length > X_CHAR_LIMIT
-                  ? 'var(--color-error)'
-                  : 'var(--mission-control-text-dim)',
-              }}
+              className={`text-xs mt-1 text-right ${post.content.length > X_CHAR_LIMIT ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}
             >
               {post.content.length} / {X_CHAR_LIMIT}
             </div>
@@ -278,7 +258,7 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
           {/* Status actions */}
           {post.status !== 'posted' && (
             <div>
-              <div className="text-xs font-medium mb-2 text-mission-control-text-dim">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">
                 Change Status
               </div>
               <div className="flex flex-wrap gap-2">
@@ -309,10 +289,7 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
         </div>
 
         {/* Footer */}
-        <div
-          className="p-4 border-t"
-          style={{ borderColor: 'var(--mission-control-border)' }}
-        >
+        <div className="p-4 border-t border-mission-control-border">
           <Button
             onClick={() => onDelete(post.id)}
             variant="soft"
@@ -355,30 +332,29 @@ function NewPostModal({ defaultDate, onSubmit, onClose }: NewPostModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-lg border shadow-xl"
-        style={{
-          background: 'var(--mission-control-bg)',
-          borderColor: 'var(--mission-control-border)',
-        }}
+        className="w-full max-w-md rounded-2xl border border-mission-control-border bg-mission-control-bg shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <Flex
           align="center"
           justify="between"
-          className="p-4 border-b"
-          style={{ borderColor: 'var(--mission-control-border)' }}
+          className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0"
         >
           <Flex align="center" gap="2">
-            <Plus size={16} className="text-info" />
+            <Plus size={16} className="text-[var(--color-info)]" />
             <span className="text-sm font-semibold text-mission-control-text">
               Schedule New Post
             </span>
           </Flex>
-          <IconButton onClick={onClose} variant="ghost" color="gray" size="1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+          >
             <X size={16} />
-          </IconButton>
+          </button>
         </Flex>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
@@ -396,8 +372,7 @@ function NewPostModal({ defaultDate, onSubmit, onClose }: NewPostModalProps) {
               color={overLimit ? 'red' : undefined}
             />
             <div
-              className="text-xs mt-1 text-right"
-              style={{ color: overLimit ? 'var(--color-error)' : 'var(--mission-control-text-dim)' }}
+              className={`text-xs mt-1 text-right ${overLimit ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}
             >
               {content.length} / {X_CHAR_LIMIT}
             </div>
@@ -581,17 +556,16 @@ export function XContentCalendar() {
     <Flex
       direction="column"
       height="100%"
-      style={{ background: 'var(--mission-control-bg)' }}
+      className="bg-mission-control-bg"
     >
       {/* Header */}
       <Flex
         align="center"
         justify="between"
-        className="px-4 py-3 border-b"
-        style={{ borderColor: 'var(--mission-control-border)' }}
+        className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0"
       >
         <Flex align="center" gap="3">
-          <Calendar size={18} className="text-info" />
+          <Calendar size={18} className="text-[var(--color-info)]" />
           <span className="text-sm font-semibold text-mission-control-text">
             Content Calendar
           </span>
@@ -601,23 +575,21 @@ export function XContentCalendar() {
         </Flex>
         <Flex align="center" gap="2">
           {loading && <Spinner size="1" />}
-          <IconButton
+          <button
+            type="button"
             onClick={loadPosts}
-            variant="ghost"
-            color="gray"
-            size="1"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             title="Refresh"
           >
             <RefreshCw size={14} />
-          </IconButton>
-          <IconButton
+          </button>
+          <button
+            type="button"
             onClick={handlePrevWeek}
-            variant="ghost"
-            color="gray"
-            size="1"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <ChevronLeft size={16} />
-          </IconButton>
+          </button>
           <Button
             onClick={() => setCurrentWeek(getISOWeek(new Date()))}
             variant="soft"
@@ -626,14 +598,13 @@ export function XContentCalendar() {
           >
             Today
           </Button>
-          <IconButton
+          <button
+            type="button"
             onClick={handleNextWeek}
-            variant="ghost"
-            color="gray"
-            size="1"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <ChevronRight size={16} />
-          </IconButton>
+          </button>
         </Flex>
       </Flex>
 
@@ -641,11 +612,7 @@ export function XContentCalendar() {
       <Flex
         align="center"
         gap="4"
-        className="px-4 py-2 border-b text-xs"
-        style={{
-          borderColor: 'var(--mission-control-border)',
-          color: 'var(--mission-control-text-dim)',
-        }}
+        className="px-4 py-2 border-b border-mission-control-border text-[10px] text-mission-control-text-dim"
       >
         {(['draft', 'scheduled', 'posted', 'failed'] as PostStatus[]).map((s) => {
           const c = statusColor(s);
@@ -663,7 +630,7 @@ export function XContentCalendar() {
 
       {/* Calendar grid */}
       <div className="flex-1 overflow-auto">
-        <div className="grid grid-cols-7 h-full min-w-[700px]" style={{ minHeight: '400px' }}>
+        <div className="grid grid-cols-7 h-full min-w-[700px] min-h-[400px]">
           {weekDays.map((day, idx) => {
             const dayPosts = postsForDay(day);
             const today = isToday(day);
@@ -672,35 +639,18 @@ export function XContentCalendar() {
             return (
               <div
                 key={key}
-                className="flex flex-col border-r last:border-r-0"
-                style={{ borderColor: 'var(--mission-control-border)' }}
+                className="flex flex-col border-r border-mission-control-border last:border-r-0"
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => handleDrop(day)}
               >
                 {/* Day header */}
                 <div
-                  className="p-2 border-b text-center"
-                  style={{
-                    borderColor: 'var(--mission-control-border)',
-                    background: today
-                      ? 'var(--color-info-subtle)'
-                      : 'var(--mission-control-surface)',
-                  }}
+                  className={`p-2 border-b border-mission-control-border text-center ${today ? 'bg-[var(--color-info)]/10' : 'bg-mission-control-surface'}`}
                 >
-                  <div
-                    className="text-xs font-medium"
-                    style={{
-                      color: today ? 'var(--color-info)' : 'var(--mission-control-text-dim)',
-                    }}
-                  >
+                  <div className={`text-[10px] font-bold uppercase tracking-wider ${today ? 'text-[var(--color-info)]' : 'text-mission-control-text-dim'}`}>
                     {DAY_LABELS[idx]}
                   </div>
-                  <div
-                    className="text-sm font-semibold"
-                    style={{
-                      color: today ? 'var(--color-info)' : 'var(--mission-control-text)',
-                    }}
-                  >
+                  <div className={`text-sm font-semibold ${today ? 'text-[var(--color-info)]' : 'text-mission-control-text'}`}>
                     {day.getDate()}
                   </div>
                 </div>
@@ -726,17 +676,15 @@ export function XContentCalendar() {
                 </div>
 
                 {/* Add button */}
-                <div className="p-1.5 border-t" style={{ borderColor: 'var(--mission-control-border)' }}>
-                  <Button
+                <div className="p-1.5 border-t border-mission-control-border">
+                  <button
+                    type="button"
                     onClick={() => setNewPostDay(key)}
-                    variant="ghost"
-                    color="gray"
-                    size="1"
-                    className="w-full"
+                    className="inline-flex items-center justify-center gap-1 w-full px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     <Plus size={12} />
                     Schedule
-                  </Button>
+                  </button>
                 </div>
               </div>
             );
@@ -745,13 +693,7 @@ export function XContentCalendar() {
       </div>
 
       {/* Post count summary */}
-      <div
-        className="px-4 py-2 border-t text-xs"
-        style={{
-          borderColor: 'var(--mission-control-border)',
-          color: 'var(--mission-control-text-dim)',
-        }}
-      >
+      <div className="px-4 py-2 border-t border-mission-control-border text-[10px] text-mission-control-text-dim">
         {posts.length} post{posts.length !== 1 ? 's' : ''} this week
         {' · '}
         {posts.filter((p) => p.status === 'scheduled').length} scheduled

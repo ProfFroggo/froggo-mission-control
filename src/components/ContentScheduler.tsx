@@ -10,7 +10,7 @@ const XIcon = ({ size = 16 }: any) => (
   </svg>
 );
 
-import { Button, IconButton, TextArea, TextField, Heading, Flex } from '@radix-ui/themes';
+import { Button, TextArea, TextField, Heading, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { scheduleApi } from '../lib/api';
 
@@ -43,13 +43,13 @@ interface ScheduledItem {
 
 // ── Color coding per item type ───────────────────────────────────────────────
 const typeStyles: Record<string, { border: string; badge: string; label: string }> = {
-  post:    { border: 'border-info',    badge: 'bg-info-subtle text-info',       label: 'Post' },
-  tweet:   { border: 'border-info',    badge: 'bg-info-subtle text-info',       label: 'Post' },
-  task:    { border: 'border-warning', badge: 'bg-warning-subtle text-warning', label: 'Task' },
-  meeting: { border: 'border-review',  badge: 'bg-review-subtle text-review',   label: 'Meeting' },
-  event:   { border: 'border-review',  badge: 'bg-review-subtle text-review',   label: 'Event' },
-  idea:    { border: 'border-success', badge: 'bg-success-subtle text-success', label: 'Idea' },
-  email:   { border: 'border-success', badge: 'bg-success-subtle text-success', label: 'Email' },
+  post:    { border: 'border-[var(--color-info)]',    badge: 'bg-[var(--color-info)]/10 text-[var(--color-info)]',       label: 'Post' },
+  tweet:   { border: 'border-[var(--color-info)]',    badge: 'bg-[var(--color-info)]/10 text-[var(--color-info)]',       label: 'Post' },
+  task:    { border: 'border-[var(--color-warning)]', badge: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]', label: 'Task' },
+  meeting: { border: 'border-[var(--color-review)]',  badge: 'bg-[var(--color-review)]-subtle text-[var(--color-review)]',   label: 'Meeting' },
+  event:   { border: 'border-[var(--color-review)]',  badge: 'bg-[var(--color-review)]-subtle text-[var(--color-review)]',   label: 'Event' },
+  idea:    { border: 'border-[var(--color-success)]', badge: 'bg-[var(--color-success)]/10 text-[var(--color-success)]', label: 'Idea' },
+  email:   { border: 'border-[var(--color-success)]', badge: 'bg-[var(--color-success)]/10 text-[var(--color-success)]', label: 'Email' },
   message: { border: 'border-muted',   badge: 'bg-muted-subtle text-muted',     label: 'Message' },
 };
 
@@ -72,8 +72,8 @@ function getTypeIcon(type: string): AnyIcon {
 const typeIconColor: Record<string, string> = {
   tweet:   'text-mission-control-text bg-mission-control-text/10',
   post:    'text-mission-control-text bg-mission-control-text/10',
-  email:   'text-success bg-success-subtle',
-  message: 'text-review bg-review-subtle',
+  email:   'text-[var(--color-success)] bg-[var(--color-success)]/10',
+  message: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle',
 };
 function getTypeIconColor(type: string) {
   return typeIconColor[type] ?? 'text-mission-control-text-dim bg-mission-control-border/30';
@@ -392,7 +392,7 @@ export default function ContentScheduler() {
     return (
       <div
         ref={rescheduleRef}
-        className="absolute right-0 top-full mt-1 z-50 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-card-lg p-3 min-w-[260px]"
+        className="absolute right-0 top-full mt-1 z-50 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-card-lg p-3 min-w-[260px]"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="text-xs font-medium text-mission-control-text-dim mb-2">Reschedule to</p>
@@ -435,13 +435,13 @@ export default function ContentScheduler() {
     return (
       <div
         key={item.id}
-        className={`relative p-4 bg-mission-control-surface border border-mission-control-border border-l-4 ${style.border} rounded-lg ${
+        className={`relative p-4 bg-mission-control-surface border border-mission-control-border border-l-4 ${style.border} rounded-xl ${
           isPending ? 'hover:border-mission-control-accent/30' : 'opacity-70'
         } transition-colors`}
       >
         <Flex align="start" gap="3">
           {/* Type icon badge */}
-          <div className={`p-2 rounded-lg shrink-0 ${iconColor}`}>
+          <div className={`p-2 rounded-xl shrink-0 ${iconColor}`}>
             <Icon size={14} />
           </div>
 
@@ -452,9 +452,9 @@ export default function ContentScheduler() {
                 {style.label}
               </span>
               <span className={`text-xs px-2 py-0.5 rounded ${
-                item.status === 'pending' ? 'bg-warning-subtle text-warning' :
-                item.status === 'sent'    ? 'bg-success-subtle text-success' :
-                item.status === 'failed'  ? 'bg-error-subtle text-error'     :
+                item.status === 'pending' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+                item.status === 'sent'    ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
+                item.status === 'failed'  ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]'     :
                 'bg-muted-subtle text-muted'
               }`}>
                 {item.status}
@@ -485,49 +485,42 @@ export default function ContentScheduler() {
           {/* Actions */}
           {isPending && (
             <div className="flex gap-1 relative shrink-0">
-              <IconButton
+              <button
                 onClick={() => handleSendNow(item.id)}
-                variant="ghost"
-                color="green"
-                size="2"
                 title="Send now"
                 aria-label="Send now"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Play size={14} />
-              </IconButton>
-              <IconButton
+              </button>
+              <button
                 onClick={() => handleEdit(item)}
-                variant="ghost"
-                color="gray"
-                size="2"
                 title="Edit"
                 aria-label="Edit"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Edit2 size={14} />
-              </IconButton>
+              </button>
               <div className="relative">
-                <IconButton
+                <button
                   onClick={() => openReschedule(item)}
-                  variant="ghost"
-                  color="blue"
-                  size="2"
                   title="Reschedule"
                   aria-label="Reschedule"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <CalendarClock size={14} />
-                </IconButton>
+                </button>
                 {renderReschedulePopover(item)}
               </div>
-              <IconButton
+              <button
+                type="button"
                 onClick={() => handleCancelItem(item.id)}
-                variant="ghost"
-                color="red"
-                size="2"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                 title="Cancel"
                 aria-label="Cancel"
               >
                 <Trash2 size={14} />
-              </IconButton>
+              </button>
             </div>
           )}
         </Flex>
@@ -538,13 +531,17 @@ export default function ContentScheduler() {
   // ── Render: week grid chip ────────────────────────────────────────────────
   const renderWeekChip = (item: ScheduledItem) => {
     const style = getTypeStyle(item.type);
+    const time = new Date(item.scheduledFor);
     return (
       <div
         key={item.id}
         title={item.content}
-        className={`text-xs px-1.5 py-0.5 rounded border-l-2 ${style.border} bg-mission-control-surface truncate cursor-default`}
+        className={`flex-1 rounded-r text-[11px] pl-2 pr-1 py-0.5 border-l-2 ${style.border} bg-mission-control-accent/10 text-mission-control-accent truncate cursor-default`}
       >
-        <span className="truncate block leading-4">{item.content}</span>
+        <span className="text-mission-control-text-dim/70 tabular-nums mr-1 text-[10px]">
+          {time.getHours()}:{time.getMinutes().toString().padStart(2, '0')}
+        </span>
+        <span className="truncate">{item.content}</span>
       </div>
     );
   };
@@ -554,17 +551,15 @@ export default function ContentScheduler() {
     <div className="flex flex-col h-full">
       {/* Week nav */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface shrink-0">
-        <IconButton
+        <button
           onClick={goToPrevWeek}
-          variant="ghost"
-          color="gray"
-          size="2"
           aria-label="Previous week"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
-        </IconButton>
+        </button>
         <Flex align="center" gap="3">
           <span className="text-sm font-medium tabular-nums">{weekRangeLabel}</span>
           {!isCurrentWeek && (
@@ -578,17 +573,15 @@ export default function ContentScheduler() {
             </Button>
           )}
         </Flex>
-        <IconButton
+        <button
           onClick={goToNextWeek}
-          variant="ghost"
-          color="gray"
-          size="2"
           aria-label="Next week"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 18 15 12 9 6" />
           </svg>
-        </IconButton>
+        </button>
       </div>
 
       {/* Grid */}
@@ -603,24 +596,21 @@ export default function ContentScheduler() {
                 <div
                   key={i}
                   className={`py-2 px-1 text-center border-l border-mission-control-border ${
-                    isToday ? 'bg-info/5 border-t-2 border-t-info' : ''
+                    isToday ? 'bg-mission-control-accent/5' : ''
                   }`}
                 >
-                  <div className={`text-xs font-medium ${isToday ? 'text-info' : 'text-mission-control-text-dim'}`}>
+                  <div className={`text-[10px] font-bold uppercase tracking-wider ${isToday ? 'text-mission-control-accent' : 'text-mission-control-text-dim'}`}>
                     {DAY_NAMES[i]}
                   </div>
                   <div className="mt-0.5">
                     {isToday ? (
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-info text-info text-xs font-semibold">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-mission-control-accent/10 text-mission-control-accent text-xs font-bold ring-2 ring-[var(--mission-control-accent)]">
                         {day.getDate()}
                       </span>
                     ) : (
-                      <span className="text-sm font-semibold text-mission-control-text">{day.getDate()}</span>
+                      <span className="text-sm font-semibold text-mission-control-text/70">{day.getDate()}</span>
                     )}
                   </div>
-                  {isToday && (
-                    <div className="text-xs text-info font-medium mt-0.5">Today</div>
-                  )}
                 </div>
               );
             })}
@@ -632,7 +622,7 @@ export default function ContentScheduler() {
               key={hour}
               className="grid grid-cols-[52px_repeat(7,1fr)] border-b border-mission-control-border/40"
             >
-              <div className="py-1 pr-2 text-right text-xs text-mission-control-text-dim pt-1.5 select-none">
+              <div className="py-1 pr-2 text-right text-[11px] tabular-nums text-mission-control-text-dim/70 pt-1.5 select-none flex-shrink-0">
                 {hour === 12 ? '12pm' : hour < 12 ? `${hour}am` : `${hour - 12}pm`}
               </div>
               {weekDays.map((day, dayIdx) => {
@@ -642,7 +632,7 @@ export default function ContentScheduler() {
                   <div
                     key={dayIdx}
                     className={`border-l border-mission-control-border/40 p-0.5 min-h-[52px] ${
-                      isToday ? 'bg-info/5' : ''
+                      isToday ? 'bg-mission-control-accent/5' : ''
                     }`}
                   >
                     <div className="space-y-0.5">
@@ -688,7 +678,7 @@ export default function ContentScheduler() {
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface shrink-0">
         <Flex align="center" justify="between" className="mb-3">
           <Flex align="center" gap="3">
-            <div className="p-2 bg-mission-control-accent/20 rounded-lg">
+            <div className="p-2 bg-mission-control-accent/20 rounded-xl">
               <Calendar size={20} className="text-mission-control-accent" />
             </div>
             <div>
@@ -696,7 +686,7 @@ export default function ContentScheduler() {
                 <h1 className="text-lg font-semibold">Schedule Queue</h1>
                 {/* Items-this-week badge */}
                 {thisWeekItems.length > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-info-subtle text-info border border-info-border font-medium tabular-nums">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 font-medium tabular-nums">
                     {thisWeekItems.length} this week
                   </span>
                 )}
@@ -762,19 +752,22 @@ export default function ContentScheduler() {
         {viewMode === 'list' && (
           <Flex gap="2">
             {(['pending', 'sent', 'all'] as const).map((f) => (
-              <Button
+              <button
                 key={f}
+                type="button"
                 onClick={() => setFilter(f)}
-                variant={filter === f ? 'solid' : 'outline'}
-                color={filter === f ? 'violet' : 'gray'}
-                size="2"
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  filter === f
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 <span className="tabular-nums">
                   {f === 'pending' && `Pending (${pendingCount})`}
                   {f === 'sent'    && `Sent (${sentCount})`}
                   {f === 'all'     && `All (${items.length})`}
                 </span>
-              </Button>
+              </button>
             ))}
           </Flex>
         )}
@@ -785,9 +778,9 @@ export default function ContentScheduler() {
         <div className="p-4 border-b border-mission-control-border bg-mission-control-bg shrink-0">
           <Flex align="center" justify="between" className="mb-3">
             <Heading size="2" weight="medium">{editingId ? 'Edit Scheduled Item' : 'Schedule New Item'}</Heading>
-            <IconButton onClick={resetForm} variant="ghost" color="gray" size="1" aria-label="Close form">
+            <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={resetForm} aria-label="Close form">
               <X size={14} />
-            </IconButton>
+            </button>
           </Flex>
 
           <div className="space-y-3">
@@ -797,16 +790,19 @@ export default function ContentScheduler() {
                 const Icon  = getTypeIcon(t);
                 const label = t === 'tweet' ? 'Post' : 'Email';
                 return (
-                  <Button
+                  <button
                     key={t}
+                    type="button"
                     onClick={() => setFormType(t)}
-                    variant={formType === t ? 'solid' : 'outline'}
-                    color={formType === t ? 'violet' : 'gray'}
-                    size="2"
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                      formType === t
+                        ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                        : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                    }`}
                   >
                     <Icon size={14} />
                     {label}
-                  </Button>
+                  </button>
                 );
               })}
             </Flex>
@@ -876,7 +872,7 @@ export default function ContentScheduler() {
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.preventDefault(); }}
                   aria-label="Drag and drop zone for media files"
-                  className={`border-2 border-dashed rounded-lg p-3 text-center transition-colors cursor-pointer ${
+                  className={`border-2 border-dashed rounded-xl p-3 text-center transition-colors cursor-pointer ${
                     isDragging
                       ? 'border-mission-control-accent bg-mission-control-accent/10'
                       : 'border-mission-control-border hover:border-mission-control-border/60'
@@ -886,7 +882,7 @@ export default function ContentScheduler() {
                 </div>
               )}
               {mediaFile && (
-                <Flex align="center" gap="3" className="border border-mission-control-border rounded-lg p-2 bg-mission-control-surface">
+                <Flex align="center" gap="3" className="border border-mission-control-border rounded-xl p-2 bg-mission-control-surface">
                   <div className="shrink-0">
                     {mediaFile.type === 'image' && mediaPreview ? (
                       <img src={mediaPreview} alt="Preview" className="w-10 h-10 object-cover rounded" />
@@ -899,12 +895,12 @@ export default function ContentScheduler() {
                     )}
                   </div>
                   <span className="text-xs flex-1 truncate">{mediaFile.fileName}</span>
-                  <IconButton type="button" onClick={handleRemoveMedia} variant="ghost" color="red" size="1" title="Remove" aria-label="Remove media">
+                  <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={handleRemoveMedia} title="Remove" aria-label="Remove media">
                     <X size={12} />
-                  </IconButton>
+                  </button>
                 </Flex>
               )}
-              {uploadError && <div className="text-xs text-error bg-error-subtle px-2 py-1 rounded">{uploadError}</div>}
+              {uploadError && <div className="text-xs text-[var(--color-error)] bg-[var(--color-error)]/10 px-2 py-1 rounded">{uploadError}</div>}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -974,10 +970,10 @@ export default function ContentScheduler() {
                       {todayItems.length > 0 && (
                         <section className="mb-4">
                           <Flex align="center" gap="2" className="mb-2 px-1">
-                            <span className="text-xs font-semibold text-info uppercase tracking-wide">Today</span>
-                            <span className="flex-1 h-px bg-info/20" />
+                            <span className="text-[10px] font-bold text-[var(--color-info)] uppercase tracking-wide">Today</span>
+                            <span className="flex-1 h-px bg-[var(--color-info)]/20" />
                           </Flex>
-                          <div className="rounded-lg p-3 bg-info/5 border border-info/20 space-y-2">
+                          <div className="rounded-xl p-3 bg-[var(--color-info)]/5 border border-[var(--color-info)]/20 space-y-2">
                             {todayItems.map((item) => renderItemCard(item))}
                           </div>
                         </section>
@@ -988,7 +984,7 @@ export default function ContentScheduler() {
                         <section className="space-y-2">
                           {todayItems.length > 0 && (
                             <Flex align="center" gap="2" className="mb-2 px-1">
-                              <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Upcoming</span>
+                              <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wide">Upcoming</span>
                               <span className="flex-1 h-px bg-mission-control-border" />
                             </Flex>
                           )}

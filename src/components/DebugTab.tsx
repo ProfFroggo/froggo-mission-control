@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Wifi, WifiOff, RefreshCw, Terminal, Activity, AlertCircle } from 'lucide-react';
-import { Button, Flex, IconButton, Box } from '@radix-ui/themes';
+import { Button, Flex, Box } from '@radix-ui/themes';
 import { gateway, reconnectGateway } from '../lib/gateway';
 import type { ConnectionState } from '../lib/gateway';
 import { showToast } from './Toast';
@@ -58,10 +58,10 @@ export default function DebugTab() {
   };
 
   const stateColor = {
-    connected: 'text-success',
-    connecting: 'text-warning',
-    authenticating: 'text-warning',
-    disconnected: 'text-error',
+    connected: 'text-[var(--color-success)]',
+    connecting: 'text-[var(--color-warning)]',
+    authenticating: 'text-[var(--color-warning)]',
+    disconnected: 'text-[var(--color-error)]',
   };
 
   const stateIcon = gwState === 'connected' ? Wifi : WifiOff;
@@ -106,9 +106,9 @@ export default function DebugTab() {
             <Terminal size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Active Sessions ({sessions.length})</h2>
           </Flex>
-          <IconButton onClick={loadData} disabled={loading} size="2" variant="ghost" aria-label="Refresh sessions">
+          <button type="button" onClick={loadData} disabled={loading} aria-label="Refresh sessions" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </IconButton>
+          </button>
         </div>
         <div className="divide-y divide-mission-control-border max-h-64 overflow-y-auto">
           {sessions.length === 0 ? (
@@ -116,7 +116,7 @@ export default function DebugTab() {
           ) : sessions.map((s: any, i: number) => (
             <div key={i} className="p-3 flex items-center gap-3 hover:bg-mission-control-bg/50">
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                Date.now() - (s.updatedAt || 0) < 300000 ? 'bg-success' : 'bg-mission-control-bg0'
+                Date.now() - (s.updatedAt || 0) < 300000 ? 'bg-[var(--color-success)]' : 'bg-mission-control-surface'
               }`} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{s.label || s.key || s.sessionKey}</div>
@@ -146,7 +146,7 @@ export default function DebugTab() {
             const isError = /\berror\b/i.test(line);
             const isWarn = /\bwarn/i.test(line);
             return (
-              <div key={i} className={`py-0.5 px-2 ${isError ? 'text-error' : isWarn ? 'text-warning' : 'text-mission-control-text-dim'}`}>
+              <div key={i} className={`py-0.5 px-2 ${isError ? 'text-[var(--color-error)]' : isWarn ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim'}`}>
                 {line}
               </div>
             );

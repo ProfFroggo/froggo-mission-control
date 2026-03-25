@@ -13,7 +13,7 @@
 
 import { useState, useEffect } from 'react';
 import { Bot, CheckCircle, AlertTriangle, RefreshCw, X } from 'lucide-react';
-import { Button, IconButton, Spinner, Flex } from '@radix-ui/themes';
+import { Button, Spinner, Flex } from '@radix-ui/themes';
 import BaseModal, { BaseModalBody, BaseModalFooter } from './BaseModal';
 import IntegrationWizard from './IntegrationWizard';
 import { marketplaceApi } from '../lib/api';
@@ -124,16 +124,16 @@ export default function AgentInstallModal({
       >
         {/* Header */}
         <Flex align="center" gap="3" className="px-6 pt-6 pb-4 border-b border-mission-control-border">
-          <div className="w-9 h-9 rounded-lg bg-[--accent-3] flex items-center justify-center flex-shrink-0">
-            <Bot size={18} className="text-[--accent-11]" />
+          <div className="w-10 h-10 rounded-xl bg-mission-control-border/30 border border-mission-control-border flex items-center justify-center flex-shrink-0">
+            <Bot size={18} className="text-mission-control-text-dim" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold text-mission-control-text">Install Agent: {entry.name}</h2>
-            <span className="text-xs text-mission-control-text-dim">v{entry.version}</span>
+            <h2 className="text-base font-semibold text-mission-control-text">Install Agent: {entry.name}</h2>
+            <span className="text-xs text-mission-control-text-dim/70">v{entry.version}</span>
           </div>
-          <IconButton onClick={onCancel} variant="ghost" color="gray" size="2" aria-label="Cancel">
+          <button onClick={onCancel} aria-label="Cancel" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
             <X size={16} />
-          </IconButton>
+          </button>
         </Flex>
 
         {/* Body */}
@@ -159,7 +159,7 @@ export default function AgentInstallModal({
 
             {/* Credentials warning */}
             {(entry.agent.credentials?.length ?? 0) > 0 && (
-              <p className="text-sm text-warning">
+              <p className="text-sm text-[var(--color-warning)]">
                 Requires {entry.agent.credentials!.length} API key
                 {entry.agent.credentials!.length !== 1 ? 's' : ''} — you&apos;ll be prompted after install.
               </p>
@@ -220,7 +220,7 @@ export default function AgentInstallModal({
       >
         {/* Header */}
         <Flex align="center" gap="3" className="px-6 pt-6 pb-4 border-b border-mission-control-border">
-          <CheckCircle size={20} className="text-success flex-shrink-0" />
+          <CheckCircle size={20} className="text-[var(--color-success)] flex-shrink-0" />
           <h2 className="text-base font-semibold text-mission-control-text">Agent Installed</h2>
         </Flex>
 
@@ -229,7 +229,7 @@ export default function AgentInstallModal({
           <div className="space-y-4">
             {/* Success message */}
             <p className="text-sm text-mission-control-text">
-              <span className="font-medium text-success">{entry.name}</span> installed successfully.
+              <span className="font-medium text-[var(--color-success)]">{entry.name}</span> installed successfully.
             </p>
 
             {/* Workspace path */}
@@ -239,7 +239,7 @@ export default function AgentInstallModal({
             </div>
 
             {/* Gateway restart advisory */}
-            <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-warning-subtle border border-warning-border text-warning text-sm">
+            <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-[var(--color-warning)] text-sm">
               <RefreshCw size={15} className="flex-shrink-0 mt-0.5" />
               <span>Reload the page for the new agent to appear in the agent list.</span>
             </div>
@@ -268,13 +268,13 @@ export default function AgentInstallModal({
     >
       {/* Header */}
       <Flex align="center" gap="3" className="px-6 pt-6 pb-4 border-b border-mission-control-border">
-        <AlertTriangle size={20} className="text-error flex-shrink-0" />
+        <AlertTriangle size={20} className="text-[var(--color-error)] flex-shrink-0" />
         <h2 className="text-base font-semibold text-mission-control-text">Installation Failed</h2>
       </Flex>
 
       {/* Body */}
       <BaseModalBody>
-        <p className="text-sm text-error">
+        <p className="text-sm text-[var(--color-error)]">
           {errorMsg ?? 'An unexpected error occurred during installation.'}
         </p>
       </BaseModalBody>

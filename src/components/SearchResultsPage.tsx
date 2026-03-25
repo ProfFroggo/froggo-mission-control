@@ -4,7 +4,7 @@ import {
   Search, CheckSquare, Bot, BookOpen, Library, Megaphone, Zap,
   Download, X, ArrowUpDown, Calendar,
 } from 'lucide-react';
-import { Button, IconButton, TextField, Checkbox, Flex } from '@radix-ui/themes';
+import { Button, TextField, Checkbox, Flex } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type SortMode = 'relevance' | 'date' | 'name';
@@ -218,17 +218,13 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
           </Button>
         )}
         {onClose && (
-          <IconButton
+          <button
             onClick={onClose}
             aria-label="Close search"
-            variant="ghost"
-            color="gray"
-            size="2"
-           
-            className="flex-shrink-0"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors flex-shrink-0"
           >
             <X size={20} />
-          </IconButton>
+          </button>
         )}
       </Flex>
 
@@ -238,7 +234,7 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
         <aside className="w-56 flex-shrink-0 border-r border-mission-control-border p-4 overflow-y-auto">
           {/* Type filters */}
           <div className="mb-6">
-            <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2">
+            <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">
               Result Types
             </div>
             <div className="space-y-1.5">
@@ -263,7 +259,7 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
 
           {/* Date range */}
           <div className="mb-6">
-            <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
+            <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
               <Calendar size={12} aria-hidden="true" />
               Date Range
             </div>
@@ -289,38 +285,38 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
                 />
               </div>
               {(dateFrom || dateTo) && (
-                <Button
+                <button
                   onClick={() => { setDateFrom(''); setDateTo(''); }}
-                  variant="ghost"
-                  color="gray"
-                  size="1"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   Clear dates
-                </Button>
+                </button>
               )}
             </div>
           </div>
 
           {/* Sort */}
           <div>
-            <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
+            <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
               <ArrowUpDown size={12} aria-hidden="true" />
               Sort By
             </div>
             <div className="space-y-1">
-              {(['relevance', 'date', 'name'] as SortMode[]).map(mode => (
-                <Button
-                  key={mode}
-                  onClick={() => setSortMode(mode)}
-                  variant={sortMode === mode ? 'solid' : 'ghost'}
-                  color={sortMode === mode ? 'blue' : 'gray'}
-                  size="1"
-                  className="w-full capitalize"
-                  aria-pressed={sortMode === mode}
-                >
-                  {mode}
-                </Button>
-              ))}
+              <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border flex-col">
+                {(['relevance', 'date', 'name'] as SortMode[]).map(mode => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setSortMode(mode)}
+                    aria-pressed={sortMode === mode}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors w-full capitalize ${
+                      sortMode === mode ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </aside>

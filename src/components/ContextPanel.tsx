@@ -6,7 +6,7 @@ import {
   Image as ImageIcon, FileText, Video, File as FileIcon,
   Upload, X, Eye, Loader2, Trash2, StickyNote, CheckCircle2, Circle,
 } from 'lucide-react';
-import { IconButton, TextArea, Box, Flex } from '@radix-ui/themes';
+import { TextArea, Box, Flex } from '@radix-ui/themes';
 
 interface ContextFile {
   id: string;
@@ -165,7 +165,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
       <section>
         <Flex align="center" gap="2" mb="3">
           <StickyNote size={14} className="text-mission-control-text-dim" />
-          <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Context Notes</h3>
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Context Notes</h3>
           {savingNotes && (
             <span className="text-xs text-mission-control-text-dim ml-auto">Saving...</span>
           )}
@@ -184,7 +184,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
       <section>
         <Flex align="center" gap="2" mb="3">
           <FileText size={14} className="text-mission-control-text-dim" />
-          <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Context Files</h3>
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Context Files</h3>
           <span className="text-xs text-mission-control-text-dim ml-1">({files.length})</span>
         </Flex>
 
@@ -212,7 +212,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
               {uploadSteps.map((step, i) => (
                 <Flex key={i} align="center" gap="2">
                   {step.status === 'done' ? (
-                    <CheckCircle2 size={14} className="text-success flex-shrink-0" />
+                    <CheckCircle2 size={14} className="text-[var(--color-success)] flex-shrink-0" />
                   ) : step.status === 'active' ? (
                     <Loader2 size={14} className="animate-spin text-mission-control-accent flex-shrink-0" />
                   ) : (
@@ -234,7 +234,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
         </div>
 
         {uploadError && (
-          <p className="text-xs text-error mb-3">{uploadError}</p>
+          <p className="text-xs text-[var(--color-error)] mb-3">{uploadError}</p>
         )}
 
         {/* File Grid */}
@@ -275,28 +275,24 @@ export default function ContextPanel({ entityType, entityId }: Props) {
                 </Box>
                 <Flex align="center" gap="1" className="flex-shrink-0">
                   {file.processedContent && (
-                    <IconButton
+                    <button
                       onClick={() => setViewingFile(file)}
-                      size="1"
-                      variant="ghost"
-                     
                       title="View processed content"
                       aria-label="View processed content"
+                      className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     >
                       <Eye size={13} />
-                    </IconButton>
+                    </button>
                   )}
-                  <IconButton
+                  <button
+                    type="button"
                     onClick={() => handleDelete(file.id)}
-                    size="1"
-                    variant="ghost"
-                    color="red"
-                   
                     title="Delete file"
                     aria-label="Delete file"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                   >
                     <Trash2 size={13} />
-                  </IconButton>
+                  </button>
                 </Flex>
               </Flex>
             ))}
@@ -323,15 +319,14 @@ export default function ContextPanel({ entityType, entityId }: Props) {
                 <FileTypeIcon fileType={viewingFile.fileType} />
                 <span className="text-sm font-semibold text-mission-control-text truncate">{viewingFile.originalName}</span>
               </Flex>
-              <IconButton
+              <button
+                type="button"
                 onClick={() => setViewingFile(null)}
-                size="1"
-                variant="ghost"
-               
                 aria-label="Close"
+                className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <X size={15} />
-              </IconButton>
+              </button>
             </Flex>
             <Box p="4" className="flex-1 overflow-y-auto">
               <pre className="text-xs text-mission-control-text whitespace-pre-wrap font-mono leading-relaxed">

@@ -1,6 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useRef, useEffect, lazy } from 'react';
-import { Button, IconButton, Flex } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import { AsyncBoundary } from './AsyncBoundary';
 import {
   BarChart2,
@@ -9,7 +9,6 @@ import {
   Clock,
   Users,
   Zap,
-  Loader2,
   ChevronDown,
   GitCompare,
   Download,
@@ -116,32 +115,38 @@ async function triggerAnalyticsExport(
 
 function ChartSkeleton() {
   return (
-    <div className="h-full flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 size={28} className="animate-spin text-mission-control-accent" />
-        <p className="text-xs text-mission-control-text-dim">Loading charts…</p>
+    <div className="p-6 space-y-6 h-full overflow-y-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-24 bg-mission-control-border/20 rounded-xl animate-pulse" />
+        ))}
+      </div>
+      <div className="h-[320px] bg-mission-control-border/20 rounded-xl animate-pulse" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="h-[280px] bg-mission-control-border/20 rounded-xl animate-pulse" />
+        <div className="h-[280px] bg-mission-control-border/20 rounded-xl animate-pulse" />
       </div>
     </div>
   );
 }
 
-/** Section header inside a combined tab */
+/** Section header inside a combined tab — matches chart wrapper header pattern */
 function SectionHeader({ icon: Icon, title, description }: { icon: LucideIcon; title: string; description?: string }) {
   return (
-    <Flex align="center" gap="2" className="mb-4">
-      <Icon size={15} className="text-mission-control-accent flex-shrink-0" />
-      <div>
-        <h3 className="text-sm font-semibold text-mission-control-text">{title}</h3>
-        {description && <p className="text-xs text-mission-control-text-dim">{description}</p>}
+    <div className="flex items-center justify-between px-0 pb-3 mb-0 border-b border-mission-control-border flex-shrink-0">
+      <div className="flex items-center gap-2">
+        <Icon size={14} className="text-mission-control-text-dim" />
+        <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{title}</span>
       </div>
-    </Flex>
+      {description && <span className="text-xs text-mission-control-text-dim">{description}</span>}
+    </div>
   );
 }
 
 /** Wraps a chart section in a consistent card */
 function ChartCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 ${className}`}>
+    <div className={`bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden px-4 pt-3 pb-4 ${className}`}>
       {children}
     </div>
   );
@@ -209,7 +214,7 @@ export default function AnalyticsDashboard() {
     <div className="h-full flex flex-col">
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
-        <Flex align="center" justify="between" className="px-6 py-4">
+        <Flex align="center" justify="between" className="px-4 py-3">
           {/* Title */}
           <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg">
@@ -241,27 +246,23 @@ export default function AnalyticsDashboard() {
               ))}
             </div>
 
-            <IconButton
+            <button
               type="button"
               onClick={() => setShowAgentComparison(true)}
-              size="2"
-              variant="ghost"
-              color="gray"
               title="Compare agents"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <GitCompare size={15} />
-            </IconButton>
+            </button>
 
-            <IconButton
+            <button
               type="button"
               onClick={() => setRefreshKey((k) => k + 1)}
-              size="2"
-              variant="ghost"
-              color="gray"
               title="Refresh data"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <RefreshCw size={15} />
-            </IconButton>
+            </button>
 
             {/* Export dropdown */}
             <div className="relative" ref={exportMenuRef}>
@@ -300,7 +301,7 @@ export default function AnalyticsDashboard() {
                             title="Export and copy"
                           >
                             {copiedExport === `${t}-${fmt}`
-                              ? <Check size={12} className="text-success" />
+                              ? <Check size={12} className="text-[var(--color-success)]" />
                               : <Copy size={12} />}
                           </button>
                         </Flex>

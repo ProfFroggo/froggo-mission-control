@@ -2,7 +2,7 @@ import { memo, useState, type ComponentPropsWithoutRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Copy, Check, ExternalLink, FileCode, GitBranch, FileJson, FileText as FileTextIcon } from 'lucide-react';
-import { Flex, IconButton, Button } from '@radix-ui/themes';
+import { Button } from '@radix-ui/themes';
 import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
 
@@ -51,8 +51,8 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
 
           // Tables
           table: ({ children }) => (
-            <div className="my-3 overflow-x-auto rounded-lg border border-mission-control-border">
-              <table className="w-full text-sm">{children}</table>
+            <div className="my-3 overflow-x-auto">
+              <table className="w-full text-sm border border-mission-control-border rounded-lg overflow-hidden">{children}</table>
             </div>
           ),
           thead: ({ children }) => <thead className="bg-mission-control-surface">{children}</thead>,
@@ -61,8 +61,8 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
             const rowIndex = (props as Record<string, unknown>)['data-row-index'];
             return <tr className={typeof rowIndex === 'number' && rowIndex % 2 !== 0 ? 'bg-mission-control-surface/30' : ''}>{children}</tr>;
           },
-          th: ({ children }) => <th className="px-3 py-2 text-left font-medium text-mission-control-text border-b border-mission-control-border whitespace-nowrap">{children}</th>,
-          td: ({ children }) => <td className="px-3 py-2 text-mission-control-text border-t border-mission-control-border/50">{children}</td>,
+          th: ({ children }) => <th className="bg-mission-control-border/30 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim px-3 py-2 text-left border-b border-mission-control-border whitespace-nowrap">{children}</th>,
+          td: ({ children }) => <td className="px-3 py-2 border-b border-mission-control-border/40 text-mission-control-text">{children}</td>,
 
           // Blockquotes
           blockquote: ({ children }) => (
@@ -70,7 +70,7 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
           ),
 
           // Horizontal rule
-          hr: () => <hr className="my-3 border-mission-control-border" />,
+          hr: () => <hr className="my-4 border-mission-control-border/40" />,
 
           // Code
           code: ({ className, children, ...props }) => {
@@ -88,7 +88,7 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
             }
 
             return (
-              <code className="px-1.5 py-0.5 bg-mission-control-border rounded text-sm font-mono text-mission-control-accent font-semibold" {...props}>
+              <code className="bg-mission-control-bg font-mono text-xs px-1.5 py-0.5 rounded text-[var(--color-info)]" {...props}>
                 {children}
               </code>
             );
@@ -169,17 +169,15 @@ function ArtifactCard({ lang, code, onOpen }: { lang: string; code: string; onOp
       <span className="text-xs font-medium text-mission-control-text flex-1 truncate">{title}</span>
       <span className="text-xs text-mission-control-text-dim font-mono opacity-60">{lang.toUpperCase()}</span>
       <span className="text-xs text-mission-control-text-dim opacity-50">{lineCount}L</span>
-      <IconButton
+      <button
+        type="button"
         onClick={async () => { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-        size="1"
-        variant="ghost"
-       
         title="Copy code"
         aria-label="Copy code"
-        className="opacity-0 group-hover:opacity-100"
+        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover:opacity-100"
       >
-        {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
-      </IconButton>
+        {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
+      </button>
       {onOpen && (
         <Button
           onClick={() => onOpen(lang, code)}
@@ -196,24 +194,29 @@ function ArtifactCard({ lang, code, onOpen }: { lang: string; code: string; onOp
 
 function CodeBlock({ code, language }: { code: string; language: string }) {
   const [copied, setCopied] = useState(false);
+  const lang = language || 'code';
 
   return (
-    <div className="relative my-3 rounded-lg overflow-hidden bg-mission-control-bg border border-mission-control-border shadow-sm">
-      <Flex align="center" justify="between" className="px-3 py-2 bg-mission-control-surface/50 border-b border-mission-control-border/50">
-        <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">{language || 'code'}</span>
-        <Button
-          onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
-          size="1"
-          variant="ghost"
-
-          title="Copy code"
-        >
-          {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
-          <span>{copied ? 'Copied!' : 'Copy'}</span>
-        </Button>
-      </Flex>
+    <div className="relative my-3 rounded-lg overflow-hidden bg-mission-control-bg border border-mission-control-border shadow-sm group/code">
+      {/* Language label — always visible, top-left */}
+      <div className="flex items-center px-4 py-1.5 bg-mission-control-border/20 border-b border-mission-control-border/50">
+        <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-mission-control-text-dim select-none">
+          {lang}
+        </span>
+      </div>
+      {/* Copy button — overlaid top-right, visible on hover */}
+      <button
+        type="button"
+        onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
+        title="Copy code"
+        aria-label="Copy code to clipboard"
+        className="absolute top-1 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] text-mission-control-text-dim hover:text-mission-control-text bg-mission-control-bg/80 hover:bg-mission-control-border/60 border border-transparent hover:border-mission-control-border transition-all opacity-0 group-hover/code:opacity-100 z-10"
+      >
+        {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
+        <span>{copied ? 'Copied!' : 'Copy'}</span>
+      </button>
       <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
-        <code className="font-mono text-mission-control-text break-words whitespace-pre-wrap">{code}</code>
+        <code className="font-mono text-mission-control-text whitespace-pre">{code}</code>
       </pre>
     </div>
   );

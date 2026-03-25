@@ -16,7 +16,7 @@ import {
   AlertCircle,
   RefreshCw,
 } from 'lucide-react';
-import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -351,32 +351,27 @@ export function XHashtagIntelligence() {
                         </span>
                       </Flex>
                       <Flex align="center" gap="2">
-                        <IconButton
+                        <button
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                           onClick={() => handleInsert(result.tag)}
                           aria-label="Insert into composer"
-                          variant="ghost"
-                          size="2"
-                         
                         >
                           <Copy size={14} />
-                        </IconButton>
-                        <IconButton
+                        </button>
+                        <button
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                           onClick={() =>
                             savedTags.includes(result.tag)
                               ? handleRemoveSaved(result.tag)
                               : handleSave(result.tag)
                           }
                           aria-label={savedTags.includes(result.tag) ? 'Remove from saved' : 'Save hashtag'}
-                          variant="ghost"
-                          color={savedTags.includes(result.tag) ? 'blue' : 'gray'}
-                          size="2"
-                         
                         >
                           <Bookmark
                             size={14}
                             fill={savedTags.includes(result.tag) ? 'currentColor' : 'none'}
                           />
-                        </IconButton>
+                        </button>
                       </Flex>
                     </Flex>
 
@@ -384,21 +379,21 @@ export function XHashtagIntelligence() {
                     <div className="grid grid-cols-4 divide-x divide-mission-control-border text-center py-2">
                       <div className="px-2">
                         <div className="text-sm font-semibold tabular-nums text-mission-control-text flex items-center justify-center gap-1">
-                          <Heart size={11} className="text-error" />
+                          <Heart size={11} className="text-[var(--color-error)]" />
                           {result.totalLikes}
                         </div>
                         <div className="text-xs text-mission-control-text-dim">likes</div>
                       </div>
                       <div className="px-2">
                         <div className="text-sm font-semibold tabular-nums text-mission-control-text flex items-center justify-center gap-1">
-                          <Repeat2 size={11} className="text-info" />
+                          <Repeat2 size={11} className="text-[var(--color-info)]" />
                           {result.totalRetweets}
                         </div>
                         <div className="text-xs text-mission-control-text-dim">retweets</div>
                       </div>
                       <div className="px-2">
                         <div className="text-sm font-semibold tabular-nums text-mission-control-text flex items-center justify-center gap-1">
-                          <MessageCircle size={11} className="text-warning" />
+                          <MessageCircle size={11} className="text-[var(--color-warning)]" />
                           {result.totalReplies}
                         </div>
                         <div className="text-xs text-mission-control-text-dim">replies</div>
@@ -505,27 +500,20 @@ export function XHashtagIntelligence() {
                   }}
                 >
                   {tag}
-                  <IconButton
+                  <button
+                    className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100"
                     onClick={() => handleInsert(tag)}
                     aria-label="Insert"
-                    variant="ghost"
-                    size="1"
-                   
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Copy size={10} />
-                  </IconButton>
-                  <IconButton
+                  </button>
+                  <button
+                    className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100"
                     onClick={() => handleRemoveSaved(tag)}
                     aria-label="Remove"
-                    variant="ghost"
-                    color="red"
-                    size="1"
-                   
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X size={10} />
-                  </IconButton>
+                  </button>
                 </Flex>
               ))}
             </div>
@@ -609,15 +597,13 @@ export function XHashtagIntelligence() {
                         <Copy size={11} />
                         Insert all
                       </Button>
-                      <IconButton
+                      <button
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         onClick={() => handleDeleteSet(set.id)}
                         aria-label="Delete set"
-                        variant="ghost"
-                        color="red"
-                        size="1"
                       >
                         <X size={14} />
-                      </IconButton>
+                      </button>
                     </Flex>
                   </Flex>
                   <div className="flex flex-wrap gap-1.5">

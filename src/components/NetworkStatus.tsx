@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { WifiOff, Wifi, X } from 'lucide-react';
-import { IconButton, Flex } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useEventBus } from '../lib/useEventBus';
 
@@ -55,15 +55,13 @@ export default function NetworkStatus() {
       >
         <WifiOff size={16} aria-hidden />
         <span>No internet connection. Some features may be unavailable.</span>
-        <IconButton
-          variant="ghost"
-          size="1"
+        <button
           onClick={() => setDismissed(true)}
           aria-label="Dismiss offline notification"
-          className="ml-2 text-white opacity-80 hover:opacity-100"
+          className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded text-white opacity-80 hover:opacity-100 transition-opacity"
         >
           <X size={16} />
-        </IconButton>
+        </button>
       </Flex>
     );
   }

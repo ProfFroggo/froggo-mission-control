@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity, Map, Package, AlertCircle, ArrowUpCircle, Terminal, Loader2, ChevronDown, ChevronRight, Clock, DollarSign } from 'lucide-react';
 import { Button, Flex, Select, TextField } from '@radix-ui/themes';
 import PanelHeader from './PanelHeader';
@@ -127,10 +127,39 @@ function StatusRow({ label, value, ok }: { label: string; value: string; ok?: bo
   return (
     <Flex align="center" justify="between" className="py-1">
       <span className="text-mission-control-text-dim">{label}</span>
-      <span className={`font-mono text-xs ${ok === false ? 'text-error' : ok === true ? 'text-success' : 'text-mission-control-text-dim'}`}>
+      <span className={`font-mono text-xs ${ok === false ? 'text-[var(--color-error)]' : ok === true ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim'}`}>
         {value}
       </span>
     </Flex>
+  );
+}
+
+// ─── Shared layout primitives ──────────────────────────────────────────────────
+
+/** Titled group of settings rows. Renders as a rounded card with a labelled header bar. */
+function SettingGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden mb-4">
+      <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim px-4 py-3 border-b border-mission-control-border bg-mission-control-bg/50">
+        {label}
+      </div>
+      <div className="divide-y divide-mission-control-border/40">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** A single setting row: label + description on the left, control on the right. */
+function SettingRow({ label, description, children }: { label: ReactNode; description?: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex-1 min-w-0 pr-4">
+        <div className="text-sm font-medium text-mission-control-text">{label}</div>
+        {description && <div className="text-xs text-mission-control-text-dim mt-0.5">{description}</div>}
+      </div>
+      <div className="flex-shrink-0">{children}</div>
+    </div>
   );
 }
 
@@ -216,16 +245,15 @@ function PlatformUpdateTab() {
             <Package size={16} />
             Platform Updates
           </h2>
-          <Button
+          <button
+            type="button"
             onClick={checkVersion}
             disabled={checking}
-            variant="ghost"
-            color="gray"
-            size="1"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw size={12} className={checking ? 'animate-spin' : ''} />
             {checking ? 'Checking...' : 'Check now'}
-          </Button>
+          </button>
         </Flex>
 
         <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-3">
@@ -255,10 +283,10 @@ function PlatformUpdateTab() {
           {versionInfo && !checking && (
             <Flex align="center" gap="2" className={`px-3 py-2 rounded-lg text-sm mt-1 ${
               versionInfo.error
-                ? 'bg-warning-subtle text-warning border border-warning/20'
+                ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/20'
                 : versionInfo.updateAvailable
-                  ? 'bg-info-subtle text-info border border-info/20'
-                  : 'bg-success-subtle text-success border border-success/20'
+                  ? 'bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20'
+                  : 'bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20'
             }`}>
               {versionInfo.error ? (
                 <><AlertCircle size={14} /> Registry unavailable — {versionInfo.error}</>
@@ -276,7 +304,7 @@ function PlatformUpdateTab() {
       {versionInfo?.updateAvailable && versionInfo.releaseNotes && (
         <section>
           <h3 className="text-sm font-medium text-mission-control-text mb-2 flex items-center gap-2">
-            <ArrowUpCircle size={14} className="text-info" />
+            <ArrowUpCircle size={14} className="text-[var(--color-info)]" />
             What's in v{versionInfo.latest}
           </h3>
           <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 max-h-48 overflow-y-auto">
@@ -310,11 +338,11 @@ function PlatformUpdateTab() {
         <section>
           <Flex align="center" gap="2" className="mb-2">
             <Terminal size={14} className="text-mission-control-text-dim" />
-            <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">Install log</span>
+            <span className="text-[10px] text-mission-control-text-dim font-bold uppercase tracking-wide">Install log</span>
           </Flex>
           <div
             ref={logRef}
-            className="bg-mission-control-bg rounded-lg border border-mission-control-border p-3 h-48 overflow-y-auto font-mono text-xs text-success space-y-0.5"
+            className="bg-mission-control-bg rounded-lg border border-mission-control-border p-3 h-48 overflow-y-auto font-mono text-xs text-[var(--color-success)] space-y-0.5"
           >
             {log.map((line, i) => (
               <div key={i} className="leading-5">{line || '\u00a0'}</div>
@@ -333,8 +361,8 @@ function PlatformUpdateTab() {
       {updateDone && (
         <Flex align="start" gap="3" className={`px-4 py-3 rounded-lg border text-sm ${
           updateDone.success
-            ? 'bg-success-subtle border-success/20 text-success'
-            : 'bg-error-subtle border-error/20 text-error'
+            ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/20 text-[var(--color-success)]'
+            : 'bg-[var(--color-error)]/10 border-[var(--color-error)]/20 text-[var(--color-error)]'
         }`}>
           {updateDone.success
             ? <Check size={16} className="mt-0.5 shrink-0" />
@@ -376,17 +404,15 @@ function SettingsAuditLog() {
 
   return (
     <section>
-      <Button
+      <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
-        variant="ghost"
-        color="gray"
-        size="2"
-        className="mb-2"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mb-2"
       >
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <Clock size={14} />
         Recent Changes
-      </Button>
+      </button>
 
       {open && (
         <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-3 space-y-1">
@@ -401,7 +427,7 @@ function SettingsAuditLog() {
           {!loading && entries.map((e) => (
             <Flex key={e.id} align="start" justify="between" gap="3" className="py-1.5 border-b border-mission-control-border last:border-0">
               <div className="min-w-0 flex-1">
-                <span className="font-mono text-xs text-mission-control-text truncate block">{e.key}</span>
+                <span className="font-mono text-xs text-mission-control-text truncate block w-full">{e.key}</span>
                 <span className="text-xs text-mission-control-text-dim">
                   {e.oldValue != null ? (
                     <><span className="line-through opacity-60">{e.oldValue}</span>{' → '}</>
@@ -565,7 +591,7 @@ export default function SettingsPanel() {
           />
         </div>
 
-        <div className="p-4">
+        <div className="p-4 max-w-2xl mx-auto">
 
         {/* Tab Content */}
         {activeTab === 'accounts' && <ConnectedAccountsPanel />}
@@ -577,54 +603,50 @@ export default function SettingsPanel() {
         
         {/* GENERAL TAB */}
         {activeTab === 'general' && (
-          <div className="space-y-6">
+          <div className="space-y-2">
             {/* Live System Status */}
-            <section>
-              <Flex align="center" justify="between" className="mb-4">
-                <h2 className="text-heading-3 flex items-center gap-2">
-                  <Activity size={16} /> System Status
-                </h2>
-                <Button
-                  onClick={() => {
-                    setHealth(null);
-                    setAgentCount(null);
-                    fetch('/api/health').then(r => r.json()).then(setHealth).catch(() => {});
-                    fetch('/api/agents').then(r => r.json()).then(d => { if (Array.isArray(d)) setAgentCount(d.length); }).catch(() => {});
-                  }}
-                  variant="ghost"
-                  color="gray"
-                  size="1"
-                >
-                  <RefreshCw size={12} /> Refresh
-                </Button>
-              </Flex>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-2 text-sm">
-                <StatusRow
-                  label="Claude CLI"
-                  value={health ? (
-                    !health.claudeFound ? 'Not found — run: npm install -g @anthropic-ai/claude-code' :
-                    !health.claudeAuthenticated ? 'Not authenticated — run: claude' :
-                    'Ready'
-                  ) : '…'}
-                  ok={health ? (health.claudeFound && health.claudeAuthenticated) : undefined}
-                />
-                <StatusRow label="Database" value={health ? (health.database ? 'Connected' : 'Missing') : '…'} ok={health?.database} />
-                <StatusRow label="MCP Servers" value="mission-control-db · memory" ok={true} />
-                <StatusRow label="Agents" value={agentCount !== null ? `${agentCount} registered` : '…'} ok={agentCount !== null && agentCount > 0} />
-                <StatusRow label="Hooks" value="approval · review-gate · session-sync · precompact" ok={true} />
-                <StatusRow label="Vault" value="~/mission-control/memory/" ok={true} />
-                <StatusRow label="Library" value="~/mission-control/library/" ok={true} />
+            <SettingGroup label="System Status">
+              <div className="px-4 py-3">
+                <Flex align="center" justify="between" className="mb-3">
+                  <span className="text-xs text-mission-control-text-dim">Live health check</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHealth(null);
+                      setAgentCount(null);
+                      fetch('/api/health').then(r => r.json()).then(setHealth).catch(() => {});
+                      fetch('/api/agents').then(r => r.json()).then(d => { if (Array.isArray(d)) setAgentCount(d.length); }).catch(() => {});
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+                  >
+                    <RefreshCw size={11} /> Refresh
+                  </button>
+                </Flex>
+                <div className="space-y-1 text-sm">
+                  <StatusRow
+                    label="Claude CLI"
+                    value={health ? (
+                      !health.claudeFound ? 'Not found — run: npm install -g @anthropic-ai/claude-code' :
+                      !health.claudeAuthenticated ? 'Not authenticated — run: claude' :
+                      'Ready'
+                    ) : '…'}
+                    ok={health ? (health.claudeFound && health.claudeAuthenticated) : undefined}
+                  />
+                  <StatusRow label="Database" value={health ? (health.database ? 'Connected' : 'Missing') : '…'} ok={health?.database} />
+                  <StatusRow label="MCP Servers" value="mission-control-db · memory" ok={true} />
+                  <StatusRow label="Agents" value={agentCount !== null ? `${agentCount} registered` : '…'} ok={agentCount !== null && agentCount > 0} />
+                  <StatusRow label="Hooks" value="approval · review-gate · session-sync · precompact" ok={true} />
+                  <StatusRow label="Vault" value="~/mission-control/memory/" ok={true} />
+                  <StatusRow label="Library" value="~/mission-control/library/" ok={true} />
+                </div>
               </div>
-            </section>
+            </SettingGroup>
 
-            {/* Default Panel */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Monitor size={16} /> Startup
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
+            {/* Startup + Navigation */}
+            <SettingGroup label="Startup">
+              <div className="px-4 py-3 space-y-3">
                 <div>
-                  <label htmlFor="default-panel" className="block text-sm text-mission-control-text-dim mb-2">Default Panel on Startup</label>
+                  <label htmlFor="default-panel" className="block text-sm font-medium text-mission-control-text mb-2">Default Panel on Startup</label>
                   <Select.Root
                     value={settings.defaultPanel}
                     onValueChange={(val) => setSettings(s => ({ ...s, defaultPanel: val }))}
@@ -645,62 +667,41 @@ export default function SettingsPanel() {
                   <p className="text-xs text-mission-control-text-dim mt-1">This panel will open when you launch the app</p>
                 </div>
               </div>
-            </section>
-
-            {/* Navigation */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Monitor size={16} /> Navigation
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
-                <Flex align="center" justify="between">
-                  <div>
-                    <div className="font-medium">Collapsed Sidebar</div>
-                    <div className="text-sm text-mission-control-text-dim">Show sidebar as icon only</div>
-                  </div>
-                  <Toggle
-                    checked={!sidebarExpanded}
-                    onChange={(checked) => {
-                      const expanded = !checked;
-                      setSidebarExpanded(expanded);
-                      localStorage.setItem('sidebarExpanded', String(expanded));
-                      window.dispatchEvent(new Event('sidebarStateChange'));
-                    }}
-                    colorScheme="green"
-                  />
-                </Flex>
-              </div>
-            </section>
+              <SettingRow label="Collapsed Sidebar" description="Show sidebar as icon only">
+                <Toggle
+                  checked={!sidebarExpanded}
+                  onChange={(checked) => {
+                    const expanded = !checked;
+                    setSidebarExpanded(expanded);
+                    localStorage.setItem('sidebarExpanded', String(expanded));
+                    window.dispatchEvent(new Event('sidebarStateChange'));
+                  }}
+                  colorScheme="green"
+                />
+              </SettingRow>
+            </SettingGroup>
 
             {/* API Keys */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Key size={16} /> API Keys
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
-                <div>
-                  <label htmlFor="gemini-api-key" className="block text-sm font-medium mb-1">
-                    Google Gemini API Key
-                  </label>
-                  <p className="text-xs text-mission-control-text-dim mb-2">Required for voice chat, meeting transcription, and PDF extraction</p>
-                  <TextField.Root
-                    id="gemini-api-key"
-                    type="password"
-                    size="2"
-                    value={settings.geminiApiKey}
-                    onChange={(e) => setSettings(s => ({ ...s, geminiApiKey: e.target.value }))}
-                    placeholder="AIza..."
-                  />
-                </div>
+            <SettingGroup label="API Keys">
+              <div className="px-4 py-3 space-y-2">
+                <label htmlFor="gemini-api-key" className="block text-sm font-medium text-mission-control-text">
+                  Google Gemini API Key
+                </label>
+                <p className="text-xs text-mission-control-text-dim">Required for voice chat, meeting transcription, and PDF extraction</p>
+                <TextField.Root
+                  id="gemini-api-key"
+                  type="password"
+                  size="2"
+                  value={settings.geminiApiKey}
+                  onChange={(e) => setSettings(s => ({ ...s, geminiApiKey: e.target.value }))}
+                  placeholder="AIza..."
+                />
               </div>
-            </section>
+            </SettingGroup>
 
-            {/* Export/Import */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Download size={16} /> Backup & Restore
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
+            {/* Backup & Restore */}
+            <SettingGroup label="Backup & Restore">
+              <div className="px-4 py-3 space-y-3">
                 <Flex gap="3">
                   <Button
                     onClick={handleExport}
@@ -734,14 +735,11 @@ export default function SettingsPanel() {
                   Export your settings to backup or transfer to another device
                 </p>
               </div>
-            </section>
+            </SettingGroup>
 
-            {/* Platform Tour */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Map size={16} /> Platform Tour
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-3">
+            {/* Platform Tour + Onboarding */}
+            <SettingGroup label="Onboarding">
+              <div className="px-4 py-3 space-y-3">
                 <p className="text-sm text-mission-control-text-dim">
                   Re-launch the 8-stop guided tour to explore Dashboard, Tasks, Agents, Inbox, Memory, Library, Analytics, and Settings.
                 </p>
@@ -755,14 +753,7 @@ export default function SettingsPanel() {
                   Restart Tour
                 </Button>
               </div>
-            </section>
-
-            {/* Onboarding */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <RefreshCw size={16} /> Onboarding
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-3">
+              <div className="px-4 py-3 space-y-3 border-t border-mission-control-border/40">
                 <p className="text-sm text-mission-control-text-dim">
                   Re-run the setup wizard — platform name, agent selection, first task, and launch.
                 </p>
@@ -776,51 +767,31 @@ export default function SettingsPanel() {
                   Re-run setup wizard
                 </Button>
               </div>
-            </section>
+            </SettingGroup>
 
-            {/* Approvals */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Shield size={16} /> Approvals
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
-                <Flex align="center" justify="between">
-                  <div>
-                    <div className="font-medium">Auto-Assign Approvals</div>
-                    <div className="text-sm text-mission-control-text-dim">
-                      Automatically assign new approval requests to the reviewing agent
-                    </div>
-                  </div>
-                  <Toggle
-                    checked={approvalsAutoAssign}
-                    onChange={setApprovalsAutoAssign}
-                    colorScheme="green"
-                  />
-                </Flex>
-              </div>
-            </section>
-
-            {/* Notification Sound */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Bell size={16} /> Notification Sound
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
-                <Flex align="center" justify="between">
-                  <div>
-                    <div className="font-medium">Sound Alerts</div>
-                    <div className="text-sm text-mission-control-text-dim">
-                      Play a sound when new notifications arrive
-                    </div>
-                  </div>
-                  <Toggle
-                    checked={notificationsSound}
-                    onChange={setNotificationsSound}
-                    colorScheme="green"
-                  />
-                </Flex>
-              </div>
-            </section>
+            {/* Approvals + Notification Sound */}
+            <SettingGroup label="Behaviour">
+              <SettingRow
+                label="Auto-Assign Approvals"
+                description="Automatically assign new approval requests to the reviewing agent"
+              >
+                <Toggle
+                  checked={approvalsAutoAssign}
+                  onChange={setApprovalsAutoAssign}
+                  colorScheme="green"
+                />
+              </SettingRow>
+              <SettingRow
+                label="Sound Alerts"
+                description="Play a sound when new notifications arrive"
+              >
+                <Toggle
+                  checked={notificationsSound}
+                  onChange={setNotificationsSound}
+                  colorScheme="green"
+                />
+              </SettingRow>
+            </SettingGroup>
 
             {/* Recent Changes audit log */}
             <SettingsAuditLog />
@@ -829,35 +800,34 @@ export default function SettingsPanel() {
 
         {/* APPEARANCE TAB */}
         {activeTab === 'appearance' && (
-          <div className="space-y-6">
+          <div className="space-y-2">
             {/* Theme */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Moon size={16} /> Theme
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
+            <SettingGroup label="Theme">
+              <div className="px-4 py-3 space-y-4">
                 <div>
-                  <label htmlFor="color-mode" className="block text-sm text-mission-control-text-dim mb-2">Color Mode</label>
-                  <Flex gap="2">
+                  <label htmlFor="color-mode" className="block text-sm font-medium text-mission-control-text mb-2">Color Mode</label>
+                  <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
                     {(['dark', 'light', 'system'] as const).map((t) => (
-                      <Button
+                      <button
                         key={t}
+                        type="button"
                         onClick={() => setSettings(s => ({ ...s, theme: t }))}
-                        variant={settings.theme === t ? 'solid' : 'soft'}
-                        color={settings.theme === t ? 'grass' : 'gray'}
-                        size="2"
-                        className="flex-1"
+                        className={`flex flex-1 items-center justify-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                          settings.theme === t
+                            ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                            : 'text-mission-control-text-dim hover:text-mission-control-text'
+                        }`}
                       >
-                        {t === 'dark' && <Moon size={16} />}
-                        {t === 'light' && <Sun size={16} />}
-                        {t === 'system' && <Monitor size={16} />}
+                        {t === 'dark' && <Moon size={14} />}
+                        {t === 'light' && <Sun size={14} />}
+                        {t === 'system' && <Monitor size={14} />}
                         {t.charAt(0).toUpperCase() + t.slice(1)}
-                      </Button>
+                      </button>
                     ))}
-                  </Flex>
+                  </div>
                 </div>
                 <div>
-                  <label htmlFor="accent-color" className="block text-sm text-mission-control-text-dim mb-2">Accent Color</label>
+                  <label htmlFor="accent-color" className="block text-sm font-medium text-mission-control-text mb-2">Accent Color</label>
                   <div className="flex gap-2 flex-wrap">
                     {['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#10b981'].map((color) => (
                       <button
@@ -881,16 +851,13 @@ export default function SettingsPanel() {
                   />
                 </div>
               </div>
-            </section>
+            </SettingGroup>
 
             {/* Typography */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Type size={16} /> Typography
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
+            <SettingGroup label="Typography">
+              <div className="px-4 py-3 space-y-4">
                 <div>
-                  <label htmlFor="font-family-select" className="block text-sm text-mission-control-text-dim mb-2">Font Family</label>
+                  <label htmlFor="font-family-select" className="block text-sm font-medium text-mission-control-text mb-2">Font Family</label>
                   <Select.Root
                     value={settings.fontFamily}
                     onValueChange={(val) => setSettings(s => ({ ...s, fontFamily: val }))}
@@ -905,7 +872,7 @@ export default function SettingsPanel() {
                   </Select.Root>
                 </div>
                 <div>
-                  <label htmlFor="font-size" className="block text-sm text-mission-control-text-dim mb-2">
+                  <label htmlFor="font-size" className="block text-sm font-medium text-mission-control-text mb-2">
                     Font Size: {settings.fontSize}px
                   </label>
                   <input
@@ -924,14 +891,14 @@ export default function SettingsPanel() {
                     <span>Large (18px)</span>
                   </Flex>
                 </div>
-                <div className="mt-4 p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                  <p className="mb-2" style={{ fontSize: `${settings.fontSize}px` }}>
+                <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
+                  <p className="mb-1" style={{ fontSize: `${settings.fontSize}px` }}>
                     The quick brown fox jumps over the lazy dog
                   </p>
                   <p className="text-xs text-mission-control-text-dim">Preview of current font settings</p>
                 </div>
               </div>
-            </section>
+            </SettingGroup>
           </div>
         )}
 
@@ -945,70 +912,60 @@ export default function SettingsPanel() {
         {/* KEYBOARD SHORTCUTS TAB */}
         {activeTab === 'shortcuts' && (
           <div className="space-y-6">
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Keyboard size={16} /> Keyboard Shortcuts
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-1">
-                {defaultKeyboardShortcuts.map((shortcut) => (
-                  <Flex key={shortcut.id} align="center" justify="between" className="py-2.5 border-b border-mission-control-border last:border-0">
-                    <div>
-                      <div className="font-medium text-sm">{shortcut.name}</div>
-                      <div className="text-xs text-mission-control-text-dim">{shortcut.description}</div>
-                    </div>
-                    <kbd className="px-3 py-1 bg-mission-control-bg border border-mission-control-border rounded text-sm font-mono text-mission-control-text-dim">
-                      {shortcut.modifiers.map(m => m === 'cmd' ? '⌘' : m === 'shift' ? '⇧' : m === 'alt' ? '⌥' : '⌃').join('')}
-                      {shortcut.currentKey.toUpperCase()}
-                    </kbd>
-                  </Flex>
-                ))}
-                <p className="pt-3 text-xs text-mission-control-text-dim">⌘ = Command &nbsp;·&nbsp; ⇧ = Shift &nbsp;·&nbsp; ⌥ = Option &nbsp;·&nbsp; ⌃ = Control</p>
+            <SettingGroup label="Keyboard Shortcuts">
+              {defaultKeyboardShortcuts.map((shortcut) => (
+                <div key={shortcut.id} className="flex items-center justify-between px-4 py-3">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <div className="text-sm font-medium text-mission-control-text">{shortcut.name}</div>
+                    <div className="text-xs text-mission-control-text-dim mt-0.5">{shortcut.description}</div>
+                  </div>
+                  <kbd className="flex-shrink-0 px-3 py-1 bg-mission-control-bg border border-mission-control-border rounded text-sm font-mono text-mission-control-text-dim">
+                    {shortcut.modifiers.map(m => m === 'cmd' ? '⌘' : m === 'shift' ? '⇧' : m === 'alt' ? '⌥' : '⌃').join('')}
+                    {shortcut.currentKey.toUpperCase()}
+                  </kbd>
+                </div>
+              ))}
+              <div className="px-4 py-3 border-t border-mission-control-border/40">
+                <p className="text-xs text-mission-control-text-dim">⌘ = Command &nbsp;·&nbsp; ⇧ = Shift &nbsp;·&nbsp; ⌥ = Option &nbsp;·&nbsp; ⌃ = Control</p>
               </div>
-            </section>
+            </SettingGroup>
           </div>
         )}
 
         {/* AUTOMATION TAB */}
         {activeTab === 'automation' && (
-          <div className="space-y-6">
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Settings size={16} /> Automation
-              </h2>
-              <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
-                {/* External Actions kill switch */}
-                <Flex align="center" justify="between">
-                  <div>
-                    <Flex align="center" gap="2" className="font-medium">
-                      External Actions
-                      {settings.externalActionsEnabled ? (
-                        <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded">LIVE</span>
-                      ) : (
-                        <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded">BLOCKED</span>
-                      )}
-                    </Flex>
-                    <div className="text-sm text-mission-control-text-dim">
-                      {settings.externalActionsEnabled
-                        ? 'Approved agent actions (emails, posts) will execute'
-                        : 'All external actions blocked — agents can plan but not execute'}
-                    </div>
-                  </div>
-                  <Toggle
-                    checked={settings.externalActionsEnabled}
-                    onChange={(checked) => setSettings(s => ({ ...s, externalActionsEnabled: checked }))}
-                    colorScheme="green"
-                  />
-                </Flex>
-
-                {/* Info */}
-                <div className="p-4 bg-info-subtle border border-info-border rounded-lg text-sm text-info space-y-2">
+          <div className="space-y-2">
+            <SettingGroup label="External Actions">
+              <SettingRow
+                label={
+                  <span className="flex items-center gap-2">
+                    External Actions
+                    {settings.externalActionsEnabled ? (
+                      <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded">LIVE</span>
+                    ) : (
+                      <span className="text-xs px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded">BLOCKED</span>
+                    )}
+                  </span>
+                }
+                description={settings.externalActionsEnabled
+                  ? 'Approved agent actions (emails, posts) will execute'
+                  : 'All external actions blocked — agents can plan but not execute'}
+              >
+                <Toggle
+                  checked={settings.externalActionsEnabled}
+                  onChange={(checked) => setSettings(s => ({ ...s, externalActionsEnabled: checked }))}
+                  colorScheme="green"
+                />
+              </SettingRow>
+              <div className="px-4 py-3 border-t border-mission-control-border/40">
+                <div className="p-3 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg text-sm text-[var(--color-info)] space-y-2">
                   <Flex align="center" gap="2" className="font-medium">
                     <Shield size={14} /> Approval Gate
                   </Flex>
                   <p>Agents call <code className="text-xs bg-black/20 px-1 rounded">approval_create</code> before any external action. The Approvals panel lets you review and approve or reject each one before it executes.</p>
                 </div>
               </div>
-            </section>
+            </SettingGroup>
           </div>
         )}
 

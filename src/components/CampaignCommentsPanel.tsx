@@ -64,24 +64,20 @@ function CommentRow({
         </p>
         <Flex align="center" gap="3" mt="2">
           {!isReply && (
-            <Button
+            <button
               onClick={() => onReply(comment.id)}
-              variant="ghost"
-              color="gray"
-              size="1"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Reply
-            </Button>
+            </button>
           )}
-          <Button
+          <button
             onClick={() => onDelete(comment.id)}
-            variant="ghost"
-            color="red"
-            size="1"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
           >
             <Trash2 size={10} />
             Delete
-          </Button>
+          </button>
         </Flex>
       </Box>
     </Flex>
@@ -147,14 +143,13 @@ function CommentComposer({
       />
       <Flex align="center" gap="2" justify="end">
         {onCancel && (
-          <Button
+          <button
+            type="button"
             onClick={onCancel}
-            variant="ghost"
-            color="gray"
-            size="2"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             Cancel
-          </Button>
+          </button>
         )}
         <Button
           onClick={handleSubmit}

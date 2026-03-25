@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, GripVertical } from 'lucide-react';
-import { Button, Flex, IconButton } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import {
   DndContext,
   closestCenter,
@@ -45,23 +45,25 @@ function SortableItem({ panel, isLastVisible, onToggle }: {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 px-4 py-3.5 rounded-lg bg-mission-control-surface border border-mission-control-border transition-shadow ${
-        isDragging ? 'shadow-xl scale-[1.02]' : ''
+      className={`flex items-center gap-3 py-2.5 border-b border-mission-control-border/40 last:border-0 transition-shadow ${
+        isDragging ? 'shadow-xl scale-[1.02] rounded-lg bg-mission-control-surface px-2' : ''
       }`}
     >
-      <IconButton
+      <button
+        type="button"
         {...attributes}
         {...listeners}
         aria-label={`Drag to reorder ${panel.label}`}
-        variant="ghost"
-        color="gray"
-        size="2"
-       
-        className="cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
+        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
       >
-        <GripVertical size={20} />
-      </IconButton>
-      <span className="flex-1 text-mission-control-text text-sm font-medium">{panel.label}</span>
+        <GripVertical size={16} />
+      </button>
+      <div className="w-8 h-8 rounded-lg bg-mission-control-border/30 flex items-center justify-center flex-shrink-0">
+        <span className="text-[10px] font-semibold text-mission-control-text-dim uppercase select-none">
+          {panel.label.slice(0, 2)}
+        </span>
+      </div>
+      <span className="flex-1 text-sm font-medium text-mission-control-text">{panel.label}</span>
       <Toggle
         checked={panel.visible}
         onChange={(_checked) => onToggle(panel.id)}
@@ -130,34 +132,32 @@ export default function EditPanelsModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center modal-backdrop"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) closeEditModal(); }}
       onKeyDown={(e) => { if (e.key === 'Escape') closeEditModal(); }}
       role="button"
       tabIndex={0}
       aria-label="Close edit panels modal"
     >
-      <div className="glass-modal rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col">
         {/* Header */}
-        <Flex align="start" justify="between" className="p-6 pb-4">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <div>
-            <h2 className="text-xl font-bold text-mission-control-text">Edit Panels</h2>
-            <p className="text-sm text-mission-control-text-dim mt-1">Showing {visibleCount} of {draft.length} Panels</p>
+            <span className="text-base font-semibold text-mission-control-text">Edit Panels</span>
+            <p className="text-xs text-mission-control-text-dim mt-0.5">Showing {visibleCount} of {draft.length} panels</p>
           </div>
-          <IconButton
+          <button
+            type="button"
             onClick={closeEditModal}
             aria-label="Close"
-            variant="ghost"
-            color="gray"
-            size="2"
-
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
-            <X size={22} />
-          </IconButton>
-        </Flex>
+            <X size={15} />
+          </button>
+        </div>
 
         {/* Panel list */}
-        <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-2">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -177,25 +177,23 @@ export default function EditPanelsModal() {
         </div>
 
         {/* Footer buttons */}
-        <Flex gap="3" className="p-6 pt-4 border-t border-mission-control-border">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
           <Button
             onClick={handleReset}
-            variant="outline"
+            variant="soft"
             color="gray"
-            size="3"
-            className="flex-1"
+            size="2"
           >
             Reset
           </Button>
           <Button
             onClick={handleSave}
             variant="solid"
-            size="3"
-            className="flex-1"
+            size="2"
           >
             Save
           </Button>
-        </Flex>
+        </div>
       </div>
     </div>
   );

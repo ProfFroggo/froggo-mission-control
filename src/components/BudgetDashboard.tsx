@@ -4,7 +4,7 @@
 // historical spend chart, and total monthly spend.
 
 import { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton, Badge, Heading, Select, TextField, Flex } from '@radix-ui/themes';
+import { Button, Badge, Heading, Select, TextField, Flex } from '@radix-ui/themes';
 import {
   DollarSign,
   TrendingUp,
@@ -170,9 +170,9 @@ function BudgetCard({
       : 'This month';
 
   const statusClasses: Record<BudgetStatus, string> = {
-    ok: 'bg-success-subtle border-success-border text-success',
-    warning: 'bg-warning-subtle border-warning-border text-warning',
-    exceeded: 'bg-error-subtle border-error-border text-error',
+    ok: 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]',
+    warning: 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30 text-[var(--color-warning)]',
+    exceeded: 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 text-[var(--color-error)]',
   };
 
   const statusLabel: Record<BudgetStatus, string> = {
@@ -182,7 +182,7 @@ function BudgetCard({
   };
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 flex flex-col gap-3">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 flex flex-col gap-3">
       {/* Header */}
       <Flex align="start" justify="between" gap="2">
         <div className="min-w-0">
@@ -199,16 +199,14 @@ function BudgetCard({
           >
             {statusLabel[budget.status]}
           </Badge>
-          <IconButton
+          <button
             type="button"
-            variant="ghost"
-            size="1"
-            color="red"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             onClick={() => onDelete(budget.id)}
             aria-label={`Delete budget ${budget.name}`}
           >
             <Trash2 size={14} />
-          </IconButton>
+          </button>
         </div>
       </Flex>
 
@@ -216,7 +214,7 @@ function BudgetCard({
       <Flex align="center" gap="4">
         <CircularProgress pct={pct} status={budget.status} />
         <div className="flex flex-col gap-1">
-          <div className="text-2xl font-bold tabular-nums">
+          <div className="text-2xl font-bold tabular-nums font-mono">
             ${budget.currentUsd.toFixed(2)}
           </div>
           <div className="text-xs text-mission-control-text-dim">
@@ -234,7 +232,7 @@ function BudgetCard({
 
       {/* 7-day chart */}
       <div>
-        <div className="text-xs text-mission-control-text-dim uppercase tracking-wider mb-1 flex items-center gap-1">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1">
           <BarChart3 size={10} /> 7-day spend
         </div>
         <SpendBarChart budgetId={budget.id} />
@@ -309,20 +307,20 @@ function AddBudgetForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 flex flex-col gap-3"
+      className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 flex flex-col gap-3"
     >
       <Flex align="center" justify="between">
         <span className="font-semibold text-sm flex items-center gap-2">
           <PiggyBank size={16} className="text-mission-control-accent" />
           New Budget
         </span>
-        <IconButton type="button" variant="ghost" size="1" onClick={onCancel} aria-label="Cancel">
+        <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={onCancel} aria-label="Cancel">
           <X size={16} />
-        </IconButton>
+        </button>
       </Flex>
 
       {error && (
-        <Flex align="center" gap="2" className="text-xs text-error bg-error-subtle border border-error-border rounded-lg px-3 py-2">
+        <Flex align="center" gap="2" className="text-xs text-[var(--color-error)] bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg px-3 py-2">
           <AlertTriangle size={12} />
           {error}
         </Flex>
@@ -339,7 +337,7 @@ function AddBudgetForm({
             placeholder="e.g. Monthly ops budget"
             value={form.name}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            style={{ width: '100%' }}
+            className="w-full"
           />
         </div>
 
@@ -353,7 +351,7 @@ function AddBudgetForm({
             placeholder="e.g. coder (leave blank for all)"
             value={form.agentId}
             onChange={e => setForm(f => ({ ...f, agentId: e.target.value }))}
-            style={{ width: '100%' }}
+            className="w-full"
           />
         </div>
 
@@ -362,7 +360,7 @@ function AddBudgetForm({
             Period
           </label>
           <Select.Root value={form.period} onValueChange={(val) => setForm(f => ({ ...f, period: val as Period }))}>
-            <Select.Trigger id="budget-period" style={{ width: '100%' }} />
+            <Select.Trigger id="budget-period" className="w-full" />
             <Select.Content>
               <Select.Item value="daily">Daily</Select.Item>
               <Select.Item value="weekly">Weekly</Select.Item>
@@ -383,7 +381,7 @@ function AddBudgetForm({
             placeholder="e.g. 50.00"
             value={form.limitUsd}
             onChange={e => setForm(f => ({ ...f, limitUsd: e.target.value }))}
-            style={{ width: '100%' }}
+            className="w-full"
           />
         </div>
 
@@ -399,13 +397,13 @@ function AddBudgetForm({
             placeholder="80"
             value={form.alertAt}
             onChange={e => setForm(f => ({ ...f, alertAt: e.target.value }))}
-            style={{ width: '100%' }}
+            className="w-full"
           />
         </div>
       </div>
 
       <Flex justify="end" gap="2">
-        <Button type="button" variant="ghost" size="2" onClick={onCancel}>Cancel</Button>
+        <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={onCancel}>Cancel</button>
         <Button type="submit" size="2" disabled={saving}>
           {saving ? 'Creating…' : (<><Plus size={14} /> Create Budget</>)}
         </Button>
@@ -486,13 +484,13 @@ export default function BudgetDashboard() {
       </Flex>
 
       {/* Total spend this month */}
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 flex items-center gap-3">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 flex items-center gap-3">
         <div className="p-2 bg-mission-control-bg rounded-lg">
-          <DollarSign size={18} className="text-success" />
+          <DollarSign size={18} className="text-[var(--color-success)]" />
         </div>
         <div>
-          <div className="text-xs text-mission-control-text-dim">Total spend this month</div>
-          <div className="text-2xl font-bold text-success tabular-nums">
+          <div className="text-xs text-mission-control-text-dim mt-0.5">Total spend this month</div>
+          <div className="text-2xl font-bold text-[var(--color-success)] tabular-nums font-mono">
             ${monthlyTotal.toFixed(4)}
           </div>
         </div>
@@ -512,8 +510,8 @@ export default function BudgetDashboard() {
               gap="2"
               className={`px-3 py-2 rounded-lg text-xs font-medium border ${
                 b.status === 'exceeded'
-                  ? 'bg-error-subtle border-error-border text-error'
-                  : 'bg-warning-subtle border-warning-border text-warning'
+                  ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 text-[var(--color-error)]'
+                  : 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30 text-[var(--color-warning)]'
               }`}
             >
               <AlertTriangle size={13} className="shrink-0" />

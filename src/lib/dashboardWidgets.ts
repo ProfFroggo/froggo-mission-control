@@ -103,6 +103,13 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     defaultSize: 'md',
     category: 'agents',
   },
+  {
+    id: 'perf-48h',
+    title: '48h Performance',
+    description: 'Tasks completed and created in the last 48 hours, with top performers.',
+    defaultSize: 'md',
+    category: 'metrics',
+  },
 ];
 
 export function getWidgetDefinition(id: string): DashboardWidgetDefinition | undefined {

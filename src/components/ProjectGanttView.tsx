@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronRight, ZoomIn, ZoomOut, Calendar,
   AlertCircle,
 } from 'lucide-react';
-import { Button, Flex, IconButton } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import { taskApi } from '../lib/api';
 import { Spinner } from './LoadingStates';
 
@@ -237,7 +237,7 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
 
   if (error) {
     return (
-      <Flex align="center" gap="2" className="m-4 px-4 py-3 bg-error-subtle border border-error/30 rounded-lg text-error text-sm">
+      <Flex align="center" gap="2" className="m-4 px-4 py-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg text-[var(--color-error)] text-sm">
         <AlertCircle size={15} />
         {error}
       </Flex>
@@ -259,41 +259,43 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
         <span className="text-xs text-mission-control-text-dim mr-2">Zoom:</span>
-        {(['week', 'month', 'quarter'] as ZoomLevel[]).map(z => (
-          <Button
-            key={z}
-            variant={zoom === z ? 'solid' : 'outline'}
-            size="1"
-            onClick={() => setZoom(z)}
-          >
-            {ZOOM_CONFIG[z].label}
-          </Button>
-        ))}
+        <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+          {(['week', 'month', 'quarter'] as ZoomLevel[]).map(z => (
+            <button
+              key={z}
+              type="button"
+              onClick={() => setZoom(z)}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                zoom === z ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
+            >
+              {ZOOM_CONFIG[z].label}
+            </button>
+          ))}
+        </div>
         <div className="ml-auto flex items-center gap-1">
-          <IconButton
-            variant="ghost"
-            size="1"
+          <button
             onClick={() => {
               const levels: ZoomLevel[] = ['week', 'month', 'quarter'];
               const idx = levels.indexOf(zoom);
               if (idx > 0) setZoom(levels[idx - 1]);
             }}
             title="Zoom in"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <ZoomIn size={14} />
-          </IconButton>
-          <IconButton
-            variant="ghost"
-            size="1"
+          </button>
+          <button
             onClick={() => {
               const levels: ZoomLevel[] = ['week', 'month', 'quarter'];
               const idx = levels.indexOf(zoom);
               if (idx < levels.length - 1) setZoom(levels[idx + 1]);
             }}
             title="Zoom out"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <ZoomOut size={14} />
-          </IconButton>
+          </button>
         </div>
       </div>
 
@@ -312,11 +314,10 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
             return (
               <div key={g}>
                 {/* Group header */}
-                <Button
-                  variant="ghost"
+                <button
                   onClick={() => toggleGroup(g)}
                   style={{ height: ROW_H, width: '100%' }}
-                  className="flex items-center gap-2 px-3 text-xs font-semibold text-mission-control-text bg-mission-control-bg0 hover:bg-mission-control-surface/60 transition-colors border-b border-mission-control-border"
+                  className="flex items-center gap-2 px-3 text-xs font-semibold text-mission-control-text bg-mission-control-surface hover:bg-mission-control-surface/60 transition-colors border-b border-mission-control-border"
                 >
                   {isCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
                   <span
@@ -330,7 +331,7 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
                     }}
                   />
                   {g} ({groupTasks.length})
-                </Button>
+                </button>
                 {/* Task rows */}
                 {!isCollapsed && groupTasks.map(task => (
                   <div
@@ -382,7 +383,7 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
                   {/* Group header row (blank) */}
                   <div
                     style={{ height: ROW_H, borderBottom: '1px solid var(--mission-control-border, #2a2a2a)' }}
-                    className="bg-mission-control-bg0"
+                    className="bg-mission-control-surface"
                   />
                   {/* Task rows */}
                   {!isCollapsed && groupTasks.map(task => (

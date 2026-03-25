@@ -15,7 +15,7 @@ export const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-black/60',
+      'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm',
       'data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-in [animation-direction:reverse]',
       className
     )}
@@ -37,7 +37,7 @@ export const DialogContent = React.forwardRef<
         'w-full max-w-lg',
         'bg-mission-control-surface',
         'border border-mission-control-border',
-        'rounded-2xl shadow-lg',
+        'rounded-2xl shadow-2xl',
         'data-[state=open]:animate-scale-in',
         'focus:outline-none',
         className
@@ -45,7 +45,7 @@ export const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1.5 text-mission-control-text-dim opacity-60 hover:opacity-100 hover:bg-mission-control-border/40 transition-all focus:outline-none focus:ring-2 focus:ring-mission-control-accent/50">
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1.5 text-mission-control-text-dim opacity-60 hover:opacity-100 hover:bg-mission-control-border/40 transition-colors focus:outline-none focus:ring-2 focus:ring-mission-control-accent/50">
         <X size={16} />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>

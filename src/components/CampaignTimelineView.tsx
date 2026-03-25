@@ -139,7 +139,7 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
       {campaignProgress !== null && phaseLabel && (
         <Flex align="center" justify="between">
           <Flex align="center" gap="2">
-            <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Phase</span>
+            <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Phase</span>
             <span className="text-xs px-2 py-0.5 rounded-full border border-mission-control-accent/40 text-mission-control-accent bg-mission-control-accent/10 font-medium">
               {phaseLabel}
             </span>

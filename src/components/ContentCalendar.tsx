@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton, Heading, Box, Flex } from '@radix-ui/themes';
+import { Button, Heading, Box, Flex } from '@radix-ui/themes';
 import { ChevronLeft, ChevronRight, Plus, Mail, MessageSquare, Calendar, Eye } from 'lucide-react';
 
 // X logo component
@@ -23,9 +23,9 @@ interface ScheduledItem {
 
 const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
   tweet: { icon: XIcon, color: 'text-mission-control-text', bg: 'bg-mission-control-text/10' },
-  email: { icon: Mail, color: 'text-error', bg: 'bg-error-subtle' },
-  message: { icon: MessageSquare, color: 'text-success', bg: 'bg-success-subtle' },
-  post: { icon: Calendar, color: 'text-review', bg: 'bg-review-subtle' },
+  email: { icon: Mail, color: 'text-[var(--color-error)]', bg: 'bg-[var(--color-error)]/10' },
+  message: { icon: MessageSquare, color: 'text-[var(--color-success)]', bg: 'bg-[var(--color-success)]/10' },
+  post: { icon: Calendar, color: 'text-[var(--color-review)]', bg: 'bg-[var(--color-review)]-subtle' },
 };
 
 export default function ContentCalendar() {
@@ -113,8 +113,8 @@ export default function ContentCalendar() {
       <Box p="6" className="border-b border-mission-control-border bg-mission-control-surface">
         <Flex align="center" justify="between" mb="4">
           <Flex align="center" gap="3">
-            <div className="p-2 bg-review-subtle rounded-lg">
-              <Calendar size={24} className="text-review" />
+            <div className="p-2 bg-mission-control-accent/10 rounded-lg">
+              <Calendar size={24} className="text-mission-control-accent" />
             </div>
             <div>
               <Heading size="5" weight="medium">Content Calendar</Heading>
@@ -125,13 +125,12 @@ export default function ContentCalendar() {
           </Flex>
 
           <Flex align="center" gap="2">
-            <Button
-              variant="surface"
-              size="2"
+            <button
               onClick={() => setViewMode(viewMode === 'month' ? 'week' : 'month')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-mission-control-border text-sm font-medium text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/30 transition-colors"
             >
               {viewMode === 'month' ? 'Week View' : 'Month View'}
-            </Button>
+            </button>
             <Button
               variant="solid"
               size="2"
@@ -148,13 +147,21 @@ export default function ContentCalendar() {
 
         {/* Month navigation */}
         <Flex align="center" justify="between">
-          <IconButton variant="ghost" size="2" onClick={() => navigateMonth(-1)}>
+          <button
+            onClick={() => navigateMonth(-1)}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            aria-label="Previous month"
+          >
             <ChevronLeft size={20} />
-          </IconButton>
+          </button>
           <Heading size="4" weight="medium">{monthName}</Heading>
-          <IconButton variant="ghost" size="2" onClick={() => navigateMonth(1)}>
+          <button
+            onClick={() => navigateMonth(1)}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            aria-label="Next month"
+          >
             <ChevronRight size={20} />
-          </IconButton>
+          </button>
         </Flex>
       </Box>
 
@@ -163,7 +170,7 @@ export default function ContentCalendar() {
         {/* Day headers */}
         <div className="grid grid-cols-7 gap-2 mb-2">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center text-xs text-mission-control-text-dim font-medium py-2">
+            <div key={day} className="text-center text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim py-2">
               {day}
             </div>
           ))}
@@ -173,12 +180,13 @@ export default function ContentCalendar() {
         <div className="grid grid-cols-7 gap-2">
           {days.map((date, idx) => {
             if (!date) {
-              return <div key={`empty-${idx}`} className="min-h-24 bg-mission-control-bg/30 rounded-lg" />;
+              return <div key={`empty-${idx}`} className="min-h-24 rounded-lg" />;
             }
 
             const dayItems = getItemsForDate(date);
             const today = isToday(date);
             const past = isPast(date);
+            const isSelected = selectedDate?.toDateString() === date.toDateString();
 
             return (
               <div
@@ -188,39 +196,39 @@ export default function ContentCalendar() {
                 role="button"
                 tabIndex={0}
                 aria-label={`Select date ${date.toLocaleDateString()}${today ? ', today' : ''}${dayItems.length > 0 ? `, ${dayItems.length} items` : ''}`}
-                aria-pressed={selectedDate?.toDateString() === date.toDateString()}
-                className={`min-h-24 p-2 rounded-lg border cursor-pointer transition-all ${
+                aria-pressed={isSelected}
+                className={`min-h-24 p-2 rounded-lg border cursor-pointer transition-colors ${
                   today
-                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30'
-                    : selectedDate?.toDateString() === date.toDateString()
+                    ? 'bg-mission-control-surface border-mission-control-border/30 ring-2 ring-[var(--mission-control-accent)]'
+                    : isSelected
                     ? 'bg-mission-control-surface border-mission-control-accent/50'
                     : past
-                    ? 'bg-mission-control-bg/50 border-transparent opacity-60'
-                    : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/30'
+                    ? 'bg-mission-control-surface border-mission-control-border/30 opacity-50'
+                    : 'bg-mission-control-surface border-mission-control-border/30 hover:bg-mission-control-border/20'
                 }`}
               >
                 {/* Date number */}
-                <div className={`text-sm font-medium mb-1 ${today ? 'text-mission-control-accent' : ''}`}>
+                <div className={`text-sm mb-1 ${today ? 'text-mission-control-accent font-bold' : 'text-mission-control-text/70'}`}>
                   {date.getDate()}
                 </div>
 
                 {/* Items */}
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {dayItems.slice(0, 3).map(item => {
                     const config = typeConfig[item.type];
                     const Icon = config.icon;
                     return (
                       <div
                         key={item.id}
-                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${config.bg} flex-shrink-0 whitespace-nowrap`}
+                        className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] truncate ${config.bg}`}
                       >
-                        <Icon size={10} className={config.color} />
-                        <span className="truncate">{item.title}</span>
+                        <Icon size={9} className={`flex-shrink-0 ${config.color}`} />
+                        <span className={`truncate ${config.color}`}>{item.title}</span>
                       </div>
                     );
                   })}
                   {dayItems.length > 3 && (
-                    <div className="text-xs text-mission-control-text-dim">
+                    <div className="text-[10px] text-mission-control-text-dim/70 pl-0.5">
                       +{dayItems.length - 3} more
                     </div>
                   )}
@@ -238,9 +246,13 @@ export default function ContentCalendar() {
             <Heading size="3" weight="medium">
               {selectedDate.toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Heading>
-            <IconButton variant="ghost" size="1" onClick={() => setSelectedDate(null)}>
+            <button
+              onClick={() => setSelectedDate(null)}
+              className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              aria-label="Close"
+            >
               ×
-            </IconButton>
+            </button>
           </Flex>
 
           {getItemsForDate(selectedDate).length === 0 ? (
@@ -258,21 +270,27 @@ export default function ContentCalendar() {
                     align="center"
                     gap="3"
                     p="2"
-                    className="bg-mission-control-bg rounded-lg"
+                    className="bg-mission-control-surface border border-mission-control-border rounded-xl"
                   >
-                    <div className={`p-1.5 rounded ${config.bg}`}>
+                    <div className={`p-1.5 rounded-lg ${config.bg} flex-shrink-0`}>
                       <Icon size={14} className={config.color} />
                     </div>
                     <Box className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{item.title}</div>
-                      <div className="text-xs text-mission-control-text-dim">
-                        {new Date(item.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="w-12 text-[11px] tabular-nums text-mission-control-text-dim/70 flex-shrink-0">
+                          {new Date(item.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
                     </Box>
                     <Flex gap="1">
-                      <IconButton variant="ghost" size="1" onClick={() => showToast('info', `Preview: ${item.content}`)} title="Preview">
-                        <Eye size={14} className="text-mission-control-text-dim" />
-                      </IconButton>
+                      <button
+                        onClick={() => showToast('info', `Preview: ${item.content}`)}
+                        title="Preview"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+                      >
+                        <Eye size={14} />
+                      </button>
                     </Flex>
                   </Flex>
                 );

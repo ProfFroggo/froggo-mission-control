@@ -192,51 +192,62 @@ function ModuleCard({
   const IconComponent = resolveIcon(mod.icon);
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4 transition-all hover:border-mission-control-text-dim/30 flex flex-col gap-3">
-      {/* Header */}
-      <Flex align="start" gap="3">
-        <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
-          <IconComponent size={20} className="text-mission-control-accent" />
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden transition-colors hover:border-[var(--mission-control-accent)]/30 flex flex-col">
+      {/* Icon area */}
+      <div className="bg-mission-control-border/20 px-4 pt-4 pb-3 flex items-center justify-between">
+        <div className="w-10 h-10 rounded-lg bg-mission-control-border/20 flex items-center justify-center flex-shrink-0">
+          <IconComponent size={18} className="text-mission-control-text-dim" />
         </div>
+        {installed && !hasUpdate && (
+          <span className="flex items-center gap-1 text-[10px] font-medium text-[var(--color-success)] bg-[var(--color-success)]/10 px-2 py-0.5 rounded-full border border-[var(--color-success)]/20">
+            <CheckCircle size={10} />
+            {builtin ? 'Built-in' : 'Installed'}
+          </span>
+        )}
+        {hasUpdate && (
+          <span className="text-[10px] bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/30 px-2 py-0.5 rounded-full font-medium">
+            Update available
+          </span>
+        )}
+      </div>
+      {/* Content */}
+      <div className="p-4 flex flex-col gap-3 flex-1">
+      {/* Header */}
+      <div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
             <span className="font-semibold text-mission-control-text text-sm">{mod.name}</span>
             {mod.agent && (
-              <span className="inline-flex items-center gap-0.5 text-xs bg-mission-control-accent/15 text-mission-control-accent px-1.5 py-0.5 rounded font-medium">
-                <Bot size={10} />
+              <span className="inline-flex items-center gap-0.5 text-[10px] bg-mission-control-accent/15 text-mission-control-accent px-1.5 py-0.5 rounded font-medium">
+                <Bot size={9} />
                 Agent
               </span>
             )}
             {mod.verified && (
-              <ShieldCheck size={13} className="text-info flex-shrink-0" aria-label="Verified" />
-            )}
-            {hasUpdate && (
-              <span className="text-xs bg-warning-subtle text-warning border border-warning-border px-1.5 py-0.5 rounded-full font-medium">
-                Update available
-              </span>
+              <ShieldCheck size={12} className="text-[var(--color-info)] flex-shrink-0" aria-label="Verified" />
             )}
           </div>
-          <span className="text-xs text-mission-control-text-dim">
+          <span className="text-xs text-mission-control-text-dim/70">
             v{mod.version}
             {mod.author && ` · ${mod.author}`}
           </span>
         </div>
-      </Flex>
+      </div>
 
       {/* Description */}
       {mod.description && (
-        <p className="text-sm text-mission-control-text-dim line-clamp-2 leading-relaxed">
+        <p className="text-xs text-mission-control-text-dim/80 line-clamp-2 leading-relaxed">
           {mod.description}
         </p>
       )}
 
       {/* Footer: category + downloads + actions */}
-      <div className="mt-auto flex items-center gap-2 flex-wrap">
-        <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border/60 text-mission-control-text-dim capitalize">
+      <div className="mt-auto flex items-center gap-2 flex-wrap pt-1">
+        <span className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5 text-mission-control-text-dim/70 capitalize">
           {mod.category}
         </span>
         {mod.downloads > 0 && (
-          <span className="text-xs text-mission-control-text-dim">
+          <span className="text-[10px] text-mission-control-text-dim/70">
             {mod.downloads.toLocaleString()} installs
           </span>
         )}
@@ -282,16 +293,12 @@ function ModuleCard({
               </IconButton>
             </>
           ) : builtin ? (
-            <span className="flex items-center gap-1.5 text-xs text-[--accent-11] font-medium">
+            <span className="flex items-center gap-1.5 text-xs text-mission-control-accent/70 font-medium">
               <PackageCheck size={13} />
               Built-in
             </span>
           ) : (
             <>
-              <span className="flex items-center gap-1.5 text-xs text-success font-medium">
-                <CheckCircle size={13} />
-                Installed
-              </span>
               <IconButton
                 type="button"
                 onClick={() => onUninstall(mod.id)}
@@ -305,6 +312,7 @@ function ModuleCard({
             </>
           )}
         </Flex>
+      </div>
       </div>
     </div>
   );
@@ -455,7 +463,7 @@ export default function MarketplaceBrowse() {
     <div className="h-full overflow-y-auto p-6 space-y-5">
       {/* Restart banner */}
       {restartBanner && (
-        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-warning-subtle border border-warning-border text-warning text-sm">
+        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-[var(--color-warning)] text-sm">
           <AlertCircle size={15} className="flex-shrink-0" />
           Please restart Mission Control.app to apply changes.
         </Flex>
@@ -463,7 +471,7 @@ export default function MarketplaceBrowse() {
 
       {/* Error banner */}
       {error && (
-        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-error border border-error text-error text-sm">
+        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-[var(--color-error)] border border-[var(--color-error)] text-[var(--color-error)] text-sm">
           <AlertCircle size={15} className="flex-shrink-0" />
           {error}
         </Flex>

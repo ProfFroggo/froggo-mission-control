@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Cloud, CloudRain, CloudSnow, Sun, CloudDrizzle, Wind, Droplets, RefreshCw, AlertCircle, Thermometer, ArrowUp, ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
-import { IconButton, Button, Box, Flex } from '@radix-ui/themes';
+import { Box, Flex } from '@radix-ui/themes';
 import WidgetLoading from './WidgetLoading';
 
 interface WeatherCondition {
@@ -70,9 +70,9 @@ export default function WeatherWidget() {
 
   const getWeatherColor = (description: string) => {
     const desc = description.toLowerCase();
-    if (desc.includes('rain') || desc.includes('shower')) return 'text-info';
+    if (desc.includes('rain') || desc.includes('shower')) return 'text-[var(--color-info)]';
     if (desc.includes('snow') || desc.includes('sleet')) return 'text-cyan-300';
-    if (desc.includes('clear') || desc.includes('sunny')) return 'text-warning';
+    if (desc.includes('clear') || desc.includes('sunny')) return 'text-[var(--color-warning)]';
     if (desc.includes('cloud') || desc.includes('overcast')) return 'text-mission-control-text-dim';
     return 'text-mission-control-text-dim';
   };
@@ -92,17 +92,16 @@ export default function WeatherWidget() {
           <h2 className="font-semibold">Weather</h2>
           <span className="text-xs text-mission-control-text-dim">Gibraltar</span>
         </Flex>
-        <IconButton
+        <button
+          type="button"
           onClick={fetchWeather}
           disabled={loading}
-          size="2"
-          variant="ghost"
-
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           title="Refresh"
           aria-label="Refresh weather"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-        </IconButton>
+        </button>
       </Flex>
 
       <Box p="4">
@@ -115,11 +114,11 @@ export default function WeatherWidget() {
           />
         ) : error ? (
           <Box className="text-center py-6 text-mission-control-text-dim">
-            <AlertCircle size={32} className="mx-auto mb-2 text-error" />
+            <AlertCircle size={32} className="mx-auto mb-2 text-[var(--color-error)]" />
             <p className="text-sm">{error}</p>
-            <Button onClick={fetchWeather} size="1" variant="ghost" className="mt-2">
+            <button type="button" onClick={fetchWeather} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors mt-2">
               Try again
-            </Button>
+            </button>
           </Box>
         ) : current && today ? (
           <Box className="space-y-4">
@@ -135,14 +134,14 @@ export default function WeatherWidget() {
             {/* Today's High/Low */}
             <Flex align="center" gap="4" pt="4" className="border-t border-mission-control-border">
               <Flex align="center" gap="2" className="flex-1">
-                <ArrowUp size={16} className="text-error" />
+                <ArrowUp size={16} className="text-[var(--color-error)]" />
                 <Box>
                   <div className="text-xs text-mission-control-text-dim">High</div>
                   <div className="text-lg font-semibold">{today.maxtempC}°</div>
                 </Box>
               </Flex>
               <Flex align="center" gap="2" className="flex-1">
-                <ArrowDown size={16} className="text-info" />
+                <ArrowDown size={16} className="text-[var(--color-info)]" />
                 <Box>
                   <div className="text-xs text-mission-control-text-dim">Low</div>
                   <div className="text-lg font-semibold">{today.mintempC}°</div>
@@ -153,7 +152,7 @@ export default function WeatherWidget() {
             {/* Additional Details */}
             <Flex align="center" gap="4" pt="3" className="border-t border-mission-control-border/50">
               <Flex align="center" gap="2" className="text-sm">
-                <Droplets size={14} className="text-info" />
+                <Droplets size={14} className="text-[var(--color-info)]" />
                 <span className="text-mission-control-text-dim">{current.humidity}%</span>
               </Flex>
               <Flex align="center" gap="2" className="text-sm">
@@ -165,16 +164,14 @@ export default function WeatherWidget() {
             {/* 3-Day Forecast (Expandable) */}
             {forecast && forecast.length > 0 && (
               <Box pt="3" className="border-t border-mission-control-border">
-                <Button
+                <button
+                  type="button"
                   onClick={() => setExpanded(!expanded)}
-                  variant="ghost"
-                  size="2"
-
-                  className="w-full justify-between"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors w-full justify-between"
                 >
                   <span>3-Day Forecast</span>
                   {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                </Button>
+                </button>
 
                 {expanded && (
                   <Box mt="3" className="space-y-2">
@@ -199,9 +196,9 @@ export default function WeatherWidget() {
                             {avgCondition}
                           </span>
                           <Flex align="center" gap="2" className="text-sm">
-                            <span className="text-error/80">{day.maxtempC}°</span>
+                            <span className="text-[var(--color-error)]/80">{day.maxtempC}°</span>
                             <span className="text-mission-control-text-dim">/</span>
-                            <span className="text-info/80">{day.mintempC}°</span>
+                            <span className="text-[var(--color-info)]/80">{day.mintempC}°</span>
                           </Flex>
                         </Flex>
                       );

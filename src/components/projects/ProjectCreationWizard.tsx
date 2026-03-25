@@ -59,14 +59,17 @@ function ChoicesWidget({ data, onChoose, disabled }: { data: ChoiceWidgetData; o
           placeholder="Type your answer..."
           disabled={disabled}
           size="1"
-          style={{ flex: 1 }}
+          className="flex-1"
         />
         <IconButton variant="solid" size="1" onClick={() => { if (customText.trim() && !disabled) { onChoose(customText.trim()); setCustomMode(false); setCustomText(''); } }} disabled={!customText.trim() || disabled}>
           <Send size={13} />
         </IconButton>
-        <IconButton variant="ghost" size="1" onClick={() => { setCustomMode(false); setCustomText(''); }}>
+        <button
+          onClick={() => { setCustomMode(false); setCustomText(''); }}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+        >
           <X size={13} />
-        </IconButton>
+        </button>
       </Flex>
     );
   }
@@ -78,15 +81,19 @@ function ChoicesWidget({ data, onChoose, disabled }: { data: ChoiceWidgetData; o
         {data.options.map((opt, i) => {
           const isOther = isOtherOption(opt);
           return (
-            <Button
+            <button
               key={i}
+              type="button"
               disabled={disabled}
-              variant={isOther ? 'ghost' : 'soft'}
-              size="1"
               onClick={() => isOther ? setCustomMode(true) : onChoose(opt)}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors disabled:opacity-50 ${
+                isOther
+                  ? 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                  : 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent hover:bg-mission-control-accent/20'
+              }`}
             >
               {opt}
-            </Button>
+            </button>
           );
         })}
       </div>
@@ -464,10 +471,10 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   // Identity widget rendered inline in chat
   function IdentityWidget() {
     return (
-      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-3">
+      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-xl space-y-3">
         {/* Preview */}
         <Flex align="center" gap="3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
             <SelectedIconComp size={20} style={{ color }} />
           </div>
           <span className="font-medium text-sm text-mission-control-text">{projName}</span>
@@ -477,9 +484,12 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
           <p className="text-xs text-mission-control-text-dim mb-2">Icon</p>
           <div className="flex flex-wrap gap-1.5">
             {PROJECT_ICON_OPTIONS.map(({ id, icon: Ic }) => (
-              <IconButton key={id} variant={iconId === id ? 'solid' : 'ghost'} size="1" onClick={() => setIconId(id)}>
+              <button key={id} type="button" onClick={() => setIconId(id)}
+                className={`p-1.5 rounded-md border transition-colors ${
+                  iconId === id ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}>
                 <Ic size={14} />
-              </IconButton>
+              </button>
             ))}
           </div>
         </div>
@@ -489,12 +499,12 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
           <div className="flex flex-wrap gap-2">
             {COLOR_OPTIONS.map(c => (
               <button type="button" key={c} onClick={() => setColor(c)}
-                className={`w-6 h-6 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-offset-mission-control-surface ring-white scale-110' : 'hover:scale-105'}`}
+                className={`w-6 h-6 rounded-full transition-[colors,transform] ${color === c ? 'ring-2 ring-offset-2 ring-offset-mission-control-surface ring-white scale-110' : 'hover:scale-105'}`}
                 style={{ backgroundColor: c }} />
             ))}
           </div>
         </div>
-        <Button variant="solid" size="1" onClick={handleIdentityConfirm} style={{ width: '100%', justifyContent: 'center' }}>
+        <Button variant="solid" size="1" onClick={handleIdentityConfirm} className="w-full justify-center">
           Looks good →
         </Button>
       </div>
@@ -504,7 +514,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   // Agent picker widget
   function AgentsWidget() {
     return (
-      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-2">
+      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-xl space-y-2">
         {loadingAgents ? (
           <Flex justify="center" py="4"><Loader2 size={18} className="animate-spin text-mission-control-text-dim" /></Flex>
         ) : (
@@ -512,7 +522,10 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             {agents.map(agent => {
               const sel = selectedAgents.includes(agent.id);
               return (
-                <Button key={agent.id} variant={sel ? 'soft' : 'ghost'} size="1" onClick={() => setSelectedAgents(prev => sel ? prev.filter(x => x !== agent.id) : [...prev, agent.id])} style={{ width: '100%', justifyContent: 'flex-start' }}>
+                <button key={agent.id} type="button" onClick={() => setSelectedAgents(prev => sel ? prev.filter(x => x !== agent.id) : [...prev, agent.id])}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-colors ${
+                    sel ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                  }`}>
                   <AgentAvatar agentId={agent.id} size="sm" fallbackEmoji={agent.emoji} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-mission-control-text">{agent.name}</div>
@@ -521,12 +534,12 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${sel ? 'border-mission-control-accent bg-mission-control-accent' : 'border-mission-control-border'}`}>
                     {sel && <Check size={9} className="text-white" />}
                   </div>
-                </Button>
+                </button>
               );
             })}
           </div>
         )}
-        <Button variant="solid" size="1" onClick={handleAgentsConfirm} style={{ width: '100%', justifyContent: 'center', marginTop: '4px' }}>
+        <Button variant="solid" size="1" onClick={handleAgentsConfirm} className="w-full justify-center mt-1">
           {selectedAgents.length > 0 ? `Add ${selectedAgents.length} agent${selectedAgents.length !== 1 ? 's' : ''} →` : 'Skip →'}
         </Button>
       </div>
@@ -536,9 +549,9 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   // Summary confirm widget
   function ConfirmWidget() {
     return (
-      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-3">
+      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-xl space-y-3">
         <Flex align="center" gap="3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
             <SelectedIconComp size={20} style={{ color }} />
           </div>
           <div>
@@ -552,12 +565,15 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
           </div>
         )}
         <Flex gap="2">
-          <Button variant="solid" size="1" onClick={handleConfirm} style={{ flex: 1, justifyContent: 'center' }}>
+          <Button variant="solid" size="1" onClick={handleConfirm} className="flex-1 justify-center">
             <Check size={14} /> Create project
           </Button>
-          <Button variant="ghost" size="1" onClick={() => { setPhase('name'); setMsgs([]); mcSay("Let's start over. What should we call the project?"); }}>
+          <button
+            onClick={() => { setPhase('name'); setMsgs([]); mcSay("Let's start over. What should we call the project?"); }}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+          >
             Start over
-          </Button>
+          </button>
         </Flex>
       </div>
     );
@@ -596,19 +612,18 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div
-          className={`w-full max-w-2xl bg-mission-control-bg border rounded-2xl shadow-2xl flex flex-col transition-colors ${refsDragging ? 'border-mission-control-accent' : 'border-mission-control-border'}`}
-          style={{ maxHeight: '90vh' }}
+          className={`w-full max-w-2xl bg-mission-control-surface border rounded-2xl shadow-2xl flex flex-col transition-colors max-h-[90vh] ${refsDragging ? 'border-mission-control-accent' : 'border-mission-control-border'}`}
           onDragOver={e => { e.preventDefault(); setRefsDragging(true); }}
           onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setRefsDragging(false); }}
           onDrop={e => { e.preventDefault(); setRefsDragging(false); addRefFiles(e.dataTransfer.files); }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-mission-control-border flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
             <Flex align="center" gap="3">
               {gsdMode
                 ? <GitBranch size={15} className="text-mission-control-accent" />
                 : <Sparkles size={15} className="text-mission-control-accent" />}
-              <span className="text-sm font-semibold text-mission-control-text">New Project</span>
+              <span className="text-base font-semibold text-mission-control-text">New Project</span>
               {gsdMode && (
                 <span className="text-xs px-2 py-0.5 bg-mission-control-accent/15 text-mission-control-accent rounded-full font-medium">
                   GSD Planning
@@ -617,20 +632,32 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             </Flex>
             <Flex align="center" gap="2">
               {/* Mode toggle */}
-              <div className="flex items-center rounded-lg border border-mission-control-border overflow-hidden text-xs">
-                <Button variant={!gsdMode ? 'solid' : 'ghost'} size="1" onClick={() => !gsdMode || switchMode(false)}>
+              <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border text-xs">
+                <button type="button" onClick={() => !gsdMode || switchMode(false)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-medium transition-colors ${
+                    !gsdMode ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}>
                   <Zap size={11} /> Quick
-                </Button>
-                <Button variant={gsdMode ? 'solid' : 'ghost'} size="1" onClick={() => gsdMode || switchMode(true)}>
+                </button>
+                <button type="button" onClick={() => gsdMode || switchMode(true)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-medium transition-colors ${
+                    gsdMode ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}>
                   <GitBranch size={11} /> GSD Plan
-                </Button>
+                </button>
               </div>
-              <Button variant="ghost" size="1" onClick={() => setPhase('template')}>
+              <button
+                onClick={() => setPhase('template')}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              >
                 Skip
-              </Button>
-              <IconButton variant="ghost" size="1" onClick={onClose}>
-                <X size={16} />
-              </IconButton>
+              </button>
+              <button
+                onClick={onClose}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+              >
+                <X size={15} />
+              </button>
             </Flex>
           </div>
 
@@ -688,7 +715,10 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                           {agents.map(agent => {
                             const sel = selectedAgents.includes(agent.id);
                             return (
-                              <Button key={agent.id} variant={sel ? 'soft' : 'ghost'} size="1" onClick={() => setSelectedAgents(prev => sel ? prev.filter(id => id !== agent.id) : [...prev, agent.id])} style={{ width: '100%', justifyContent: 'flex-start' }}>
+                              <button key={agent.id} type="button" onClick={() => setSelectedAgents(prev => sel ? prev.filter(id => id !== agent.id) : [...prev, agent.id])}
+                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-colors ${
+                                  sel ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                                }`}>
                                 <AgentAvatar agentId={agent.id} size="sm" fallbackEmoji={agent.emoji} />
                                 <div className="flex-1 min-w-0">
                                   <div className="text-xs font-medium text-mission-control-text">{agent.name}</div>
@@ -697,7 +727,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                                 <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${sel ? 'border-mission-control-accent bg-mission-control-accent' : 'border-mission-control-border'}`}>
                                   {sel && <Check size={9} className="text-white" />}
                                 </div>
-                              </Button>
+                              </button>
                             );
                           })}
                           <Button
@@ -740,8 +770,8 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                 <Flex align="center" gap="2">
                   {gsdDocs
                     ? <GitBranch size={14} className="text-mission-control-accent" />
-                    : <CheckCircle size={14} className="text-success" />}
-                  <p className="text-xs font-semibold text-mission-control-text uppercase tracking-wide">
+                    : <CheckCircle size={14} className="text-[var(--color-success)]" />}
+                  <p className="text-[10px] font-bold text-mission-control-text uppercase tracking-wide">
                     {gsdDocs ? 'GSD Plan Generated' : 'Ready to Create'}
                   </p>
                 </Flex>
@@ -763,7 +793,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                     + {discoveryRefs.length} reference{discoveryRefs.length > 1 ? 's' : ''} will be uploaded as context files
                   </div>
                 )}
-                <Button variant="solid" size="1" onClick={handleDiscoveryConfirm} style={{ width: '100%', justifyContent: 'center' }}>
+                <Button variant="solid" size="1" onClick={handleDiscoveryConfirm} className="w-full justify-center">
                   {gsdDocs ? <><GitBranch size={14} /> Build this project</> : <><Check size={14} /> Create project</>}
                 </Button>
               </div>
@@ -785,16 +815,19 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             {discoveryRefs.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {discoveryRefs.map((ref, i) => (
-                  <Flex key={i} align="center" gap="1" className="px-2 py-1 bg-mission-control-surface border border-mission-control-border rounded-lg text-xs group">
+                  <Flex key={i} align="center" gap="1" className="px-2 py-1 bg-mission-control-surface border border-mission-control-border rounded-xl text-xs group">
                     {ref.type === 'url'
                       ? <ExternalLink size={11} className="text-mission-control-accent flex-shrink-0" />
                       : ref.file?.type.startsWith('image/')
                         ? <ImageIcon size={11} className="text-mission-control-text-dim flex-shrink-0" />
                         : <FileTextIcon size={11} className="text-mission-control-text-dim flex-shrink-0" />}
                     <span className="text-mission-control-text max-w-[140px] truncate">{ref.name}</span>
-                    <IconButton variant="ghost" size="1" onClick={() => setDiscoveryRefs(prev => prev.filter((_, j) => j !== i))}>
+                    <button
+                      onClick={() => setDiscoveryRefs(prev => prev.filter((_, j) => j !== i))}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                    >
                       <X size={10} />
-                    </IconButton>
+                    </button>
                   </Flex>
                 ))}
               </div>
@@ -810,25 +843,34 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                   onKeyDown={e => { if (e.key === 'Enter') addRefUrl(); if (e.key === 'Escape') { setShowRefUrlInput(false); setRefUrlInput(''); } }}
                   placeholder="https://figma.com/... or any reference URL"
                   size="1"
-                  style={{ flex: 1 }}
+                  className="flex-1"
                 />
                 <Button variant="solid" size="1" onClick={addRefUrl} disabled={!refUrlInput.trim()}>
                   Add
                 </Button>
-                <IconButton variant="ghost" size="1" onClick={() => { setShowRefUrlInput(false); setRefUrlInput(''); }}>
+                <button
+                  onClick={() => { setShowRefUrlInput(false); setRefUrlInput(''); }}
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                >
                   <X size={13} />
-                </IconButton>
+                </button>
               </Flex>
             )}
 
             {/* Add buttons row */}
             <Flex align="center" gap="3">
-              <Button variant="ghost" size="1" onClick={() => discoveryFileInputRef.current?.click()}>
+              <button
+                onClick={() => discoveryFileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              >
                 <Paperclip size={12} /> Add files
-              </Button>
-              <Button variant={showRefUrlInput ? 'soft' : 'ghost'} size="1" onClick={() => setShowRefUrlInput(v => !v)}>
+              </button>
+              <button type="button" onClick={() => setShowRefUrlInput(v => !v)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  showRefUrlInput ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}>
                 <ExternalLink size={12} /> Add URL
-              </Button>
+              </button>
               {discoveryRefs.length === 0 && (
                 <span className="text-xs text-mission-control-text-dim ml-auto">
                   {refsDragging ? 'Drop files here' : 'Drop files or add URLs as reference context'}
@@ -847,7 +889,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleDiscoverySend()}
                 placeholder={discoveryLoading ? '' : gsdMode ? 'Describe your idea or pick an option above...' : 'Tell me about your project...'}
                 disabled={discoveryLoading || discoveryReady}
-                style={{ flex: 1 }}
+                className="flex-1"
               />
               <IconButton variant="solid" size="1" onClick={handleDiscoverySend} disabled={!discoveryInput.trim() || discoveryLoading || discoveryReady}>
                 <Send size={14} />
@@ -863,18 +905,21 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   if (phase === 'context-files') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
-          <Flex align="center" justify="between" px="4" py="3" className="border-b border-mission-control-border">
+        <div className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
             <div>
-              <div className="text-sm font-semibold text-mission-control-text">Add Context Files</div>
-              <div className="text-xs text-mission-control-text-dim">Optional — upload files Gemini should use as context</div>
+              <div className="text-base font-semibold text-mission-control-text">Add Context Files</div>
+              <div className="text-xs text-mission-control-text-dim mt-0.5">Optional — upload files Gemini should use as context</div>
             </div>
-            <IconButton variant="ghost" size="1" onClick={onClose}>
-              <X size={16} />
-            </IconButton>
-          </Flex>
+            <button
+              onClick={onClose}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
+              <X size={15} />
+            </button>
+          </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             {/* Drop zone */}
             <div
               onDragOver={e => { e.preventDefault(); setContextFilesDragging(true); }}
@@ -887,7 +932,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                 }
               }}
               onClick={() => contextFilesInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-colors ${
+              className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
                 contextFilesDragging
                   ? 'border-mission-control-accent bg-mission-control-accent/10'
                   : 'border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-surface'
@@ -911,28 +956,31 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             {stagedFiles.length > 0 && (
               <div className="space-y-1.5">
                 {stagedFiles.map((f, i) => (
-                  <Flex key={i} align="center" gap="2" className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
+                  <Flex key={i} align="center" gap="2" className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-xl">
                     <span className="flex-1 text-sm text-mission-control-text truncate">{f.name}</span>
                     <span className="text-xs text-mission-control-text-dim">{(f.size / 1024).toFixed(0)}KB</span>
-                    <IconButton variant="ghost" size="1" onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))}>
+                    <button
+                      onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                    >
                       <Trash2 size={12} />
-                    </IconButton>
+                    </button>
                   </Flex>
                 ))}
               </div>
             )}
           </div>
 
-          <Flex gap="2" px="4" py="3" className="border-t border-mission-control-border">
-            <Button variant="solid" size="1" onClick={async () => {
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+            <Button variant="solid" size="2" onClick={async () => {
                 setPhase('confirm');
                 const names = agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name);
                 const userText = names.length > 0 ? `Team: ${names.join(', ')}` : 'No agents yet';
                 await mcAsk(userText, 'confirm', "Here's what I'll set up:");
-              }} style={{ flex: 1, justifyContent: 'center' }}>
+              }}>
               {stagedFiles.length > 0 ? `Continue with ${stagedFiles.length} file${stagedFiles.length !== 1 ? 's' : ''}` : 'Continue'}
             </Button>
-          </Flex>
+          </div>
         </div>
       </div>
     );
@@ -942,25 +990,28 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   if (phase === 'template') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
-          <Flex align="center" justify="between" px="4" py="3" className="border-b border-mission-control-border">
+        <div className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
             <Flex align="center" gap="2">
               <LayoutTemplate size={16} className="text-mission-control-accent" />
-              <span className="text-sm font-semibold text-mission-control-text">New Project</span>
+              <span className="text-base font-semibold text-mission-control-text">New Project</span>
             </Flex>
-            <IconButton variant="ghost" size="1" onClick={onClose}>
-              <X size={16} />
-            </IconButton>
-          </Flex>
-          <div className="flex-1 overflow-y-auto p-5 space-y-3">
-            <p className="text-sm text-mission-control-text-dim mb-4">Start from a template or build from scratch.</p>
+            <button
+              onClick={onClose}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4">Start from a template or build from scratch</p>
             {/* Blank */}
             <button
               type="button"
               onClick={() => setPhase('name')}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 transition-all text-left"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 hover:bg-mission-control-accent/5 transition-colors text-left"
             >
-              <div className="w-9 h-9 rounded-lg bg-mission-control-bg border border-mission-control-border flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-mission-control-bg border border-mission-control-border flex items-center justify-center flex-shrink-0">
                 <Bot size={16} className="text-mission-control-text-dim" />
               </div>
               <div>
@@ -982,10 +1033,10 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                     setColor(tmpl.color);
                     setPhase('name');
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 transition-all text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 hover:bg-mission-control-accent/5 transition-colors text-left"
                 >
                   <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: `${tmpl.color}20`, border: `1px solid ${tmpl.color}40` }}
                   >
                     <TmplIcon size={16} style={{ color: tmpl.color }} />
@@ -1005,22 +1056,25 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+      <div className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
 
         {/* Header */}
-        <Flex align="center" gap="3" px="4" py="3" className="border-b border-mission-control-border">
-          <div className="w-8 h-8 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center">
-            <Bot size={16} className="text-mission-control-accent" />
-          </div>
-          <div className="flex-1">
-            <div className="text-sm font-semibold text-mission-control-text">New Project Setup</div>
-          </div>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
+            <div className="w-8 h-8 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center">
+              <Bot size={16} className="text-mission-control-accent" />
+            </div>
+            <span className="text-base font-semibold text-mission-control-text">New Project Setup</span>
+          </Flex>
           {phase !== 'creating' && (
-            <IconButton variant="ghost" size="1" onClick={onClose}>
+            <button
+              onClick={onClose}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
               <X size={16} />
-            </IconButton>
+            </button>
           )}
-        </Flex>
+        </div>
 
         {/* Chat area */}
         {phase !== 'creating' && phase !== 'done' && (
@@ -1029,7 +1083,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               <div key={msg.id} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start gap-2'}`}>
                 {msg.from === 'mc' && <MCAvatar />}
                 <div className={`max-w-[82%] ${msg.from === 'user' ? 'flex flex-col items-end' : ''}`}>
-                  <div className={`px-3 py-2 rounded-lg text-sm ${
+                  <div className={`px-3 py-2 rounded-xl text-sm ${
                     msg.from === 'user'
                       ? 'bg-mission-control-accent text-white rounded-br-sm'
                       : 'bg-mission-control-surface text-mission-control-text rounded-bl-sm'
@@ -1047,7 +1101,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             {mcTyping && (
               <Flex gap="2" align="start">
                 <MCAvatar />
-                <div className="bg-mission-control-surface px-4 py-3 rounded-lg rounded-bl-sm">
+                <div className="bg-mission-control-surface px-4 py-3 rounded-xl rounded-bl-sm">
                   <Flex gap="1">
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1063,7 +1117,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
         {phase === 'creating' && (
           <div className="flex-1 overflow-y-auto p-4 min-h-[280px]">
             <Flex align="center" gap="3" mb="4">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
                 <SelectedIconComp size={20} style={{ color }} />
               </div>
               <div>
@@ -1075,21 +1129,21 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
 
             <div className="space-y-2">
               {steps.map(s => (
-                <div key={s.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                <div key={s.id} className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${
                   s.status === 'running' ? 'bg-mission-control-accent/5 border-mission-control-accent/30' :
-                  s.status === 'done'    ? 'bg-success border-success' :
-                  s.status === 'error'   ? 'bg-error border-error' :
+                  s.status === 'done'    ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30' :
+                  s.status === 'error'   ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30' :
                   'bg-mission-control-surface border-mission-control-border'
                 }`}>
                   <div className="flex-shrink-0 mt-0.5">
                     {s.status === 'running' && <Loader2 size={16} className="text-mission-control-accent animate-spin" />}
-                    {s.status === 'done'    && <CheckCircle size={16} className="text-success" />}
-                    {s.status === 'error'   && <XCircle size={16} className="text-error" />}
+                    {s.status === 'done'    && <CheckCircle size={16} className="text-[var(--color-success)]" />}
+                    {s.status === 'error'   && <XCircle size={16} className="text-[var(--color-error)]" />}
                     {s.status === 'pending' && <Circle size={16} className="text-mission-control-border" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium ${
-                      s.status === 'done' ? 'text-success' : s.status === 'error' ? 'text-error' :
+                      s.status === 'done' ? 'text-[var(--color-success)]' : s.status === 'error' ? 'text-[var(--color-error)]' :
                       s.status === 'running' ? 'text-mission-control-accent' : 'text-mission-control-text-dim'
                     }`}>{s.label}</div>
                     <div className="text-xs text-mission-control-text-dim mt-0.5">{s.errorMsg || s.detail}</div>
@@ -1099,8 +1153,8 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             </div>
 
             {createError && (
-              <div className="mt-4 p-3 bg-error border border-error rounded-lg">
-                <div className="text-sm text-error font-medium">Setup failed</div>
+              <div className="mt-4 p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-xl">
+                <div className="text-sm text-[var(--color-error)] font-medium">Setup failed</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">{createError}</div>
               </div>
             )}
@@ -1127,16 +1181,19 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
         <div className="p-3 border-t border-mission-control-border">
           {phase === 'done' && created ? (
             <Flex gap="2">
-              <Button variant="solid" size="1" onClick={() => onCreated(created)} style={{ flex: 1, justifyContent: 'center' }}>
+              <Button variant="solid" size="1" onClick={() => onCreated(created)} className="flex-1 justify-center">
                 <Check size={15} /> Open Project
               </Button>
-              <Button variant="ghost" size="1" onClick={onClose}>
+              <button type="button" onClick={onClose} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                 Close
-              </Button>
+              </button>
             </Flex>
           ) : phase === 'creating' && createError ? (
             <Flex gap="2">
-              <Button variant="ghost" size="1" onClick={() => { setPhase('confirm'); setSteps([]); setCreateError(null); setMsgs(prev => [...prev.slice(0, -1)]); mcSay("Let me show the summary again.", 'confirm'); }} style={{ flex: 1, justifyContent: 'center' }}>Retry</Button>
+              <button
+                onClick={() => { setPhase('confirm'); setSteps([]); setCreateError(null); setMsgs(prev => [...prev.slice(0, -1)]); mcSay("Let me show the summary again.", 'confirm'); }}
+                className="inline-flex items-center justify-center flex-1 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              >Retry</button>
             </Flex>
           ) : phase === 'creating' ? (
             <Flex align="center" justify="center" gap="2" py="2" className="text-sm text-mission-control-text-dim">
@@ -1153,7 +1210,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                 disabled={mcTyping}
                 placeholder={phase === 'name' ? 'Project name...' : 'Describe the goal...'}
                 autoFocus
-                style={{ flex: 1 }}
+                className="flex-1"
               />
               <IconButton variant="solid" size="1" onClick={handleSend} disabled={!input.trim() || mcTyping}>
                 <Send size={18} />

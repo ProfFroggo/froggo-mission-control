@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
-import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File, Search, Settings, Pin, Reply, ChevronDown } from 'lucide-react';
+import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File, Search, Settings, Pin, Reply, ChevronDown, MessageCircle } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import MentionText from './MentionText';
@@ -32,6 +32,14 @@ interface ChatRoomViewProps {
 }
 
 const MAX_AGENT_RESPONSES_PER_TURN = 15;
+
+// Relative timestamp helper
+function relativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
 // Convert tool names like mcp__mission-control_db__task_update → "task_update"
 function formatToolName(name: string): string {
@@ -682,23 +690,21 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        {!hideHeader && <div className={`p-4 border-b border-mission-control-border flex items-center gap-3 ${
+        {!hideHeader && <div className={`flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0 gap-3 ${
           isTeamMeeting
-            ? 'bg-warning/10 border-warning/30'
+            ? 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30'
             : 'bg-mission-control-surface'
         }`}>
-        <IconButton
+        <button
           onClick={onBack}
-          size="2"
-          variant="ghost"
-         
           title="Back to chat"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <ArrowLeft size={18} />
-        </IconButton>
+        </button>
         <Flex align="center" gap="2">
           {isTeamMeeting ? (
-            <div className="w-10 h-10 rounded-full bg-warning flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-full bg-[var(--color-warning)] flex items-center justify-center shadow-md">
               <UsersRound size={20} className="text-white" />
             </div>
           ) : (
@@ -709,7 +715,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             </div>
           )}
           <div>
-            <h2 className={`font-semibold text-sm ${isTeamMeeting ? 'text-warning' : ''}`}>
+            <h2 className={`font-semibold text-sm ${isTeamMeeting ? 'text-[var(--color-warning)]' : ''}`}>
               {room.name}
             </h2>
             <p className="text-xs text-mission-control-text-dim">
@@ -727,7 +733,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             {room.agents.map(id => (
               <div key={id} className="relative group">
                 <AgentAvatar agentId={id} size="xs" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-success border border-white/80 dark:border-white" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--color-success)] border border-white/80 dark:border-white" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-mission-control-surface text-mission-control-text text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                   {agentName(id)}
                 </div>
@@ -744,7 +750,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 <div
                   key={u.id}
                   title={u.name}
-                  className="w-6 h-6 rounded-full bg-success flex items-center justify-center text-white text-xs font-semibold border-2 border-mission-control-surface ring-0"
+                  className="w-6 h-6 rounded-full bg-[var(--color-success)] flex items-center justify-center text-white text-xs font-semibold border-2 border-mission-control-surface ring-0"
                 >
                   {u.name.charAt(0).toUpperCase()}
                 </div>
@@ -760,25 +766,25 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
         <div className="ml-auto flex items-center gap-2">
           {/* Search toggle */}
-          <IconButton
+          <button
             onClick={() => { setShowSearch(v => !v); if (showSearch) setSearchQuery(''); }}
-            size="2"
-            variant={showSearch ? 'soft' : 'ghost'}
-           
             title="Search messages (Cmd+F)"
+            className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+              showSearch
+                ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Search size={16} />
-          </IconButton>
+          </button>
           {/* Settings */}
-          <IconButton
+          <button
             onClick={() => setShowSettings(true)}
-            size="2"
-            variant="ghost"
-           
             title="Room settings"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <Settings size={16} />
-          </IconButton>
+          </button>
           {/* Stop / Resume toggle */}
           {(loading || typingAgents.size > 0 || room.messages.some(m => m.streaming)) ? (
             <IconButton
@@ -804,28 +810,27 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             </IconButton>
           ) : null}
           {/* Manage members */}
-          <IconButton
+          <button
             onClick={() => setShowManageMembers(true)}
-            size="2"
-            variant="ghost"
-           
             title="Manage members"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <UserPlus size={18} />
-          </IconButton>
+          </button>
           {/* Voice meeting toggle */}
-          <IconButton
+          <button
             onClick={() => setVoiceMode(!voiceMode)}
-            size="2"
-            variant={voiceMode ? 'soft' : 'ghost'}
-            color={voiceMode ? 'green' : undefined}
-           
             title={voiceMode ? 'Switch to text chat' : 'Start voice meeting'}
+            className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+              voiceMode
+                ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Phone size={16} />
-          </IconButton>
+          </button>
           {!hideDelete && (
-          <IconButton
+          <button
             onClick={() => {
               showConfirm({
                 title: isTeamMeeting ? 'End Meeting' : 'Delete Room',
@@ -837,14 +842,11 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 onBack();
               });
             }}
-            size="2"
-            variant="ghost"
-            color="red"
-           
             title={isTeamMeeting ? 'End meeting' : 'Delete room'}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
           >
             <Trash2 size={16} />
-          </IconButton>
+          </button>
           )}
         </div>
       </div>}
@@ -859,63 +861,56 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             onChange={e => { setSearchQuery(e.target.value); setSearchMatchIdx(0); }}
             placeholder="Search messages..."
             size="2"
-            style={{ flex: 1 }}
+            className="flex-1"
           />
           {searchMatchIds.length > 0 && (
             <>
               <span className="text-xs text-mission-control-text-dim shrink-0">
                 {searchMatchIdx + 1}/{searchMatchIds.length}
               </span>
-              <IconButton
+              <button
                 onClick={() => setSearchMatchIdx(i => (i - 1 + searchMatchIds.length) % searchMatchIds.length)}
-                size="1"
-                variant="ghost"
-               
                 title="Previous match"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <ChevronDown size={14} className="rotate-180" />
-              </IconButton>
-              <IconButton
+              </button>
+              <button
                 onClick={() => setSearchMatchIdx(i => (i + 1) % searchMatchIds.length)}
-                size="1"
-                variant="ghost"
-               
                 title="Next match"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <ChevronDown size={14} />
-              </IconButton>
+              </button>
             </>
           )}
           {searchQuery && searchMatchIds.length === 0 && (
             <span className="text-xs text-mission-control-text-dim shrink-0">No results</span>
           )}
-          <IconButton
+          <button
             onClick={() => { setShowSearch(false); setSearchQuery(''); }}
-            size="1"
-            variant="ghost"
-           
             title="Close search"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <X size={14} />
-          </IconButton>
+          </button>
         </div>
       )}
 
       {/* Pinned message banner */}
       {pinnedMessage && (
-        <div className="px-4 py-2 border-b border-mission-control-border bg-mission-control-surface/80 flex items-center gap-2 text-xs">
+        <div className="px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex items-center gap-2 text-xs">
           <Pin size={12} className="text-mission-control-accent shrink-0" />
           <span className="text-mission-control-text-dim truncate flex-1">{pinnedMessage.content.slice(0, 120)}</span>
-          <Button
+          <button
             onClick={() => {
               const el = document.getElementById(`msg-${pinnedMessage.id}`);
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }}
-            size="1"
-            variant="ghost"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             Jump
-          </Button>
+          </button>
         </div>
       )}
 
@@ -930,10 +925,10 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-mission-control-text-dim">
             {isTeamMeeting ? (
               <>
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
-                  <UsersRound size={40} className="text-warning" />
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[var(--color-warning)]/20 flex items-center justify-center">
+                  <UsersRound size={40} className="text-[var(--color-warning)]" />
                 </div>
-                <p className="text-lg font-medium mb-2 text-warning">Team Meeting Started</p>
+                <p className="text-lg font-medium mb-2 text-[var(--color-warning)]">Team Meeting Started</p>
                 <p className="text-sm mb-4">
                   All {room.agents.length} agents are present and ready.
                 </p>
@@ -942,7 +937,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     <div key={id} className="flex items-center gap-1.5 px-2.5 py-1 bg-mission-control-surface border border-mission-control-border rounded-full text-xs">
                       <AgentAvatar agentId={id} size="xs" />
                       <span>{agentName(id)}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)]" />
                     </div>
                   ))}
                 </div>
@@ -965,12 +960,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               </>
             ) : (
               <>
-                <Users size={48} className="mb-4 opacity-30" />
-                <p className="text-lg font-medium mb-2">Room Created</p>
-                <p className="text-sm mb-4 text-center">
-                  Start a conversation with {room.agents.map(id => agentName(id)).join(' and ')}.
+                <div className="w-12 h-12 rounded-full bg-mission-control-accent/10 flex items-center justify-center mb-3">
+                  <MessageCircle size={20} className="text-mission-control-accent" />
+                </div>
+                <p className="text-sm font-medium text-mission-control-text-dim">Start the conversation</p>
+                <p className="text-xs text-mission-control-text-dim max-w-[240px] text-center mt-1">
+                  Send a message to {room.agents.map(id => agentName(id)).join(' and ')}.
                 </p>
-                <p className="text-xs text-center">
+                <p className="text-xs text-mission-control-text-dim text-center mt-3">
                   Use <span className="font-mono bg-mission-control-bg px-1.5 py-0.5 rounded">@all</span> to notify everyone,
                   or <span className="font-mono bg-mission-control-bg px-1.5 py-0.5 rounded">@AgentName</span> for specific agents.
                 </p>
@@ -989,7 +986,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             const theme = msg.agentId ? getAgentTheme(msg.agentId) : null;
             const prev = idx > 0 ? displayedMessages[idx - 1] : null;
             const showAvatar = !prev || prev.agentId !== msg.agentId || prev.role !== msg.role;
-            const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const time = relativeTime(msg.timestamp);
 
             // Collect any pending permission requests for this message
             const msgPermissions = [...pendingPermissions.values()].filter(p => p.msgId === msg.id);
@@ -1015,31 +1012,34 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} ${showAvatar ? 'mt-4' : 'mt-1'}`}
               >
                 {/* Avatar */}
-                <div className={`flex-shrink-0 w-9 ${!showAvatar ? 'invisible' : ''}`}>
+                <div className={`flex-shrink-0 w-8 ${!showAvatar ? 'invisible' : ''}`}>
                   {isUser ? (
-                    <div className="w-9 h-9 rounded-full bg-mission-control-accent flex items-center justify-center text-white text-sm font-semibold">
+                    <div className="w-8 h-8 rounded-full bg-mission-control-accent flex items-center justify-center text-white text-sm font-semibold">
                       K
                     </div>
                   ) : msg.agentId ? (
-                    <AgentAvatar agentId={msg.agentId} size="md" ring />
+                    <AgentAvatar agentId={msg.agentId} size="sm" ring />
                   ) : null}
                 </div>
 
                 {/* Content */}
                 <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[80%] min-w-[100px]`}>
                   {showAvatar && (
-                    <div className={`text-xs font-medium mb-1 px-1 ${
-                      isUser ? 'text-mission-control-accent' : (theme?.text || 'text-mission-control-text-dim')
+                    <div className={`mb-1 px-1 text-xs font-medium ${
+                      isUser
+                        ? 'text-mission-control-accent'
+                        : 'text-[var(--color-success)]'
                     }`}>
                       {isUser ? 'Kevin' : (msg.agentId ? agentName(msg.agentId) : 'Agent')}
                     </div>
                   )}
                   <div
-                    className={`px-4 py-3 break-words ${
+                    className={`break-words text-sm leading-relaxed ${
                       isUser
-                        ? 'bg-mission-control-accent/10 border border-mission-control-accent/20 text-mission-control-text rounded-xl rounded-tr-sm'
-                        : `bg-mission-control-surface/80 backdrop-blur-sm border ${theme?.border || 'border-mission-control-border'} rounded-xl rounded-tl-sm shadow-sm`
+                        ? 'text-mission-control-text rounded-[18px_18px_4px_18px] px-4 py-2.5'
+                        : `bg-transparent text-mission-control-text px-0 py-0`
                     }`}
+                    style={isUser ? { background: 'color-mix(in srgb, var(--mission-control-accent) 11%, transparent)', border: '1px solid color-mix(in srgb, var(--mission-control-accent) 18%, transparent)' } : undefined}
                   >
                     {msg.streaming && !msg.content ? (
                       <Flex align="start" gap="2" className="py-1 max-w-xs">
@@ -1074,29 +1074,30 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       </div>
                     )}
                   </div>
-                  <span className="text-xs tabular-nums text-mission-control-text-dim mt-1 px-1">{time}</span>
+                  <span className="text-[11px] tabular-nums text-mission-control-text-dim/70 mt-1 px-1">{time}</span>
                   {/* Hover action buttons */}
                   <Flex align="center" gap="1" className={`mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'justify-end' : 'justify-start'}`}>
-                    <IconButton
+                    <button
+                      type="button"
                       onClick={() => setReplyToMsg(msg)}
                       title="Reply in thread"
-                      size="1"
-                      variant="ghost"
-                     
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     >
                       <Reply size={13} />
-                    </IconButton>
-                    <IconButton
+                    </button>
+                    <button
                       onClick={() => updateRoom(roomId, {
                         pinnedMessageId: room.pinnedMessageId === msg.id ? undefined : msg.id,
                       })}
                       title={room.pinnedMessageId === msg.id ? 'Unpin' : 'Pin message'}
-                      size="1"
-                      variant={room.pinnedMessageId === msg.id ? 'soft' : 'ghost'}
-                     
+                      className={`inline-flex items-center justify-center w-6 h-6 rounded transition-colors ${
+                        room.pinnedMessageId === msg.id
+                          ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                          : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                      }`}
                     >
                       <Pin size={13} />
-                    </IconButton>
+                    </button>
                   </Flex>
                   {/* Reactions */}
                   <MessageReactions messageId={msg.id} isUser={isUser} />
@@ -1132,14 +1133,16 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
         {/* Typing indicators for agents */}
         {typingAgents.size > 0 && !room.messages.some(m => m.streaming) && (
-          <Flex align="center" gap="2" className="text-sm text-mission-control-text-dim pl-12">
-            <Flex gap="1">
-              <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" />
-              <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
-              <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
-            </Flex>
-            {[...typingAgents].map(id => agentName(id)).join(', ')} typing...
-          </Flex>
+          <div className="flex items-center gap-2 px-4 py-2">
+            <div className="flex gap-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-mission-control-text-dim animate-bounce [animation-delay:0ms]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-mission-control-text-dim animate-bounce [animation-delay:150ms]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-mission-control-text-dim animate-bounce [animation-delay:300ms]" />
+            </div>
+            <span className="text-xs text-mission-control-text-dim">
+              {[...typingAgents].map(id => agentName(id)).join(', ')} {typingAgents.size === 1 ? 'is' : 'are'} responding...
+            </span>
+          </div>
         )}
 
         {/* Agent background task status — shows what dispatched agents are working on */}
@@ -1162,7 +1165,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
       {/* Input */}
       <div
-        className="p-3 border-t border-mission-control-border bg-mission-control-bg relative"
+        className="flex items-end gap-2 px-4 py-3 border-t border-mission-control-border flex-shrink-0 bg-mission-control-bg relative transition-colors"
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFiles(Array.from(e.dataTransfer.files)); }}
         role="button"
@@ -1213,7 +1216,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     color="red"
                     radius="full"
                     style={{ position: 'absolute', top: '-6px', right: '-6px', opacity: 0 }}
-                    className="group-hover:opacity-100 transition-all duration-150"
+                    className="group-hover:opacity-100 transition-colors duration-150"
                   >
                     <X size={12} />
                   </IconButton>
@@ -1230,14 +1233,12 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             <span className="text-mission-control-text-dim truncate flex-1">
               Replying to: {replyToMsg.content.slice(0, 80)}
             </span>
-            <IconButton
+            <button
               onClick={() => setReplyToMsg(null)}
-              size="1"
-              variant="ghost"
-             
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <X size={12} />
-            </IconButton>
+            </button>
           </div>
         )}
 
@@ -1282,47 +1283,47 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         )}
 
         <Flex align="center" gap="3">
-          <IconButton
+          <button
             onClick={() => fileInputRef.current?.click()}
-            size="3"
-            variant="ghost"
-           
             title="Attach file"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <Paperclip size={20} />
-          </IconButton>
-          <IconButton
+          </button>
+          <button
             onClick={() => setShowMentions(!showMentions)}
-            size="3"
-            variant={showMentions ? 'soft' : 'ghost'}
-           
             title="Mention an agent"
+            className={`inline-flex items-center justify-center w-10 h-10 rounded-md transition-colors ${
+              showMentions
+                ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <AtSign size={20} />
-          </IconButton>
+          </button>
 
           <div className="flex-1 relative">
-            <TextArea
+            <textarea
               ref={inputRef}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder="Message the room... (use @name to mention)"
               rows={1}
-              size="3"
-              style={{ resize: 'none' }}
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-[14px] px-4 py-3 text-sm resize-none text-mission-control-text placeholder:text-mission-control-text-dim outline-none focus:border-[var(--mission-control-accent)] focus:ring-2 focus:ring-[var(--mission-control-accent)]/20 transition-colors"
+              style={{ minHeight: '44px' }}
             />
           </div>
 
-          <IconButton
+          <button
+            type="button"
             onClick={handleSend}
             disabled={!input.trim() && attachments.length === 0}
-            size="3"
-            variant="soft"
-           
+            className="w-8 h-8 rounded-lg bg-[var(--mission-control-accent)] text-white flex items-center justify-center hover:opacity-85 transition-opacity flex-shrink-0 disabled:opacity-40"
+            title="Send message"
           >
-            <Send size={20} />
-          </IconButton>
+            <Send size={16} />
+          </button>
         </Flex>
       </div>
       </>
@@ -1330,7 +1331,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       {/* Manage Members Modal */}
       {showManageMembers && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           onClick={() => setShowManageMembers(false)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setShowManageMembers(false); } }}
           role="button"
@@ -1345,7 +1346,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           >
             <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
               <h3 className="font-semibold">Manage Members</h3>
-              <IconButton onClick={() => setShowManageMembers(false)} size="2" variant="ghost"><X size={16} /></IconButton>
+              <button onClick={() => setShowManageMembers(false)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"><X size={16} /></button>
             </div>
             <div className="p-4 overflow-y-auto flex-1 min-h-0 space-y-1">
               {agents.map((agent) => {
@@ -1370,7 +1371,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       <span className={`text-sm font-medium ${inRoom ? theme.text : 'text-mission-control-text-dim'}`}>{agent.name}</span>
                       <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${inRoom ? 'bg-success-subtle text-success' : 'bg-mission-control-bg text-mission-control-text-dim'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${inRoom ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-mission-control-bg text-mission-control-text-dim'}`}>
                       {inRoom ? 'In room' : 'Add'}
                     </span>
                   </button>

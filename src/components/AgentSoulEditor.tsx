@@ -4,7 +4,7 @@ import {
   Save, RefreshCw, FileText, Send, Info, Tag, X, Plus,
   Brain, MessageSquare, Star, ToggleLeft, ToggleRight,
 } from 'lucide-react';
-import { Button, IconButton, TextField, TextArea, Switch, Box, Flex } from '@radix-ui/themes';
+import { Button, TextField, TextArea, Switch, Box, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { agentApi } from '../lib/api';
 
@@ -268,16 +268,14 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
               className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent font-medium"
             >
               {trait}
-              <IconButton
+              <button
                 type="button"
-                size="1"
-                variant="ghost"
-               
+                className="inline-flex items-center justify-center w-4 h-4 rounded text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                 onClick={() => removeTrait(trait)}
                 aria-label={`Remove trait ${trait}`}
               >
                 <X size={10} />
-              </IconButton>
+              </button>
             </span>
           ))}
           {traits.length === 0 && (
@@ -286,15 +284,14 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
         </div>
         <div className="flex flex-wrap gap-1 mb-3">
           {TRAIT_SUGGESTIONS.filter(s => !traits.includes(s)).slice(0, 8).map(suggestion => (
-            <Button
+            <button
               key={suggestion}
               type="button"
-              size="1"
-              variant="ghost"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={() => addTrait(suggestion)}
             >
               + {suggestion}
-            </Button>
+            </button>
           ))}
         </div>
         <Flex gap="2">
@@ -305,19 +302,17 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
             placeholder="Add custom trait..."
             maxLength={30}
             size="1"
-            style={{ flex: 1 }}
+            className="flex-1"
           />
-          <IconButton
+          <button
             type="button"
-            size="2"
-            variant="ghost"
-           
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
             onClick={() => addTrait(newTrait)}
             disabled={!newTrait.trim() || traits.length >= 10}
             aria-label="Add trait"
           >
             <Plus size={13} />
-          </IconButton>
+          </button>
         </Flex>
       </div>
 
@@ -329,19 +324,21 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
         </Flex>
         <div className="grid grid-cols-2 gap-2">
           {TONE_PRESETS.map(preset => (
-            <Button
+            <button
               key={preset.id}
               type="button"
-              size="2"
-              variant={tonePreset === preset.id ? 'soft' : 'ghost'}
               onClick={() => setTonePreset(preset.id)}
-              style={{ justifyContent: 'flex-start', height: 'auto', padding: '10px 12px' }}
+              className={`flex items-start gap-1.5 px-3 py-2.5 rounded-md text-xs font-medium border transition-colors text-left ${
+                tonePreset === preset.id
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
-              <div style={{ textAlign: 'left' }}>
-                <div className="text-xs font-semibold">{preset.label}</div>
-                <div className="text-xs opacity-70 mt-0.5">{preset.description}</div>
+              <div>
+                <div className="font-semibold">{preset.label}</div>
+                <div className="opacity-70 mt-0.5">{preset.description}</div>
               </div>
-            </Button>
+            </button>
           ))}
         </div>
       </div>
@@ -439,74 +436,87 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
 
       {/* Soul File Editor */}
       <div className="space-y-3">
+        {/* Section header */}
         <Flex align="center" justify="between" gap="2">
-          <Flex align="center" gap="2" className="text-sm font-medium text-mission-control-text">
-            <FileText size={15} />
-            <span>~/mission-control/agents/{agentId}/SOUL.md</span>
-          </Flex>
           <Flex align="center" gap="2">
-            <IconButton
+            <FileText size={14} className="text-mission-control-text-dim flex-shrink-0" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+              SOUL.md
+            </span>
+            <span className="text-[11px] text-mission-control-text-dim/70 font-mono truncate hidden sm:block">
+              ~/mission-control/agents/{agentId}/SOUL.md
+            </span>
+          </Flex>
+          <Flex align="center" gap="1">
+            <button
               type="button"
-              size="2"
-              variant="ghost"
-
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={() => setShowHint(!showHint)}
               title="Show format hints"
               aria-label="Show format hints"
             >
               <Info size={14} />
-            </IconButton>
-            <IconButton
+            </button>
+            <button
               type="button"
-              size="2"
-              variant="ghost"
-
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
               onClick={loadSoul}
               disabled={loading}
               title="Reload from disk"
               aria-label="Reload from disk"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            </IconButton>
+            </button>
           </Flex>
         </Flex>
 
         {showHint && (
-          <div className="rounded-lg bg-info-subtle border border-info-border p-3">
-            <p className="text-xs font-semibold text-info mb-2">Expected format</p>
-            <pre className="text-xs text-mission-control-text-dim whitespace-pre-wrap font-mono leading-relaxed">
+          <div className="rounded-lg bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)] mb-2">Expected format</p>
+            <pre className="text-xs text-mission-control-text-dim/70 whitespace-pre-wrap font-mono leading-relaxed">
               {SOUL_HINT}
             </pre>
           </div>
         )}
 
-        <TextArea
+        <textarea
           value={content}
           onChange={e => handleChange(e.target.value)}
-          rows={18}
           spellCheck={false}
-          size="2"
-          style={{ fontFamily: 'monospace', resize: 'vertical' }}
+          className="w-full font-mono text-sm bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-3 text-mission-control-text placeholder:text-mission-control-text-dim/50 resize-y focus:outline-none focus:border-[var(--mission-control-accent)] min-h-[300px]"
+          style={{ minHeight: '300px' }}
           placeholder="No soul file yet. Write one to give this agent its identity, skills, and operating principles."
         />
 
-        <Flex align="center" justify="between" gap="2">
-          <span className={`text-xs ${charCount > MAX_CHARS * 0.9 ? 'text-warning' : 'text-mission-control-text-dim'}`}>
+        {/* Sticky footer row */}
+        <Flex align="center" justify="between" gap="2" className="sticky bottom-0 bg-transparent pt-1 pb-0">
+          <span className={`text-[11px] tabular-nums ${charCount > MAX_CHARS * 0.9 ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim/70'}`}>
             {charCount.toLocaleString()} / {(MAX_CHARS / 1024).toFixed(0)}KB
-            {isDirty && <span className="ml-2 text-mission-control-accent">Unsaved changes</span>}
+            {isDirty && <span className="ml-2 text-[var(--mission-control-accent)]">Unsaved</span>}
           </span>
           <Flex align="center" gap="2">
-            <Button
+            <button
               type="button"
-              size="2"
-              variant="ghost"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
               onClick={handleTestDispatch}
               disabled={dispatching}
               title="Dispatch a test task to this agent to verify its soul file is working"
             >
               {dispatching ? <RefreshCw size={13} className="animate-spin" /> : <Send size={13} />}
               Test dispatch
-            </Button>
+            </button>
+            {isDirty && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                onClick={() => { setContent(originalContent); setCharCount(originalContent.length); }}
+                disabled={saving}
+                title="Discard changes"
+              >
+                <X size={13} />
+                Discard
+              </button>
+            )}
             <Button
               type="button"
               size="2"
@@ -515,7 +525,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
               disabled={saving || !isDirty}
             >
               {saving ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
-              {saving ? 'Saving...' : 'Save soul file'}
+              {saving ? 'Saving...' : 'Save soul'}
             </Button>
           </Flex>
         </Flex>

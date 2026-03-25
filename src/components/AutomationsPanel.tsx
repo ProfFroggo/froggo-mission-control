@@ -6,7 +6,7 @@ import {
   RefreshCw, FileText, MessageSquare, Archive, Layers, List, History,
   Users, BarChart2,
 } from 'lucide-react';
-import { Button, IconButton, TextField, Switch, Flex } from '@radix-ui/themes';
+import { Button, TextField, Switch, Flex } from '@radix-ui/themes';
 import TabNav, { type TabNavItem } from './TabNav';
 import AutomationBuilderModal from './AutomationBuilderModal';
 import AutomationStepBuilder, { type AutomationStepDef } from './AutomationStepBuilder';
@@ -173,10 +173,10 @@ const TEMPLATES: Template[] = [
 
 function StatusBadge({ status }: { status: AutomationStatus }) {
   const map: Record<AutomationStatus, { label: string; className: string }> = {
-    active:  { label: 'Active',  className: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-subtle text-success text-xs font-medium' },
-    paused:  { label: 'Paused',  className: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-subtle text-warning text-xs font-medium' },
-    draft:   { label: 'Draft',   className: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mission-control-border text-mission-control-text-dim text-xs font-medium' },
-    error:   { label: 'Error',   className: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-subtle text-error text-xs font-medium' },
+    active:  { label: 'Active',  className: 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)]' },
+    paused:  { label: 'Paused',  className: 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)]' },
+    draft:   { label: 'Draft',   className: 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-mission-control-border/50 text-mission-control-text-dim' },
+    error:   { label: 'Error',   className: 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-danger)]/10 text-[var(--color-danger)]' },
   };
   const { label, className } = map[status];
   return (
@@ -197,8 +197,9 @@ function TriggerIcon({ type }: { type: TriggerType }) {
   };
   const Icon = icons[type];
   return (
-    <span title={type} className="text-mission-control-text-dim">
-      <Icon size={14} />
+    <span title={type} className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]">
+      <Icon size={10} />
+      {type}
     </span>
   );
 }
@@ -225,19 +226,19 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
   const isActive = automation.status === 'active';
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl px-5 py-4 flex flex-col gap-3">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/30 transition-colors flex flex-col gap-3">
       {/* Top row: name + status + toggle */}
       <Flex align="start" gap="3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <TriggerIcon type={automation.trigger_type} />
-            <span className="font-semibold text-sm text-mission-control-text overflow-hidden text-ellipsis whitespace-nowrap">
+            <span className="text-sm font-semibold text-mission-control-text overflow-hidden text-ellipsis whitespace-nowrap">
               {automation.name}
             </span>
             <StatusBadge status={automation.status} />
+            <TriggerIcon type={automation.trigger_type} />
           </div>
           {automation.description && (
-            <p className="text-xs text-mission-control-text-dim mt-1 leading-relaxed">
+            <p className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">
               {automation.description}
             </p>
           )}
@@ -252,43 +253,40 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
 
       {/* Meta row: last run, next run */}
       <div className="flex gap-4 flex-wrap">
-        <span className="text-xs text-mission-control-text-dim tabular-nums">
+        <span className="text-[10px] text-mission-control-text-dim tabular-nums">
           Last run: {formatTime(automation.lastRun)}
         </span>
-        <span className="text-xs text-mission-control-text-dim tabular-nums">
+        <span className="text-[10px] text-mission-control-text-dim tabular-nums">
           Next run: {formatTime(automation.nextRun)}
         </span>
-        <span className="text-xs text-mission-control-text-dim tabular-nums">
+        <span className="text-[10px] text-mission-control-text-dim tabular-nums">
           {automation.steps.length} step{automation.steps.length !== 1 ? 's' : ''}
         </span>
       </div>
 
       {/* Action row */}
       <div className="flex gap-2 flex-wrap items-center">
-        <Button size="1" variant="solid" onClick={() => onRunNow(automation.id)}>
+        <Button size="1" variant="outline" onClick={() => onRunNow(automation.id)}>
           <Play size={12} /> Run now
         </Button>
-        <Button size="1" variant="ghost" color="gray" onClick={() => onEdit(automation)}>
+        <button onClick={() => onEdit(automation)} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
           <Edit2 size={12} /> Edit
-        </Button>
-        <Button size="1" variant="ghost" color="gray" onClick={() => onOpenStepBuilder(automation)}>
+        </button>
+        <button onClick={() => onOpenStepBuilder(automation)} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
           <List size={12} /> Steps
-        </Button>
-        <Button size="1" variant="ghost" color="gray" onClick={() => onOpenRunLog(automation)}>
+        </button>
+        <button onClick={() => onOpenRunLog(automation)} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
           <History size={12} /> History
-        </Button>
-        <IconButton
-          size="1"
-          variant="ghost"
-          color="red"
-         
+        </button>
+        <button
+          type="button"
           onClick={() => onDelete(automation.id)}
           title="Delete automation"
           aria-label="Delete automation"
-          className="ml-auto"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-border/40 transition-colors ml-auto"
         >
           <Trash2 size={12} />
-        </IconButton>
+        </button>
       </div>
     </div>
   );
@@ -302,11 +300,11 @@ interface TemplateCardProps {
 }
 
 const CATEGORY_COLORS: Record<TemplateCategory, string> = {
-  Content:   'var(--review)',
-  Social:    'var(--danger)',
-  Reporting: 'var(--info)',
-  Tasks:     'var(--success)',
-  Alerts:    'var(--warning)',
+  Content:   'var(--color-review)',
+  Social:    'var(--color-danger)',
+  Reporting: 'var(--color-info)',
+  Tasks:     'var(--color-success)',
+  Alerts:    'var(--color-warning)',
 };
 
 function TemplateCard({ template, onUse }: TemplateCardProps) {
@@ -329,7 +327,7 @@ function TemplateCard({ template, onUse }: TemplateCardProps) {
             {template.name}
           </span>
           <span
-            className="text-[11px] font-bold px-1.5 py-0.5 rounded"
+            className="text-[10px] font-bold px-1.5 py-0.5 rounded"
             style={{ backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
           >
             {template.category}
@@ -530,7 +528,7 @@ export default function AutomationsPanel() {
       {/* Header + Tabs */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
         {/* Header */}
-        <Flex align="center" justify="between" className="px-6 py-4">
+        <Flex align="center" justify="between" className="px-4 py-3">
           <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
               <Zap size={24} className="text-mission-control-accent" />
@@ -553,14 +551,12 @@ export default function AutomationsPanel() {
         </Flex>
 
         {/* Tabs */}
-        <div className="border-t border-mission-control-border">
-          <TabNav
-            tabs={AUTOMATION_TABS}
-            activeTab={activeTab}
-            onTabChange={(id) => setActiveTab(id as ActiveTab)}
-            paddingX="px-6"
-          />
-        </div>
+        <TabNav
+          tabs={AUTOMATION_TABS}
+          activeTab={activeTab}
+          onTabChange={(id) => setActiveTab(id as ActiveTab)}
+          paddingX="px-6"
+        />
       </div>
 
       {/* My Automations tab content */}
@@ -580,9 +576,9 @@ export default function AutomationsPanel() {
                 className="pl-8"
               />
             </div>
-            <IconButton onClick={fetchAutomations} title="Refresh" aria-label="Refresh automations" size="2" variant="ghost">
+            <button onClick={fetchAutomations} title="Refresh" aria-label="Refresh automations" className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
               <RefreshCw size={14} />
-            </IconButton>
+            </button>
           </Flex>
 
           {/* Automation list or empty state */}

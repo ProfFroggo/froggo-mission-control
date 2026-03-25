@@ -86,14 +86,13 @@ export default function SourceForm({ source, onCancel, onSave }: SourceFormProps
         >
           {saving ? '...' : source ? 'Update' : 'Add'}
         </Button>
-        <Button
+        <button
           type="button"
-          size="1"
-          variant="ghost"
           onClick={onCancel}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           Cancel
-        </Button>
+        </button>
       </Flex>
     </form>
   );

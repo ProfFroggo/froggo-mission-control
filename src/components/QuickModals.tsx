@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Mail, MessageSquare, RefreshCw, Clock, MapPin, AlertCircle } from 'lucide-react';
-import { Flex, IconButton } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
 import { useUserSettings } from '../store/userSettings';
 
@@ -85,27 +85,26 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
     >
       <BaseModalHeader
         title="Calendar - Next 3 Days"
-        icon={<Calendar size={20} className="text-info" />}
+        icon={<Calendar size={20} className="text-[var(--color-info)]" />}
         onClose={onClose}
       />
       
       <Flex align="center" justify="end" className="px-6 py-2 border-b border-mission-control-border/50">
-        <IconButton
-          variant="ghost"
-          size="2"
+        <button
           onClick={fetchEvents}
           disabled={loading}
           aria-label="Refresh events"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-        </IconButton>
+        </button>
       </Flex>
 
       <BaseModalBody noPadding maxHeight="60vh">
         {loading ? (
           <div className="p-8 text-center text-mission-control-text-dim">Loading...</div>
         ) : error ? (
-          <div className="p-8 text-center text-error">{error}</div>
+          <div className="p-8 text-center text-[var(--color-error)]">{error}</div>
         ) : events.length === 0 ? (
           <div className="p-8 text-center text-mission-control-text-dim">No events</div>
         ) : (
@@ -189,27 +188,26 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
     >
       <BaseModalHeader
         title="Unread Emails"
-        icon={<Mail size={20} className="text-success" />}
+        icon={<Mail size={20} className="text-[var(--color-success)]" />}
         onClose={onClose}
       />
       
       <Flex align="center" justify="end" className="px-6 py-2 border-b border-mission-control-border/50">
-        <IconButton
-          variant="ghost"
-          size="2"
+        <button
           onClick={fetchEmails}
           disabled={loading}
           aria-label="Refresh emails"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-        </IconButton>
+        </button>
       </Flex>
 
       <BaseModalBody noPadding maxHeight="60vh">
         {loading ? (
           <div className="p-8 text-center text-mission-control-text-dim">Loading...</div>
         ) : error ? (
-          <div className="p-8 text-center text-error">{error}</div>
+          <div className="p-8 text-center text-[var(--color-error)]">{error}</div>
         ) : emails.length === 0 ? (
           <div className="p-8 text-center text-mission-control-text-dim">No unread emails</div>
         ) : (
@@ -273,15 +271,14 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
       />
       
       <Flex align="center" justify="end" className="px-6 py-2 border-b border-mission-control-border/50">
-        <IconButton
-          variant="ghost"
-          size="2"
+        <button
           onClick={fetchMentions}
           disabled={loading}
           aria-label="Refresh mentions"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-        </IconButton>
+        </button>
       </Flex>
 
       <BaseModalBody noPadding maxHeight="60vh">
@@ -289,7 +286,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
           <div className="p-8 text-center text-mission-control-text-dim">Loading...</div>
         ) : error ? (
           <div className="p-8 text-center text-mission-control-text-dim">
-            <AlertCircle size={24} className="mx-auto mb-2 text-warning" />
+            <AlertCircle size={24} className="mx-auto mb-2 text-[var(--color-warning)]" />
             <p>{error}</p>
             <p className="text-xs mt-2">X API may need setup</p>
           </div>
@@ -317,11 +314,11 @@ function PlatformIcon({ platform }: { platform: string }) {
   switch (platform) {
     case 'whatsapp':
       return (
-        <span className="w-5 h-5 rounded-full bg-success flex items-center justify-center text-white text-xs font-bold">W</span>
+        <span className="w-5 h-5 rounded-full bg-[var(--color-success)] flex items-center justify-center text-white text-xs font-bold">W</span>
       );
     case 'telegram':
       return (
-        <span className="w-5 h-5 rounded-full bg-info flex items-center justify-center text-white text-xs font-bold">T</span>
+        <span className="w-5 h-5 rounded-full bg-[var(--color-info)] flex items-center justify-center text-white text-xs font-bold">T</span>
       );
     case 'discord':
       return (
@@ -371,27 +368,26 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
     >
       <BaseModalHeader
         title="Recent Messages"
-        icon={<MessageSquare size={20} className="text-review" />}
+        icon={<MessageSquare size={20} className="text-[var(--color-review)]" />}
         onClose={onClose}
       />
       
       <Flex align="center" justify="end" className="px-6 py-2 border-b border-mission-control-border/50">
-        <IconButton
-          variant="ghost"
-          size="2"
+        <button
           onClick={fetchMessages}
           disabled={loading}
           aria-label="Refresh messages"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-        </IconButton>
+        </button>
       </Flex>
 
       <BaseModalBody noPadding maxHeight="60vh">
         {loading ? (
           <div className="p-8 text-center text-mission-control-text-dim">Loading...</div>
         ) : error ? (
-          <div className="p-8 text-center text-error">{error}</div>
+          <div className="p-8 text-center text-[var(--color-error)]">{error}</div>
         ) : messages.length === 0 ? (
           <div className="p-8 text-center text-mission-control-text-dim">
             <MessageSquare size={24} className="mx-auto mb-2 opacity-50" />

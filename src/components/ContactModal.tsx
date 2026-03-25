@@ -494,36 +494,30 @@ Be thorough but only include real people, not generic references.`;
 
       {/* Mode Selector */}
       <div className="px-6 pt-6">
-        <Flex gap="2">
-          <Button
-            onClick={() => setMode('dialogue')}
-            variant={mode === 'dialogue' ? 'solid' : 'outline'}
-            size="2"
-            className="flex-1"
-          >
+        <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+          <button type="button" onClick={() => setMode('dialogue')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+              mode === 'dialogue' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+            }`}>
             <MessageSquare size={16} />
             <span className="font-medium">Dialogue</span>
             <Sparkles size={14} className={mode === 'dialogue' ? 'animate-pulse' : 'opacity-50'} />
-          </Button>
-          <Button
-            onClick={() => setMode('upload')}
-            variant={mode === 'upload' ? 'solid' : 'outline'}
-            size="2"
-            className="flex-1"
-          >
+          </button>
+          <button type="button" onClick={() => setMode('upload')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+              mode === 'upload' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+            }`}>
             <Upload size={16} />
             <span className="font-medium">Upload</span>
-          </Button>
-          <Button
-            onClick={() => setMode('manual')}
-            variant={mode === 'manual' ? 'solid' : 'outline'}
-            size="2"
-            className="flex-1"
-          >
+          </button>
+          <button type="button" onClick={() => setMode('manual')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+              mode === 'manual' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+            }`}>
             <Edit3 size={16} />
             <span className="font-medium">Manual</span>
-          </Button>
-        </Flex>
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -701,7 +695,7 @@ Be thorough but only include real people, not generic references.`;
                         key={idx}
                         type="button"
                         onClick={() => setSelectedEntity(idx)}
-                        className={`w-full text-left p-4 rounded-lg border transition-all ${
+                        className={`w-full text-left p-4 rounded-lg border transition-colors ${
                           selectedEntity === idx
                             ? 'border-[--accent-9] bg-[--accent-3]'
                             : 'border-mission-control-border hover:border-[--accent-8]/50'
@@ -755,32 +749,32 @@ Be thorough but only include real people, not generic references.`;
               {/* Contact Type */}
               <div role="group" aria-labelledby="contact-type-label">
                 <span id="contact-type-label" className="block text-sm text-mission-control-text-dim mb-2">Contact Type</span>
-                <Flex gap="3" role="radiogroup" aria-label="Contact type selection">
-                  <Button
+                <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border" role="radiogroup" aria-label="Contact type selection">
+                  <button
                     type="button"
                     role="radio"
                     aria-checked={contactType === 'personal'}
                     onClick={() => setContactType('personal')}
-                    variant={contactType === 'personal' ? 'soft' : 'outline'}
-                    size="2"
-                    className="flex-1"
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                      contactType === 'personal' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                    }`}
                   >
                     <User size={16} />
                     Personal
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     type="button"
                     role="radio"
                     aria-checked={contactType === 'professional'}
                     onClick={() => setContactType('professional')}
-                    variant={contactType === 'professional' ? 'soft' : 'outline'}
-                    size="2"
-                    className="flex-1"
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                      contactType === 'professional' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                    }`}
                   >
                     <Briefcase size={16} />
                     Professional
-                  </Button>
-                </Flex>
+                  </button>
+                </div>
               </div>
 
               {/* Name */}
@@ -948,8 +942,8 @@ Be thorough but only include real people, not generic references.`;
         {/* Status Message - Positioned absolutely over modal */}
         {saveStatus !== 'idle' && (
           <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-10 ${
-            saveStatus === 'success' ? 'bg-success-subtle border border-success-border text-success' :
-            saveStatus === 'error' ? 'bg-error-subtle border border-error-border text-error' :
+            saveStatus === 'success' ? 'bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 text-[var(--color-success)]' :
+            saveStatus === 'error' ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)]' :
             'bg-mission-control-surface border border-mission-control-border'
           }`}>
             {saveStatus === 'success' ? <CheckCircle size={16} /> :

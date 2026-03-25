@@ -76,7 +76,7 @@ export default function HealthStatusWidget() {
   if (error) {
     return (
       <div className="p-4 flex flex-col items-center justify-center h-full">
-        <XCircle size={32} className="text-error mb-2" />
+        <XCircle size={32} className="text-[var(--color-error)] mb-2" />
         <p className="text-xs text-mission-control-text-dim text-center">{error}</p>
       </div>
     );
@@ -96,9 +96,9 @@ export default function HealthStatusWidget() {
       {/* Header */}
       <Flex align="center" gap="2" className="mb-3">
         <Shield size={16} className={
-          health === 'healthy' ? 'text-success' :
-          health === 'warning' ? 'text-warning' :
-          'text-error'
+          health === 'healthy' ? 'text-[var(--color-success)]' :
+          health === 'warning' ? 'text-[var(--color-warning)]' :
+          'text-[var(--color-error)]'
         } />
         <h3 className="text-sm font-semibold text-mission-control-text">System Health</h3>
       </Flex>
@@ -108,24 +108,24 @@ export default function HealthStatusWidget() {
         {/* Health indicator */}
         <Flex align="center" gap="3">
           <div className={`flex items-center justify-center w-12 h-12 rounded-full ${
-            health === 'healthy' ? 'bg-success-subtle' :
-            health === 'warning' ? 'bg-warning-subtle' :
-            'bg-error-subtle'
+            health === 'healthy' ? 'bg-[var(--color-success)]/10' :
+            health === 'warning' ? 'bg-[var(--color-warning)]/10' :
+            'bg-[var(--color-error)]/10'
           }`}>
             {health === 'healthy' ? (
-              <CheckCircle size={24} className="text-success" />
+              <CheckCircle size={24} className="text-[var(--color-success)]" />
             ) : health === 'warning' ? (
-              <AlertTriangle size={24} className="text-warning" />
+              <AlertTriangle size={24} className="text-[var(--color-warning)]" />
             ) : (
-              <XCircle size={24} className="text-error" />
+              <XCircle size={24} className="text-[var(--color-error)]" />
             )}
           </div>
           
           <div className="flex-1">
             <div className={`text-lg font-bold ${
-              health === 'healthy' ? 'text-success' :
-              health === 'warning' ? 'text-warning' :
-              'text-error'
+              health === 'healthy' ? 'text-[var(--color-success)]' :
+              health === 'warning' ? 'text-[var(--color-warning)]' :
+              'text-[var(--color-error)]'
             }`}>
               {health === 'healthy' ? 'All Systems Go' :
                health === 'warning' ? 'Minor Issues' :
@@ -143,32 +143,32 @@ export default function HealthStatusWidget() {
         <div className="space-y-2 pt-2 border-t border-mission-control-border">
           {/* Watcher status */}
           <Flex align="center" justify="between" className="text-xs">
-            <span className="text-mission-control-text-dim">Task Processing</span>
-            <span className={status.watcherRunning ? 'text-success' : 'text-error'}>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Task Processing</span>
+            <span className={`text-xs font-medium ${status.watcherRunning ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
               {status.watcherRunning ? 'Running' : 'Stopped'}
             </span>
           </Flex>
 
           {/* Kill switch */}
           <Flex align="center" justify="between" className="text-xs">
-            <span className="text-mission-control-text-dim">Safety Controls</span>
-            <span className={status.killSwitchOn ? 'text-error' : 'text-success'}>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Safety Controls</span>
+            <span className={`text-xs font-medium ${status.killSwitchOn ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'}`}>
               {status.killSwitchOn ? 'Engaged' : 'Normal'}
             </span>
           </Flex>
 
           {/* Active tasks */}
           <Flex align="center" justify="between" className="text-xs">
-            <span className="text-mission-control-text-dim">Active Tasks</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Active Tasks</span>
             <div className="flex items-center gap-1.5">
               {status.inProgressTasks > 0 && (
-                <Loader size={12} className="text-info animate-spin" />
+                <Loader size={12} className="text-[var(--color-info)] animate-spin" />
               )}
-              <span className={
+              <span className={`tabular-nums font-mono text-xs font-medium ${
                 status.inProgressTasks === 0 ? 'text-mission-control-text-dim' :
-                status.inProgressTasks > 10 ? 'text-warning' :
-                'text-info'
-              }>
+                status.inProgressTasks > 10 ? 'text-[var(--color-warning)]' :
+                'text-[var(--color-info)]'
+              }`}>
                 {status.inProgressTasks}
               </span>
             </div>
@@ -177,8 +177,8 @@ export default function HealthStatusWidget() {
       </div>
 
       {/* Last updated */}
-      <div className="mt-3 pt-3 border-t border-mission-control-border text-xs text-mission-control-text-dim text-center">
-        Auto-refreshing every 30s
+      <div className="mt-3 pt-3 border-t border-mission-control-border text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim/70 text-center">
+        Auto-refreshes every 60s
       </div>
     </div>
   );

@@ -15,7 +15,7 @@ import {
   RefreshCw,
   Download,
 } from 'lucide-react';
-import { Button, IconButton, Flex } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import TabNav from './TabNav';
 import TaskTrendsChart from './TaskTrendsChart';
 import AgentUtilizationChart from './AgentUtilizationChart';
@@ -152,7 +152,7 @@ export default function AnalyticsPanel() {
     <Flex direction="column" height="100%">
       {/* Header + tabs wrapper */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
-        <Flex align="center" justify="between" className="px-6 py-4">
+        <Flex align="center" justify="between" className="px-4 py-3">
           <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg">
               <BarChart3 size={24} className="text-mission-control-accent" />
@@ -181,10 +181,10 @@ export default function AnalyticsPanel() {
                 </button>
               ))}
             </div>
-            <IconButton size="2" variant="ghost" color="gray" onClick={loadAnalytics} title="Refresh">
+            <button type="button" onClick={loadAnalytics} title="Refresh" aria-label="Refresh" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <RefreshCw size={16} />
-            </IconButton>
-            <Button size="2" variant="soft" onClick={exportData}>
+            </button>
+            <Button size="2" variant="outline" onClick={exportData}>
               <Download size={16} />
               Export
             </Button>
@@ -209,63 +209,63 @@ export default function AnalyticsPanel() {
       <div className="flex-1 overflow-y-auto p-4">
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div>
         {view === 'overview' && (
           <div className="space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
                 <Flex align="center" justify="between" className="mb-2">
-                  <Target size={20} className="text-info" />
-                  <TrendingUp size={16} className="text-success" />
+                  <Target size={18} className="text-[var(--color-info)]" />
+                  <TrendingUp size={14} className="text-[var(--color-success)]" />
                 </Flex>
-                <div className="text-3xl font-bold text-info mb-1">
+                <div className="text-2xl font-bold tabular-nums text-mission-control-text mb-0.5">
                   {totalCompleted}
                 </div>
-                <div className="text-secondary">Tasks Completed</div>
-                <div className="mt-2 text-caption">
-                  {totalCreated} created • {avgCompletionRate}% rate
+                <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mt-0.5">Tasks Completed</div>
+                <div className="mt-1.5 text-xs text-mission-control-text-dim tabular-nums">
+                  {totalCreated} created • <span className="text-[var(--color-success)]">{avgCompletionRate}%</span> rate
                 </div>
               </div>
 
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
                 <Flex align="center" justify="between" className="mb-2">
-                  <Users size={20} className="text-review" />
-                  <Zap size={16} className="text-warning" />
+                  <Users size={18} className="text-[var(--color-review)]" />
+                  <Zap size={14} className="text-[var(--color-warning)]" />
                 </Flex>
-                <div className="text-3xl font-bold text-review mb-1">
+                <div className="text-2xl font-bold tabular-nums text-mission-control-text mb-0.5">
                   {agentUtilization.length}
                 </div>
-                <div className="text-secondary">Active Agents</div>
-                <div className="mt-2 text-caption">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mt-0.5">Active Agents</div>
+                <div className="mt-1.5 text-xs text-mission-control-text-dim tabular-nums">
                   {agentUtilization.filter(a => a.tasksInProgress > 0).length} working now
                 </div>
               </div>
 
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
                 <Flex align="center" justify="between" className="mb-2">
-                  <Clock size={20} className="text-warning" />
-                  <Activity size={16} className="text-success" />
+                  <Clock size={18} className="text-[var(--color-warning)]" />
+                  <Activity size={14} className="text-[var(--color-success)]" />
                 </Flex>
-                <div className="text-3xl font-bold text-warning mb-1">
+                <div className="text-2xl font-bold tabular-nums text-mission-control-text mb-0.5">
                   {totalHours.toFixed(0)}h
                 </div>
-                <div className="text-secondary">Total Hours</div>
-                <div className="mt-2 text-caption">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mt-0.5">Total Hours</div>
+                <div className="mt-1.5 text-xs text-mission-control-text-dim">
                   Last {timeRange === '7d' ? '7' : timeRange === '30d' ? '30' : '90'} days
                 </div>
               </div>
 
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
                 <Flex align="center" justify="between" className="mb-2">
-                  <TrendingUp size={20} className="text-success" />
-                  <Zap size={16} className="text-info" />
+                  <TrendingUp size={18} className="text-[var(--color-success)]" />
+                  <Zap size={14} className="text-[var(--color-info)]" />
                 </Flex>
-                <div className="text-3xl font-bold text-success mb-1">
+                <div className="text-2xl font-bold tabular-nums text-mission-control-text mb-0.5">
                   {avgVelocity > 0 ? '+' : ''}{avgVelocity}
                 </div>
-                <div className="text-secondary">Avg Velocity</div>
-                <div className="mt-2 text-caption">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mt-0.5">Avg Velocity</div>
+                <div className="mt-1.5 text-xs text-mission-control-text-dim">
                   Tasks/day throughput
                 </div>
               </div>
@@ -282,10 +282,10 @@ export default function AnalyticsPanel() {
 
             {/* Subtask Progress */}
             {subtaskStats.length > 0 && (
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
-                <h3 className="text-heading-3 mb-4 flex items-center gap-2">
-                  <Target size={16} className="text-mission-control-accent" />
-                  Active Tasks - Subtask Progress
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                  <Target size={12} className="text-mission-control-text-dim" />
+                  Active Tasks — Subtask Progress
                 </h3>
                 <div className="space-y-3">
                   {subtaskStats.slice(0, 10).map((stat: any) => (
@@ -297,7 +297,7 @@ export default function AnalyticsPanel() {
                         <Flex align="center" gap="2">
                           <div className="flex-1 bg-mission-control-bg rounded-full h-2">
                             <div
-                              className="bg-mission-control-accent rounded-full h-2 transition-all"
+                              className="bg-mission-control-accent rounded-full h-2 transition-colors"
                               style={{ width: `${stat.completionRate}%` }}
                             />
                           </div>
@@ -323,11 +323,14 @@ export default function AnalyticsPanel() {
         
         {view === 'projects' && (
           <div className="space-y-6">
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
-              <h3 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Calendar size={16} className="text-mission-control-accent" />
-                Project Statistics
-              </h3>
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} className="text-mission-control-text-dim" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Project Statistics</span>
+                </div>
+              </div>
+              <div className="px-4 pt-3 pb-4">
               {projectStats.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-mission-control-text-dim">
                   <BarChart3 size={32} className="mb-3 opacity-30" />
@@ -339,41 +342,41 @@ export default function AnalyticsPanel() {
                 {projectStats.map((project) => (
                   <div
                     key={project.project}
-                    className="p-4 bg-mission-control-bg rounded-lg"
+                    className="p-4 bg-mission-control-border/10 rounded-xl"
                   >
                     <Flex align="center" justify="between" className="mb-3">
                       <div>
-                        <div className="font-medium">{project.project}</div>
-                        <div className="text-secondary">
+                        <div className="font-medium text-mission-control-text">{project.project}</div>
+                        <div className="text-xs text-mission-control-text-dim mt-0.5">
                           {project.totalTasks} total • {project.completedTasks} completed
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-mission-control-accent">
+                        <div className="text-2xl font-bold tabular-nums text-mission-control-text">
                           {project.completedTasks > 0
                             ? Math.round((project.completedTasks / project.totalTasks) * 100)
                             : 0}%
                         </div>
-                        <div className="text-caption">completion</div>
+                        <div className="text-xs text-mission-control-text-dim mt-0.5">completion</div>
                       </div>
                     </Flex>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-mission-control-text-dim">In Progress</div>
-                        <div className="font-medium text-info">
+                        <div className="font-medium text-[var(--color-info)]">
                           {project.inProgressTasks}
                         </div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Avg Time</div>
-                        <div className="font-medium text-warning">
+                        <div className="font-medium text-[var(--color-warning)]">
                           {project.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Total Time</div>
-                        <div className="font-medium text-review">
+                        <div className="font-medium text-[var(--color-review)]">
                           {project.totalTimeSpent.toFixed(1)}h
                         </div>
                       </div>
@@ -382,7 +385,7 @@ export default function AnalyticsPanel() {
                     {/* Progress bar */}
                     <div className="mt-3 bg-mission-control-border rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-mission-control-accent to-[var(--color-info)] rounded-full h-2 transition-all"
+                        className="bg-gradient-to-r from-mission-control-accent to-[var(--color-info)] rounded-full h-2 transition-colors"
                         style={{
                           width: `${project.totalTasks > 0 
                             ? (project.completedTasks / project.totalTasks) * 100 
@@ -394,6 +397,7 @@ export default function AnalyticsPanel() {
                 ))}
               </div>
               )}
+            </div>
             </div>
           </div>
         )}

@@ -150,7 +150,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
   return (
     <>
       <header
-        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-mission-control-surface/80 backdrop-blur-xl border-b border-mission-control-border/50 transition-all duration-200"
+        className="drag-region fixed top-0 right-0 h-14 z-40 flex items-center justify-between px-4 bg-mission-control-surface border-b border-mission-control-border transition-colors duration-200"
         style={{ left: `${sidebarWidth}px` }}
       >
         {/* Left: Focus mode */}
@@ -168,12 +168,12 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
             onClick={() => setNotifCenterOpen(prev => !prev)}
             title="Notifications"
             aria-label={`Notifications${unreadNotifCount > 0 ? ` (${unreadNotifCount} unread)` : ''}`}
-            className="relative inline-flex items-center justify-center p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors min-h-[44px] min-w-[44px]"
+            className="relative w-8 h-8 rounded-lg flex items-center justify-center text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
           >
             <Bell size={16} aria-hidden="true" />
             {unreadNotifCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center text-[9px] font-bold bg-error text-error rounded-full leading-none tabular-nums">
-                {unreadNotifCount > 999 ? `${unreadNotifCount}+` : unreadNotifCount}
+              <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] flex items-center justify-center text-[9px] font-bold bg-[var(--color-error)] text-white rounded-full leading-none tabular-nums px-0.5">
+                {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
               </span>
             )}
           </button>
@@ -185,25 +185,25 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
             title={`Platform: ${platformStatus === 'ok' ? 'Healthy' : platformStatus === 'degraded' ? 'Degraded' : 'Error'}`}
             aria-expanded={healthDashboardOpen}
             aria-label={`Platform health: ${platformStatus === 'ok' ? 'Healthy' : platformStatus === 'degraded' ? 'Degraded' : 'Error'}`}
-            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full transition-colors hover:bg-mission-control-border min-h-[44px] min-w-[44px]"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-mission-control-border/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
           >
             <span
               className={`w-2 h-2 rounded-full flex-shrink-0 ${
                 platformStatus === 'ok'
-                  ? 'bg-success'
+                  ? 'bg-[var(--color-success)]'
                   : platformStatus === 'degraded'
-                  ? 'bg-warning'
-                  : 'bg-error animate-pulse'
+                  ? 'bg-[var(--color-warning)]'
+                  : 'bg-[var(--color-error)] animate-pulse'
               }`}
             />
             <Activity
               size={11}
               className={
                 platformStatus === 'ok'
-                  ? 'text-success'
+                  ? 'text-[var(--color-success)]'
                   : platformStatus === 'degraded'
-                  ? 'text-warning'
-                  : 'text-error'
+                  ? 'text-[var(--color-warning)]'
+                  : 'text-[var(--color-error)]'
               }
               aria-hidden="true"
             />
@@ -217,10 +217,10 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
               aria-label={connectionState === 'disconnected'
                 ? `Connection: Disconnected. Reconnecting, attempt ${reconnectAttempts}.`
                 : `Connection: Connecting to gateway, attempt ${reconnectAttempts}.`}
-              className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full ${
+              className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${
                 connectionState === 'disconnected'
-                  ? 'bg-error-subtle text-error'
-                  : 'bg-warning-subtle text-warning'
+                  ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]'
+                  : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
               }`}
               title={connectionState === 'disconnected'
                 ? `Disconnected. Reconnecting... (${reconnectAttempts})`
@@ -250,7 +250,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
               aria-live="polite"
               aria-atomic="true"
               aria-label={`${offlineQueueSize} actions queued for sync`}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-info px-2 py-1 rounded-full bg-info-subtle"
+              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]"
               title={`${offlineQueueSize} actions queued for sync`}
             >
               <Loader size={12} className="animate-spin" aria-hidden="true" />
@@ -260,14 +260,14 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
           )}
 
           {status.pendingInbox > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-warning" title={`${status.pendingInbox} pending inbox items`}>
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)]" title={`${status.pendingInbox} pending inbox items`}>
               <Inbox size={12} aria-hidden="true" />
               <span className="tabular-nums">{status.pendingInbox}</span>
             </span>
           )}
 
           {status.inProgressTasks > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-info" title={`${status.inProgressTasks} tasks in progress`}>
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]" title={`${status.inProgressTasks} tasks in progress`}>
               <Loader size={12} className="animate-spin" aria-hidden="true" />
               <span className="tabular-nums">{status.inProgressTasks}</span>
             </span>

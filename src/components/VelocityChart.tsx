@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, Download, Copy, Check } from 'lucide-react';
-import { Button, Flex, Spinner } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 
 interface WeekBucket {
   weekStart: string;
@@ -90,8 +90,9 @@ export default function VelocityChart({ weeks = 8 }: Props) {
 
   if (loading) {
     return (
-      <div className="h-64 flex items-center justify-center">
-        <Spinner size="3" />
+      <div className="space-y-4">
+        <div className="h-5 bg-mission-control-border/40 rounded animate-pulse w-40" />
+        <div className="h-[224px] bg-mission-control-border/20 rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -133,30 +134,28 @@ export default function VelocityChart({ weeks = 8 }: Props) {
       <Flex align="center" justify="between">
         <Flex align="center" gap="2">
           <TrendingUp size={16} className="text-mission-control-accent" />
-          <span className="font-medium">Task Velocity</span>
-          <span className="text-xs text-mission-control-text-dim">last {weeks} weeks</span>
+          <span className="text-sm font-semibold text-mission-control-text">Task Velocity</span>
+          <span className="text-[10px] uppercase tracking-wider text-mission-control-text-dim">last {weeks} weeks</span>
         </Flex>
         <Flex align="center" gap="2">
-          <Button
-            variant="surface"
-            color="gray"
-            size="1"
+          <button
+            type="button"
             onClick={handleExportCsv}
             title="Export velocity as CSV"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Download size={12} />
             CSV
-          </Button>
-          <Button
-            variant="surface"
-            color="gray"
-            size="1"
+          </button>
+          <button
+            type="button"
             onClick={handleCopy}
             title="Copy to clipboard"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
-            {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
+            {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
-          </Button>
+          </button>
         </Flex>
       </Flex>
 
@@ -193,7 +192,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                   y1={y}
                   x2={chartW - CHART_PADDING.right}
                   y2={y}
-                  stroke="var(--color-border, #334155)"
+                  stroke="var(--mission-control-border, #334155)"
                   strokeWidth={0.5}
                   strokeDasharray="3,3"
                 />
@@ -203,7 +202,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                   textAnchor="end"
                   dominantBaseline="middle"
                   fontSize={9}
-                  fill="var(--color-text-dim, #64748b)"
+                  fill="var(--mission-control-text-dim, #64748b)"
                 >
                   {tick}
                 </text>
@@ -266,7 +265,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                     y={baseY - h_created - h_completed - h_inProgress - 3}
                     textAnchor="middle"
                     fontSize={8}
-                    fill="var(--color-text-dim, #64748b)"
+                    fill="var(--mission-control-text-dim, #64748b)"
                   >
                     {stackedTotal}
                   </text>
@@ -277,7 +276,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                   y={baseY + 14}
                   textAnchor="middle"
                   fontSize={8}
-                  fill="var(--color-text-dim, #64748b)"
+                  fill="var(--mission-control-text-dim, #64748b)"
                 >
                   {label}
                 </text>
@@ -291,7 +290,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
             y1={yPos(0)}
             x2={chartW - CHART_PADDING.right}
             y2={yPos(0)}
-            stroke="var(--color-border, #334155)"
+            stroke="var(--mission-control-border, #334155)"
             strokeWidth={1}
           />
         </svg>

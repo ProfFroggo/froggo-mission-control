@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { UserPlus, BookOpen, Users, ChevronRight, Award, Target, CheckCircle, AlertTriangle, FileText, Sparkles } from 'lucide-react';
+import { UserPlus, BookOpen, Users, ChevronRight, Target, CheckCircle, AlertTriangle, FileText, GraduationCap } from 'lucide-react';
 import { Button, Badge, Flex } from '@radix-ui/themes';
 import HRAgentCreationModal from './HRAgentCreationModal';
 import TrainingLogModal from './TrainingLogModal';
@@ -108,24 +108,24 @@ export default function HRSection() {
 
   const indicatorEl = indicator && (
     <Badge color="grass" variant="soft" className="flex items-center gap-1">
-      {indicator === 'new-training' && <><Sparkles size={10} /> New training</>}
-      {indicator === 'new-report' && <><Sparkles size={10} /> New report</>}
+      {indicator === 'new-training' && <><BookOpen size={10} /> New training</>}
+      {indicator === 'new-report' && <><FileText size={10} /> New report</>}
     </Badge>
   );
 
   return (
     <>
       <div className="mb-8">
-        <div className="rounded-lg border border-success-border bg-gradient-to-br from-teal-500/5 to-transparent overflow-hidden">
+        <div className="rounded-lg border border-[var(--color-success)]/30 bg-mission-control-surface overflow-hidden">
           {/* HR Header */}
-          <Flex align="center" gap="3" className="p-4 border-b border-success-border">
-            <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-2xl ring-2 ring-teal-500/30">
-              🎓
+          <Flex align="center" gap="3" className="p-4 border-b border-[var(--color-success)]/30">
+            <div className="w-12 h-12 rounded-full bg-[var(--color-success)]/10 border border-[var(--color-success)]/20 flex items-center justify-center text-[var(--color-success)]">
+              <GraduationCap size={22} />
             </div>
             <div className="flex-1">
               <h2 className="font-bold text-mission-control-text flex items-center gap-2">
                 HR Agent
-                <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-success-subtle text-success border border-success-border">
+                <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/30">
                   Agent Management
                 </span>
               </h2>
@@ -133,36 +133,47 @@ export default function HRSection() {
                 I help you build and train the best possible team.
               </p>
             </div>
-            {/* Indicator — top right, clears when relevant modal opened */}
-            {indicatorEl}
+            {/* Indicator + action buttons — top right */}
+            <Flex align="center" gap="2">
+              {indicatorEl}
+              <Button onClick={openReports} variant="outline" color="grass" size="2">
+                <FileText size={14} /> Reports
+              </Button>
+              <Button onClick={openTrainingLog} variant="outline" color="grass" size="2">
+                <BookOpen size={14} /> Training Log
+              </Button>
+              <Button onClick={() => setShowCreate(true)} size="2">
+                <UserPlus size={14} /> New Agent
+              </Button>
+            </Flex>
           </Flex>
 
           {/* Quick Stats */}
           {teamHealth && (
             <div className="grid grid-cols-4 gap-px bg-mission-control-border/30">
-              <div className="p-3 bg-mission-control-bg">
+              <div className="p-3 bg-mission-control-surface">
                 <div className="text-lg font-bold text-mission-control-text tabular-nums">{teamHealth.totalAgents}</div>
-                <div className="text-xs text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+                <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <Users size={10} /> Agents
                 </div>
               </div>
-              <div className="p-3 bg-mission-control-bg">
+              <div className="p-3 bg-mission-control-surface">
                 <div className="text-lg font-bold text-mission-control-text tabular-nums">{teamHealth.avgProficiency}</div>
-                <div className="text-xs text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+                <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <Target size={10} /> Avg Skill
                 </div>
               </div>
-              <div className="p-3 bg-mission-control-bg">
+              <div className="p-3 bg-mission-control-surface">
                 <div className="text-lg font-bold text-mission-control-text tabular-nums">{teamHealth.recentTrainings}</div>
-                <div className="text-xs text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+                <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <BookOpen size={10} /> Total Trainings
                 </div>
               </div>
-              <div className="p-3 bg-mission-control-bg">
-                <div className={`text-lg font-bold tabular-nums ${teamHealth.agentsNeedingTraining.length > 0 ? 'text-warning' : 'text-success'}`}>
-                  {teamHealth.agentsNeedingTraining.length > 0 ? teamHealth.agentsNeedingTraining.length : '✓'}
+              <div className="p-3 bg-mission-control-surface">
+                <div className={`text-lg font-bold tabular-nums font-mono ${teamHealth.agentsNeedingTraining.length > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-success)]'}`}>
+                  {teamHealth.agentsNeedingTraining.length > 0 ? teamHealth.agentsNeedingTraining.length : '0'}
                 </div>
-                <div className="text-xs text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+                <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   {teamHealth.agentsNeedingTraining.length > 0 ? <AlertTriangle size={10} /> : <CheckCircle size={10} />}
                   Gaps
                 </div>
@@ -170,53 +181,19 @@ export default function HRSection() {
             </div>
           )}
 
-          {/* Action Buttons */}
-          <Flex gap="2" className="p-3">
-            <Button
-              onClick={() => setShowCreate(true)}
-              size="2"
-              className="flex-1"
-            >
-              <UserPlus size={16} /> Create New Agent
-            </Button>
-            <Button
-              onClick={openReports}
-              variant="outline"
-              color="grass"
-              size="2"
-            >
-              <FileText size={16} /> Reports
-            </Button>
-            <Button
-              onClick={openTrainingLog}
-              variant="outline"
-              color="grass"
-              size="2"
-            >
-              <BookOpen size={16} /> Training Log
-            </Button>
-            <Button
-              onClick={() => setShowSkills(true)}
-              variant="outline"
-              color="grass"
-              size="2"
-            >
-              <Award size={16} /> Skills
-            </Button>
-          </Flex>
 
           {/* Skill gaps alert */}
           {teamHealth && teamHealth.agentsNeedingTraining.length > 0 && (
             <div className="px-4 pb-3">
-              <Flex align="center" gap="2" className="px-3 py-2 rounded-lg bg-warning-subtle border border-warning-border text-xs text-warning">
+              <Flex align="center" gap="2" className="px-3 py-2 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-xs text-[var(--color-warning)]">
                 <AlertTriangle size={12} className="flex-shrink-0" />
                 <span>
                   <strong>{teamHealth.agentsNeedingTraining.join(', ')}</strong>{' '}
                   {teamHealth.agentsNeedingTraining.length === 1 ? 'has' : 'have'} skills below threshold. Training recommended.
                 </span>
-                <Button variant="ghost" color="amber" size="1" className="ml-auto whitespace-nowrap" onClick={openTrainingLog}>
+                <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors ml-auto whitespace-nowrap" onClick={openTrainingLog}>
                   View <ChevronRight size={12} className="inline" />
-                </Button>
+                </button>
               </Flex>
             </div>
           )}

@@ -71,3 +71,11 @@ export function formatDateTime(ts: number): string {
     hour: '2-digit', minute: '2-digit',
   });
 }
+
+/** Convert a raw filename to a human-readable label. Strips extension, replaces -/_ with spaces, title-cases. */
+export function humanizeFilename(name: string): string {
+  return name
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}

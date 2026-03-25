@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Button, IconButton, Box, Flex } from '@radix-ui/themes';
+import { Button, Box, Flex } from '@radix-ui/themes';
 import { Monitor, AppWindow, X, RefreshCw, Loader2, AlertTriangle, Lock } from 'lucide-react';
 
 export interface ScreenSource {
@@ -65,38 +65,47 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm cursor-default"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm cursor-default"
       onClick={onCancel}
       role="presentation"
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div role="dialog" aria-modal="true" aria-label="Screen source picker" className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-[640px] max-w-[90vw] max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border">
-          <h2 className="text-lg font-semibold text-mission-control-text">Share Your Screen</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <h2 className="text-base font-semibold text-mission-control-text">Share Your Screen</h2>
           <Flex align="center" gap="2">
-            <IconButton variant="ghost" size="1" onClick={fetchSources} title="Refresh">
+            <button
+              onClick={fetchSources}
+              title="Refresh"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            </IconButton>
-            <IconButton variant="ghost" size="1" onClick={onCancel}>
+            </button>
+            <button type="button" onClick={onCancel} aria-label="Close" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={16} />
-            </IconButton>
+            </button>
           </Flex>
-        </Flex>
+        </div>
 
         {/* Filter tabs */}
         <Flex gap="1" px="5" pt="3">
-          {(['all', 'screen', 'window'] as const).map(f => (
-            <Button key={f} variant={filter === f ? 'solid' : 'ghost'} size="1" onClick={() => setFilter(f)}>
-              {f === 'screen' && <Monitor size={12} />}
-              {f === 'window' && <AppWindow size={12} />}
-              {f === 'all' ? 'All' : f === 'screen' ? `Screens (${screens.length})` : `Windows (${windows.length})`}
-            </Button>
-          ))}
+          <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+            {(['all', 'screen', 'window'] as const).map(f => (
+              <button key={f} type="button" onClick={() => setFilter(f)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  filter === f ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                }`}>
+                {f === 'screen' && <Monitor size={12} />}
+                {f === 'window' && <AppWindow size={12} />}
+                {f === 'all' ? 'All' : f === 'screen' ? `Screens (${screens.length})` : `Windows (${windows.length})`}
+              </button>
+            ))}
+          </div>
         </Flex>
 
         {/* Sources grid */}
-        <Box p="5" className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
             <Flex direction="column" align="center" justify="center" py="9" className="text-mission-control-text-dim">
               <Loader2 size={32} className="animate-spin mb-3" />
@@ -119,26 +128,28 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
                 </ol>
               </div>
               <Flex gap="3">
-                <Button
-                  variant="ghost"
-                  size="1"
+                <button
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() => {
                     // Not available in web mode — user must open System Settings manually
                   }}
                 >
                   Open System Settings
-                </Button>
-                <Button variant="solid" size="1" onClick={fetchSources}>
+                </button>
+                <Button variant="solid" size="2" onClick={fetchSources}>
                   Check Again
                 </Button>
               </Flex>
             </Flex>
           ) : error ? (
-            <Flex direction="column" align="center" justify="center" py="9" className="text-error">
+            <Flex direction="column" align="center" justify="center" py="9" className="text-[var(--color-error)]">
               <p className="text-sm flex items-center gap-1"><AlertTriangle size={14} className="inline" /> {error}</p>
-              <Button variant="ghost" size="1" onClick={fetchSources}>
+              <button
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                onClick={fetchSources}
+              >
                 Retry
-              </Button>
+              </button>
             </Flex>
           ) : filtered.length === 0 ? (
             <Flex direction="column" align="center" justify="center" py="9" className="text-mission-control-text-dim">
@@ -148,7 +159,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {filtered.map(source => (
                 <button type="button" key={source.id} onClick={() => setSelected(source.id)} onDoubleClick={() => onSelect(source)}
-                  className={`group flex flex-col rounded-lg border-2 overflow-hidden transition-all hover:scale-[1.02] ${
+                  className={`group flex flex-col rounded-lg border-2 overflow-hidden transition-[colors,transform] hover:scale-[1.02] ${
                     selected === source.id
                       ? 'border-mission-control-accent shadow-lg shadow-mission-control-accent/20 bg-mission-control-accent/5'
                       : 'border-mission-control-border hover:border-mission-control-text-dim bg-mission-control-bg'
@@ -187,17 +198,17 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
               ))}
             </div>
           )}
-        </Box>
+        </div>
 
         {/* Footer */}
-        <Flex align="center" justify="end" gap="3" px="5" py="4" className="border-t border-mission-control-border">
-          <Button variant="ghost" size="1" onClick={onCancel}>
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+          <Button variant="ghost" size="2" onClick={onCancel}>
             Cancel
           </Button>
-          <Button variant="solid" size="1" onClick={handleConfirm} disabled={!selected}>
+          <Button variant="solid" size="2" onClick={handleConfirm} disabled={!selected}>
             Share
           </Button>
-        </Flex>
+        </div>
       </div>
     </div>
   );

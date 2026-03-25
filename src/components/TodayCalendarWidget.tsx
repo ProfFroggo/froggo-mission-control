@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Video, RefreshCw, ChevronRight } from 'lucide-react';
-import { Button, Flex, IconButton, Heading, Spinner } from '@radix-ui/themes';
+import { Flex, Heading, Spinner } from '@radix-ui/themes';
 
 interface TodayCalendarWidgetProps {
   onNavigate?: (view: 'schedule') => void;
@@ -84,23 +84,31 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
   return (
-    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
+    <div className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
       {/* Header */}
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="2">
-          <Calendar size={16} className="text-info" />
+          <Calendar size={16} className="text-[var(--color-info)]" />
           <div>
             <Heading size="3" weight="medium">Today&apos;s Schedule</Heading>
             <p className="text-xs text-mission-control-text-dim">{dateStr}</p>
           </div>
         </Flex>
         <Flex align="center" gap="2">
-          <IconButton variant="ghost" size="2" onClick={loadTodayEvents} disabled={loading} title="Refresh">
+          <button
+            onClick={loadTodayEvents}
+            disabled={loading}
+            title="Refresh"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
+          >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </IconButton>
-          <Button variant="ghost" size="1" onClick={() => onNavigate?.('schedule')} className="flex items-center gap-1 text-sm text-mission-control-accent hover:underline">
+          </button>
+          <button
+            onClick={() => onNavigate?.('schedule')}
+            className="flex items-center gap-1 text-sm text-mission-control-accent hover:underline"
+          >
             View All <ChevronRight size={14} />
-          </Button>
+          </button>
         </Flex>
       </Flex>
 
@@ -112,11 +120,11 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
             <p className="text-sm text-mission-control-text-dim">Loading events...</p>
           </div>
         ) : error ? (
-          <div className="p-6 text-center text-error">
+          <div className="p-6 text-center text-[var(--color-error)]">
             <p className="text-sm">{error}</p>
-            <Button variant="ghost" size="1" onClick={loadTodayEvents} className="mt-2 text-xs text-mission-control-accent hover:underline">
+            <button onClick={loadTodayEvents} className="mt-2 text-xs text-mission-control-accent hover:underline">
               Retry
-            </Button>
+            </button>
           </div>
         ) : events.length === 0 ? (
           <div className="p-6 text-center">
@@ -125,80 +133,86 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
             <p className="text-xs text-mission-control-text-dim mt-1">Enjoy your free time!</p>
           </div>
         ) : (
-          <div className="divide-y divide-mission-control-border">
+          <div>
             {events.slice(0, 5).map((event) => {
               const meetingLink = getMeetingLink(event);
               const timeStr = formatTime(event);
               const happening = isNow(event);
               const upcoming = isUpcoming(event);
-              
+              const isAllDay = event.start.date && !event.start.dateTime;
+
               return (
-                <div 
-                  key={event.id} 
-                  className={`p-3 hover:bg-mission-control-bg/50 transition-colors ${
-                    happening ? 'bg-info-subtle border-l-2 border-l-info' : ''
+                <div
+                  key={event.id}
+                  className={`flex items-center gap-3 px-4 py-2.5 border-b border-mission-control-border/40 last:border-0 hover:bg-mission-control-border/10 transition-colors ${
+                    happening ? 'bg-[var(--color-info)]/10' : ''
                   }`}
                 >
-                  <Flex align="start" gap="2">
-                    <div className={`flex-shrink-0 w-14 text-right ${
-                      happening ? 'text-info font-semibold' :
-                      upcoming ? 'text-warning font-medium' :
-                      'text-mission-control-text-dim'
-                    }`}>
-                      <div className="text-xs">{timeStr}</div>
+                  {/* Status dot */}
+                  <span
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      happening ? 'bg-[var(--color-info)]' : upcoming ? 'bg-[var(--color-warning)]' : 'bg-mission-control-border'
+                    }`}
+                  />
+
+                  {/* Time */}
+                  {isAllDay ? (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/30 text-mission-control-text-dim w-16 flex-shrink-0 text-center">
+                      All day
+                    </span>
+                  ) : (
+                    <span className="text-[10px] tabular-nums text-mission-control-text-dim w-16 flex-shrink-0 font-mono">
+                      {timeStr}
+                    </span>
+                  )}
+
+                  {/* Title + location */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="text-sm font-medium text-mission-control-text truncate">
+                        {event.summary}
+                      </p>
+                      {happening && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 flex-shrink-0">
+                          Now
+                        </span>
+                      )}
+                      {upcoming && !happening && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/30 flex-shrink-0">
+                          Soon
+                        </span>
+                      )}
                     </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <Flex align="start" justify="between" gap="2">
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-medium truncate ${
-                            happening ? 'text-info' : 'text-mission-control-text'
-                          }`}>
-                            {event.summary}
-                            {happening && (
-                              <span className="ml-2 px-1.5 py-0.5 bg-info text-info text-xs rounded-full">
-                                Now
-                              </span>
-                            )}
-                            {upcoming && !happening && (
-                              <span className="ml-2 px-1.5 py-0.5 bg-warning-subtle text-warning text-xs rounded-full">
-                                Soon
-                              </span>
-                            )}
-                          </p>
-                          
-                          {event.location && (
-                            <Flex align="center" gap="1" className="mt-1 text-xs text-mission-control-text-dim">
-                              <MapPin size={10} />
-                              <span className="truncate">{event.location}</span>
-                            </Flex>
-                          )}
-                        </div>
-                        
-                        {meetingLink && (
-                          <a
-                            href={meetingLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-shrink-0 p-1.5 bg-mission-control-accent/20 text-mission-control-accent rounded-lg hover:bg-mission-control-accent hover:text-white transition-all"
-                            title="Join meeting"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Video size={14} />
-                          </a>
-                        )}
+                    {event.location && (
+                      <Flex align="center" gap="1" className="mt-0.5 text-[10px] text-mission-control-text-dim">
+                        <MapPin size={9} />
+                        <span className="truncate">{event.location}</span>
                       </Flex>
-                    </div>
-                  </Flex>
+                    )}
+                  </div>
+
+                  {/* Join meeting button */}
+                  {meetingLink && (
+                    <a
+                      href={meetingLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 p-1.5 bg-mission-control-accent/10 text-mission-control-accent rounded-lg hover:bg-mission-control-accent hover:text-white transition-colors"
+                      title="Join meeting"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Video size={13} />
+                    </a>
+                  )}
                 </div>
               );
             })}
-            
+
             {events.length > 5 && (
-              <div className="p-2 text-center">
-                <Button variant="ghost" size="1" onClick={() => onNavigate?.('schedule')} className="text-xs text-mission-control-accent hover:underline">
+              <div className="px-4 py-2.5">
+                <button onClick={() => onNavigate?.('schedule')} className="text-xs text-mission-control-accent hover:underline">
                   +{events.length - 5} more event{events.length - 5 > 1 ? 's' : ''}
-                </Button>
+                </button>
               </div>
             )}
           </div>

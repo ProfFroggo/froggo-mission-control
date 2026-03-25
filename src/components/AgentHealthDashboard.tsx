@@ -97,17 +97,34 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
       {/* Fleet overview cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { icon: Users,         val: totalAgents,        label: 'Total agents',          color: 'text-mission-control-text' },
-          { icon: Activity,      val: online,             label: 'Online (last hour)',     color: 'text-success' },
-          { icon: AlertTriangle, val: circuitOpenCount,   label: 'Circuit breakers open',  color: circuitOpenCount > 0 ? 'text-error' : 'text-success' },
-          { icon: Zap,           val: unassignedInProgress, label: 'Unassigned in-progress', color: unassignedInProgress > 0 ? 'text-warning' : 'text-success' },
-        ].map(({ icon: Icon, val, label, color }) => (
-          <div key={label} className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
+          {
+            icon: Users, val: totalAgents, label: 'Total agents',
+            color: 'text-mission-control-text',
+            subLabel: 'registered',
+          },
+          {
+            icon: Activity, val: online, label: 'Online',
+            color: online > 0 ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim',
+            subLabel: 'last hour',
+          },
+          {
+            icon: AlertTriangle, val: circuitOpenCount, label: 'Circuit open',
+            color: circuitOpenCount > 0 ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]',
+            subLabel: circuitOpenCount > 0 ? 'needs attention' : 'all clear',
+          },
+          {
+            icon: Zap, val: unassignedInProgress, label: 'Unassigned',
+            color: unassignedInProgress > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-success)]',
+            subLabel: 'in-progress',
+          },
+        ].map(({ icon: Icon, val, label, color, subLabel }) => (
+          <div key={label} className="bg-mission-control-surface border border-mission-control-border rounded-xl p-3">
             <div className="flex items-center gap-1.5 mb-2">
-              <Icon size={14} className={color} />
-              <span className="text-xs text-mission-control-text-dim">{label}</span>
+              <Icon size={12} className={color} />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{label}</span>
             </div>
-            <div className={`text-2xl font-bold tabular-nums ${color}`}>{val}</div>
+            <div className="text-xl font-bold tabular-nums font-mono text-mission-control-text">{val}</div>
+            <div className="text-[11px] text-mission-control-text-dim/70 mt-0.5">{subLabel}</div>
           </div>
         ))}
       </div>
@@ -119,11 +136,11 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-mission-control-border bg-mission-control-surface/50">
-              <th className="text-left px-4 py-2.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Agent</th>
-              <th className="text-left px-4 py-2.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider hidden sm:table-cell">Last active</th>
-              <th className="text-left px-4 py-2.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider hidden md:table-cell">Done today</th>
-              <th className="text-left px-4 py-2.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Circuit</th>
-              <th className="text-left px-4 py-2.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Current task</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Agent</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider hidden sm:table-cell">Last active</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider hidden md:table-cell">Done today</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Circuit</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Current task</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-mission-control-border/50">
@@ -133,15 +150,24 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
                 className={`hover:bg-mission-control-surface/40 transition-colors ${onSelectAgent ? 'cursor-pointer' : ''}`}
                 onClick={() => onSelectAgent?.(row.agent.id, row.agent.name)}
               >
-                {/* Agent name + status dot */}
+                {/* Agent name + status badge */}
                 <td className="px-4 py-3">
                   <Flex align="center" gap="2">
-                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                      row.agent.status === 'busy' ? 'bg-mission-control-accent animate-pulse' :
-                      row.agent.status === 'active' || row.agent.status === 'idle' ? 'bg-success' :
-                      'bg-mission-control-text-dim/40'
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      row.agent.status === 'active' || row.agent.status === 'busy'
+                        ? 'bg-[var(--color-success)] agent-dot-pulse'
+                        : 'bg-mission-control-border'
                     }`} />
                     <span className="font-medium text-mission-control-text">{row.agent.name}</span>
+                    {(row.agent.status === 'active' || row.agent.status === 'busy') ? (
+                      <span className="hidden sm:inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20">
+                        online
+                      </span>
+                    ) : (
+                      <span className="hidden sm:inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/40 text-mission-control-text-dim">
+                        offline
+                      </span>
+                    )}
                   </Flex>
                 </td>
 
@@ -155,7 +181,7 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
 
                 {/* Tasks done today */}
                 <td className="px-4 py-3 hidden md:table-cell">
-                  <Flex align="center" gap="1" className="text-success">
+                  <Flex align="center" gap="1" className="text-[var(--color-success)]">
                     <CheckCircle size={11} />
                     {row.tasksToday}
                   </Flex>
@@ -164,18 +190,18 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
                 {/* Circuit status */}
                 <td className="px-4 py-3">
                   {row.circuitOpen ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-error-subtle text-error border border-error-border">
+                    <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/30">
                       <AlertTriangle size={9} /> Open
                     </span>
                   ) : (
-                    <span className="text-xs text-success">OK</span>
+                    <span className="text-xs text-[var(--color-success)]">OK</span>
                   )}
                 </td>
 
                 {/* Current task */}
                 <td className="px-4 py-3 max-w-xs">
                   {row.currentTask ? (
-                    <span className="flex items-center gap-1 text-warning text-xs">
+                    <span className="flex items-center gap-1 text-[var(--color-warning)] text-xs">
                       <Zap size={11} className="flex-shrink-0" />
                       <span className="truncate">{row.currentTask}</span>
                     </span>

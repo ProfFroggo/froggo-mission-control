@@ -15,10 +15,10 @@ import BaseModal, { BaseModalBody } from './BaseModal';
 import AgentAvatar from './AgentAvatar';
 
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
-  { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-error-subtle', icon: <AlertTriangle size={14} /> },
-  { id: 'p1', label: 'High', color: 'text-warning', bg: 'bg-warning-subtle', icon: <ArrowUp size={14} /> },
-  { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-warning-subtle', icon: <Circle size={14} /> },
-  { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-bg0/20', icon: <ArrowDown size={14} /> },
+  { id: 'p0', label: 'Urgent', color: 'text-[var(--color-error)]', bg: 'bg-[var(--color-error)]/10', icon: <AlertTriangle size={14} /> },
+  { id: 'p1', label: 'High', color: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10', icon: <ArrowUp size={14} /> },
+  { id: 'p2', label: 'Medium', color: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10', icon: <Circle size={14} /> },
+  { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface/20', icon: <ArrowDown size={14} /> },
 ];
 
 // Task templates
@@ -486,31 +486,23 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
           <h2 className="text-xl font-semibold mb-4">Create New Task</h2>
 
           {/* Mode Selector */}
-          <Flex gap="2">
-            <Button
-              onClick={() => setMode('chat')}
-              type="button"
-              variant={mode === 'chat' ? 'solid' : 'outline'}
-              color={mode === 'chat' ? 'violet' : 'gray'}
-              size="3"
-              className="flex-1"
-            >
+          <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+            <button type="button" onClick={() => setMode('chat')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                mode === 'chat' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+              }`}>
               <MessageSquare size={16} />
               Chat with Mission Control
               <Sparkles size={14} className={mode === 'chat' ? 'animate-pulse' : 'opacity-50'} />
-            </Button>
-            <Button
-              onClick={() => setMode('manual')}
-              type="button"
-              variant={mode === 'manual' ? 'solid' : 'outline'}
-              color={mode === 'manual' ? 'violet' : 'gray'}
-              size="3"
-              className="flex-1"
-            >
+            </button>
+            <button type="button" onClick={() => setMode('manual')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                mode === 'manual' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+              }`}>
               <Edit3 size={16} />
               Manual Entry
-            </Button>
-          </Flex>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -637,9 +629,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               <div>
                 <Flex align="center" justify="between" className="mb-1">
                   <label htmlFor="task-title" className="text-sm text-mission-control-text-dim">
-                    Title <span className="text-error text-xs ml-0.5" aria-hidden="true">*</span>
+                    Title <span className="text-[var(--color-error)] text-xs ml-0.5" aria-hidden="true">*</span>
                   </label>
-                  <span className={`text-xs ${title.length > 120 ? 'text-warning' : 'text-mission-control-text-dim'}`}>{title.length}/140</span>
+                  <span className={`text-xs ${title.length > 120 ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim'}`}>{title.length}/140</span>
                 </Flex>
                 <TextField.Root
                   id="task-title"
@@ -651,7 +643,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   size="2"
                 />
                 {titleError && (
-                  <p className="text-error text-xs mt-1" role="alert">{titleError}</p>
+                  <p className="text-[var(--color-error)] text-xs mt-1" role="alert">{titleError}</p>
                 )}
               </div>
 
@@ -677,36 +669,31 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   <label htmlFor="task-planning-notes" className="flex items-center gap-1.5 text-sm text-mission-control-text-dim">
                     <FileText size={14} />
                     Planning Notes
-                    <span className="text-error text-xs ml-0.5" aria-hidden="true">*</span>
+                    <span className="text-[var(--color-error)] text-xs ml-0.5" aria-hidden="true">*</span>
                   </label>
                   <Flex align="center" gap="2">
                     <span className="text-xs text-mission-control-text-dim">{planningNotes.length} chars</span>
                     <div className="relative">
-                      <Button
+                      <button
                         type="button"
                         onClick={() => setShowTemplates(v => !v)}
-                        size="1"
-                        variant="ghost"
-                       
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Lightbulb size={12} />
                         Use template
                         <ChevronDown size={12} className={`transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
-                      </Button>
+                      </button>
                       {showTemplates && (
                         <div className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[140px]">
                           {TASK_TEMPLATES.map(t => (
-                            <Button
+                            <button
                               key={t.id}
                               type="button"
                               onClick={() => { setPlanningNotes(t.planningNotes); setShowTemplates(false); }}
-                              variant="ghost"
-                              size="1"
-                              radius="none"
-                              className="w-full justify-start px-3 py-2 first:rounded-t-lg last:rounded-b-lg"
+                              className="inline-flex items-center gap-1.5 w-full px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors first:rounded-t-lg last:rounded-b-lg"
                             >
                               {t.label}
-                            </Button>
+                            </button>
                           ))}
                         </div>
                       )}
@@ -733,30 +720,28 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   <Flag size={14} /> Priority
                 </span>
                 <Flex gap="2">
-                  <Button
+                  <button
                     type="button"
                     onClick={() => setPriority('')}
                     aria-label="No priority"
-                    size="2"
-                    variant={!priority ? 'soft' : 'outline'}
-                   
-                    className="flex-1"
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors flex-1 justify-center ${
+                      !priority ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                    }`}
                   >
                     None
-                  </Button>
+                  </button>
                   {PRIORITIES.map(p => (
-                    <Button
+                    <button
                       key={p.id}
                       type="button"
                       onClick={() => setPriority(p.id)}
                       aria-label={`Priority: ${p.label}`}
-                      size="2"
-                      variant={priority === p.id ? 'soft' : 'outline'}
-                     
-                      className="flex-1"
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors flex-1 justify-center ${
+                        priority === p.id ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                      }`}
                     >
                       {p.icon}
-                    </Button>
+                    </button>
                   ))}
                 </Flex>
               </div>
@@ -838,19 +823,18 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   <Bot size={14} /> Assign to Agent (Worker)
                 </span>
                 <div className="grid grid-cols-3 gap-2">
-                  <Button
+                  <button
                     type="button"
                     onClick={() => setAssignedTo('')}
                     aria-label="No agent assigned"
                     aria-pressed={!assignedTo}
-                    size="2"
-                    variant={!assignedTo ? 'soft' : 'outline'}
-                   
-                    className="p-2 text-left flex items-center gap-2"
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
+                      !assignedTo ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                    }`}
                   >
                     <span className="text-base">👤</span>
                     <span className="truncate">None</span>
-                  </Button>
+                  </button>
                   {agents
                     .filter(agent => !['main', 'mission-control'].includes(agent.id))
                     .map(agent => {
@@ -862,17 +846,16 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                       const isDisabled = agent.status === 'disabled';
                       const isBusy = activeTaskCount > 5;
                       return (
-                        <Button
+                        <button
                           key={agent.id}
                           type="button"
                           onClick={() => setAssignedTo(agent.id)}
                           aria-label={`Assign to ${agent.name}${isDisabled ? ' (offline)' : ''}${isBusy ? ' (busy)' : ''}`}
                           aria-pressed={assignedTo === agent.id}
-                          size="2"
-                          variant={assignedTo === agent.id ? 'soft' : 'outline'}
-                         
                           disabled={isDisabled}
-                          className="p-2 text-left flex flex-col gap-1 h-auto"
+                          className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg border text-left transition-colors flex-col items-start ${
+                            assignedTo === agent.id ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                           <Flex align="center" gap="2">
                             <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
@@ -880,23 +863,23 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                           </Flex>
                           <Flex align="center" gap="1" className="text-[10px] text-mission-control-text-dim">
                             <span>{activeTaskCount} task{activeTaskCount !== 1 ? 's' : ''}</span>
-                            {isBusy && <span className="text-warning">(busy)</span>}
-                            {isDisabled && <span className="text-error">(offline)</span>}
+                            {isBusy && <span className="text-[var(--color-warning)]">(busy)</span>}
+                            {isDisabled && <span className="text-[var(--color-error)]">(offline)</span>}
                           </Flex>
                           {activeTaskCount > 0 && (
-                            <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
+                            <div className="h-1 bg-mission-control-border rounded-full overflow-hidden w-full">
                               <div
-                                className={`h-full rounded-full ${isBusy ? 'bg-warning' : 'bg-success'}`}
+                                className={`h-full rounded-full ${isBusy ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-success)]'}`}
                                 style={{ width: `${Math.min(100, (activeTaskCount / 8) * 100)}%` }}
                               />
                             </div>
                           )}
-                        </Button>
+                        </button>
                       );
                     })}
                 </div>
                 {assignedTo && agents.find(a => a.id === assignedTo)?.status === 'disabled' && (
-                  <Flex align="center" gap="2" className="mt-2 p-2 rounded-lg bg-warning-subtle border border-warning-border text-warning text-xs">
+                  <Flex align="center" gap="2" className="mt-2 p-2 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-[var(--color-warning)] text-xs">
                     <AlertTriangle size={12} className="flex-shrink-0" />
                     This agent is disabled. Task will queue but won&apos;t execute until re-enabled.
                   </Flex>
@@ -912,21 +895,20 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   {agents
                     .filter(agent => agent.id !== assignedTo)
                     .map(agent => (
-                      <Button
+                      <button
                         key={agent.id}
                         type="button"
                         onClick={() => setReviewerId(agent.id)}
                         aria-label={`Assign ${agent.name} as reviewer`}
                         aria-pressed={reviewerId === agent.id}
-                        size="2"
-                        variant={reviewerId === agent.id ? 'soft' : 'outline'}
-                       
-                        className="p-2 text-left flex items-center gap-2"
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
+                          reviewerId === agent.id ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                        }`}
                       >
                         <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
                         <span className="truncate">{agent.name}</span>
                         {agent.id === 'mission-control' && <span className="text-xs opacity-60">(default)</span>}
-                      </Button>
+                      </button>
                     ))}
                 </div>
                 <p className="text-xs text-mission-control-text-dim mt-2">
@@ -981,16 +963,14 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                               ({(file.size / 1024).toFixed(1)} KB)
                             </span>
                           </div>
-                          <IconButton
+                          <button
                             type="button"
                             onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
                             aria-label={`Remove file ${file.name}`}
-                            variant="ghost"
-                            color="red"
-                            size="1"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
                           >
                             <X size={14} />
-                          </IconButton>
+                          </button>
                         </Flex>
                       ))}
                     </div>
@@ -1003,13 +983,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Multi-Stage Project Setup */}
               <div className="border border-mission-control-border rounded-lg overflow-hidden">
-                <Button
+                <button
                   type="button"
                   onClick={() => setShowMultiStage(!showMultiStage)}
-                  variant="ghost"
-                  size="2"
-                  radius="none"
-                  className="w-full flex items-center justify-between px-3 py-2"
+                  className="inline-flex items-center w-full justify-between px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <span className="flex items-center gap-2">
                     <ChevronDown size={14} className="text-mission-control-text-dim" />
@@ -1019,7 +996,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     )}
                   </span>
                   <ChevronDown size={14} className={`text-mission-control-text-dim transition-transform ${showMultiStage ? 'rotate-180' : ''}`} />
-                </Button>
+                </button>
                 {showMultiStage && (
                   <div className="p-3 space-y-3 border-t border-mission-control-border">
                     <div>

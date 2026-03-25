@@ -18,7 +18,7 @@ export const PopoverContent = React.forwardRef<
       className={cn(
         'z-50 w-72 rounded-xl p-4',
         'bg-mission-control-surface',
-        'border border-mission-control-border shadow-md',
+        'border border-mission-control-border shadow-xl',
         'outline-none data-[state=open]:animate-scale-in',
         className
       )}

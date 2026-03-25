@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { X, Download, ExternalLink } from 'lucide-react';
-import { Flex, IconButton, Button } from '@radix-ui/themes';
+import { Flex, Button } from '@radix-ui/themes';
 
 interface FilePreviewModalProps {
   isOpen: boolean;
@@ -90,47 +90,43 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
           role="dialog"
           aria-modal="true"
           aria-labelledby="file-preview-title"
-          className={`relative max-w-6xl max-h-[90vh] w-full glass-modal rounded-2xl border border-mission-control-border shadow-2xl flex flex-col overflow-hidden pointer-events-auto ${
+          className={`relative max-w-6xl max-h-[90vh] w-full bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl flex flex-col overflow-hidden pointer-events-auto ${
             isClosing ? 'modal-content-exit' : 'modal-content-enter'
           }`}
         >
         {/* Header */}
-        <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border bg-mission-control-bg/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div>
-              <h3 id="file-preview-title" className="font-semibold truncate">{file.name}</h3>
-              <p className="text-sm text-mission-control-text-dim">
+              <h3 id="file-preview-title" className="text-base font-semibold truncate">{file.name}</h3>
+              <p className="text-xs text-mission-control-text-dim">
                 {(file.size / 1024).toFixed(1)} KB • {file.type || 'Unknown type'}
               </p>
             </div>
           </div>
 
           <Flex align="center" gap="2">
-            <IconButton
+            <button
               onClick={handleDownload}
-              size="2"
-              variant="ghost"
-             
               title="Download"
               aria-label="Download file"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <Download size={16} />
-            </IconButton>
-            <IconButton
+            </button>
+            <button
               onClick={handleClose}
-              size="2"
-              variant="ghost"
-             
               title="Close (ESC)"
               aria-label="Close modal"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <X size={16} />
-            </IconButton>
+            </button>
           </Flex>
-        </Flex>
+        </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {isImage && file.dataUrl ? (
             <div className="flex items-center justify-center h-full">
               <img
@@ -148,7 +144,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
               />
             </div>
           ) : isText && file.dataUrl ? (
-            <div className="bg-mission-control-bg rounded-lg border border-mission-control-border p-4 font-mono text-sm overflow-auto max-h-[70vh]">
+            <div className="bg-mission-control-bg border border-mission-control-border rounded-xl p-4 font-mono text-sm overflow-auto max-h-[70vh]">
               <pre className="whitespace-pre-wrap">{atob(file.dataUrl.split(',')[1])}</pre>
             </div>
           ) : (
@@ -163,7 +159,6 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
                   onClick={handleDownload}
                   size="2"
                   variant="solid"
-                 
                   className="mx-auto"
                 >
                   <Download size={16} />
@@ -174,11 +169,14 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
           )}
         </div>
 
-        {/* Footer hint */}
-        <div className="p-3 border-t border-mission-control-border bg-mission-control-bg/30 text-center">
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
           <p className="text-xs text-mission-control-text-dim">
             Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded text-xs">Esc</kbd> to close
           </p>
+          <Button onClick={handleClose} size="2" variant="ghost">
+            Close
+          </Button>
         </div>
         </div>
       </div>

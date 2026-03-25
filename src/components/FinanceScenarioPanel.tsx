@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { Calculator, TrendingUp, TrendingDown, Plus, Trash2, Play, Save, Loader2 } from 'lucide-react';
-import { Button, Flex, IconButton, TextField, Select, TextArea, Box } from '@radix-ui/themes';
+import { Button, Flex, TextField, Select, TextArea, Box } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { financeApi } from '../lib/api';
 
@@ -151,23 +151,23 @@ function QuickProjectionTab() {
               key={item.id}
               className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                 isCancelled
-                  ? 'bg-error/5 border-error/30 opacity-60'
-                  : 'bg-mission-control-bg-alt border-mission-control-border'
+                  ? 'bg-[var(--color-error)]/5 border-[var(--color-error)]/30 opacity-60'
+                  : 'bg-mission-control-border/20 border-mission-control-border'
               }`}
             >
               {/* Toggle */}
-              <IconButton
+              <button
                 onClick={() => setCancel(item.id, !isCancelled)}
-                size="2"
-                variant={isCancelled ? 'soft' : 'solid'}
-                color={isCancelled ? 'red' : 'gray'}
-                radius="full"
                 aria-label={isCancelled ? 'Restore item' : 'Cancel item'}
                 title={isCancelled ? 'Click to restore' : 'Click to cancel'}
-                className="flex-shrink-0"
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-full border flex-shrink-0 transition-colors ${
+                  isCancelled
+                    ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 text-[var(--color-error)]'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 <span className="w-2 h-2 rounded-full bg-current" />
-              </IconButton>
+              </button>
 
               {/* Name */}
               <span
@@ -223,55 +223,55 @@ function QuickProjectionTab() {
       {result && (
         <div className="grid grid-cols-3 gap-3 mt-4">
           {/* Before */}
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-            <p className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2">Before</p>
-            <p className="text-lg font-bold text-mission-control-text">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Before</p>
+            <p className="text-xl font-bold tabular-nums text-mission-control-text">
               {formatCurrency(result.before.monthly)}
               <span className="text-xs font-normal text-mission-control-text-dim">/mo</span>
             </p>
-            <p className="text-xs text-mission-control-text-dim mt-1">
+            <p className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
               {formatCurrency(result.before.yearly)}/yr
             </p>
           </div>
 
           {/* After */}
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-            <p className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2">After</p>
-            <p className="text-lg font-bold text-mission-control-text">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">After</p>
+            <p className="text-xl font-bold tabular-nums text-mission-control-text">
               {formatCurrency(result.after.monthly)}
               <span className="text-xs font-normal text-mission-control-text-dim">/mo</span>
             </p>
-            <p className="text-xs text-mission-control-text-dim mt-1">
+            <p className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
               {formatCurrency(result.after.yearly)}/yr
             </p>
           </div>
 
           {/* Savings */}
           <div
-            className={`rounded-lg p-4 border ${
+            className={`rounded-xl p-4 border ${
               result.savings.monthly >= 0
-                ? 'bg-success/10 border-success/30'
-                : 'bg-error/10 border-error/30'
+                ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30'
+                : 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30'
             }`}
           >
-            <p className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2 flex items-center gap-1">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1">
               {result.savings.monthly >= 0 ? (
-                <TrendingDown className="w-3 h-3 text-success" />
+                <TrendingDown className="w-3 h-3 text-[var(--color-success)]" />
               ) : (
-                <TrendingUp className="w-3 h-3 text-error" />
+                <TrendingUp className="w-3 h-3 text-[var(--color-error)]" />
               )}
               Savings
             </p>
             <p
-              className={`text-lg font-bold ${
-                result.savings.monthly >= 0 ? 'text-success' : 'text-error'
+              className={`text-xl font-bold tabular-nums ${
+                result.savings.monthly >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'
               }`}
             >
               {result.savings.monthly >= 0 ? '+' : ''}
               {formatCurrency(result.savings.monthly)}
               <span className="text-xs font-normal text-mission-control-text-dim">/mo</span>
             </p>
-            <p className="text-xs text-mission-control-text-dim mt-1">
+            <p className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
               {result.savings.yearly >= 0 ? '+' : ''}
               {formatCurrency(result.savings.yearly)}/yr
             </p>
@@ -422,14 +422,16 @@ function ScenarioBuilderTab() {
         </span>
         <Flex align="center" gap="2">
           {comparedIds.length >= 2 && (
-            <Button
+            <button
               onClick={() => setCompareMode((v) => !v)}
-              size="1"
-              variant={compareMode ? 'soft' : 'ghost'}
-             
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                compareMode
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+              }`}
             >
               Compare
-            </Button>
+            </button>
           )}
           <Button
             onClick={() => setShowForm(true)}
@@ -445,8 +447,8 @@ function ScenarioBuilderTab() {
 
       {/* Comparison chart */}
       {compareMode && comparisonChartData.length > 0 && (
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-mission-control-text mb-3">Scenario Comparison</h4>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Scenario Comparison</h4>
           <div style={{ height: 200 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={comparisonChartData}>
@@ -504,7 +506,7 @@ function ScenarioBuilderTab() {
             const months = projectionData[scenario.id];
             const color = SCENARIO_COLORS[idx % SCENARIO_COLORS.length];
             return (
-              <div key={scenario.id} className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
+              <div key={scenario.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
                 <Flex align="start" justify="between" gap="3" className="mb-3">
                   <div>
                     <h4 className="font-semibold text-mission-control-text">{scenario.name}</h4>
@@ -523,16 +525,14 @@ function ScenarioBuilderTab() {
                     >
                       <Play className="w-3 h-3" /> Run
                     </Button>
-                    <IconButton
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       onClick={() => deleteScenario(scenario.id, scenario.name)}
-                      size="2"
-                      variant="ghost"
-                      color="red"
-                     
                       aria-label={`Delete ${scenario.name}`}
                     >
                       <Trash2 className="w-4 h-4" />
-                    </IconButton>
+                    </button>
                   </div>
                 </Flex>
 
@@ -577,11 +577,11 @@ function ScenarioBuilderTab() {
                                 <div className="space-y-1 text-mission-control-text-dim">
                                   <Flex justify="between" gap="4">
                                     <span>Income</span>
-                                    <span className="text-success">{formatCurrency(d.income)}</span>
+                                    <span className="text-[var(--color-success)]">{formatCurrency(d.income)}</span>
                                   </Flex>
                                   <Flex justify="between" gap="4">
                                     <span>Expenses</span>
-                                    <span className="text-error">{formatCurrency(d.expenses)}</span>
+                                    <span className="text-[var(--color-error)]">{formatCurrency(d.expenses)}</span>
                                   </Flex>
                                   {d.oneTime !== 0 && (
                                     <Flex justify="between" gap="4">
@@ -591,13 +591,13 @@ function ScenarioBuilderTab() {
                                   )}
                                   <Flex justify="between" gap="4" className="border-t border-mission-control-border pt-1 mt-1">
                                     <span className="font-medium text-mission-control-text">Net</span>
-                                    <span className={d.net >= 0 ? 'text-success' : 'text-error'}>
+                                    <span className={d.net >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}>
                                       {formatCurrency(d.net)}
                                     </span>
                                   </Flex>
                                   <Flex justify="between" gap="4">
                                     <span className="font-medium text-mission-control-text">Balance</span>
-                                    <span className={d.runningBalance >= 0 ? 'text-success' : 'text-error'}>
+                                    <span className={d.runningBalance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}>
                                       {formatCurrency(d.runningBalance)}
                                     </span>
                                   </Flex>
@@ -690,22 +690,21 @@ function ScenarioBuilderTab() {
           {/* Income adjustments */}
           <div>
             <Flex align="center" justify="between" className="mb-2">
-              <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
+              <span className="text-[10px] text-mission-control-text-dim font-bold uppercase tracking-wide">
                 Income adjustments
               </span>
-              <Button
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 onClick={() =>
                   setForm((f) => ({
                     ...f,
                     incomeRows: [...f.incomeRows, { label: '', monthly_delta: 0 }],
                   }))
                 }
-                size="1"
-                variant="ghost"
-
               >
                 <Plus className="w-3 h-3" /> Add
-              </Button>
+              </button>
             </Flex>
             {form.incomeRows.map((row, i) => (
               <Flex key={i} align="center" gap="2" className="mb-2">
@@ -736,21 +735,19 @@ function ScenarioBuilderTab() {
                   size="2"
                   className="w-24"
                 />
-                <IconButton
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
                       incomeRows: f.incomeRows.filter((_, j) => j !== i),
                     }))
                   }
-                  size="2"
-                  variant="ghost"
-                  color="red"
-                 
                   aria-label="Remove income row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                </IconButton>
+                </button>
               </Flex>
             ))}
           </div>
@@ -758,22 +755,21 @@ function ScenarioBuilderTab() {
           {/* Expense adjustments */}
           <div>
             <Flex align="center" justify="between" className="mb-2">
-              <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
+              <span className="text-[10px] text-mission-control-text-dim font-bold uppercase tracking-wide">
                 Expense adjustments
               </span>
-              <Button
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 onClick={() =>
                   setForm((f) => ({
                     ...f,
                     expenseRows: [...f.expenseRows, { category: '', monthly_delta: 0 }],
                   }))
                 }
-                size="1"
-                variant="ghost"
-
               >
                 <Plus className="w-3 h-3" /> Add
-              </Button>
+              </button>
             </Flex>
             {form.expenseRows.map((row, i) => (
               <Flex key={i} align="center" gap="2" className="mb-2">
@@ -804,21 +800,19 @@ function ScenarioBuilderTab() {
                   size="2"
                   className="w-24"
                 />
-                <IconButton
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
                       expenseRows: f.expenseRows.filter((_, j) => j !== i),
                     }))
                   }
-                  size="2"
-                  variant="ghost"
-                  color="red"
-                 
                   aria-label="Remove expense row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                </IconButton>
+                </button>
               </Flex>
             ))}
           </div>
@@ -826,22 +820,21 @@ function ScenarioBuilderTab() {
           {/* One-time events */}
           <div>
             <Flex align="center" justify="between" className="mb-2">
-              <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
+              <span className="text-[10px] text-mission-control-text-dim font-bold uppercase tracking-wide">
                 One-time events
               </span>
-              <Button
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 onClick={() =>
                   setForm((f) => ({
                     ...f,
                     eventRows: [...f.eventRows, { label: '', amount: 0, date: '' }],
                   }))
                 }
-                size="1"
-                variant="ghost"
-
               >
                 <Plus className="w-3 h-3" /> Add
-              </Button>
+              </button>
             </Flex>
             {form.eventRows.map((row, i) => (
               <Flex key={i} align="center" gap="2" className="mb-2">
@@ -885,21 +878,19 @@ function ScenarioBuilderTab() {
                   size="2"
                   className="w-32"
                 />
-                <IconButton
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
                       eventRows: f.eventRows.filter((_, j) => j !== i),
                     }))
                   }
-                  size="2"
-                  variant="ghost"
-                  color="red"
-                 
                   aria-label="Remove event row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                </IconButton>
+                </button>
               </Flex>
             ))}
           </div>
@@ -919,14 +910,13 @@ function ScenarioBuilderTab() {
                 <><Save className="w-4 h-4" /> Save & Project</>
               )}
             </Button>
-            <Button
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={resetForm}
-              size="2"
-              variant="ghost"
-             
             >
               Cancel
-            </Button>
+            </button>
           </Flex>
         </div>
       )}

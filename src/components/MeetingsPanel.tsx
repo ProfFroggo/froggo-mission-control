@@ -1350,16 +1350,16 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="shrink-0 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="max-w-5xl mx-auto px-4 py-4">
+      <div className="px-4 py-3 border-b border-mission-control-border flex-shrink-0 bg-mission-control-surface">
+        <div className="max-w-5xl mx-auto">
           <Flex align="center" justify="between">
             <Flex align="center" gap="4">
               <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
                 <Phone size={20} className="text-mission-control-accent" />
               </div>
               <div>
-                <h1 className="text-heading-2">Meetings</h1>
-                <p className="text-secondary">
+                <h1 className="text-sm font-semibold text-mission-control-text">Meetings</h1>
+                <p className="text-xs text-mission-control-text-dim mt-0.5">
                   {isMeetingActive ? 'Recording in progress' : 'Transcribe and review meetings'}
                 </p>
               </div>
@@ -1370,23 +1370,24 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                   {statusMessage}
                 </span>
               )}
-              <IconButton
-                size="2"
-                variant={isMuted ? 'soft' : 'ghost'}
-                color={isMuted ? 'red' : 'gray'}
-
+              <button
                 onClick={toggleMuted}
                 title={isMuted ? 'Unmute' : 'Mute'}
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                  isMuted
+                    ? 'bg-[var(--color-error)]-subtle border border-[var(--color-error)]-border text-[var(--color-error)]'
+                    : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
-              </IconButton>
+              </button>
             </Flex>
           </Flex>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="shrink-0 border-b border-mission-control-border bg-mission-control-surface/50">
+      <div className="shrink-0 bg-mission-control-surface">
         <div className="max-w-5xl mx-auto">
           <TabNav
             tabs={[
@@ -1418,9 +1419,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       <div className="space-y-4">
                         {/* Header row */}
                         <Flex align="center" gap="3">
-                          <div className="relative flex-shrink-0 w-10 h-10 rounded-lg bg-error-subtle flex items-center justify-center">
-                            <Mic size={18} className="text-error" />
-                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-error rounded-full animate-pulse" />
+                          <div className="relative flex-shrink-0 w-10 h-10 rounded-lg bg-[var(--color-error)]/10 flex items-center justify-center">
+                            <Mic size={18} className="text-[var(--color-error)]" />
+                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-[var(--color-error)] rounded-full animate-pulse" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-mission-control-text truncate">{meetingTitle || 'Untitled Meeting'}</p>
@@ -1446,7 +1447,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             const active = i / 32 < audioLevel * 1.4;
                             const height = active ? `${30 + Math.sin(i * 0.9 + Date.now() / 200) * 50}%` : '15%';
                             return (
-                              <div key={i} className={`flex-1 rounded-full transition-all duration-75 ${active ? 'bg-success' : 'bg-mission-control-border'}`}
+                              <div key={i} className={`flex-1 rounded-full transition-colors duration-75 ${active ? 'bg-[var(--color-success)]' : 'bg-mission-control-border'}`}
                                 style={{ height }} />
                             );
                           })}
@@ -1467,7 +1468,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               <Flex align="center" gap="3" className="text-mission-control-text-dim">
                                 <span className="flex gap-1 items-center">
                                   {[0, 1, 2].map(i => (
-                                    <span key={i} className="w-1.5 h-1.5 rounded-full bg-success animate-bounce"
+                                    <span key={i} className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-bounce"
                                       style={{ animationDelay: `${i * 0.2}s` }} />
                                   ))}
                                 </span>
@@ -1545,9 +1546,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         </div>
 
                         {startError && (
-                          <Flex align="start" gap="3" p="4" className="bg-error-subtle border border-error-border rounded-lg">
-                            <XCircle size={18} className="text-error shrink-0 mt-0.5" />
-                            <p className="text-sm text-error">{startError}</p>
+                          <Flex align="start" gap="3" p="4" className="bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
+                            <XCircle size={18} className="text-[var(--color-error)] shrink-0 mt-0.5" />
+                            <p className="text-sm text-[var(--color-error)]">{startError}</p>
                           </Flex>
                         )}
 
@@ -1561,22 +1562,20 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             <Mic size={24} />
                             Start Recording
                           </Button>
-                          <IconButton
+                          <button
                             onClick={() => { setShowTitleInput(false); setStartError(null); }}
-                            size="3"
-                            variant="ghost"
-                            color="gray"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                           >
                             <X size={20} />
-                          </IconButton>
+                          </button>
                         </Flex>
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-success-subtle flex items-center justify-center">
-                          <Phone size={36} className="text-success" />
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[var(--color-success)]/10 flex items-center justify-center">
+                          <Phone size={36} className="text-[var(--color-success)]" />
                         </div>
-                        <h2 className="text-heading-3 mb-2">Start a Meeting</h2>
+                        <h2 className="text-sm font-semibold text-mission-control-text mb-2">Start a Meeting</h2>
                         <p className="text-mission-control-text-dim mb-6 max-w-md mx-auto">
                           Record, transcribe, and extract action items from your meetings with AI-powered transcription.
                         </p>
@@ -1597,22 +1596,20 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {/* Upcoming Calendar Events */}
                 {upcomingEvents.length > 0 && !isMeetingActive && (
                   <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                    <Flex align="center" justify="between" p="4" className="border-b border-mission-control-border">
+                    <div className="px-4 py-3 border-b border-mission-control-border flex items-center justify-between">
                       <Flex align="center" gap="2">
-                        <Calendar size={18} className="text-mission-control-accent" />
-                        <h3 className="font-medium text-mission-control-text">Upcoming Meetings</h3>
+                        <Calendar size={16} className="text-mission-control-accent" />
+                        <h3 className="text-sm font-semibold text-mission-control-text">Upcoming Meetings</h3>
                       </Flex>
-                      <Button
+                      <button
                         onClick={loadUpcomingEvents}
                         disabled={loadingUpcomingEvents}
-                        size="1"
-                        variant="ghost"
-                        color="gray"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
                       >
                         <Loader2 size={12} className={loadingUpcomingEvents ? 'animate-spin inline' : 'hidden'} />
                         Refresh
-                      </Button>
-                    </Flex>
+                      </button>
+                    </div>
                     <div className="divide-y divide-mission-control-border">
                       {upcomingEvents.slice(0, 5).map((event) => {
                         const startDate = new Date(event.start?.dateTime || event.start?.date || '');
@@ -1630,8 +1627,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                 </span>
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="font-medium text-mission-control-text truncate">{event.summary || 'Untitled'}</p>
-                                <p className="text-sm text-mission-control-text-dim">
+                                <p className="text-sm font-semibold text-mission-control-text truncate">{event.summary || 'Untitled'}</p>
+                                <p className="text-[10px] tabular-nums font-mono text-mission-control-text-dim">
                                   {startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                   {endDate.getTime() !== startDate.getTime() && (
                                     <> - {endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</>
@@ -1656,11 +1653,11 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* AI Summary */}
                     {(generatingSummary || aiSummary) && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <Flex align="center" gap="2" p="4" className="border-b border-mission-control-border">
-                          <Brain size={18} className="text-review" />
-                          <h3 className="font-medium text-mission-control-text">AI Summary</h3>
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                          <Brain size={16} className="text-[var(--color-review)]" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">AI Summary</h3>
                           {generatingSummary && <Loader2 size={14} className="animate-spin text-mission-control-text-dim" />}
-                        </Flex>
+                        </div>
                         <div className="p-6">
                           {generatingSummary ? (
                             <Flex align="center" gap="3" className="text-mission-control-text-dim">
@@ -1679,33 +1676,31 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Action Items Approval */}
                     {meetingActionItems.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <Flex align="center" justify="between" p="4" className="border-b border-mission-control-border">
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center justify-between">
                           <Flex align="center" gap="2">
-                            <ListTodo size={18} className="text-warning" />
-                            <h3 className="font-medium text-mission-control-text">Action Items</h3>
+                            <ListTodo size={16} className="text-[var(--color-warning)]" />
+                            <h3 className="text-sm font-semibold text-mission-control-text">Action Items</h3>
                             <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                               {pendingItems.length} pending • {approvedItems.length} approved
                             </span>
                           </Flex>
                           {pendingItems.length > 0 && (
-                            <Button
+                            <button
                               onClick={approveAllPending}
-                              size="1"
-                              variant="ghost"
-                              color="green"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                             >
                               <CheckCircle2 size={14} />
                               Approve All
-                            </Button>
+                            </button>
                           )}
-                        </Flex>
+                        </div>
                         <div className="divide-y divide-mission-control-border">
                           {meetingActionItems.map((item) => (
                             <div 
                               key={item.id} 
-                              className={`p-4 transition-all ${
+                              className={`p-4 transition-colors ${
                                 item.status === 'dismissed' ? 'opacity-40' : ''
-                              } ${item.status === 'approved' ? 'bg-success-subtle' : ''}`}
+                              } ${item.status === 'approved' ? 'bg-[var(--color-success)]/10' : ''}`}
                             >
                               {editingItemId === item.id ? (
                                 <div className="space-y-3">
@@ -1728,14 +1723,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       <Check size={14} />
                                       Save & Approve
                                     </Button>
-                                    <Button
+                                    <button
+                                      type="button"
                                       onClick={cancelEditing}
-                                      size="1"
-                                      variant="ghost"
-                                      color="gray"
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                                     >
                                       Cancel
-                                    </Button>
+                                    </button>
                                   </Flex>
                                 </div>
                               ) : (
@@ -1743,21 +1737,21 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   <div className="flex-1">
                                     <Flex align="center" gap="2" className="mb-1">
                                       <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                        item.type === 'task' ? 'bg-info-subtle text-info' :
-                                        item.type === 'schedule' ? 'bg-review-subtle text-review' :
-                                        item.type === 'message' ? 'bg-warning-subtle text-warning' :
+                                        item.type === 'task' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' :
+                                        item.type === 'schedule' ? 'bg-[var(--color-review)]-subtle text-[var(--color-review)]' :
+                                        item.type === 'message' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
                                         'bg-mission-control-border text-mission-control-text-dim'
                                       }`}>
                                         {item.type}
                                       </span>
                                       {item.status === 'approved' && (
-                                        <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full flex items-center gap-1">
+                                        <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full flex items-center gap-1">
                                           <Check size={10} />
                                           Approved
                                         </span>
                                       )}
                                       {item.status === 'dismissed' && (
-                                        <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded-full">
+                                        <span className="text-xs px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full">
                                           Dismissed
                                         </span>
                                       )}
@@ -1768,33 +1762,28 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   </div>
                                   {item.status === 'pending' && (
                                     <Flex align="center" gap="1">
-                                      <IconButton
+                                      <button
                                         onClick={() => approveActionItem(item.id)}
-                                        size="2"
-                                        variant="ghost"
-                                        color="green"
                                         title="Approve"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                       >
                                         <Check size={16} />
-                                      </IconButton>
-                                      <IconButton
+                                      </button>
+                                      <button
+                                        type="button"
                                         onClick={() => startEditingItem(item)}
-                                        size="2"
-                                        variant="ghost"
-                                        color="gray"
                                         title="Edit"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                       >
                                         <Edit3 size={16} />
-                                      </IconButton>
-                                      <IconButton
+                                      </button>
+                                      <button
                                         onClick={() => dismissActionItem(item.id)}
-                                        size="2"
-                                        variant="ghost"
-                                        color="red"
                                         title="Dismiss"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
                                       >
                                         <XCircle size={16} />
-                                      </IconButton>
+                                      </button>
                                     </Flex>
                                   )}
                                 </Flex>
@@ -1803,7 +1792,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           ))}
                         </div>
                         {approvedItems.length > 0 && (
-                          <Flex align="center" justify="between" p="4" className="border-t border-mission-control-border bg-mission-control-bg/50">
+                          <Flex align="center" justify="between" p="4" className="border-t border-mission-control-border bg-mission-control-bg">
                             <p className="text-sm text-mission-control-text-dim">
                               {approvedItems.length} item{approvedItems.length > 1 ? 's' : ''} ready to create as tasks
                             </p>
@@ -1829,20 +1818,20 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Agent-Proposed Tasks */}
                     {proposedTasks.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <Flex align="center" gap="2" className="p-4 border-b border-mission-control-border">
-                          <Brain size={18} className="text-review" />
-                          <h3 className="font-medium text-mission-control-text">Agent-Proposed Tasks</h3>
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                          <Brain size={16} className="text-[var(--color-review)]" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">Agent-Proposed Tasks</h3>
                           <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                             {proposedTasks.filter(t => t.status === 'pending').length} pending • {proposedTasks.filter(t => t.status === 'approved').length} approved
                           </span>
-                        </Flex>
+                        </div>
                         <div className="divide-y divide-mission-control-border">
                           {proposedTasks.map((task) => (
                             <div 
                               key={task.id} 
-                              className={`p-4 transition-all ${
+                              className={`p-4 transition-colors ${
                                 task.status === 'rejected' ? 'opacity-40' : ''
-                              } ${task.status === 'approved' ? 'bg-success-subtle' : ''}`}
+                              } ${task.status === 'approved' ? 'bg-[var(--color-success)]/10' : ''}`}
                             >
                               {editingProposedTask === task.id ? (
                                 <div className="space-y-3">
@@ -1866,14 +1855,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     >
                                       Save
                                     </Button>
-                                    <Button
+                                    <button
+                                      type="button"
                                       onClick={() => setEditingProposedTask(null)}
-                                      size="1"
-                                      variant="ghost"
-                                      color="gray"
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                                     >
                                       Cancel
-                                    </Button>
+                                    </button>
                                   </Flex>
                                 </div>
                               ) : (
@@ -1894,39 +1882,31 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   </div>
                                   {task.status === 'pending' && (
                                     <Flex align="center" gap="1" className="shrink-0">
-                                      <IconButton
+                                      <button
                                         onClick={() => approveProposedTask(task.id)}
-                                        size="2"
-                                        variant="ghost"
-                                        color="green"
-                                       
                                         title="Approve & Create Task"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                       >
                                         <CheckCircle2 size={16} />
-                                      </IconButton>
-                                      <IconButton
+                                      </button>
+                                      <button
+                                        type="button"
                                         onClick={() => {
                                           setEditingProposedTask(task.id);
                                           setEditingProposedText(task.title);
                                         }}
-                                        size="2"
-                                        variant="ghost"
-                                        color="gray"
-                                       
                                         title="Edit"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                       >
                                         <Edit3 size={16} />
-                                      </IconButton>
-                                      <IconButton
+                                      </button>
+                                      <button
                                         onClick={() => rejectProposedTask(task.id)}
-                                        size="2"
-                                        variant="ghost"
-                                        color="red"
-                                       
                                         title="Reject"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
                                       >
                                         <XCircle size={16} />
-                                      </IconButton>
+                                      </button>
                                     </Flex>
                                   )}
                                 </Flex>
@@ -1972,21 +1952,18 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         <MessageSquare size={18} />
                         Send to Mission Control
                       </Button>
-                      <Button
+                      <button
                         onClick={() => {
                           setMeetingTranscript([]);
                           setMeetingActionItems([]);
                           setMeetingEndSummary(null);
                           setAiSummary(null);
                         }}
-                        size="2"
-                        variant="ghost"
-                        color="red"
-                       
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
                       >
                         <Trash2 size={18} />
                         Clear
-                      </Button>
+                      </button>
                     </Flex>
                   </>
                 )}
@@ -1999,15 +1976,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                   <div className="space-y-6">
                     {/* Meeting Detail Header */}
                     <Flex align="center" justify="between">
-                      <Button
+                      <button
                         onClick={() => { setSelectedMeeting(null); setMeetingChatMessages([]); }}
-                        size="2"
-                        variant="ghost"
-                        color="gray"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <ChevronRight size={16} className="rotate-180" />
                         Back to list
-                      </Button>
+                      </button>
                       <Flex align="center" gap="2">
                         <Button
                           onClick={() => exportMeeting(selectedMeeting)}
@@ -2061,13 +2036,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
                     {/* Meeting Info */}
                     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-                      <h2 className="text-heading-3 mb-1">
+                      <h2 className="text-sm font-semibold text-mission-control-text mb-1">
                         {selectedMeeting.title || selectedMeeting.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                       </h2>
                       {selectedMeeting.oneLiner && (
-                        <p className="text-sm text-mission-control-text-dim mb-2">{selectedMeeting.oneLiner}</p>
+                        <p className="text-xs text-mission-control-text-dim mb-2">{selectedMeeting.oneLiner}</p>
                       )}
-                      <Flex align="center" gap="4" className="text-secondary">
+                      <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim">
                         <span className="flex items-center gap-1">
                           <Calendar size={14} />
                           {selectedMeeting.date.toLocaleDateString()}
@@ -2087,9 +2062,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Summary (from uploaded transcript — stored in rawContent/description) */}
                     {selectedMeeting.rawContent && selectedMeeting.transcript.length === 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border flex items-center gap-2">
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
                           <Brain size={16} className="text-mission-control-accent" />
-                          <h3 className="font-medium text-mission-control-text">Meeting Summary</h3>
+                          <h3 className="text-sm font-semibold text-mission-control-text">Meeting Summary</h3>
                         </div>
                         <div className="p-4 text-sm">
                           <MarkdownMessage content={selectedMeeting.rawContent} />
@@ -2100,11 +2075,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Transcript (from live meetings — stored as line array) */}
                     {selectedMeeting.transcript.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border">
-                          <h3 className="font-medium text-mission-control-text flex items-center gap-2">
-                            <FileText size={16} />
-                            Transcript
-                          </h3>
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                          <FileText size={16} className="text-mission-control-text-dim" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">Transcript</h3>
                         </div>
                         <div className="p-4 max-h-96 overflow-y-auto space-y-2">
                           {selectedMeeting.transcript.map((line, i) => (
@@ -2119,11 +2092,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Action Items & Tasks */}
                     {(selectedMeeting.actionItems.length > 0 || selectedMeeting.tasksCreated.length > 0) && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border">
-                          <h3 className="font-medium text-mission-control-text flex items-center gap-2">
-                            <ListTodo size={16} />
-                            Action Items
-                          </h3>
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                          <ListTodo size={16} className="text-mission-control-text-dim" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">Action Items</h3>
                         </div>
                         <div className="p-4 space-y-4">
                           {selectedMeeting.actionItems.length > 0 && (
@@ -2141,7 +2112,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               <p className="text-xs text-mission-control-text-dim mb-2">Tasks Created</p>
                               <ul className="space-y-1">
                                 {selectedMeeting.tasksCreated.map((task) => (
-                                  <li key={task} className="text-sm text-success flex items-center gap-2">
+                                  <li key={task} className="text-sm text-[var(--color-success)] flex items-center gap-2">
                                     <Check size={12} />
                                     {task}
                                   </li>
@@ -2156,31 +2127,29 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Proposed Tasks (from uploaded transcript metadata) — fully actionable */}
                     {selectedMeeting.storedTaskProposals && selectedMeeting.storedTaskProposals.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
-                          <Flex align="center" gap="2">
-                            <Zap size={16} className="text-mission-control-accent" />
-                            <h3 className="font-medium text-mission-control-text">Proposed Tasks</h3>
-                            <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
-                              {selectedMeeting.storedTaskProposals.filter(t => t.status === 'pending').length} pending
-                            </span>
-                          </Flex>
-                        </Flex>
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                          <Zap size={16} className="text-mission-control-accent" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">Proposed Tasks</h3>
+                          <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
+                            {selectedMeeting.storedTaskProposals.filter(t => t.status === 'pending').length} pending
+                          </span>
+                        </div>
                         <div className="divide-y divide-mission-control-border">
                           {selectedMeeting.storedTaskProposals.map(proposal => (
                             <div
                               key={proposal.id}
-                              className={`p-4 transition-all ${
+                              className={`p-4 transition-colors ${
                                 proposal.status === 'rejected' ? 'opacity-30' : ''
-                              } ${proposal.status === 'approved' ? 'bg-success-subtle' : ''}`}
+                              } ${proposal.status === 'approved' ? 'bg-[var(--color-success)]/10' : ''}`}
                             >
                               <Flex align="start" gap="3">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                                     <span className="font-medium text-sm text-mission-control-text">{proposal.title}</span>
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                                      proposal.priority === 'p0' ? 'bg-error-subtle text-error' :
-                                      proposal.priority === 'p1' ? 'bg-warning-subtle text-warning' :
-                                      proposal.priority === 'p2' ? 'bg-info-subtle text-info' :
+                                      proposal.priority === 'p0' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+                                      proposal.priority === 'p1' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+                                      proposal.priority === 'p2' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' :
                                       'bg-mission-control-bg text-mission-control-text-dim'
                                     }`}>{proposal.priority?.toUpperCase()}</span>
                                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-mission-control-bg text-mission-control-text-dim">{proposal.assignedTo}</span>
@@ -2199,7 +2168,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                 </div>
                                 {proposal.status === 'pending' && (
                                   <Flex align="center" gap="1" className="shrink-0">
-                                    <IconButton
+                                    <button
                                       onClick={async () => {
                                         // Update local state
                                         const updated = selectedMeeting.storedTaskProposals!.map(p =>
@@ -2228,35 +2197,29 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                           showToast('error', 'Failed to create task');
                                         }
                                       }}
-                                      size="2"
-                                      variant="ghost"
-                                      color="green"
-                                     
                                       title="Approve — creates task assigned to agent"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                     >
                                       <CheckCircle2 size={16} />
-                                    </IconButton>
-                                    <IconButton
+                                    </button>
+                                    <button
                                       onClick={() => {
                                         const updated = selectedMeeting.storedTaskProposals!.map(p =>
                                           p.id === proposal.id ? { ...p, status: 'rejected' as const } : p
                                         );
                                         setSelectedMeeting({ ...selectedMeeting, storedTaskProposals: updated });
                                       }}
-                                      size="2"
-                                      variant="ghost"
-                                      color="red"
-                                     
                                       title="Reject"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
                                     >
                                       <XCircle size={16} />
-                                    </IconButton>
+                                    </button>
                                   </Flex>
                                 )}
                                 {proposal.status === 'approved' && (
                                   <Flex align="center" gap="1" className="shrink-0 mt-1">
-                                    <CheckCircle2 size={14} className="text-success" />
-                                    <span className="text-xs text-success">Created</span>
+                                    <CheckCircle2 size={14} className="text-[var(--color-success)]" />
+                                    <span className="text-xs text-[var(--color-success)]">Created</span>
                                   </Flex>
                                 )}
                                 {proposal.status === 'rejected' && (
@@ -2276,11 +2239,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
                     {/* AI Chat */}
                     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                      <div className="p-4 border-b border-mission-control-border">
-                        <h3 className="font-medium text-mission-control-text flex items-center gap-2">
-                          <Brain size={16} />
-                          Ask about this meeting
-                        </h3>
+                      <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                        <Brain size={16} className="text-mission-control-text-dim" />
+                        <h3 className="text-sm font-semibold text-mission-control-text">Ask about this meeting</h3>
                       </div>
                       <div className="p-4">
                         {meetingChatMessages.length > 0 && (
@@ -2288,9 +2249,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             {meetingChatMessages.map((msg) => (
                               <div key={`${msg.role}-${msg.timestamp}-${msg.content.slice(0, 20)}`} className={`text-sm ${msg.role === 'user' ? 'text-right' : ''}`}>
                                 <span className={`inline-block rounded-lg px-3 py-2 max-w-[90%] ${
-                                  msg.role === 'user' 
-                                    ? 'bg-success text-success'
-                                    : 'bg-mission-control-bg border border-mission-control-border'
+                                  msg.role === 'user'
+                                    ? 'bg-mission-control-accent/10 border border-mission-control-accent/20 text-mission-control-text'
+                                    : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text'
                                 }`}>
                                   {msg.role === 'assistant' ? <MarkdownMessage content={msg.content} /> : msg.content}
                                 </span>
@@ -2327,17 +2288,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                   <div>
                     {/* Meetings List */}
                     <Flex align="center" justify="between" className="mb-4">
-                      <h2 className="text-heading-3">Meetings</h2>
-                      <Button
+                      <h2 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Meetings</h2>
+                      <button
                         onClick={loadPastMeetings}
                         disabled={loadingPastMeetings}
-                        size="1"
-                        variant="ghost"
-                        color="gray"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
                       >
                         {loadingPastMeetings ? <Spinner size={14} /> : <Loader2 size={14} />}
                         Refresh
-                      </Button>
+                      </button>
                     </Flex>
 
                     {loadingPastMeetings ? (
@@ -2364,15 +2323,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             type="button"
                             key={meeting.id || meeting.filepath}
                             onClick={() => setSelectedMeeting(meeting)}
-                            className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-4 hover:border-mission-control-accent transition-all group cursor-pointer"
+                            className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/30 transition-colors group cursor-pointer"
                           >
                             <Flex align="center" justify="between" className="mb-2">
                               <div>
-                                <p className="font-medium text-mission-control-text group-hover:text-success transition-all">
+                                <p className="text-sm font-semibold text-mission-control-text group-hover:text-mission-control-accent transition-colors">
                                   {meeting.title || meeting.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                                 </p>
                                 <Flex align="center" gap="3" className="text-sm text-mission-control-text-dim">
-                                  <span>{meeting.time}</span>
+                                  <span className="text-[10px] tabular-nums font-mono text-mission-control-text-dim">{meeting.time}</span>
                                   {meeting.duration && meeting.duration > 0 && (
                                     <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full">
                                       {formatDuration(meeting.duration)}
@@ -2380,7 +2339,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   )}
                                 </Flex>
                               </div>
-                              <ChevronRight size={16} className="text-mission-control-text-dim group-hover:text-success transition-all" />
+                              <ChevronRight size={16} className="text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
                             </Flex>
                             {(meeting.oneLiner || meeting.transcript.length > 0) && (
                               <p className="text-sm text-mission-control-text-dim line-clamp-2 mt-2">
@@ -2390,12 +2349,12 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             {(meeting.actionItems.length > 0 || meeting.tasksCreated.length > 0) && (
                               <Flex gap="2" className="mt-3">
                                 {meeting.actionItems.length > 0 && (
-                                  <span className="text-xs px-2 py-0.5 bg-warning-subtle text-warning rounded-full">
+                                  <span className="text-xs px-2 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full">
                                     {meeting.actionItems.length} action items
                                   </span>
                                 )}
                                 {meeting.tasksCreated.length > 0 && (
-                                  <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full">
+                                  <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full">
                                     {meeting.tasksCreated.length} tasks
                                   </span>
                                 )}
@@ -2413,7 +2372,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
             {/* Transcribe Audio File View */}
             {activeView === 'transcribe' && (
               <div className="p-6 max-w-2xl mx-auto">
-                <h2 className="text-heading-3 mb-4">Transcribe Audio File</h2>
+                <h2 className="text-sm font-semibold text-mission-control-text mb-4">Transcribe Audio File</h2>
                 <p className="text-mission-control-text-dim mb-6">
                   Upload an audio file (MP3, WAV, M4A) to transcribe using Gemini AI.
                 </p>
@@ -2421,7 +2380,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {!transcribing && !transcriptionResult && (
                   <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-8 text-center">
                     <Upload size={48} className="mx-auto mb-4 text-mission-control-text-dim opacity-30" />
-                    <label className="inline-flex items-center gap-2 px-6 py-3 bg-mission-control-accent hover:bg-mission-control-accent/90 text-white rounded-lg cursor-pointer transition-all">
+                    <label className="inline-flex items-center gap-2 px-6 py-3 bg-mission-control-accent hover:bg-mission-control-accent/90 text-white rounded-lg cursor-pointer transition-colors">
                       <Upload size={18} />
                       Choose Audio File
                       <input
@@ -2446,7 +2405,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     </Flex>
                     <div className="w-full h-3 bg-mission-control-bg rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-mission-control-accent to-success rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-mission-control-accent to-success rounded-full transition-colors duration-500"
                         style={{ width: `${Math.min(100, transcriptionProgress)}%` }}
                       />
                     </div>
@@ -2461,29 +2420,25 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
             {/* Upload Transcript View */}
             {activeView === 'upload-transcript' && (
               <div className="p-6 max-w-2xl mx-auto">
-                <h2 className="text-heading-3 mb-4">Upload Transcript</h2>
+                <h2 className="text-sm font-semibold text-mission-control-text mb-4">Upload Transcript</h2>
                 <p className="text-mission-control-text-dim mb-6">
                   Upload a .txt or .md transcript file to generate a summary and extract action items.
                 </p>
 
                 {/* Upload error */}
                 {uploadError && !transcribing && (
-                  <div className="mb-4 bg-error-subtle border border-error-border rounded-2xl p-4 flex items-start gap-3">
-                    <XCircle size={20} className="text-error shrink-0 mt-0.5" />
+                  <div className="mb-4 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-2xl p-4 flex items-start gap-3">
+                    <XCircle size={20} className="text-[var(--color-error)] shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-error">Upload failed</p>
+                      <p className="font-medium text-[var(--color-error)]">Upload failed</p>
                       <p className="text-sm text-mission-control-text-dim mt-1">{uploadError}</p>
                     </div>
-                    <IconButton
+                    <button
                       onClick={() => setUploadError(null)}
-                      size="1"
-                      variant="ghost"
-                      color="red"
-                     
-                      className="ml-auto"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ml-auto"
                     >
                       <X size={14} />
-                    </IconButton>
+                    </button>
                   </div>
                 )}
 
@@ -2493,20 +2448,20 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     onDrop={handleTranscriptDrop}
                     onDragOver={handleTranscriptDragOver}
                     onDragLeave={handleTranscriptDragLeave}
-                    className={`bg-mission-control-surface border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
+                    className={`bg-mission-control-surface border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${
                       uploadDragOver
                         ? 'border-mission-control-accent bg-mission-control-accent/5'
                         : 'border-mission-control-border hover:border-mission-control-text-dim'
                     }`}
                   >
-                    <Upload size={48} className={`mx-auto mb-4 transition-all ${
+                    <Upload size={48} className={`mx-auto mb-4 transition-colors ${
                       uploadDragOver ? 'text-mission-control-accent scale-110' : 'text-mission-control-text-dim opacity-30'
                     }`} />
                     <p className="text-mission-control-text font-medium mb-2">
                       {uploadDragOver ? 'Drop file here' : 'Drag & drop a transcript file'}
                     </p>
                     <p className="text-sm text-mission-control-text-dim mb-4">or</p>
-                    <label className="inline-flex items-center gap-2 px-6 py-3 bg-mission-control-accent hover:bg-mission-control-accent/90 text-white rounded-lg cursor-pointer transition-all">
+                    <label className="inline-flex items-center gap-2 px-6 py-3 bg-mission-control-accent hover:bg-mission-control-accent/90 text-white rounded-lg cursor-pointer transition-colors">
                       <FileText size={18} />
                       Choose File
                       <input
@@ -2531,7 +2486,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     </Flex>
                     <div className="w-full h-3 bg-mission-control-bg rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-mission-control-accent to-success rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-mission-control-accent to-success rounded-full transition-colors duration-500"
                         style={{ width: `${Math.min(100, transcriptionProgress)}%` }}
                       />
                     </div>
@@ -2545,10 +2500,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {transcriptionSaved && !transcribing && (
                   <div className="space-y-4">
                     {/* Success — navigate to meeting detail */}
-                    <div className="bg-success-subtle border border-success-border rounded-2xl p-5">
+                    <div className="bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-2xl p-5">
                       <Flex align="center" gap="3" className="mb-3">
-                        <CheckCircle2 size={20} className="text-success shrink-0" />
-                        <p className="font-medium text-success">Transcript processed</p>
+                        <CheckCircle2 size={20} className="text-[var(--color-success)] shrink-0" />
+                        <p className="font-medium text-[var(--color-success)]">Transcript processed</p>
                       </Flex>
                       <p className="text-sm text-mission-control-text-dim mb-4">
                         {uploadSummary ? 'AI summary generated' : 'Extractive summary created'}
@@ -2632,7 +2587,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {/* Recent uploads — shown as clickable cards */}
                 {recentUploads.length > 0 && (
                   <div className="mt-6">
-                    <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Recently Uploaded</h3>
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Recently Uploaded</h3>
                     <div className="space-y-2">
                       {recentUploads.map(upload => (
                         <button
@@ -2642,10 +2597,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             setActiveView('history');
                             loadPastMeetings();
                           }}
-                          className="w-full p-3 bg-mission-control-surface border border-mission-control-border rounded-xl flex items-center gap-3 hover:border-mission-control-accent/50 transition-all text-left cursor-pointer"
+                          className="w-full p-3 bg-mission-control-surface border border-mission-control-border rounded-xl flex items-center gap-3 hover:border-mission-control-accent/50 transition-colors text-left cursor-pointer"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-info-subtle flex items-center justify-center shrink-0">
-                            <FileText size={16} className="text-info" />
+                          <div className="w-8 h-8 rounded-lg bg-[var(--color-info)]/10 flex items-center justify-center shrink-0">
+                            <FileText size={16} className="text-[var(--color-info)]" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-mission-control-text truncate">{upload.title}</p>
@@ -2665,10 +2620,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
               <div className="p-6 pt-0 max-w-2xl mx-auto">
                 <div className="space-y-4">
                   {!transcriptionSaved ? (
-                    <div className="bg-success-subtle border border-success-border rounded-2xl p-6">
+                    <div className="bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-2xl p-6">
                       <Flex align="center" gap="2" className="mb-4">
-                        <CheckCircle2 size={20} className="text-success" />
-                        <span className="font-medium text-success">
+                        <CheckCircle2 size={20} className="text-[var(--color-success)]" />
+                        <span className="font-medium text-[var(--color-success)]">
                           {activeView === 'transcribe' ? 'Transcription Complete' : 'Text Extracted'}
                         </span>
                       </Flex>
@@ -2713,9 +2668,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-success-subtle border border-success-border rounded-2xl p-6 text-center">
-                      <CheckCircle2 size={32} className="text-success mx-auto mb-3" />
-                      <p className="font-medium text-success mb-1">Saved to Meetings</p>
+                    <div className="bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-2xl p-6 text-center">
+                      <CheckCircle2 size={32} className="text-[var(--color-success)] mx-auto mb-3" />
+                      <p className="font-medium text-[var(--color-success)] mb-1">Saved to Meetings</p>
                       <p className="text-sm text-mission-control-text-dim mb-4">
                         Summary and tasks have been generated. View in the Meetings tab.
                       </p>
@@ -2743,23 +2698,23 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                   {/* Proposed Task Cards from Mission Control */}
                   {proposedTasks.length > 0 && (
                     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                      <Flex align="center" justify="between" p="4" className="border-b border-mission-control-border">
+                      <div className="px-4 py-3 border-b border-mission-control-border flex items-center justify-between">
                         <Flex align="center" gap="2">
-                          <Brain size={18} className="text-review" />
-                          <h3 className="font-medium text-mission-control-text">Task Cards from Mission Control</h3>
+                          <Brain size={16} className="text-[var(--color-review)]" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">Task Cards from Mission Control</h3>
                           <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                             {proposedTasks.filter(t => t.status === 'pending').length} pending
                           </span>
                         </Flex>
                         <p className="text-xs text-mission-control-text-dim">Approve to add to Kanban</p>
-                      </Flex>
+                      </div>
                       <div className="divide-y divide-mission-control-border">
                         {proposedTasks.map((task) => (
                           <div
                             key={task.id}
-                            className={`p-4 transition-all ${
+                            className={`p-4 transition-colors ${
                               task.status === 'rejected' ? 'opacity-40' : ''
-                            } ${task.status === 'approved' ? 'bg-success-subtle' : ''}`}
+                            } ${task.status === 'approved' ? 'bg-[var(--color-success)]/10' : ''}`}
                           >
                             {editingProposedTask === task.id ? (
                               <div className="space-y-3">
@@ -2784,14 +2739,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   >
                                     Save & Approve
                                   </Button>
-                                  <Button
+                                  <button
+                                    type="button"
                                     onClick={() => setEditingProposedTask(null)}
-                                    size="1"
-                                    variant="ghost"
-                                    color="gray"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                                   >
                                     Cancel
-                                  </Button>
+                                  </button>
                                 </Flex>
                               </div>
                             ) : (
@@ -2806,7 +2760,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       {task.proposedAgent}
                                     </span>
                                     {task.status === 'approved' && (
-                                      <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full flex items-center gap-1">
+                                      <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full flex items-center gap-1">
                                         <Check size={10} /> Added to Kanban
                                       </span>
                                     )}
@@ -2814,36 +2768,30 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                 </div>
                                 {task.status === 'pending' && (
                                   <Flex align="center" gap="1" className="shrink-0">
-                                    <IconButton
+                                    <button
                                       onClick={() => approveProposedTask(task.id)}
-                                      size="2"
-                                      variant="ghost"
-                                      color="green"
                                       title="Approve — add to Kanban"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                     >
                                       <CheckCircle2 size={16} />
-                                    </IconButton>
-                                    <IconButton
+                                    </button>
+                                    <button
                                       onClick={() => {
                                         setEditingProposedTask(task.id);
                                         setEditingProposedText(task.title);
                                       }}
-                                      size="2"
-                                      variant="ghost"
-                                      color="gray"
                                       title="Edit & Approve"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                     >
                                       <Edit3 size={16} />
-                                    </IconButton>
-                                    <IconButton
+                                    </button>
+                                    <button
                                       onClick={() => rejectProposedTask(task.id)}
-                                      size="2"
-                                      variant="ghost"
-                                      color="red"
                                       title="Reject"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
                                     >
                                       <XCircle size={16} />
-                                    </IconButton>
+                                    </button>
                                   </Flex>
                                 )}
                               </Flex>

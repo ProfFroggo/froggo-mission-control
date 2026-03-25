@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, Check, X, Clock, MessageSquare, Calendar, Mail, RefreshCw, Inbox } from 'lucide-react';
+import { Bell, Check, X, Clock, MessageSquare, Calendar, Mail, RefreshCw, Inbox, CheckCheck } from 'lucide-react';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import IconBadge from './IconBadge';
 import { inboxApi, scheduleApi } from '../lib/api';
-import { Button, IconButton, Badge, Box, Flex } from '@radix-ui/themes';
+import { IconButton, Badge, Box, Flex } from '@radix-ui/themes';
 
 interface UnifiedNotification {
   id: string;
@@ -20,13 +20,13 @@ interface UnifiedNotification {
 }
 
 const sourceConfig: Record<string, { icon: any; color: string; label: string }> = {
-  inbox: { icon: Inbox, color: 'text-warning bg-warning-subtle', label: 'Inbox' },
-  whatsapp: { icon: MessageSquare, color: 'text-success bg-success-subtle', label: 'WhatsApp' },
-  telegram: { icon: MessageSquare, color: 'text-info bg-info-subtle', label: 'Telegram' },
-  discord: { icon: MessageSquare, color: 'text-review bg-review-subtle', label: 'Discord' },
-  email: { icon: Mail, color: 'text-error bg-error-subtle', label: 'Email' },
-  calendar: { icon: Calendar, color: 'text-warning bg-warning-subtle', label: 'Calendar' },
-  system: { icon: Bell, color: 'text-mission-control-text-dim bg-mission-control-bg0/10', label: 'System' },
+  inbox: { icon: Inbox, color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10', label: 'Inbox' },
+  whatsapp: { icon: MessageSquare, color: 'text-[var(--color-success)] bg-[var(--color-success)]/10', label: 'WhatsApp' },
+  telegram: { icon: MessageSquare, color: 'text-[var(--color-info)] bg-[var(--color-info)]/10', label: 'Telegram' },
+  discord: { icon: MessageSquare, color: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle', label: 'Discord' },
+  email: { icon: Mail, color: 'text-[var(--color-error)] bg-[var(--color-error)]/10', label: 'Email' },
+  calendar: { icon: Calendar, color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10', label: 'Calendar' },
+  system: { icon: Bell, color: 'text-mission-control-text-dim bg-mission-control-surface/10', label: 'System' },
 };
 
 export default function NotificationsPanel() {
@@ -153,34 +153,58 @@ export default function NotificationsPanel() {
               </p>
             </div>
           </Flex>
-          <Button
-            variant="soft"
-            color="gray"
-            size="2"
-            onClick={loadNotifications}
-            disabled={loading}
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+                title="Mark all as read"
+              >
+                <CheckCheck size={13} />
+                Mark all read
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={loadNotifications}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+          </div>
         </Flex>
 
-        {/* Filter tabs */}
-        <Flex gap="2">
-          {(['all', 'unread', 'urgent'] as const).map((f) => (
-            <Button
-              key={f}
-              variant={filter === f ? 'solid' : 'soft'}
-              color={filter === f ? 'blue' : 'gray'}
-              size="2"
-              onClick={() => setFilter(f)}
-            >
-              {f === 'all' && `All (${notifications.length})`}
-              {f === 'unread' && `Unread (${unreadCount})`}
-              {f === 'urgent' && `Urgent (${urgentCount})`}
-            </Button>
-          ))}
-        </Flex>
+        {/* Filter tabs — underline style */}
+        <div className="flex items-center border-b border-mission-control-border -mb-px">
+          {(['all', 'unread', 'urgent'] as const).map((f) => {
+            const count = f === 'all' ? notifications.length : f === 'unread' ? unreadCount : urgentCount;
+            const isActive = filter === f;
+            return (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFilter(f)}
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  isActive
+                    ? 'border-mission-control-accent text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+                <span className={`px-1.5 py-0.5 rounded-full text-xs font-mono tabular-nums ${
+                  isActive
+                    ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                    : 'bg-mission-control-border text-mission-control-text-dim'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </Box>
 
       {/* Notifications List */}
@@ -199,12 +223,12 @@ export default function NotificationsPanel() {
               return (
                 <div
                   key={notif.id}
-                  className={`p-4 rounded-lg border transition-all ${
+                  className={`p-4 rounded-lg border transition-colors ${
                     notif.urgent
-                      ? 'bg-error-subtle border-error-border'
+                      ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 border-l-2 border-l-[var(--color-error)]'
                       : notif.read
-                      ? 'bg-mission-control-bg border-mission-control-border opacity-60'
-                      : 'bg-mission-control-surface border-mission-control-border shadow-card'
+                      ? 'bg-transparent border-mission-control-border opacity-70'
+                      : 'bg-mission-control-accent/5 border-mission-control-border border-l-2 border-l-mission-control-accent shadow-card'
                   }`}
                 >
                   <Flex align="start" gap="3">
@@ -218,12 +242,12 @@ export default function NotificationsPanel() {
                         )}
                       </Flex>
                       <p className="text-sm text-mission-control-text-dim truncate">{notif.description}</p>
-                      <Flex align="center" gap="2" mt="2" className="text-xs text-mission-control-text-dim">
-                        <span className={`px-1.5 py-0.5 rounded ${config.color.replace('text-', 'bg-').replace('/10', '/20')}`}>
+                      <Flex align="center" gap="2" mt="2">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${config.color}`}>
                           {config.label}
                         </span>
-                        <Clock size={10} />
-                        <span className="tabular-nums">{formatTimeAgo(notif.timestamp)}</span>
+                        <Clock size={10} className="text-mission-control-text-dim/70" />
+                        <span className="text-[11px] text-mission-control-text-dim/70 tabular-nums">{formatTimeAgo(notif.timestamp)}</span>
                       </Flex>
                     </Box>
 
@@ -241,16 +265,15 @@ export default function NotificationsPanel() {
                           <Check size={16} />
                         </IconButton>
                       )}
-                      <IconButton
-                        variant="ghost"
-                        size="2"
-                        color="gray"
+                      <button
+                        type="button"
                         onClick={() => handleDismiss(notif)}
                         title="Dismiss"
                         aria-label="Dismiss"
+                        className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                       >
                         <X size={16} />
-                      </IconButton>
+                      </button>
                     </Flex>
                   </Flex>
                 </div>

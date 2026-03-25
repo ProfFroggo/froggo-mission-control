@@ -146,7 +146,7 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
               return (
                 <div
                   key={`wb-${i}`}
-                  className="rounded-full bg-error transition-all duration-75"
+                  className="rounded-full bg-[var(--color-error)] transition-colors duration-75"
                   style={{
                     width: 2,
                     height: `${Math.max(15, height * 100)}%`,
@@ -158,16 +158,18 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
           </div>
         )}
 
-        <IconButton
+        <button
           onClick={toggleListening}
           disabled={disabled}
-          variant={listening ? 'solid' : 'soft'}
-          color={listening ? 'red' : 'gray'}
-          size="2"
           title={listening ? 'Stop listening' : 'Voice input'}
+          className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+            listening
+              ? 'bg-destructive/10 border border-destructive/30 text-destructive'
+              : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
         >
           {listening ? <AudioLines size={16} /> : <Mic size={16} />}
-        </IconButton>
+        </button>
       </Flex>
 
       {/* Listening label */}
@@ -182,10 +184,10 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
         <Flex direction="column" align="center" gap="1" style={{ width: 64 }}>
           <div className="w-full h-1 bg-mission-control-border rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                confidenceColor === 'grass' ? 'bg-success' :
-                confidenceColor === 'orange' ? 'bg-warning' :
-                'bg-error'
+              className={`h-full rounded-full transition-colors duration-300 ${
+                confidenceColor === 'grass' ? 'bg-[var(--color-success)]' :
+                confidenceColor === 'orange' ? 'bg-[var(--color-warning)]' :
+                'bg-[var(--color-error)]'
               }`}
               style={{ width: confidenceWidth }}
             />

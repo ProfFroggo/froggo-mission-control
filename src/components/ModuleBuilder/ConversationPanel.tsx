@@ -62,22 +62,26 @@ export default function ConversationPanel({
         </Flex>
         <div className="w-full h-2 bg-mission-control-border rounded-full overflow-hidden">
           <div
-            className="h-full bg-mission-control-accent rounded-full transition-all duration-500"
+            className="h-full bg-mission-control-accent rounded-full transition-colors duration-500"
             style={{ width: `${overallProgress}%` }}
           />
         </div>
         {/* Section pills */}
         <div className="flex gap-1.5 mt-2 flex-wrap">
           {sectionProgress.map(s => (
-            <Button
+            <button
               key={s.id}
-              size="1"
-              variant={s.complete ? 'soft' : s.id === currentSection ? 'soft' : 'ghost'}
-              color={s.complete ? 'green' : s.id === currentSection ? 'indigo' : 'gray'}
               onClick={() => onJumpToSection(s.id)}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                s.complete
+                  ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]'
+                  : s.id === currentSection
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+              }`}
             >
               {s.complete && <CheckCircle size={10} />}{s.label}
-            </Button>
+            </button>
           ))}
         </div>
       </div>

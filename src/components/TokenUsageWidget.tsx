@@ -131,12 +131,12 @@ function AgentBar({
         </button>
         <Flex align="center" gap="2" className="text-mission-control-text-dim shrink-0 tabular-nums">
           <span>{tokLabel}</span>
-          <span className="text-warning">${agent.cost.toFixed(4)}</span>
+          <span className="text-[var(--color-warning)]">${agent.cost.toFixed(4)}</span>
         </Flex>
       </Flex>
       <Box className="h-1.5 bg-mission-control-bg rounded-full overflow-hidden">
         <Box
-          className="h-full rounded-full transition-all duration-500"
+          className="h-full rounded-full transition-colors duration-500"
           style={{ width: `${pct}%`, backgroundColor: theme.color }}
         />
       </Box>
@@ -160,8 +160,8 @@ function BudgetBanner({ totalCost, budgetUsd }: { totalCost: number; budgetUsd: 
       py="2"
       className={`rounded-lg text-xs font-medium ${
         isOver
-          ? 'bg-error-subtle border border-error-border text-error'
-          : 'bg-warning-subtle border border-warning-border text-warning'
+          ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)]'
+          : 'bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-[var(--color-warning)]'
       }`}
     >
       <AlertTriangle size={14} className="shrink-0" />
@@ -258,7 +258,7 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
       <Box className="grid grid-cols-2 gap-3">
         <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
           <Flex align="center" gap="1" mb="1" className="text-xs text-mission-control-text-dim">
-            <Zap size={13} className="text-warning" />
+            <Zap size={13} className="text-[var(--color-warning)]" />
             Total Tokens
           </Flex>
           <Box className="text-2xl font-bold tabular-nums">{totalLabel}</Box>
@@ -267,10 +267,10 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
 
         <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
           <Flex align="center" gap="1" mb="1" className="text-xs text-mission-control-text-dim">
-            <Coins size={13} className="text-success" />
+            <Coins size={13} className="text-[var(--color-success)]" />
             Est. Cost
           </Flex>
-          <Box className="text-2xl font-bold text-success tabular-nums">${data.totalCost.toFixed(4)}</Box>
+          <Box className="text-2xl font-bold text-[var(--color-success)] tabular-nums">${data.totalCost.toFixed(4)}</Box>
           <Box className="text-xs text-mission-control-text-dim mt-0.5 tabular-nums">
             {budgetUsd > 0 ? `of $${budgetUsd.toFixed(2)} budget` : 'no budget set'}
           </Box>
@@ -280,7 +280,7 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
       {/* Top 3 agents */}
       {top3.length > 0 && (
         <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
-          <Flex align="center" gap="1" mb="3" className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+          <Flex align="center" gap="1" mb="3" className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
             <TrendingUp size={12} />
             Top Consumers
           </Flex>
@@ -300,7 +300,7 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
       {/* Daily spend sparkline */}
       {data.byDay.length > 0 && (
         <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
-          <Flex align="center" gap="1" mb="3" className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+          <Flex align="center" gap="1" mb="3" className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
             <Coins size={12} />
             Daily Spend
           </Flex>

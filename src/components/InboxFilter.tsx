@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Star, Mail, Paperclip, X, Save, Reply, MessageCircle, Gamepad2, Send as SendPlane, AlertTriangle } from 'lucide-react';
 import { showToast } from './Toast';
-import { Button, Flex, IconButton, TextField, Box } from '@radix-ui/themes';
+import { Button, Flex, TextField, Box } from '@radix-ui/themes';
 
 export interface FilterCriteria {
   search?: string;
@@ -273,15 +273,18 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
           </div>
 
           {/* Actions */}
-          <Button
-            variant={showAdvanced ? 'solid' : 'soft'}
-            color={showAdvanced ? 'blue' : 'gray'}
-            size="2"
+          <button
+            type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+              showAdvanced
+                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Filter size={14} />
             Advanced
-          </Button>
+          </button>
 
           <Button
             variant="soft"
@@ -314,15 +317,17 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
           </span>
           <Flex align="center" gap="2">
             <span>Logic:</span>
-            <Button
-              variant={logicMode === 'AND' ? 'solid' : 'soft'}
-              color={logicMode === 'AND' ? 'blue' : 'gray'}
-              size="1"
+            <button
+              type="button"
               onClick={() => setLogicMode(logicMode === 'AND' ? 'OR' : 'AND')}
-              className="font-mono"
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium font-mono border transition-colors ${
+                logicMode === 'AND'
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {logicMode}
-            </Button>
+            </button>
           </Flex>
         </Flex>
       </div>
@@ -332,67 +337,85 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
         <div className="px-3 pb-3 space-y-3 border-t border-mission-control-border pt-3">
           {/* Platform Filters */}
           <div>
-            <div className="text-xs font-semibold mb-2 text-mission-control-text-dim">Platforms</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider mb-2 text-mission-control-text-dim">Platforms</div>
             <div className="flex gap-2 flex-wrap">
               {PLATFORM_OPTIONS.map(platform => (
-                <Button
+                <button
                   key={platform.id}
-                  variant={platforms.includes(platform.id) ? 'solid' : 'soft'}
-                  color={platforms.includes(platform.id) ? 'blue' : 'gray'}
-                  size="2"
+                  type="button"
                   onClick={() => togglePlatform(platform.id)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                    platforms.includes(platform.id)
+                      ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                      : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}
                 >
                   <span>{platform.icon}</span>
                   {platform.label}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
 
           {/* Flag Filters */}
           <div>
-            <div className="text-xs font-semibold mb-2 text-mission-control-text-dim">Flags</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider mb-2 text-mission-control-text-dim">Flags</div>
             <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={flags.unread ? 'solid' : 'soft'}
-                color={flags.unread ? 'blue' : 'gray'}
-                size="2"
+              <button
+                type="button"
                 onClick={() => toggleFlag('unread')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  flags.unread
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 <Mail size={14} /> Unread
-              </Button>
-              <Button
-                variant={flags.unreplied ? 'solid' : 'soft'}
-                color={flags.unreplied ? 'amber' : 'gray'}
-                size="2"
+              </button>
+              <button
+                type="button"
                 onClick={() => toggleFlag('unreplied')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  flags.unreplied
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 <Reply size={14} /> Awaiting Reply
-              </Button>
-              <Button
-                variant={flags.starred ? 'solid' : 'soft'}
-                color={flags.starred ? 'amber' : 'gray'}
-                size="2"
+              </button>
+              <button
+                type="button"
                 onClick={() => toggleFlag('starred')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  flags.starred
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 <Star size={14} /> Starred
-              </Button>
-              <Button
-                variant={flags.hasAttachment ? 'solid' : 'soft'}
-                color={flags.hasAttachment ? 'grass' : 'gray'}
-                size="2"
+              </button>
+              <button
+                type="button"
                 onClick={() => toggleFlag('hasAttachment')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  flags.hasAttachment
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 <Paperclip size={14} /> Has Attachment
-              </Button>
-              <Button
-                variant={flags.urgent ? 'solid' : 'soft'}
-                color={flags.urgent ? 'red' : 'gray'}
-                size="2"
+              </button>
+              <button
+                type="button"
                 onClick={() => toggleFlag('urgent')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  flags.urgent
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 <AlertTriangle size={14} /> Urgent
-              </Button>
+              </button>
             </div>
           </div>
 
@@ -420,7 +443,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
       {/* Saved Filters Dropdown */}
       {showSavedFilters && (
         <div className="px-3 pb-3 border-t border-mission-control-border pt-3">
-          <div className="text-xs font-semibold mb-2 text-mission-control-text-dim">Saved Filters</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider mb-2 text-mission-control-text-dim">Saved Filters</div>
           {savedFilters.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[200px] gap-3 text-center px-6 py-8">
               <Filter size={32} className="text-mission-control-text-dim opacity-40" />
@@ -434,24 +457,21 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
                   key={filter.id}
                   className="bg-mission-control-bg border border-mission-control-border rounded-lg p-2 flex items-center justify-between hover:border-mission-control-accent/50 transition-colors"
                 >
-                  <Button
-                    variant="ghost"
-                    color="gray"
-                    size="2"
+                  <button
+                    type="button"
                     onClick={() => applySavedFilter(filter)}
-                    className="flex-1 justify-start"
+                    className="flex-1 text-left inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     {filter.name}
-                  </Button>
-                  <IconButton
-                    variant="ghost"
-                    size="1"
-                    color="red"
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => deleteSavedFilter(filter.id)}
                     aria-label="Delete saved filter"
+                    className="inline-flex items-center justify-center w-6 h-6 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
                   >
                     <X size={14} />
-                  </IconButton>
+                  </button>
                 </div>
               ))}
             </div>

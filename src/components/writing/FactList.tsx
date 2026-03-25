@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pencil, Trash2, Plus, Link2 } from 'lucide-react';
-import { Button, IconButton, Flex } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import { useMemoryStore } from '../../store/memoryStore';
 import { useWritingStore } from '../../store/writingStore';
 import { useResearchStore } from '../../store/researchStore';
@@ -8,10 +8,10 @@ import FactForm from './FactForm';
 import ConfirmDialog, { useConfirmDialog } from '../ConfirmDialog';
 
 const statusBadge: Record<string, string> = {
-  verified: 'bg-success-subtle text-success',
-  unverified: 'bg-warning-subtle text-warning',
-  disputed: 'bg-error-subtle text-error',
-  'needs-source': 'bg-info-subtle text-info',
+  verified: 'bg-[var(--color-success)]/10 text-[var(--color-success)]',
+  unverified: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]',
+  disputed: 'bg-[var(--color-error)]/10 text-[var(--color-error)]',
+  'needs-source': 'bg-[var(--color-info)]/10 text-[var(--color-info)]',
 };
 
 const statusLabel: Record<string, string> = {
@@ -89,24 +89,20 @@ export default function FactList() {
                   <span className="text-[10px] text-mission-control-text line-clamp-2">{fact.claim}</span>
                 </div>
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <IconButton
-                    size="1"
-                    variant="ghost"
-                   
+                  <button
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     onClick={() => setEditingId(fact.id)}
                     title="Edit"
                   >
                     <Pencil size={11} />
-                  </IconButton>
-                  <IconButton
-                    size="1"
-                    variant="ghost"
-                   
+                  </button>
+                  <button
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     onClick={() => handleDelete(fact.id)}
                     title="Delete"
                   >
                     <Trash2 size={11} />
-                  </IconButton>
+                  </button>
                 </div>
               </Flex>
               {fact.source && (
@@ -126,15 +122,13 @@ export default function FactList() {
 
       {editingId !== 'new-fact' && (
         <div className="p-2 border-t border-mission-control-border flex-shrink-0">
-          <Button
-            size="1"
-            variant="ghost"
-            className="w-full justify-start"
+          <button
+            className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             onClick={() => setEditingId('new-fact')}
           >
             <Plus size={14} />
             Add Fact
-          </Button>
+          </button>
         </div>
       )}
 

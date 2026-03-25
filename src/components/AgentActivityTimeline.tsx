@@ -83,7 +83,7 @@ export default function AgentActivityTimeline({ agentId }: AgentActivityTimeline
               onMouseEnter={() => setHoveredDay(day)}
               onMouseLeave={() => setHoveredDay(null)}
             />
-            <span className="text-[9px] text-mission-control-text-dim/60 leading-none">
+            <span className="text-[9px] text-mission-control-text-dim/80 leading-none">
               {new Date(day.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'narrow' })}
             </span>
           </Flex>
@@ -91,12 +91,12 @@ export default function AgentActivityTimeline({ agentId }: AgentActivityTimeline
 
         {/* Tooltip */}
         {hoveredDay && (
-          <Box className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 px-2 py-1 bg-mission-control-bg0 border border-mission-control-border rounded text-xs whitespace-nowrap shadow-lg pointer-events-none">
+          <Box className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 px-2 py-1 bg-mission-control-surface border border-mission-control-border rounded text-xs whitespace-nowrap shadow-lg pointer-events-none">
             {formatDate(hoveredDay.date)}: {hoveredDay.count} {hoveredDay.count === 1 ? 'action' : 'actions'}
           </Box>
         )}
       </Flex>
-      <Flex align="center" justify="between" mt="1" className="text-[9px] text-mission-control-text-dim/50">
+      <Flex align="center" justify="between" mt="1" className="text-[9px] text-mission-control-text-dim/70">
         <span>Less</span>
         <Flex align="center" gap="1">
           {['bg-mission-control-border/40', 'bg-mission-control-accent/25', 'bg-mission-control-accent/50', 'bg-mission-control-accent/75', 'bg-mission-control-accent'].map((cls, i) => (

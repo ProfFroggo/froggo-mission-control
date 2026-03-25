@@ -12,7 +12,7 @@ import {
   ChevronDown, ChevronRight, Volume2, VolumeX, ExternalLink,
   MessageSquare, Calendar
 } from 'lucide-react';
-import { Button, IconButton, Select, Checkbox, Switch, Flex } from '@radix-ui/themes';
+import { Button, Select, Checkbox, Switch, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import IconBadge from './IconBadge';
@@ -31,18 +31,18 @@ const SOUND_PREF_KEY = 'mission-control.notification-sound';
 // ─── Type config ──────────────────────────────────────────────────────────────
 
 const typeConfig: Record<string, { icon: any; color: string; label: string }> = {
-  task_complete:    { icon: CheckCircle,   color: 'text-success bg-success-subtle',       label: 'Task Complete'   },
-  task_deadline:    { icon: Clock3,        color: 'text-warning bg-warning-subtle',       label: 'Deadline'        },
-  task_assigned:    { icon: CheckSquare,   color: 'text-info bg-info-subtle',             label: 'Task Assigned'   },
-  agent_update:     { icon: Bot,           color: 'text-review bg-review-subtle',         label: 'Agent Update'    },
-  message_arrival:  { icon: MessageSquare, color: 'text-info bg-info-subtle',             label: 'Message'         },
-  approval_pending: { icon: Eye,           color: 'text-warning bg-warning-subtle',       label: 'Review Needed'   },
-  human_review:     { icon: AlertTriangle, color: 'text-warning bg-warning-subtle',       label: 'Human Review'    },
+  task_complete:    { icon: CheckCircle,   color: 'text-[var(--color-success)] bg-[var(--color-success)]/10',       label: 'Task Complete'   },
+  task_deadline:    { icon: Clock3,        color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',       label: 'Deadline'        },
+  task_assigned:    { icon: CheckSquare,   color: 'text-[var(--color-info)] bg-[var(--color-info)]/10',             label: 'Task Assigned'   },
+  agent_update:     { icon: Bot,           color: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle',         label: 'Agent Update'    },
+  message_arrival:  { icon: MessageSquare, color: 'text-[var(--color-info)] bg-[var(--color-info)]/10',             label: 'Message'         },
+  approval_pending: { icon: Eye,           color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',       label: 'Review Needed'   },
+  human_review:     { icon: AlertTriangle, color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',       label: 'Human Review'    },
   calendar_event:   { icon: Calendar,      color: 'text-pink-400 bg-pink-500/10',         label: 'Event'           },
-  system_alert:     { icon: AlertTriangle, color: 'text-error bg-error-subtle',           label: 'Alert'           },
+  system_alert:     { icon: AlertTriangle, color: 'text-[var(--color-error)] bg-[var(--color-error)]/10',           label: 'Alert'           },
   skill_learned:    { icon: Star,          color: 'text-cyan-400 bg-cyan-500/10',         label: 'Skill'           },
   approval_needed:  { icon: Shield,        color: 'text-danger bg-danger-subtle',         label: 'Approval Needed' },
-  error:            { icon: XCircle,       color: 'text-error bg-error-subtle',           label: 'Error'           },
+  error:            { icon: XCircle,       color: 'text-[var(--color-error)] bg-[var(--color-error)]/10',           label: 'Error'           },
 };
 
 // ─── Group definitions ────────────────────────────────────────────────────────
@@ -177,62 +177,52 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
     <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
       {/* Context-specific navigation */}
       {group === 'Tasks' && (
-        <IconButton
-          size="2"
-          variant="ghost"
-         
+        <button
           onClick={(e) => navigateTo('kanban', e)}
           title="View task"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <ExternalLink size={14} />
-        </IconButton>
+        </button>
       )}
       {group === 'Approvals' && (
-        <IconButton
-          size="2"
-          variant="ghost"
-         
+        <button
           onClick={(e) => navigateTo('approvals', e)}
           title="Review"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <ExternalLink size={14} />
-        </IconButton>
+        </button>
       )}
       {group === 'Agents' && (
-        <IconButton
-          size="2"
-          variant="ghost"
-         
+        <button
           onClick={(e) => navigateTo('agents', e)}
           title="View agent"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <ExternalLink size={14} />
-        </IconButton>
+        </button>
       )}
 
       {/* Mark read */}
       {!notif.read && (
-        <IconButton
-          size="2"
-          variant="ghost"
-         
+        <button
           onClick={(e) => { e.stopPropagation(); onMarkRead(notif.id); }}
           title="Mark as read"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <Check size={14} />
-        </IconButton>
+        </button>
       )}
 
       {/* Dismiss */}
-      <IconButton
-        size="2"
-        variant="ghost"
-       
+      <button
         onClick={(e) => { e.stopPropagation(); onDismiss(notif.id); }}
         title="Dismiss"
+        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
       >
         <X size={14} />
-      </IconButton>
+      </button>
     </div>
   );
 }
@@ -427,14 +417,13 @@ export default function NotificationsPanelV2() {
       <div className="h-full flex flex-col">
         <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
           <Flex align="center" gap="3">
-            <IconButton
-              size="2"
-              variant="ghost"
-
+            <button
+              type="button"
               onClick={() => setShowSettings(false)}
+              className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <X size={20} />
-            </IconButton>
+            </button>
             <div>
               <h1 className="text-lg font-semibold text-mission-control-text">Notification Settings</h1>
               <p className="text-sm text-mission-control-text-dim">Configure notification preferences</p>
@@ -506,7 +495,7 @@ export default function NotificationsPanelV2() {
               return (
                 <div key={pref.type} className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
                   <Flex align="start" gap="3">
-                    <IconBadge icon={Icon} size={18} color={config?.color || 'bg-mission-control-bg0/10 text-mission-control-text-dim'} />
+                    <IconBadge icon={Icon} size={18} color={config?.color || 'bg-mission-control-surface/10 text-mission-control-text-dim'} />
                     <div className="flex-1">
                       <div className="font-medium mb-1">{config?.label || pref.type}</div>
                       <div className="grid grid-cols-2 gap-3 mt-3">
@@ -573,7 +562,7 @@ export default function NotificationsPanelV2() {
             <div className="p-2 bg-mission-control-accent/20 rounded-lg relative">
               <Bell size={24} className="text-mission-control-accent" />
               {stats.unread > 0 && (
-                <div className="absolute -top-1 -right-1 bg-error text-error text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 bg-[var(--color-error)] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center tabular-nums">
                   {stats.unread > 9 ? '9+' : stats.unread}
                 </div>
               )}
@@ -589,73 +578,73 @@ export default function NotificationsPanelV2() {
 
           <div className="flex gap-2 items-center flex-wrap">
             {/* Sound quick toggle */}
-            <IconButton
-              size="2"
-              variant={soundEnabled ? 'soft' : 'ghost'}
-             
+            <button
               onClick={() => saveSoundPref(!soundEnabled)}
               title={soundEnabled ? 'Mute notification sounds' : 'Enable notification sounds'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
+                soundEnabled
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-            </IconButton>
+            </button>
 
             {/* Push notification quick toggle */}
-            <IconButton
-              size="2"
-              variant={pushEnabled && pushPermission === 'granted' ? 'soft' : 'ghost'}
-             
+            <button
               onClick={pushEnabled ? handleDisablePush : handleRequestPush}
               title={pushEnabled && pushPermission === 'granted' ? 'Disable browser notifications' : 'Enable browser notifications'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
+                pushEnabled && pushPermission === 'granted'
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {pushEnabled && pushPermission === 'granted' ? <Bell size={16} /> : <BellOff size={16} />}
-            </IconButton>
+            </button>
 
             {notifications.length > 0 && (
-              <Button
-                size="2"
-                variant="ghost"
-                color="gray"
+              <button
+                type="button"
                 onClick={handleDismissAll}
                 title="Dismiss all notifications"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <X size={14} />
                 Dismiss all
-              </Button>
+              </button>
             )}
 
             {stats.unread > 0 && (
-              <Button
-                size="2"
-                variant="ghost"
-                color="gray"
+              <button
+                type="button"
                 onClick={handleMarkAllRead}
                 title="Mark all as read"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <CheckCheck size={14} />
                 Mark all read
-              </Button>
+              </button>
             )}
 
-            <Button
-              size="2"
-              variant="ghost"
-              color="gray"
+            <button
+              type="button"
               onClick={loadNotifications}
               disabled={loading}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               Refresh
-            </Button>
+            </button>
 
-            <IconButton
-              size="2"
-              variant="ghost"
-             
+            <button
+              type="button"
               onClick={() => setShowSettings(true)}
               title="Settings"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <Settings size={16} />
-            </IconButton>
+            </button>
           </div>
         </Flex>
 
@@ -715,7 +704,7 @@ export default function NotificationsPanelV2() {
                       ? <ChevronRight size={14} className="text-mission-control-text-dim flex-shrink-0" />
                       : <ChevronDown  size={14} className="text-mission-control-text-dim flex-shrink-0" />
                     }
-                    <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
                       {group}
                     </span>
                     <div className="flex-1 h-px bg-mission-control-border/50" />
@@ -738,16 +727,16 @@ export default function NotificationsPanelV2() {
                         return (
                           <div
                             key={notif.id}
-                            className={`p-4 rounded-lg border transition-all group ${
+                            className={`p-4 rounded-lg border transition-colors group ${
                               notif.priority === 'urgent'
-                                ? 'bg-error-subtle border-error-border shadow-lg'
+                                ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 border-l-2 border-l-[var(--color-error)] shadow-lg'
                                 : notif.read
-                                ? 'bg-mission-control-bg border-mission-control-border opacity-60'
-                                : 'bg-mission-control-surface border-mission-control-border shadow-card hover:shadow-card-hover'
+                                ? 'bg-transparent border-mission-control-border opacity-70'
+                                : 'bg-mission-control-accent/5 border-mission-control-border border-l-2 border-l-mission-control-accent shadow-card hover:shadow-card-hover'
                             }`}
                           >
                             <Flex align="start" gap="3">
-                              <IconBadge icon={Icon} size={16} color={config?.color || 'bg-mission-control-bg0/10 text-mission-control-text-dim'} />
+                              <IconBadge icon={Icon} size={16} color={config?.color || 'bg-mission-control-surface/10 text-mission-control-text-dim'} />
 
                               <div className="flex-1 min-w-0">
                                 {/* Clickable body */}
@@ -770,7 +759,7 @@ export default function NotificationsPanelV2() {
                                     {/* High-priority red "!" badge */}
                                     {highPriority && (
                                       <span
-                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-error text-error text-xs font-bold flex-shrink-0"
+                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--color-error)]/20 text-[var(--color-error)] text-xs font-bold flex-shrink-0"
                                         title="High priority"
                                         aria-label="High priority"
                                       >
@@ -780,10 +769,10 @@ export default function NotificationsPanelV2() {
 
                                     {/* Non-urgent, non-normal priority label */}
                                     {!highPriority && notif.priority !== 'normal' && (
-                                      <span className={`px-1.5 py-0.5 text-xs rounded flex-shrink-0 whitespace-nowrap ${
+                                      <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded flex-shrink-0 whitespace-nowrap ${
                                         notif.priority === 'high'
-                                          ? 'bg-danger text-white'
-                                          : 'bg-mission-control-bg0/20 text-mission-control-text-dim'
+                                          ? 'bg-[var(--color-warning)]/20 text-[var(--color-warning)]'
+                                          : 'bg-mission-control-border/40 text-mission-control-text-dim'
                                       }`}>
                                         {notif.priority.charAt(0).toUpperCase() + notif.priority.slice(1)}
                                       </span>
@@ -793,15 +782,15 @@ export default function NotificationsPanelV2() {
                                   <p className="text-sm text-mission-control-text-dim line-clamp-2">{notif.message}</p>
 
                                   {notif.description && (
-                                    <p className="text-xs text-mission-control-text-dim mt-1 opacity-75 line-clamp-2">{notif.description}</p>
+                                    <p className="text-xs text-mission-control-text-dim/70 mt-1 line-clamp-2">{notif.description}</p>
                                   )}
 
-                                  <div className="flex items-center gap-2 mt-2 text-xs text-mission-control-text-dim flex-wrap">
-                                    <span className={`px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${config?.color || 'bg-mission-control-bg0/20 text-mission-control-text-dim'}`}>
+                                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 whitespace-nowrap ${config?.color || 'bg-mission-control-surface/20 text-mission-control-text-dim'}`}>
                                       {config?.label || notif.type}
                                     </span>
-                                    <Clock size={10} />
-                                    <span>{formatTimeAgo(notif.created_at)}</span>
+                                    <Clock size={10} className="text-mission-control-text-dim/70" />
+                                    <span className="text-[11px] text-mission-control-text-dim/70 tabular-nums">{formatTimeAgo(notif.created_at)}</span>
                                     {notif.channel && (
                                       <>
                                         <span>•</span>

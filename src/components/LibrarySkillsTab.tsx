@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, BookOpen, RefreshCw, ChevronRight } from 'lucide-react';
-import { Button, Flex, TextField } from '@radix-ui/themes';
+import { Flex, TextField } from '@radix-ui/themes';
 import EmptyState from './EmptyState';
 import { libraryApi } from '../lib/api';
 
@@ -41,7 +41,7 @@ export default function LibrarySkillsTab() {
   return (
     <div className="h-full flex flex-col">
       {/* Search */}
-      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
+      <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
         <Flex gap="3">
           <div className="flex-1">
             <TextField.Root
@@ -49,27 +49,27 @@ export default function LibrarySkillsTab() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search skills..."
-              style={{ width: '100%' }}
+              className="w-full"
             >
               <TextField.Slot>
                 <Search size={16} />
               </TextField.Slot>
             </TextField.Root>
           </div>
-          <Button
+          <button
+            type="button"
             onClick={loadSkills}
             disabled={loading}
-            size="2"
-            variant="ghost"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             Refresh
-          </Button>
+          </button>
         </Flex>
       </div>
 
       {/* Skills Grid */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4">
         {loading && skills.length === 0 ? (
           <div className="text-center py-12 text-mission-control-text-dim">Loading skills...</div>
         ) : filtered.length === 0 ? (
@@ -83,14 +83,14 @@ export default function LibrarySkillsTab() {
             {filtered.map(skill => (
               <div
                 key={skill.id}
-                className="p-4 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30 transition-colors"
+                className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/30 transition-colors cursor-pointer"
               >
                 <Flex align="start" justify="between" className="mb-2">
                   <Flex align="center" gap="2">
                     <div className="w-7 h-7 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
                       <BookOpen size={14} className="text-mission-control-accent" />
                     </div>
-                    <span className="font-medium text-sm">{skill.name}</span>
+                    <span className="text-sm font-semibold text-mission-control-text truncate">{skill.name}</span>
                   </Flex>
                   <ChevronRight size={14} className="text-mission-control-text-dim mt-0.5" />
                 </Flex>
@@ -99,7 +99,7 @@ export default function LibrarySkillsTab() {
                     {skill.description}
                   </p>
                 )}
-                <p className="text-xs text-mission-control-text-dim/50 mt-2 font-mono truncate">
+                <p className="text-xs text-mission-control-text-dim/70 mt-2 font-mono truncate">
                   {skill.path}
                 </p>
               </div>

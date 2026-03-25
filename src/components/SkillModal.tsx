@@ -531,7 +531,7 @@ ${skillData.instructions}
 
   return (
     <div 
-      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 ${
+      className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
       }`} 
       onClick={handleClose}
@@ -541,7 +541,7 @@ ${skillData.instructions}
       aria-label="Close modal"
     >
       <div
-        className={`glass-modal rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col ${
+        className={`bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`}
         onClick={e => e.stopPropagation()}
@@ -549,58 +549,47 @@ ${skillData.instructions}
         role="presentation"
       >
         {/* Header */}
-        <div className="p-6 border-b border-mission-control-border">
-          <Flex align="center" justify="between" className="mb-4">
-            <Flex align="center" gap="3">
-              <Brain className="text-[--accent-11]" size={24} />
-              <h2 className="text-xl font-semibold">Add New Skill</h2>
-            </Flex>
-            <IconButton
-              onClick={handleClose}
-              aria-label="Close modal"
-              variant="ghost"
-              color="gray"
-              size="2"
-             
-            >
-              <X size={16} />
-            </IconButton>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
+            <Brain className="text-[--accent-11]" size={20} />
+            <span className="text-base font-semibold">Add New Skill</span>
           </Flex>
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Close modal"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
 
-          {/* Mode Selector */}
-          <Flex gap="2">
-            <Button
-              onClick={() => setMode('suggest')}
-              variant={mode === 'suggest' ? 'solid' : 'outline'}
-              color={mode === 'suggest' ? 'violet' : 'gray'}
-              size="2"
-              className="flex-1"
-            >
+        {/* Mode Selector */}
+        <div className="px-6 py-3 border-b border-mission-control-border flex-shrink-0">
+          <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+            <button type="button" onClick={() => setMode('suggest')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                mode === 'suggest' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+              }`}>
               <Lightbulb size={16} />
               <span className="font-medium">Suggest</span>
               <Sparkles size={14} className={mode === 'suggest' ? 'animate-pulse' : 'opacity-50'} />
-            </Button>
-            <Button
-              onClick={() => setMode('dialogue')}
-              variant={mode === 'dialogue' ? 'solid' : 'outline'}
-              color={mode === 'dialogue' ? 'violet' : 'gray'}
-              size="2"
-              className="flex-1"
-            >
+            </button>
+            <button type="button" onClick={() => setMode('dialogue')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                mode === 'dialogue' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+              }`}>
               <MessageSquare size={16} />
               <span className="font-medium">Dialogue</span>
-            </Button>
-            <Button
-              onClick={() => setMode('manual')}
-              variant={mode === 'manual' ? 'solid' : 'outline'}
-              color={mode === 'manual' ? 'violet' : 'gray'}
-              size="2"
-              className="flex-1"
-            >
+            </button>
+            <button type="button" onClick={() => setMode('manual')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                mode === 'manual' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+              }`}>
               <Edit3 size={16} />
               <span className="font-medium">Manual</span>
-            </Button>
-          </Flex>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -630,7 +619,7 @@ ${skillData.instructions}
                   {suggestions.map((suggestion, idx) => (
                     <div
                       key={idx}
-                      className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 hover:border-[--accent-8]/50 transition-all cursor-pointer group"
+                      className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 hover:border-[--accent-8]/50 transition-colors cursor-pointer group"
                       onClick={() => handleSelectSuggestion(suggestion)}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectSuggestion(suggestion); } }}
                       role="button"
@@ -639,9 +628,9 @@ ${skillData.instructions}
                       <Flex align="start" justify="between">
                         <div className="flex-1">
                           <Flex align="center" gap="2" className="mb-2">
-                            {suggestion.skillType === 'code' && <Code size={16} className="text-info" />}
-                            {suggestion.skillType === 'research' && <Search size={16} className="text-review" />}
-                            {suggestion.skillType === 'content' && <Edit3 size={16} className="text-success" />}
+                            {suggestion.skillType === 'code' && <Code size={16} className="text-[var(--color-info)]" />}
+                            {suggestion.skillType === 'research' && <Search size={16} className="text-[var(--color-review)]" />}
+                            {suggestion.skillType === 'content' && <Edit3 size={16} className="text-[var(--color-success)]" />}
                             <h4 className="font-semibold">{suggestion.name}</h4>
                             <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border text-mission-control-text-dim">
                               {suggestion.category}
@@ -664,10 +653,10 @@ ${skillData.instructions}
                 </div>
               )}
 
-              <Flex justify="end" gap="3" className="pt-4 border-t border-mission-control-border">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-mission-control-border">
                 <Button
                   onClick={handleClose}
-                  variant="soft"
+                  variant="ghost"
                   color="gray"
                   size="2"
                 >
@@ -677,13 +666,12 @@ ${skillData.instructions}
                   onClick={loadSuggestions}
                   disabled={loadingSuggestions}
                   variant="solid"
-                  color="violet"
                   size="2"
                 >
                   {loadingSuggestions ? <Spinner /> : <Sparkles size={16} />}
                   Refresh Suggestions
                 </Button>
-              </Flex>
+              </div>
             </div>
           ) : mode === 'dialogue' ? (
             // Dialogue Mode
@@ -801,10 +789,10 @@ ${skillData.instructions}
             </div>
           ) : (
             // Manual Mode
-            <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
+            <form onSubmit={handleManualSubmit} className="px-6 py-4 space-y-4 overflow-y-auto h-full">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="skill-name" className="block text-sm text-mission-control-text-dim mb-1">Skill Name *</label>
+                <div className="space-y-1">
+                  <label htmlFor="skill-name" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Skill Name *</label>
                   <TextField.Root
                     id="skill-name"
                     size="2"
@@ -816,8 +804,8 @@ ${skillData.instructions}
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="skill-category" className="block text-sm text-mission-control-text-dim mb-1">Category</label>
+                <div className="space-y-1">
+                  <label htmlFor="skill-category" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Category</label>
                   <TextField.Root
                     id="skill-category"
                     size="2"
@@ -830,8 +818,8 @@ ${skillData.instructions}
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="skill-description" className="block text-sm text-mission-control-text-dim mb-1">Description</label>
+              <div className="space-y-1">
+                <label htmlFor="skill-description" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Description</label>
                 <TextArea
                   id="skill-description"
                   value={description}
@@ -843,8 +831,8 @@ ${skillData.instructions}
                 />
               </div>
 
-              <div>
-                <label htmlFor="skill-instructions" className="block text-sm text-mission-control-text-dim mb-1">Instructions *</label>
+              <div className="space-y-1">
+                <label htmlFor="skill-instructions" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Instructions *</label>
                 <TextArea
                   id="skill-instructions"
                   value={instructions}
@@ -859,11 +847,11 @@ ${skillData.instructions}
                 </div>
               </div>
 
-              <Flex justify="end" gap="3" className="pt-4 border-t border-mission-control-border">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-mission-control-border">
                 <Button
                   type="button"
                   onClick={handleClose}
-                  variant="soft"
+                  variant="ghost"
                   color="gray"
                   size="2"
                 >
@@ -873,13 +861,12 @@ ${skillData.instructions}
                   type="submit"
                   disabled={!name.trim() || !instructions.trim()}
                   variant="solid"
-                  color="violet"
                   size="2"
                 >
                   <CheckCircle size={16} />
                   Create Skill & Task
                 </Button>
-              </Flex>
+              </div>
             </form>
           )}
         </div>

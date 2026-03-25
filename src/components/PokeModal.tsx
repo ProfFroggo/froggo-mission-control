@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Loader2, MessageCircle, Activity, AlertTriangle } from 'lucide-react';
-import { Flex, IconButton, TextField } from '@radix-ui/themes';
+import { Flex, TextField } from '@radix-ui/themes';
 import BaseModal from './BaseModal';
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
@@ -327,10 +327,10 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
 
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case 'in-progress': return 'text-info';
-      case 'review': return 'text-warning';
-      case 'human-review': return 'text-error';
-      case 'done': return 'text-success';
+      case 'in-progress': return 'text-[var(--color-info)]';
+      case 'review': return 'text-[var(--color-warning)]';
+      case 'human-review': return 'text-[var(--color-error)]';
+      case 'done': return 'text-[var(--color-success)]';
       default: return 'text-mission-control-text-dim';
     }
   };
@@ -338,7 +338,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
   return (
     <BaseModal isOpen={true} onClose={onClose} size="lg" className="flex flex-col">
       {/* Header with task context */}
-      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border bg-mission-control-bg-alt/50">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border bg-mission-control-border/20/50">
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-2xl">🫵</span>
           <div className="min-w-0">
@@ -360,7 +360,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                   )}
                   {task.priority && (
                     <span className="flex items-center gap-1">
-                      {task.priority === 'p0' && <AlertTriangle size={12} className="text-error" />}
+                      {task.priority === 'p0' && <AlertTriangle size={12} className="text-[var(--color-error)]" />}
                       {task.priority}
                     </span>
                   )}
@@ -369,15 +369,13 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             </Flex>
           </div>
         </div>
-        <IconButton
+        <button
           onClick={onClose}
-          size="2"
-          variant="ghost"
-         
           aria-label="Close"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <X size={18} />
-        </IconButton>
+        </button>
       </Flex>
 
       {/* Messages area */}
@@ -400,7 +398,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                   ? 'bg-mission-control-accent/20 text-mission-control-accent ml-auto rounded-br-md'
                   : msg.role === 'system'
                   ? 'bg-mission-control-border/30 text-mission-control-text-dim italic text-xs'
-                  : 'bg-mission-control-bg-alt text-mission-control-text rounded-bl-md'
+                  : 'bg-mission-control-border/20 text-mission-control-text rounded-bl-md'
               }`}
             >
               {msg.role === 'assistant' ? (
@@ -415,7 +413,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         {/* Streaming content */}
         {streamingContent && (
           <Flex justify="start">
-            <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm bg-mission-control-bg-alt text-mission-control-text">
+            <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm bg-mission-control-border/20 text-mission-control-text">
               <MarkdownMessage content={streamingContent} />
             </div>
           </Flex>
@@ -424,7 +422,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         {/* Loading indicator */}
         {(loading || sending) && !streamingContent && (
           <Flex justify="start">
-            <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-mission-control-bg-alt">
+            <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-mission-control-border/20">
               <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
             </div>
           </Flex>
@@ -444,20 +442,18 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             onKeyDown={handleKeyDown}
             placeholder={sending ? 'Waiting for response...' : 'Ask about this task...'}
             disabled={sending || loading}
-            style={{ flex: 1 }}
+            className="flex-1"
           />
-          <IconButton
+          <button
             onClick={sendMessage}
             disabled={!input.trim() || sending || loading}
-            size="2"
-            variant="ghost"
-           
             aria-label="Send"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Send size={16} />
-          </IconButton>
+          </button>
         </Flex>
-        <p className="text-[10px] text-mission-control-text-dim/40 mt-1.5 text-center">
+        <p className="text-[10px] text-mission-control-text-dim/70 mt-1.5 text-center">
           Task-scoped conversation • Responses have personality 🐸
         </p>
       </div>

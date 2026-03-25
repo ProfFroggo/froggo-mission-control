@@ -73,6 +73,14 @@ export default function XDraftComposer() {
 
   const getCharCount = (text: string) => text.length;
   const isOverLimit = (text: string) => getCharCount(text) > TWEET_CHAR_LIMIT;
+  const isNearLimit = (text: string) => getCharCount(text) >= Math.floor(TWEET_CHAR_LIMIT * 0.8) && !isOverLimit(text);
+  const isCriticalLimit = (text: string) => getCharCount(text) >= Math.floor(TWEET_CHAR_LIMIT * 0.95) && !isOverLimit(text);
+  const getCharCountClass = (text: string) => {
+    if (isOverLimit(text)) return 'text-[var(--color-error)] font-semibold';
+    if (isCriticalLimit(text)) return 'text-[var(--color-error)]';
+    if (isNearLimit(text)) return 'text-[var(--color-warning)]';
+    return 'text-mission-control-text-dim';
+  };
 
   const handleSubmit = async () => {
     // Validation - plan is optional
@@ -189,7 +197,7 @@ export default function XDraftComposer() {
       <div className="mb-6">
         <Flex align="center" justify="between" className="mb-2">
           <Flex align="center" gap="2">
-            <FileText className="w-5 h-5 text-info" />
+            <FileText className="w-5 h-5 text-[var(--color-info)]" />
             <h3 className="text-lg font-semibold text-mission-control-text">Create Draft</h3>
           </Flex>
             <Button
@@ -244,7 +252,7 @@ export default function XDraftComposer() {
             {/* Version Selector */}
               <div>
                 <span className="block text-sm font-medium text-mission-control-text mb-2">
-                  Version <span className="text-error">*</span>
+                  Version <span className="text-[var(--color-error)]">*</span>
                 </span>
                 <Flex gap="2" role="radiogroup" aria-label="Version selection">
                   {['A', 'B', 'C'].map((v) => (
@@ -266,19 +274,17 @@ export default function XDraftComposer() {
               <div>
                 <Flex align="center" justify="between" className="mb-3">
                   <label htmlFor="tweet-content" className="text-sm font-medium text-mission-control-text">
-                    Tweets <span className="text-error">*</span>
+                    Tweets <span className="text-[var(--color-error)]">*</span>
                   </label>
                   {tweets.length < 10 && (
-                    <Button
+                    <button
                       onClick={addTweet}
-                      variant="ghost"
-                      color="blue"
-                      size="1"
                       disabled={submitting}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-4 h-4" />
                       Add Tweet
-                    </Button>
+                    </button>
                   )}
                 </Flex>
 
@@ -298,10 +304,9 @@ export default function XDraftComposer() {
                               resize="vertical"
                               color={isOverLimit(tweet) ? 'red' : undefined}
                               disabled={submitting}
+                              style={{ fontSize: 16 }}
                             />
-                            <div className={`absolute bottom-2 right-2 text-xs font-mono ${
-                              isOverLimit(tweet) ? 'text-error' : 'text-mission-control-text-dim'
-                            }`}>
+                            <div className={`absolute bottom-2 right-2 text-xs font-mono tabular-nums ${getCharCountClass(tweet)}`}>
                               {getCharCount(tweet)}/{TWEET_CHAR_LIMIT}
                             </div>
                           </div>
@@ -325,11 +330,11 @@ export default function XDraftComposer() {
 
             {/* Preview */}
             {showPreview && (
-              <div className="bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-4">
+              <div className="bg-mission-control-border/20 border border-mission-control-border rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-mission-control-text mb-3">Preview (X Style)</h4>
                 <div className="space-y-3">
                   {tweets.filter(t => t.trim()).map((tweet, index) => (
-                    <div key={`${tweet.slice(0, 20)}-${index}`} className="bg-mission-control-bg-alt rounded-lg p-4 border border-mission-control-border">
+                    <div key={`${tweet.slice(0, 20)}-${index}`} className="bg-mission-control-border/20 rounded-lg p-4 border border-mission-control-border">
                       <Flex align="start" gap="3">
                         <div className="w-10 h-10 bg-mission-control-accent rounded-full flex items-center justify-center flex-shrink-0">
                           <span className="text-mission-control-text font-semibold">K</span>
@@ -341,7 +346,7 @@ export default function XDraftComposer() {
                           </Flex>
                           <p className="text-mission-control-text whitespace-pre-wrap break-words">{tweet}</p>
                           {index < tweets.filter(t => t.trim()).length - 1 && (
-                            <div className="mt-2 text-info text-sm">
+                            <div className="mt-2 text-[var(--color-info)] text-sm">
                               Show this thread
                             </div>
                           )}

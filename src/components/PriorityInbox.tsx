@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, Zap, AlertCircle, ChevronDown, Info, Star, X } from 'lucide-react';
-import { IconButton, Box, Flex } from '@radix-ui/themes';
+import { Box, Flex } from '@radix-ui/themes';
 import { settingsApi } from '../lib/api';
 
 // Priority indicator component
@@ -24,22 +24,22 @@ export function PriorityIndicator({
 
   const configs = {
     critical: {
-      color: 'bg-error',
-      textColor: 'text-error',
+      color: 'bg-[var(--color-error)]',
+      textColor: 'text-[var(--color-error)]',
       label: 'Critical',
       icon: Zap,
       pulse: true
     },
     high: {
-      color: 'bg-warning',
-      textColor: 'text-warning',
+      color: 'bg-[var(--color-warning)]',
+      textColor: 'text-[var(--color-warning)]',
       label: 'High',
       icon: AlertCircle,
       pulse: false
     },
     normal: {
-      color: 'bg-info',
-      textColor: 'text-info',
+      color: 'bg-[var(--color-info)]',
+      textColor: 'text-[var(--color-info)]',
       label: 'Normal',
       icon: TrendingUp,
       pulse: false
@@ -88,30 +88,28 @@ export function PriorityExplanation({
 
   return (
     <div className="relative">
-      <IconButton
-        variant="ghost"
-        size="1"
-        color="gray"
+      <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         title="Why is this priority?"
         aria-label="Why is this priority?"
+        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
       >
         <Info size={14} />
-      </IconButton>
+      </button>
       
       {isOpen && (
         <div className="absolute top-full right-0 mt-2 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl p-4 min-w-[320px] z-50">
           <Flex align="center" justify="between" mb="3">
             <h4 className="font-semibold text-sm">Priority Calculation</h4>
-            <IconButton
-              variant="ghost"
-              size="1"
-              color="gray"
+            <button
+              type="button"
               onClick={() => setIsOpen(false)}
               aria-label="Close"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <X size={14} />
-            </IconButton>
+            </button>
           </Flex>
           
           <div className="space-y-2 mb-3">
@@ -179,15 +177,15 @@ export function PriorityStats({ stats }: { stats: any }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className="text-xs text-mission-control-text-dim mb-1">Critical</div>
-          <div className="text-2xl font-bold text-error">{stats.critical || 0}</div>
+          <div className="text-2xl font-bold text-[var(--color-error)]">{stats.critical || 0}</div>
         </div>
         <div>
           <div className="text-xs text-mission-control-text-dim mb-1">High</div>
-          <div className="text-2xl font-bold text-warning">{stats.high || 0}</div>
+          <div className="text-2xl font-bold text-[var(--color-warning)]">{stats.high || 0}</div>
         </div>
         <div>
           <div className="text-xs text-mission-control-text-dim mb-1">Normal</div>
-          <div className="text-2xl font-bold text-info">{stats.normal || 0}</div>
+          <div className="text-2xl font-bold text-[var(--color-info)]">{stats.normal || 0}</div>
         </div>
         <div>
           <div className="text-xs text-mission-control-text-dim mb-1">Low</div>
@@ -202,7 +200,7 @@ export function PriorityStats({ stats }: { stats: any }) {
         </Flex>
         <Flex align="center" justify="between" mt="1" className="text-xs">
           <span className="text-mission-control-text-dim">Learning</span>
-          <span className="text-success font-medium">{stats.learnedSenders || 0} senders</span>
+          <span className="text-[var(--color-success)] font-medium">{stats.learnedSenders || 0} senders</span>
         </Flex>
       </div>
     </div>

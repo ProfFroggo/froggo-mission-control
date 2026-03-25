@@ -131,10 +131,10 @@ export default function GlobalNotificationSettings() {
 
       {/* Do Not Disturb */}
       {isDND && (
-        <div className="bg-error-subtle border border-error-border rounded-lg p-4 flex items-start gap-3">
-          <BellOff size={20} className="text-error flex-shrink-0 mt-0.5" />
+        <div className="bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg p-4 flex items-start gap-3">
+          <BellOff size={20} className="text-[var(--color-error)] flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-medium text-error">Do Not Disturb Active</p>
+            <p className="font-medium text-[var(--color-error)]">Do Not Disturb Active</p>
             {dndUntil && (
               <p className="text-sm text-mission-control-text-dim mt-1">
                 Until {new Date(dndUntil).toLocaleString()}
@@ -194,19 +194,19 @@ export default function GlobalNotificationSettings() {
 
       {/* Sound Settings */}
       <div>
-        <span className="block text-sm font-medium text-mission-control-text mb-3 flex items-center gap-2">
-          <Volume2 size={16} />
-          Sound
-        </span>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Sound</p>
         <div className="space-y-3">
-          <label className="flex items-center gap-3 cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {defaultSoundEnabled ? <Volume2 size={15} className="text-mission-control-text-dim" /> : <Volume2 size={15} className="text-mission-control-text-dim/40" />}
+              <span className="text-sm text-mission-control-text">Enable notification sounds by default</span>
+            </div>
             <Switch
               size="2"
               checked={defaultSoundEnabled}
               onCheckedChange={setDefaultSoundEnabled}
             />
-            <span className="text-sm">Enable notification sounds by default</span>
-          </label>
+          </div>
           {defaultSoundEnabled && (
             <Select.Root value={defaultSoundType} onValueChange={setDefaultSoundType}>
               <Select.Trigger className="w-full" />
@@ -222,36 +222,37 @@ export default function GlobalNotificationSettings() {
 
       {/* Desktop Notifications */}
       <div>
-        <label className="flex items-center gap-3 cursor-pointer">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Desktop</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bell size={15} className="text-mission-control-text-dim" />
+            <span className="text-sm text-mission-control-text">Show desktop notifications by default</span>
+          </div>
           <Switch
             size="2"
             checked={defaultDesktopNotifications}
             onCheckedChange={setDefaultDesktopNotifications}
           />
-          <span className="text-sm flex items-center gap-2">
-            <Bell size={16} />
-            Show desktop notifications by default
-          </span>
-        </label>
+        </div>
       </div>
 
       {/* Quiet Hours */}
       <div>
-        <span className="block text-sm font-medium text-mission-control-text mb-3 flex items-center gap-2">
-          <Moon size={16} />
-          Quiet Hours
-        </span>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Quiet Hours</p>
         <div className="space-y-3">
-          <label className="flex items-center gap-3 cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Moon size={15} className="text-mission-control-text-dim" />
+              <span className="text-sm text-mission-control-text">Enable quiet hours (applies to all conversations)</span>
+            </div>
             <Switch
               size="2"
               checked={quietHoursEnabled}
               onCheckedChange={setQuietHoursEnabled}
             />
-            <span className="text-sm">Enable quiet hours (applies to all conversations)</span>
-          </label>
+          </div>
           {quietHoursEnabled && (
-            <Flex gap="3" align="center" className="ml-10">
+            <Flex gap="3" align="center" className="ml-5">
               <TextField.Root
                 type="time"
                 value={quietStart}
@@ -272,21 +273,21 @@ export default function GlobalNotificationSettings() {
 
       {/* Notification Batching */}
       <div>
-        <span className="block text-sm font-medium text-mission-control-text mb-3 flex items-center gap-2">
-          <Clock size={16} />
-          Notification Batching
-        </span>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Batching</p>
         <div className="space-y-3">
-          <label className="flex items-center gap-3 cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock size={15} className="text-mission-control-text-dim" />
+              <span className="text-sm text-mission-control-text">Batch notifications (reduce interruptions)</span>
+            </div>
             <Switch
               size="2"
               checked={enableBatching}
               onCheckedChange={setEnableBatching}
             />
-            <span className="text-sm">Batch notifications (reduce interruptions)</span>
-          </label>
+          </div>
           {enableBatching && (
-            <div className="ml-10">
+            <div className="ml-5">
               <label className="block text-xs text-mission-control-text-dim mb-2">
                 Batch interval (minutes)
               </label>

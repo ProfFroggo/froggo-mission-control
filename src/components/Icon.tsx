@@ -10,7 +10,7 @@
  * 
  * Usage:
  *   <Icon icon={CheckCircle} size="sm" />
- *   <Icon icon={Bot} size="lg" className="text-info" />
+ *   <Icon icon={Bot} size="lg" className="text-[var(--color-info)]" />
  */
 
 import { LucideIcon } from 'lucide-react';
@@ -117,7 +117,7 @@ export function IconButton({
   const variantClasses = {
     default: 'bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border',
     ghost: 'hover:bg-mission-control-border',
-    danger: 'text-error hover:bg-error-subtle hover:border-error-border',
+    danger: 'text-[var(--color-error)] hover:bg-[var(--color-error)]/10 hover:border-[var(--color-error)]/30',
   };
 
   return (
@@ -131,7 +131,7 @@ export function IconButton({
         ${sizeClasses[size]}
         ${variantClasses[variant]}
         rounded-lg
-        transition-all duration-150
+        transition-colors duration-150
         active:scale-95
         disabled:opacity-50 disabled:cursor-not-allowed
         ${className}

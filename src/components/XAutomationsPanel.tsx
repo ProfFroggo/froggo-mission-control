@@ -128,11 +128,11 @@ export default function XAutomationsPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <Flex align="center" justify="between" className="mb-4">
+      <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="mb-3">
           <Flex align="center" gap="3">
-            <div className="p-2 bg-review-subtle rounded-lg">
-              <Zap size={24} className="text-review" />
+            <div className="p-2 bg-[var(--color-review)]-subtle rounded-lg">
+              <Zap size={24} className="text-[var(--color-review)]" />
             </div>
             <div>
               <h1 className="text-xl font-semibold">X Automations</h1>
@@ -188,113 +188,106 @@ export default function XAutomationsPanel() {
               return (
                 <div
                   key={automation.id}
-                  className={`flex-shrink-0 w-96 bg-mission-control-surface rounded-lg border-2 transition-all ${
-                    automation.enabled 
-                      ? 'border-success-border hover:border-success-border' 
-                      : 'border-mission-control-border hover:border-mission-control-border/80'
-                  }`}
+                  className="flex-shrink-0 w-96 bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/30 transition-colors"
                 >
-                  <div className="p-4">
-                    {/* Header */}
-                    <Flex align="start" justify="between" className="mb-3">
-                      <div className="flex items-start gap-3 flex-1">
-                        <div className={`p-2 rounded-lg ${automation.enabled ? 'bg-success-subtle' : 'bg-mission-control-border'}`}>
-                          {TriggerIcon && <TriggerIcon size={20} className={automation.enabled ? 'text-success' : 'text-mission-control-text-dim'} />}
-                        </div>
-                        <div className="flex-1">
-                          <Flex align="center" gap="2" className="mb-1">
-                            <h3 className="font-semibold">{automation.name}</h3>
-                            {automation.enabled && (
-                              <span className="px-2 py-0.5 text-xs bg-success-subtle text-success rounded-full">
-                                Active
-                              </span>
-                            )}
-                          </Flex>
-                          {automation.description && (
-                            <p className="text-sm text-mission-control-text-dim">{automation.description}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <Flex align="center" gap="2">
-                        <IconButton
-                          onClick={() => toggleAutomation(automation.id, !automation.enabled)}
-                          size="2"
-                          variant="soft"
-                          color={automation.enabled ? 'orange' : 'green'}
-                         
-                          title={automation.enabled ? 'Pause' : 'Activate'}
-                        >
-                          {automation.enabled ? <Pause size={16} /> : <Play size={16} />}
-                        </IconButton>
-                        <IconButton
-                          onClick={() => {
-                            setEditingAutomation(automation);
-                            setShowBuilder(true);
-                          }}
-                          size="2"
-                          variant="ghost"
-                         
-                          title="Edit"
-                        >
-                          <Edit size={16} />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => deleteAutomation(automation.id)}
-                          size="2"
-                          variant="soft"
-                          color="red"
-                         
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </IconButton>
-                      </Flex>
-                    </Flex>
-
-                    {/* Automation Flow */}
-                    <Flex align="center" gap="3" className="text-sm mb-3 p-3 bg-mission-control-bg rounded-lg">
-                      <Flex align="center" gap="2">
-                        <span className="text-mission-control-text-dim">IF</span>
-                        <span className="px-2 py-1 bg-info-subtle text-info rounded">
-                          {automation.trigger_type}
+                  {/* Header: name + status + actions */}
+                  <Flex align="start" justify="between" className="mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-sm font-semibold text-mission-control-text truncate">
+                          {automation.name}
                         </span>
-                        {trigger.keywords && (
-                          <span className="text-mission-control-text-dim">
-                            {'"' + trigger.keywords.join(', ') + '"'}
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                          automation.enabled
+                            ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]'
+                            : 'bg-mission-control-border/50 text-mission-control-text-dim'
+                        }`}>
+                          {automation.enabled ? 'Active' : 'Paused'}
+                        </span>
+                        {TriggerIcon && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]">
+                            <TriggerIcon size={10} />
+                            {automation.trigger_type}
                           </span>
                         )}
-                      </Flex>
-                      <span className="text-mission-control-text-dim">→</span>
-                      <Flex align="center" gap="2">
-                        <span className="text-mission-control-text-dim">THEN</span>
-                        <Flex gap="1">
-                          {Array.isArray(actions) && actions.map((action: XAutomationAction, i: number) => (
-                            <span key={i} className="px-2 py-1 bg-success-subtle text-success rounded">
-                              {action.type}
-                            </span>
-                          ))}
-                        </Flex>
-                      </Flex>
-                    </Flex>
-
-                    {/* Stats */}
-                    <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim">
-                      <Flex align="center" gap="1">
-                        <CheckCircle size={14} />
-                        {automation.total_executions} executions
-                      </Flex>
-                      <Flex align="center" gap="1">
-                        <Clock size={14} />
-                        {automation.max_executions_per_hour}/hr limit
-                      </Flex>
-                      {automation.last_executed_at && (
-                        <Flex align="center" gap="1">
-                          Last: {new Date(automation.last_executed_at).toLocaleString()}
-                        </Flex>
+                      </div>
+                      {automation.description && (
+                        <p className="text-xs text-mission-control-text-dim line-clamp-2">
+                          {automation.description}
+                        </p>
                       )}
+                    </div>
+
+                    {/* Actions */}
+                    <Flex align="center" gap="1" className="ml-2 flex-shrink-0">
+                      <IconButton
+                        onClick={() => toggleAutomation(automation.id, !automation.enabled)}
+                        size="1"
+                        variant="ghost"
+                        color={automation.enabled ? 'orange' : 'green'}
+                        title={automation.enabled ? 'Pause' : 'Activate'}
+                      >
+                        {automation.enabled ? <Pause size={14} /> : <Play size={14} />}
+                      </IconButton>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAutomation(automation);
+                          setShowBuilder(true);
+                        }}
+                        title="Edit"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteAutomation(automation.id)}
+                        title="Delete"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-[var(--color-danger)] hover:bg-mission-control-border/40 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </Flex>
+                  </Flex>
+
+                  {/* Automation Flow */}
+                  <div className="flex items-center gap-2 text-xs mb-3 px-3 py-2 bg-mission-control-bg rounded-lg flex-wrap">
+                    <span className="text-mission-control-text-dim font-medium">IF</span>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]">
+                      {automation.trigger_type}
+                    </span>
+                    {trigger.keywords && (
+                      <span className="text-mission-control-text-dim truncate max-w-[120px]">
+                        {'"' + trigger.keywords.join(', ') + '"'}
+                      </span>
+                    )}
+                    <span className="text-mission-control-text-dim">→</span>
+                    <span className="text-mission-control-text-dim font-medium">THEN</span>
+                    <div className="flex gap-1 flex-wrap">
+                      {Array.isArray(actions) && actions.map((action: XAutomationAction, i: number) => (
+                        <span key={i} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)]">
+                          {action.type}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <span className="flex items-center gap-1 text-[10px] text-mission-control-text-dim tabular-nums">
+                      <CheckCircle size={11} />
+                      {automation.total_executions} runs
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] text-mission-control-text-dim tabular-nums">
+                      <Clock size={11} />
+                      {automation.max_executions_per_hour}/hr
+                    </span>
+                    {automation.last_executed_at && (
+                      <span className="text-[10px] text-mission-control-text-dim tabular-nums">
+                        Last: {new Date(automation.last_executed_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
                   </div>
                 </div>
               );
@@ -391,8 +384,8 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
   };
   
   return (
-    <Flex align="center" justify="center" className="fixed inset-0 modal-backdrop z-50">
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-lg w-full max-w-3xl mx-4 max-h-[90vh] overflow-auto">
+    <Flex align="center" justify="center" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-auto">
         {/* Header */}
         <div className="p-6 border-b border-mission-control-border">
           <h2 className="text-xl font-semibold mb-2">
@@ -433,7 +426,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           {/* Trigger Section */}
           <div className="border-t border-mission-control-border pt-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="px-3 py-1 bg-info-subtle text-info rounded-lg text-sm">IF</span>
+              <span className="px-3 py-1 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded-lg text-sm">IF</span>
               Trigger
             </h3>
             
@@ -504,13 +497,13 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           {/* Actions Section */}
           <div className="border-t border-mission-control-border pt-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="px-3 py-1 bg-success-subtle text-success rounded-lg text-sm">THEN</span>
+              <span className="px-3 py-1 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-lg text-sm">THEN</span>
               Actions
             </h3>
             
             <div className="space-y-3 mb-4">
               {actions.map((action, index) => (
-                <div key={action.id || `action-${index}`} className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
+                <div key={action.id || `action-${index}`} className="bg-mission-control-bg border border-mission-control-border rounded-xl p-4">
                   <Flex align="start" gap="3">
                     <div className="flex-1 space-y-3">
                       <Select.Root
@@ -566,15 +559,13 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                       )}
                     </div>
                     
-                    <IconButton
+                    <button
+                      type="button"
                       onClick={() => setActions(actions.filter((_, i) => i !== index))}
-                      size="2"
-                      variant="ghost"
-                      color="red"
-
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                     >
                       <Trash2 size={16} />
-                    </IconButton>
+                    </button>
                   </Flex>
                 </div>
               ))}

@@ -575,15 +575,18 @@ ${transcriptText}`;
           {/* Recording info */}
           {isRecording && (
             <Flex align="center" justify="between" className="mt-4">
-              <Flex align="center" gap="2" className="text-error">
-                <span className="animate-pulse">●</span>
-                <span className="text-sm">Recording</span>
+              <Flex align="center" gap="2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-error)] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--color-error)]" />
+                </span>
+                <span className="text-sm text-[var(--color-error)] font-medium">Recording</span>
               </Flex>
-              <span className="font-mono text-lg">{formatDuration(timer)}</span>
+              <span className="font-mono text-base tabular-nums text-mission-control-text">{formatDuration(timer)}</span>
               {/* Audio level bar */}
-              <div className="w-20 h-2 bg-mission-control-surface rounded-full overflow-hidden">
+              <div className="w-20 h-1.5 bg-mission-control-border/40 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[--accent-9] rounded-full transition-all duration-75"
+                  className="h-full bg-mission-control-accent rounded-full transition-[width] duration-75"
                   style={{ width: `${Math.min(100, audioLevel * 100)}%` }}
                 />
               </div>
@@ -598,7 +601,7 @@ ${transcriptText}`;
           )}
           
           {error && (
-            <div className="mt-3 p-2 bg-error-subtle border border-error-border rounded text-sm text-error">
+            <div className="mt-3 p-2 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded text-sm text-[var(--color-error)]">
               {error}
             </div>
           )}
@@ -628,16 +631,16 @@ ${transcriptText}`;
               {entries.map((entry) => (
                 <div
                   key={entry.id}
-                  className={`rounded px-3 py-2 ${
+                  className={`rounded-xl border px-3 py-2.5 ${
                     entry.isProcessing
-                      ? 'bg-mission-control-surface/50 text-mission-control-text-dim animate-pulse'
-                      : 'bg-mission-control-surface text-mission-control-text'
+                      ? 'bg-mission-control-surface border-mission-control-border/50 text-mission-control-text-dim animate-pulse'
+                      : 'bg-mission-control-surface border-mission-control-border text-mission-control-text'
                   }`}
                 >
                   <Flex align="start" justify="between" gap="2">
-                    <p className="flex-1">{entry.text}</p>
-                    <span className="text-xs text-mission-control-text-dim shrink-0 mt-0.5">
-                      {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    <p className="flex-1 leading-relaxed">{entry.text}</p>
+                    <span className="text-[11px] tabular-nums text-mission-control-text-dim/70 shrink-0 mt-0.5">
+                      {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </Flex>
                 </div>
@@ -650,24 +653,22 @@ ${transcriptText}`;
         {/* Action Items */}
         {actionItems.length > 0 && (
           <div className="border-t border-mission-control-border p-4">
-            <Button
+            <button
               onClick={() => setShowActionItems(!showActionItems)}
-              variant="ghost"
-              size="2"
-              className="mb-2 w-full justify-start"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mb-2 w-full justify-start"
             >
               <ListTodo size={16} />
               Action Items ({actionItems.length})
               {showActionItems ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </Button>
+            </button>
             {showActionItems && (
-              <ul className="space-y-1 text-xs max-h-32 overflow-y-auto">
+              <ul className="space-y-1.5 text-xs max-h-32 overflow-y-auto">
                 {actionItems.map((item, i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 bg-warning-subtle rounded text-warning text-xs shrink-0">
+                  <li key={i} className="flex items-center gap-2 rounded-lg bg-mission-control-surface border border-mission-control-border px-2.5 py-1.5">
+                    <span className="px-1.5 py-0.5 bg-[var(--color-warning)]/10 rounded-full text-[var(--color-warning)] text-[10px] font-medium shrink-0 uppercase tracking-wide">
                       {item.type}
                     </span>
-                    <span className="text-mission-control-text-dim truncate">{item.text}</span>
+                    <span className="text-mission-control-text/70 truncate">{item.text}</span>
                   </li>
                 ))}
               </ul>
@@ -688,8 +689,8 @@ ${transcriptText}`;
             </Flex>
             
             {summary.savedPath && (
-              <div className="bg-success-subtle border border-success-border rounded-lg p-3 mb-4">
-                <p className="text-sm text-success">Notes saved</p>
+              <div className="bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-lg p-3 mb-4">
+                <p className="text-sm text-[var(--color-success)]">Notes saved</p>
                 <p className="text-xs text-mission-control-text-dim mt-1">{summary.savedPath.split('/').pop()}</p>
               </div>
             )}
@@ -698,8 +699,8 @@ ${transcriptText}`;
             {aiSummary ? (
               <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 mb-4">
                 <Flex align="center" gap="2" className="mb-2">
-                  <Sparkles size={16} className="text-review" />
-                  <span className="text-sm font-medium text-review">AI Summary</span>
+                  <Sparkles size={16} className="text-[var(--color-review)]" />
+                  <span className="text-sm font-medium text-[var(--color-review)]">AI Summary</span>
                 </Flex>
                 <div className="text-sm text-mission-control-text whitespace-pre-wrap">{aiSummary}</div>
               </div>
@@ -750,7 +751,7 @@ ${transcriptText}`;
               <div className="space-y-1 text-sm max-h-64 overflow-y-auto">
                 {entries.filter(e => !e.isProcessing).map(entry => (
                   <p key={entry.id} className="text-mission-control-text-dim">
-                    <span className="text-xs text-mission-control-text-dim/50 mr-1">
+                    <span className="text-xs text-mission-control-text-dim/70 mr-1">
                       {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     {entry.text}
@@ -760,15 +761,12 @@ ${transcriptText}`;
             </div>
             
             {/* Clear */}
-            <Button
+            <button
               onClick={clearAll}
-              variant="ghost"
-              color="red"
-              size="2"
-              className="mt-6"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors mt-6"
             >
               <Trash2 size={14} /> Clear
-            </Button>
+            </button>
           </div>
         ) : !isRecording && !hasTranscript ? (
           /* Empty state */
@@ -791,12 +789,12 @@ ${transcriptText}`;
               <span className="text-sm text-mission-control-text-dim">Recording in progress • {formatDuration(timer)}</span>
             </Flex>
             
-            <div className="flex-1 overflow-y-auto space-y-3">
+            <div className="flex-1 overflow-y-auto space-y-2.5">
               {entries.filter(e => !e.isProcessing).map(entry => (
-                <div key={entry.id} className="bg-mission-control-surface rounded-lg px-4 py-3">
+                <div key={entry.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3">
                   <Flex align="start" justify="between" gap="3">
-                    <p className="text-mission-control-text">{entry.text}</p>
-                    <span className="text-xs text-mission-control-text-dim shrink-0">
+                    <p className="text-mission-control-text leading-relaxed">{entry.text}</p>
+                    <span className="text-[11px] tabular-nums text-mission-control-text-dim/70 shrink-0 mt-0.5">
                       {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </Flex>

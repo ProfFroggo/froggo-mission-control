@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ArrowDownToLine, Copy, Check, RotateCcw } from 'lucide-react';
-import { Button, Flex, Box } from '@radix-ui/themes';
+import { Flex, Box } from '@radix-ui/themes';
 import { useWritingStore } from '../../store/writingStore';
 import { useChatPaneStore, type ChatMessage as ChatMessageType } from '../../store/chatPaneStore';
 import { copyToClipboard } from '../../utils/clipboard';
@@ -23,7 +23,7 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
     const success = await copyToClipboard(content);
     if (success) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 1500);
     }
   };
 
@@ -39,7 +39,7 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
   if (isUser) {
     return (
       <Flex justify="end" mb="3" className="dark">
-        <Box className="max-w-[85%] bg-mission-control-accent text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm">
+        <Box className="max-w-[85%] bg-mission-control-accent/15 text-mission-control-text rounded-2xl rounded-br-sm px-4 py-2.5 text-sm">
           <p className="whitespace-pre-wrap">{message.content}</p>
         </Box>
       </Flex>
@@ -50,8 +50,8 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
   return (
     <Flex justify="start" mb="3" className="group dark">
       <Box className="max-w-[90%]">
-        <div className="text-xs text-mission-control-text-dim mb-1 capitalize">{message.agent}</div>
-        <div className="bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm text-sm text-mission-control-text">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">{message.agent}</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm text-mission-control-text">
           {isStreaming ? (
             <div className="prose-sm">
               <ReactMarkdown>{content}</ReactMarkdown>
@@ -72,35 +72,32 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
                 Inserted
               </span>
             ) : (
-              <Button
-                size="1"
-                variant="ghost"
+              <button
+                type="button"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                 onClick={handleSendToEditor}
                 title="Send to editor"
               >
-                <ArrowDownToLine className="w-3 h-3" />
-                Send to editor
-              </Button>
+                <ArrowDownToLine className="w-3.5 h-3.5" />
+              </button>
             )}
-            <Button
-              size="1"
-              variant="ghost"
+            <button
+              type="button"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               onClick={handleCopy}
-              title="Copy to clipboard"
+              title={copied ? 'Copied!' : 'Copy to clipboard'}
             >
-              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-              {copied ? 'Copied' : 'Copy'}
-            </Button>
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
             {onRetry && (
-              <Button
-                size="1"
-                variant="ghost"
+              <button
+                type="button"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                 onClick={() => onRetry(message.content)}
                 title="Retry — remove this response and re-send the question"
               >
-                <RotateCcw className="w-3 h-3" />
-                Retry
-              </Button>
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
             )}
           </Flex>
         )}

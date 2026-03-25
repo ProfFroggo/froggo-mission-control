@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Plus, ArrowLeft } from 'lucide-react';
-import { Badge, Button, Spinner, Flex } from '@radix-ui/themes';
+import { Button, Spinner, Flex } from '@radix-ui/themes';
+
 import XPlanThreadComposer from './XPlanThreadComposer';
 import { scheduleApi } from '../lib/api';
 
@@ -37,14 +38,6 @@ export default function XPlanListView() {
     }
   };
 
-  const getStatusBadgeColor = (status: string): 'green' | 'red' | 'yellow' => {
-    switch (status) {
-      case 'approved': return 'green';
-      case 'rejected': return 'red';
-      default: return 'yellow';
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-mission-control-bg">
@@ -57,15 +50,13 @@ export default function XPlanListView() {
     return (
       <div className="flex flex-col h-full bg-mission-control-bg">
         <div className="p-4 border-b border-mission-control-border">
-          <Button
+          <button
             onClick={() => { setShowComposer(false); loadPlans(); }}
-            variant="ghost"
-            color="gray"
-            size="2"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to list
-          </Button>
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto">
           <XPlanThreadComposer />
@@ -79,7 +70,7 @@ export default function XPlanListView() {
       {/* Header */}
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="2">
-          <FileText className="w-5 h-5 text-info" />
+          <FileText className="w-5 h-5 text-[var(--color-info)]" />
           <h3 className="text-lg font-semibold text-mission-control-text">Content Plans</h3>
         </Flex>
         <Button
@@ -114,18 +105,24 @@ export default function XPlanListView() {
       ) : (
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {plans.map((plan) => (
-            <div key={plan.id} className="bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-4">
+            <div key={plan.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/20 transition-colors">
               <Flex align="start" justify="between" className="mb-2">
                 <h4 className="text-sm font-bold text-mission-control-text">{plan.title}</h4>
               </Flex>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <Badge color="blue" variant="soft" radius="full">{plan.content_type}</Badge>
-                <Badge color="violet" variant="soft" radius="full">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]">
+                  {plan.content_type}
+                </span>
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-accent/10 text-mission-control-accent">
                   {plan.thread_length} tweet{plan.thread_length > 1 ? 's' : ''}
-                </Badge>
-                <Badge color={getStatusBadgeColor(plan.status)} variant="soft" radius="full">
+                </span>
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                  plan.status === 'approved' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
+                  plan.status === 'rejected' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+                  'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
+                }`}>
                   {plan.status}
-                </Badge>
+                </span>
               </div>
               <p className="text-xs text-mission-control-text-dim">
                 Proposed by {plan.proposed_by} &middot; {new Date(plan.created_at).toLocaleDateString()}

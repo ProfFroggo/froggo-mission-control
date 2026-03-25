@@ -9,7 +9,7 @@
  * - Focus management
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { safeStorage } from '../utils/safeStorage';
 
 interface AccessibilitySettings {
@@ -162,12 +162,12 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
     }, 1000);
   }, []);
 
-  const value: AccessibilityContextType = {
+  const value = useMemo(() => ({
     settings,
     updateSettings,
     announce,
     isKeyboardNavigating,
-  };
+  }), [settings, updateSettings, announce, isKeyboardNavigating]);
 
   return (
     <AccessibilityContext.Provider value={value}>

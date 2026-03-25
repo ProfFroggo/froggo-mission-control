@@ -73,18 +73,32 @@ function credentialIndexForStep(step: number): number {
   return step - 1;
 }
 
-// ─── Progress Dots ───────────────────────────────────────────────────────────
+// ─── Step Indicator ──────────────────────────────────────────────────────────
 
-function ProgressDots({ total, current }: { total: number; current: number }) {
+function StepIndicator({ total, current }: { total: number; current: number }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-0 w-full">
       {Array.from({ length: total }).map((_, i) => (
-        <span
-          key={i}
-          className={`w-2 h-2 rounded-full transition-colors ${
-            i <= current ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-          }`}
-        />
+        <div key={i} className="flex items-center flex-1 last:flex-none">
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold tabular-nums transition-colors flex-shrink-0 ${
+              i === current
+                ? 'bg-mission-control-accent text-white'
+                : i < current
+                  ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] border border-[var(--color-success)]/30'
+                  : 'bg-mission-control-border/30 text-mission-control-text-dim border border-mission-control-border'
+            }`}
+          >
+            {i + 1}
+          </div>
+          {i < total - 1 && (
+            <div
+              className={`flex-1 h-px mx-1 transition-colors ${
+                i < current ? 'bg-[var(--color-success)]' : 'bg-mission-control-border'
+              }`}
+            />
+          )}
+        </div>
       ))}
     </div>
   );
@@ -130,17 +144,17 @@ function IntroStep({
 
       {credentials.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
             Required credentials
           </p>
           <ul className="space-y-2">
             {credentials.map((cred) => (
               <li
                 key={cred.id}
-                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border"
+                className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-mission-control-surface border border-mission-control-border"
               >
                 <span className="text-sm text-mission-control-text">{cred.label}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border text-mission-control-text-dim">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/30 text-mission-control-text-dim">
                   {typeBadge(cred.type)}
                 </span>
               </li>
@@ -189,7 +203,8 @@ function CredentialStep({
         }
         autoComplete="off"
         autoFocus
-        style={{ width: '100%' }}
+        size="2"
+        className="w-full"
       />
     </div>
   );
@@ -226,13 +241,16 @@ function ReviewStep({
       {/* Credential summary */}
       {credentials.length > 0 && (
         <div className="space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+            Credentials
+          </p>
           {credentials.map((cred) => (
             <Flex
               key={cred.id}
               align="center"
               justify="between"
               gap="3"
-              className="px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border"
+              className="px-4 py-3 rounded-xl bg-mission-control-surface border border-mission-control-border"
             >
               <span className="text-sm text-mission-control-text">{cred.label}</span>
               <span className="text-xs font-mono text-mission-control-text-dim">
@@ -265,19 +283,19 @@ function ReviewStep({
         {!testing && testResult && (
           <div className="space-y-2">
             {testResult.success ? (
-              <Flex align="center" gap="2" className="text-success text-sm">
+              <Flex align="center" gap="2" className="text-[var(--color-success)] text-sm">
                 <CheckCircle size={16} />
                 <span>Connection successful!</span>
               </Flex>
             ) : (
               <div className="space-y-2">
-                <Flex align="start" gap="2" className="text-error text-sm">
+                <Flex align="start" gap="2" className="text-[var(--color-error)] text-sm">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                   <span>{testResult.error || 'Connection failed'}</span>
                 </Flex>
                 {testResult.diagnosis && (
                   <div className="px-3 py-2.5 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text-dim">
-                    <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
+                    <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                       Suggested fix
                     </p>
                     {testResult.diagnosis}
@@ -437,10 +455,10 @@ export default function IntegrationWizard({
     >
       {/* Header */}
       <Flex align="center" justify="between" className="px-6 pt-6 pb-4 border-b border-mission-control-border">
-        <div>
+        <div className="flex-1 min-w-0 pr-4">
           <h2 className="text-lg font-semibold text-mission-control-text">{stepTitle()}</h2>
-          <div className="mt-2">
-            <ProgressDots total={totalSteps} current={currentStep} />
+          <div className="mt-3 w-full">
+            <StepIndicator total={totalSteps} current={currentStep} />
           </div>
         </div>
         <button
@@ -490,11 +508,11 @@ export default function IntegrationWizard({
       {currentStep !== reviewStep && (
         <BaseModalFooter align="right">
           {currentStep === 0 ? (
-            <LoadingButton onClick={onCancel} variant="ghost">
+            <LoadingButton onClick={onCancel} variant="ghost" size="md">
               Cancel
             </LoadingButton>
           ) : (
-            <LoadingButton onClick={handleBack} variant="ghost" icon={<ArrowLeft size={14} />}>
+            <LoadingButton onClick={handleBack} variant="secondary" size="md" icon={<ArrowLeft size={14} />}>
               Back
             </LoadingButton>
           )}
@@ -502,6 +520,7 @@ export default function IntegrationWizard({
           <LoadingButton
             onClick={handleNext}
             variant="primary"
+            size="md"
             disabled={!canGoNext()}
             icon={<ArrowRight size={14} />}
           >
@@ -510,10 +529,10 @@ export default function IntegrationWizard({
         </BaseModalFooter>
       )}
 
-      {/* Footer for review step — only Cancel/Back visible (Finish inside body) */}
+      {/* Footer for review step — only Back visible (Finish inside body) */}
       {currentStep === reviewStep && (
         <BaseModalFooter align="right">
-          <LoadingButton onClick={handleBack} variant="ghost" icon={<ArrowLeft size={14} />}>
+          <LoadingButton onClick={handleBack} variant="secondary" size="md" icon={<ArrowLeft size={14} />}>
             Back
           </LoadingButton>
         </BaseModalFooter>

@@ -493,7 +493,7 @@ SUMMARY:`;
               const parsed = JSON.parse(line) as {
                 type?: string;
                 session_id?: string;
-                message?: { content?: Array<{ type: string; text?: string }> };
+                message?: { content?: Array<{ type: string; text?: string; thinking?: string }> };
                 result?: string;
                 is_error?: boolean;
                 input_tokens?: number;
@@ -501,6 +501,14 @@ SUMMARY:`;
               };
 
               if (parsed.type === 'assistant' && parsed.message?.content) {
+                // Emit thinking blocks so UI can render collapsible thinking sections
+                const thinkingBlocks = parsed.message.content
+                  .filter(c => c.type === 'thinking' && typeof c.thinking === 'string' && c.thinking.trim());
+                if (thinkingBlocks.length > 0) {
+                  const thinking = thinkingBlocks.map(c => c.thinking ?? '').join('\n\n');
+                  enc({ type: 'thinking_block', thinking });
+                }
+
                 // Extract text content and emit only the new delta
                 const fullText = parsed.message.content
                   .filter(c => c.type === 'text' && typeof c.text === 'string')

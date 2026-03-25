@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useWritingStore } from '../../store/writingStore';
 import ChapterListItem from './ChapterListItem';
 import { ArrowLeft, Plus, ChevronDown } from 'lucide-react';
-import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import {
   DndContext,
   closestCenter,
@@ -89,15 +89,13 @@ export default function ChapterSidebar() {
       {/* Header */}
       <div className="px-3 py-3 border-b border-mission-control-border flex-shrink-0">
         <Flex align="center" gap="2">
-          <IconButton
-            size="1"
-            variant="ghost"
-
+          <button
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             onClick={closeProject}
             title="Back to projects"
           >
             <ArrowLeft size={16} />
-          </IconButton>
+          </button>
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-semibold text-mission-control-text truncate">
               {activeProject.title}
@@ -134,34 +132,31 @@ export default function ChapterSidebar() {
               >
                 {creating ? '...' : 'Add'}
               </Button>
-              <Button
-                size="1"
-                variant="ghost"
+              <button
+                type="button"
                 onClick={handleCancelAdd}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 Cancel
-              </Button>
+              </button>
             </Flex>
           </div>
         ) : (
-          <Button
-            size="1"
-            variant="ghost"
-            className="w-full justify-start"
+          <button
+            className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             onClick={() => setShowAddInput(true)}
           >
             <Plus size={14} />
             Add Chapter
-          </Button>
+          </button>
         )}
       </div>
 
       {/* Chapters section header */}
-      <Button
-        variant="ghost"
-        size="1"
+      <button
+        type="button"
         onClick={() => setChaptersCollapsed(!chaptersCollapsed)}
-        className="px-3 py-1.5 w-full justify-between flex-shrink-0 uppercase tracking-wider"
+        className="inline-flex items-center justify-between w-full px-3 py-1.5 flex-shrink-0 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors uppercase tracking-wider"
         style={{ fontSize: '10px' }}
       >
         <span>Chapters ({chapters.length})</span>
@@ -169,7 +164,7 @@ export default function ChapterSidebar() {
           size={12}
           className={`transition-transform ${chaptersCollapsed ? '-rotate-90' : ''}`}
         />
-      </Button>
+      </button>
 
       {/* Chapter list */}
       <div className="flex-1 overflow-y-auto">

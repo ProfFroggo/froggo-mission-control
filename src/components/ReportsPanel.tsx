@@ -14,7 +14,7 @@ import {
   RefreshCw,
   Bell,
 } from 'lucide-react';
-import { Button, IconButton, Flex } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import {
   generateWeeklyReport,
   generateMonthlyReport,
@@ -101,9 +101,9 @@ async function triggerExport(
 
 function StatCard({ label, value, color }: { label: string; value: string | number; color?: string }) {
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-      <div className="text-sm text-mission-control-text-dim mb-2">{label}</div>
-      <div className={`text-3xl font-bold ${color ?? 'text-mission-control-text'}`}>
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+      <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">{label}</div>
+      <div className={`text-2xl font-bold tabular-nums text-mission-control-text ${color ?? ''}`}>
         {value}
       </div>
     </div>
@@ -134,26 +134,24 @@ function ExportButtons({
 
   return (
     <Flex align="center" gap="2">
-      <Button
+      <button
         onClick={() => handleExport('csv')}
         disabled={!!busy}
-        variant="ghost"
-        size="1"
         title={`Export ${type} as CSV`}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
       >
         <Download size={12} />
         {busy === 'csv' ? 'Exporting…' : 'CSV'}
-      </Button>
-      <Button
+      </button>
+      <button
         onClick={() => handleExport('json')}
         disabled={!!busy}
-        variant="ghost"
-        size="1"
         title={`Export ${type} as JSON`}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
       >
         <Download size={12} />
         {busy === 'json' ? 'Exporting…' : 'JSON'}
-      </Button>
+      </button>
     </Flex>
   );
 }
@@ -191,7 +189,7 @@ function ExecutiveSummaryCard({
 
   if (loading) {
     return (
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 animate-pulse">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5 animate-pulse">
         <div className="h-5 bg-mission-control-border rounded w-48 mb-4" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
@@ -204,7 +202,7 @@ function ExecutiveSummaryCard({
 
   if (error || !summary) {
     return (
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
         <p className="text-sm text-mission-control-text-dim">
           Executive summary unavailable.
         </p>
@@ -213,66 +211,64 @@ function ExecutiveSummaryCard({
   }
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 space-y-5">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5 space-y-5">
       {/* Header */}
       <Flex align="center" justify="between">
         <Flex align="center" gap="2">
-          <BarChart3 size={18} className="text-mission-control-accent" />
-          <h3 className="font-semibold">Executive Summary</h3>
+          <BarChart3 size={14} className="text-mission-control-text-dim" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Executive Summary</span>
           <span className="text-xs text-mission-control-text-dim">
-            ({summary.period.days}d period)
+            ({summary.period.days}d)
           </span>
         </Flex>
-        <IconButton
+        <button
           onClick={load}
-          variant="ghost"
-          size="2"
-
           title="Refresh summary"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           <RefreshCw size={14} />
-        </IconButton>
+        </button>
       </Flex>
 
       {/* KPI grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-mission-control-bg rounded-lg">
+        <div className="p-4 bg-mission-control-border/10 rounded-lg">
           <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <CheckSquare size={12} />
             Tasks Completed
           </Flex>
-          <div className="text-2xl font-bold text-success">{summary.tasks.completed}</div>
-          <div className="text-xs text-mission-control-text-dim mt-1">
-            {summary.tasks.velocity}/day velocity
+          <div className="text-2xl font-bold tabular-nums text-mission-control-text">{summary.tasks.completed}</div>
+          <div className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
+            <span className="text-[var(--color-success)]">{summary.tasks.velocity}</span>/day velocity
           </div>
         </div>
-        <div className="p-4 bg-mission-control-bg rounded-lg">
+        <div className="p-4 bg-mission-control-border/10 rounded-lg">
           <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <Users size={12} />
             Active Agents
           </Flex>
-          <div className="text-2xl font-bold text-info">{summary.agents.active}</div>
-          <div className="text-xs text-mission-control-text-dim mt-1">
-            {summary.agents.avgSuccessRate}% avg success rate
+          <div className="text-2xl font-bold tabular-nums text-mission-control-text">{summary.agents.active}</div>
+          <div className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
+            <span className="text-[var(--color-info)]">{summary.agents.avgSuccessRate}%</span> avg success
           </div>
         </div>
-        <div className="p-4 bg-mission-control-bg rounded-lg">
+        <div className="p-4 bg-mission-control-border/10 rounded-lg">
           <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <Award size={12} />
             Approvals
           </Flex>
-          <div className="text-2xl font-bold text-warning">{summary.approvals.total}</div>
-          <div className="text-xs text-mission-control-text-dim mt-1">
-            {summary.approvals.approved} approved
+          <div className="text-2xl font-bold tabular-nums text-mission-control-text">{summary.approvals.total}</div>
+          <div className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
+            <span className="text-[var(--color-success)]">{summary.approvals.approved}</span> approved
           </div>
         </div>
-        <div className="p-4 bg-mission-control-bg rounded-lg">
+        <div className="p-4 bg-mission-control-border/10 rounded-lg">
           <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <Zap size={12} />
             Token Cost
           </Flex>
-          <div className="text-2xl font-bold text-review">${summary.tokens.cost.toFixed(4)}</div>
-          <div className="text-xs text-mission-control-text-dim mt-1">
+          <div className="text-2xl font-bold tabular-nums text-mission-control-text">${summary.tokens.cost.toFixed(4)}</div>
+          <div className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
             {formatNumber(summary.tokens.total)} tokens
           </div>
         </div>
@@ -281,7 +277,7 @@ function ExecutiveSummaryCard({
       {/* Highlights */}
       {summary.highlights.length > 0 && (
         <div className="space-y-2">
-          <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
+          <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
             Highlights
           </div>
           <div className="space-y-1.5">
@@ -290,7 +286,7 @@ function ExecutiveSummaryCard({
                 key={i}
                 align="start"
                 gap="2"
-                className="text-sm p-3 bg-mission-control-bg rounded-lg"
+                className="text-sm p-3 bg-mission-control-border/10 rounded-lg"
               >
                 <TrendingUp size={14} className="text-mission-control-accent mt-0.5 shrink-0" />
                 {h}
@@ -325,18 +321,18 @@ function ReportSection({
   children,
 }: ReportSectionProps) {
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-      <Flex align="center" justify="between" className="mb-4">
-        <div>
-          <h3 className="font-semibold flex items-center gap-2">
-            <Icon size={16} className="text-mission-control-accent" />
-            {title}
-          </h3>
-          <p className="text-xs text-mission-control-text-dim mt-0.5">{subtitle}</p>
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <Icon size={14} className="text-mission-control-text-dim" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{title}</span>
         </div>
         <ExportButtons type={exportType} from={from} to={to} />
-      </Flex>
-      {children}
+      </div>
+      <div className="px-4 pt-3 pb-4">
+        <p className="text-xs text-mission-control-text-dim mb-1">{subtitle}</p>
+        {children}
+      </div>
     </div>
   );
 }
@@ -404,8 +400,13 @@ export default function ReportsPanel() {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-mission-control-text-dim">Generating reports…</div>
+      <div className="space-y-6 p-1">
+        <div className="h-32 bg-mission-control-border/20 rounded-xl animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-mission-control-border/20 rounded-xl animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -433,19 +434,20 @@ export default function ReportsPanel() {
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Date range quick selectors */}
-          <Flex className="bg-mission-control-border rounded-lg p-1" gap="1">
+          <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
             {QUICK_RANGES.map((r) => (
-              <Button
+              <button
                 key={r.value}
+                type="button"
                 onClick={() => { setQuickRange(r.value); setCustomFrom(''); setCustomTo(''); }}
-                variant={quickRange === r.value && !customFrom ? 'soft' : 'ghost'}
-                color={quickRange === r.value && !customFrom ? undefined : 'gray'}
-                size="1"
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  quickRange === r.value && !customFrom ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 {r.label}
-              </Button>
+              </button>
             ))}
-          </Flex>
+          </div>
 
           {/* Custom date inputs — native date pickers kept as-is for functionality */}
           <Flex align="center" gap="2">
@@ -468,20 +470,20 @@ export default function ReportsPanel() {
           </Flex>
 
           {/* Report type selector */}
-          <Flex className="bg-mission-control-border rounded-lg p-1">
+          <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
             {(['weekly', 'monthly'] as const).map((type) => (
-              <Button
+              <button
                 key={type}
+                type="button"
                 onClick={() => setReportType(type)}
-                variant={reportType === type ? 'soft' : 'ghost'}
-                color={reportType === type ? undefined : 'gray'}
-                size="2"
-                className="capitalize"
+                className={`px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-colors ${
+                  reportType === type ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 {type}
-              </Button>
+              </button>
             ))}
-          </Flex>
+          </div>
 
           {/* Schedule stub */}
           <Button
@@ -505,101 +507,93 @@ export default function ReportsPanel() {
           <ReportSection
             icon={CheckSquare}
             title="Tasks Report"
-            subtitle="All tasks in selected period"
+            subtitle="id, title, status, priority, agent, created, completed, duration"
             exportType="tasks"
             from={exportFrom}
             to={exportTo}
           >
-            <p className="text-sm text-mission-control-text-dim">
-              Includes id, title, status, priority, agent, created, completed, and duration.
-            </p>
+            <span />
           </ReportSection>
 
           <ReportSection
             icon={Users}
             title="Agent Performance"
-            subtitle="Per-agent metrics"
+            subtitle="tasks completed, success rate, avg duration, token usage"
             exportType="agents"
             from={exportFrom}
             to={exportTo}
           >
-            <p className="text-sm text-mission-control-text-dim">
-              Includes tasks completed, success rate, avg duration, and token usage.
-            </p>
+            <span />
           </ReportSection>
 
           <ReportSection
             icon={Award}
             title="Approvals Report"
-            subtitle="All approval decisions"
+            subtitle="type, status, created, resolved, response time"
             exportType="approvals"
             from={exportFrom}
             to={exportTo}
           >
-            <p className="text-sm text-mission-control-text-dim">
-              Includes type, status, created, resolved, and response time.
-            </p>
+            <span />
           </ReportSection>
 
           <ReportSection
             icon={Zap}
             title="Token Usage"
-            subtitle="Daily token consumption by agent"
+            subtitle="date, agent, input/output tokens, cost per day"
             exportType="token-usage"
             from={exportFrom}
             to={exportTo}
           >
-            <p className="text-sm text-mission-control-text-dim">
-              Includes date, agent, input/output tokens, and cost per day.
-            </p>
+            <span />
           </ReportSection>
         </div>
 
         {/* ── Legacy weekly/monthly report ── */}
         {reportType === 'weekly' && weeklyReport && (
           <div className="space-y-6">
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <Flex align="center" gap="2" className="text-mission-control-accent mb-2">
-                <Calendar size={20} />
-                <span className="font-medium">Week of {weeklyReport.weekStart}</span>
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <Flex align="center" gap="2" className="mb-2">
+                <Calendar size={16} className="text-mission-control-accent" />
+                <span className="text-sm font-semibold text-mission-control-text">Week of {weeklyReport.weekStart}</span>
               </Flex>
-              <p className="text-sm text-mission-control-text-dim">
-                {weeklyReport.weekStart} to {weeklyReport.weekEnd}
+              <p className="text-xs text-mission-control-text-dim">
+                {weeklyReport.weekStart} — {weeklyReport.weekEnd}
               </p>
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard label="Tasks Created" value={weeklyReport.tasksCreated} color="text-info" />
-              <StatCard label="Tasks Completed" value={weeklyReport.tasksCompleted} color="text-success" />
-              <StatCard label="Completion Rate" value={`${weeklyReport.completionRate}%`} color="text-review" />
-              <StatCard label="Total Hours" value={`${weeklyReport.totalHours.toFixed(1)}h`} color="text-warning" />
+              <StatCard label="Tasks Created" value={weeklyReport.tasksCreated} color="text-[var(--color-info)]" />
+              <StatCard label="Tasks Completed" value={weeklyReport.tasksCompleted} color="text-[var(--color-success)]" />
+              <StatCard label="Completion Rate" value={`${weeklyReport.completionRate}%`} color="text-[var(--color-review)]" />
+              <StatCard label="Total Hours" value={`${weeklyReport.totalHours.toFixed(1)}h`} color="text-[var(--color-warning)]" />
             </div>
 
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Award size={16} className="text-warning" />
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Award size={12} className="text-mission-control-text-dim" />
                 Highlights
-              </h3>
+              </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-mission-control-bg rounded-lg">
+                <div className="p-4 bg-mission-control-border/10 rounded-lg">
                   <div className="text-sm text-mission-control-text-dim mb-2">Top Performer</div>
-                  <div className="text-xl font-bold text-warning">{weeklyReport.topAgent}</div>
+                  <div className="text-xl font-bold text-[var(--color-warning)]">{weeklyReport.topAgent}</div>
                 </div>
-                <div className="p-4 bg-mission-control-bg rounded-lg">
+                <div className="p-4 bg-mission-control-border/10 rounded-lg">
                   <div className="text-sm text-mission-control-text-dim mb-2">Most Active Project</div>
-                  <div className="text-xl font-bold text-info">{weeklyReport.topProject}</div>
+                  <div className="text-xl font-bold text-[var(--color-info)]">{weeklyReport.topProject}</div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp size={16} className="text-mission-control-accent" />
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <TrendingUp size={12} className="text-mission-control-text-dim" />
                 Insights
-              </h3>
+              </div>
               <div className="space-y-3">
                 {weeklyReport.insights.map((insight, idx) => (
-                  <div key={idx} className="p-4 bg-mission-control-bg rounded-lg text-sm">
+                  <div key={idx} className="p-4 bg-mission-control-border/10 rounded-lg text-sm">
                     {insight}
                   </div>
                 ))}
@@ -610,31 +604,31 @@ export default function ReportsPanel() {
 
         {reportType === 'monthly' && monthlyReport && (
           <div className="space-y-6">
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <Flex align="center" gap="2" className="text-mission-control-accent mb-2">
-                <Calendar size={20} />
-                <span className="font-medium">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <Flex align="center" gap="2" className="mb-2">
+                <Calendar size={16} className="text-mission-control-accent" />
+                <span className="text-sm font-semibold text-mission-control-text">
                   {monthlyReport.month} {monthlyReport.year}
                 </span>
               </Flex>
-              <p className="text-sm text-mission-control-text-dim">Monthly Performance Report</p>
+              <p className="text-xs text-mission-control-text-dim">Monthly Performance Report</p>
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard label="Tasks Created" value={monthlyReport.tasksCreated} color="text-info" />
-              <StatCard label="Tasks Completed" value={monthlyReport.tasksCompleted} color="text-success" />
-              <StatCard label="Completion Rate" value={`${monthlyReport.completionRate}%`} color="text-review" />
-              <StatCard label="Total Hours" value={`${monthlyReport.totalHours.toFixed(1)}h`} color="text-warning" />
+              <StatCard label="Tasks Created" value={monthlyReport.tasksCreated} color="text-[var(--color-info)]" />
+              <StatCard label="Tasks Completed" value={monthlyReport.tasksCompleted} color="text-[var(--color-success)]" />
+              <StatCard label="Completion Rate" value={`${monthlyReport.completionRate}%`} color="text-[var(--color-review)]" />
+              <StatCard label="Total Hours" value={`${monthlyReport.totalHours.toFixed(1)}h`} color="text-[var(--color-warning)]" />
             </div>
 
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Award size={16} className="text-warning" />
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Award size={12} className="text-mission-control-text-dim" />
                 Agent Performance
-              </h3>
+              </div>
               <div className="space-y-3">
                 {monthlyReport.agentPerformance.map((agent) => (
-                  <div key={agent.agentId} className="p-4 bg-mission-control-bg rounded-lg">
+                  <div key={agent.agentId} className="p-4 bg-mission-control-border/10 rounded-lg">
                     <Flex align="center" justify="between" className="mb-3">
                       <span className="font-medium">{agent.agentName}</span>
                       <span className="text-sm text-mission-control-text-dim">
@@ -644,17 +638,17 @@ export default function ReportsPanel() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-mission-control-text-dim">Completion Rate</div>
-                        <div className="font-medium text-success">{agent.completionRate}%</div>
+                        <div className="font-medium text-[var(--color-success)]">{agent.completionRate}%</div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Avg Time</div>
-                        <div className="font-medium text-info">
+                        <div className="font-medium text-[var(--color-info)]">
                           {agent.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Total Time</div>
-                        <div className="font-medium text-warning">
+                        <div className="font-medium text-[var(--color-warning)]">
                           {agent.totalTimeSpent.toFixed(1)}h
                         </div>
                       </div>
@@ -664,14 +658,14 @@ export default function ReportsPanel() {
               </div>
             </div>
 
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Clock size={16} className="text-mission-control-accent" />
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Clock size={12} className="text-mission-control-text-dim" />
                 Project Breakdown
-              </h3>
+              </div>
               <div className="space-y-3">
                 {monthlyReport.projectBreakdown.map((project) => (
-                  <div key={project.project} className="p-4 bg-mission-control-bg rounded-lg">
+                  <div key={project.project} className="p-4 bg-mission-control-border/10 rounded-lg">
                     <Flex align="center" justify="between" className="mb-3">
                       <span className="font-medium">{project.project}</span>
                       <span className="text-sm text-mission-control-text-dim">
@@ -681,17 +675,17 @@ export default function ReportsPanel() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-mission-control-text-dim">Completed</div>
-                        <div className="font-medium text-success">{project.completedTasks}</div>
+                        <div className="font-medium text-[var(--color-success)]">{project.completedTasks}</div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Avg Time</div>
-                        <div className="font-medium text-info">
+                        <div className="font-medium text-[var(--color-info)]">
                           {project.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Total Time</div>
-                        <div className="font-medium text-warning">
+                        <div className="font-medium text-[var(--color-warning)]">
                           {project.totalTimeSpent.toFixed(1)}h
                         </div>
                       </div>
@@ -701,14 +695,14 @@ export default function ReportsPanel() {
               </div>
             </div>
 
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp size={16} className="text-mission-control-accent" />
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <TrendingUp size={12} className="text-mission-control-text-dim" />
                 Insights
-              </h3>
+              </div>
               <div className="space-y-3">
                 {monthlyReport.insights.map((insight, idx) => (
-                  <div key={idx} className="p-4 bg-mission-control-bg rounded-lg text-sm">
+                  <div key={idx} className="p-4 bg-mission-control-border/10 rounded-lg text-sm">
                     {insight}
                   </div>
                 ))}

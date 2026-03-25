@@ -61,7 +61,7 @@ export default function RealTimeAnalytics() {
             value: 0,
             unit: 'msg',
             icon: MessageCircle,
-            color: 'text-info',
+            color: 'text-[var(--color-info)]',
             sparkline: generateSparkline(0),
           },
           {
@@ -69,7 +69,7 @@ export default function RealTimeAnalytics() {
             value: activeTasks,
             unit: 'tasks',
             icon: Activity,
-            color: 'text-review',
+            color: 'text-[var(--color-review)]',
             sparkline: generateSparkline(activeTasks),
           },
           {
@@ -77,7 +77,7 @@ export default function RealTimeAnalytics() {
             value: completions,
             unit: 'done',
             icon: CheckCircle,
-            color: 'text-success',
+            color: 'text-[var(--color-success)]',
             sparkline: generateSparkline(completions),
           },
           {
@@ -85,7 +85,7 @@ export default function RealTimeAnalytics() {
             value: sessions,
             unit: 'sessions',
             icon: Zap,
-            color: 'text-warning',
+            color: 'text-[var(--color-warning)]',
             sparkline: generateSparkline(sessions),
           },
         ]);
@@ -116,28 +116,28 @@ export default function RealTimeAnalytics() {
           title: 'Task Completed',
           description: 'Fix authentication bug',
           icon: CheckCircle,
-          color: 'text-success',
+          color: 'text-[var(--color-success)]',
         },
         {
           type: 'message' as const,
           title: 'New Message',
           description: 'Kevin sent a message in WhatsApp',
           icon: MessageCircle,
-          color: 'text-info',
+          color: 'text-[var(--color-info)]',
         },
         {
           type: 'approval' as const,
           title: 'Approval Needed',
           description: 'Tweet requires review',
           icon: AlertCircle,
-          color: 'text-warning',
+          color: 'text-[var(--color-warning)]',
         },
         {
           type: 'agent' as const,
           title: 'Agent Started',
           description: 'Coder agent started task execution',
           icon: Zap,
-          color: 'text-review',
+          color: 'text-[var(--color-review)]',
         },
       ];
 
@@ -181,11 +181,11 @@ export default function RealTimeAnalytics() {
       {/* Header */}
       <Flex align="center" justify="between" mb="6">
         <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Radio className="text-mission-control-accent" size={20} />
+          <h2 className="text-sm font-semibold flex items-center gap-2 text-mission-control-text">
+            <Radio className="text-mission-control-accent" size={16} />
             Real-Time Analytics
           </h2>
-          <p className="text-sm text-mission-control-text-dim mt-1">
+          <p className="text-[10px] uppercase tracking-wider text-mission-control-text-dim mt-1">
             Live metrics updating every 10 seconds
           </p>
         </div>
@@ -199,14 +199,14 @@ export default function RealTimeAnalytics() {
           <button
             type="button"
             onClick={() => setIsLive(!isLive)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               isLive
-                ? 'bg-success-subtle text-success border border-success-border'
+                ? 'bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/30'
                 : 'bg-mission-control-surface border border-mission-control-border'
             }`}
           >
             <div
-              className={`w-2 h-2 rounded-full ${isLive ? 'bg-success animate-pulse' : 'bg-mission-control-text-dim'}`}
+              className={`w-2 h-2 rounded-full ${isLive ? 'bg-[var(--color-success)] animate-pulse' : 'bg-mission-control-text-dim'}`}
             />
             {isLive ? 'Live' : 'Paused'}
           </button>
@@ -222,28 +222,28 @@ export default function RealTimeAnalytics() {
           return (
             <div
               key={metric.label}
-              className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4"
+              className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4"
             >
               <Flex align="center" justify="between" mb="3">
                 <Icon size={16} className={metric.color} />
                 {isLive && (
-                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-[var(--color-success)] animate-pulse" />
                 )}
               </Flex>
 
               <Flex align="baseline" gap="2" mb="1">
-                <span className="text-3xl font-bold">{metric.value}</span>
-                <span className="text-sm text-mission-control-text-dim">{metric.unit}</span>
+                <span className="text-2xl font-bold tabular-nums text-mission-control-text">{metric.value}</span>
+                <span className="text-xs text-mission-control-text-dim">{metric.unit}</span>
               </Flex>
 
-              <div className="text-sm text-mission-control-text-dim mb-3">{metric.label}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">{metric.label}</div>
 
               {/* Sparkline */}
               <Flex align="end" gap="1" className="h-8">
                 {metric.sparkline.map((value, idx) => (
                   <div
                     key={idx}
-                    className={`flex-1 ${metric.color.replace('text-', 'bg-')} rounded-t transition-all`}
+                    className={`flex-1 ${metric.color.replace('text-', 'bg-')} rounded-t transition-colors`}
                     style={{
                       height: `${(value / maxSparkline) * 100}%`,
                       opacity: 0.3 + (idx / metric.sparkline.length) * 0.7,
@@ -257,20 +257,20 @@ export default function RealTimeAnalytics() {
       </div>
 
       {/* Live Events Feed */}
-      <Box p="6" className="bg-mission-control-surface border border-mission-control-border rounded-2xl flex-1">
-        <Flex align="center" justify="between" mb="4">
-          <h3 className="font-semibold flex items-center gap-2">
-            <Activity size={16} className="text-mission-control-accent" />
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5 flex-1">
+        <Flex align="center" justify="between" className="mb-4">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim flex items-center gap-2">
+            <Activity size={12} className="text-mission-control-accent" />
             Live Activity Feed
-          </h3>
-          <div className="text-sm text-mission-control-text-dim">
+          </span>
+          <span className="text-xs text-mission-control-text-dim">
             Last {liveEvents.length} events
-          </div>
+          </span>
         </Flex>
 
         <div className="space-y-2">
           {liveEvents.length === 0 ? (
-            <div className="py-8 text-center text-mission-control-text-dim">
+            <div className="py-8 text-center text-sm text-mission-control-text-dim">
               Waiting for activity...
             </div>
           ) : (
@@ -282,20 +282,20 @@ export default function RealTimeAnalytics() {
                   align="start"
                   gap="3"
                   p="3"
-                  className="bg-mission-control-bg rounded-lg hover:bg-mission-control-border transition-colors"
+                  className="bg-mission-control-border/10 rounded-lg hover:bg-mission-control-border/20 transition-colors"
                 >
-                  <div className={`p-2 rounded-lg ${event.color.replace('text-', 'bg-')}/20`}>
-                    <Icon size={16} className={event.color} />
+                  <div className="p-2 rounded-lg bg-mission-control-border/20 flex-shrink-0">
+                    <Icon size={14} className={event.color} />
                   </div>
 
                   <Box className="flex-1 min-w-0">
                     <Flex align="center" justify="between" gap="2">
-                      <div className="font-medium truncate">{event.title}</div>
+                      <div className="text-sm font-medium text-mission-control-text truncate">{event.title}</div>
                       <div className="text-xs text-mission-control-text-dim whitespace-nowrap">
                         {formatTimestamp(event.timestamp)}
                       </div>
                     </Flex>
-                    <div className="text-sm text-mission-control-text-dim truncate">
+                    <div className="text-xs text-mission-control-text-dim/70 truncate mt-0.5">
                       {event.description}
                     </div>
                   </Box>
@@ -304,37 +304,37 @@ export default function RealTimeAnalytics() {
             })
           )}
         </div>
-      </Box>
+      </div>
 
       {/* System Status */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-xl">
           <Flex align="center" justify="between">
             <div>
-              <div className="text-sm text-mission-control-text-dim mb-1">System Status</div>
-              <div className="font-medium text-success">Operational</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">System Status</div>
+              <div className="text-sm font-semibold text-[var(--color-success)]">Operational</div>
             </div>
-            <CheckCircle size={24} className="text-success" />
+            <CheckCircle size={24} className="text-[var(--color-success)]" />
           </Flex>
         </Box>
 
-        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-xl">
           <Flex align="center" justify="between">
             <div>
-              <div className="text-sm text-mission-control-text-dim mb-1">Uptime</div>
-              <div className="font-medium">99.9%</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Uptime</div>
+              <div className="text-sm font-semibold tabular-nums text-mission-control-text">99.9%</div>
             </div>
-            <TrendingUp size={24} className="text-info" />
+            <TrendingUp size={24} className="text-[var(--color-info)]" />
           </Flex>
         </Box>
 
-        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-xl">
           <Flex align="center" justify="between">
             <div>
-              <div className="text-sm text-mission-control-text-dim mb-1">Avg Response</div>
-              <div className="font-medium">0.8s</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Avg Response</div>
+              <div className="text-sm font-semibold tabular-nums text-mission-control-text">0.8s</div>
             </div>
-            <Clock size={24} className="text-review" />
+            <Clock size={24} className="text-[var(--color-review)]" />
           </Flex>
         </Box>
       </div>

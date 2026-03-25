@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, Plus, ArrowLeft, Check, X, Send, CheckCheck } from 'lucide-react';
-import { Button, Badge, Spinner, Flex } from '@radix-ui/themes';
+import { Button, Spinner, Flex } from '@radix-ui/themes';
 import XDraftComposer from './XDraftComposer';
 import { XImageThumbnails } from './XImageAttachment';
 import { scheduleApi, approvalApi } from '../lib/api';
@@ -63,16 +63,23 @@ export default function XDraftListView() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-success-subtle text-success';
+        return 'bg-[var(--color-success)]/10 text-[var(--color-success)]';
       case 'rejected':
-        return 'bg-error-subtle text-error';
+        return 'bg-[var(--color-error)]/10 text-[var(--color-error)]';
       case 'idea':
-        return 'bg-info-subtle text-info';
+        return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+      case 'scheduled':
+        return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+      case 'published':
+      case 'sent':
+        return 'bg-[var(--color-success)]/10 text-[var(--color-success)]';
+      case 'failed':
+        return 'bg-[var(--color-error)]/10 text-[var(--color-error)]';
       default:
-        return 'bg-warning-subtle text-warning';
+        return 'bg-mission-control-border/50 text-mission-control-text-dim/70';
     }
   };
 
@@ -160,15 +167,13 @@ export default function XDraftListView() {
     return (
       <div className="flex flex-col h-full bg-mission-control-bg">
         <div className="p-4 border-b border-mission-control-border">
-          <Button
+          <button
             onClick={() => { setShowComposer(false); loadDrafts(); }}
-            variant="ghost"
-            color="gray"
-            size="2"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to list
-          </Button>
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto">
           <XDraftComposer />
@@ -182,10 +187,10 @@ export default function XDraftListView() {
       {/* Header */}
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="2">
-          <FileText className="w-5 h-5 text-info" />
+          <FileText className="w-5 h-5 text-[var(--color-info)]" />
           <h3 className="text-lg font-semibold text-mission-control-text">Drafts</h3>
           {drafts.length > 0 && (
-            <span className="px-2 py-0.5 text-xs bg-mission-control-bg-alt text-mission-control-text-dim rounded-full">
+            <span className="px-2 py-0.5 text-xs bg-mission-control-border/20 text-mission-control-text-dim rounded-full">
               {drafts.length}
             </span>
           )}
@@ -269,30 +274,24 @@ export default function XDraftListView() {
             return (
               <div
                 key={draft.id}
-                className={`bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-4 transition-opacity ${
+                className={`bg-mission-control-surface border border-mission-control-border rounded-xl p-4 transition-opacity hover:border-mission-control-accent/20 ${
                   isRejected ? 'opacity-50' : ''
                 }`}
               >
                 {/* Status + meta row */}
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <Badge color="blue" variant="soft" radius="full">Version {draft.version}</Badge>
-                  <Badge
-                    color={
-                      draft.status === 'approved' ? 'grass' :
-                      draft.status === 'rejected' ? 'red' :
-                      draft.status === 'idea' ? 'blue' : 'amber'
-                    }
-                    variant="soft"
-                    radius="full"
-                  >
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-mission-control-accent/10 text-mission-control-accent">
+                    v{draft.version}
+                  </span>
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${getStatusBadgeClass(draft.status)}`}>
                     {draft.status}
-                  </Badge>
+                  </span>
                   {draft.proposed_by && (
                     <span className="text-xs text-mission-control-text-dim">
                       by {draft.proposed_by}
                     </span>
                   )}
-                  <span className="text-xs text-mission-control-text-dim ml-auto">
+                  <span className="text-xs text-mission-control-text-dim ml-auto tabular-nums">
                     {new Date(draft.created_at).toLocaleDateString()}
                   </span>
                 </div>
@@ -310,16 +309,14 @@ export default function XDraftListView() {
                 {/* Action buttons */}
                 <Flex align="center" gap="2" className="mt-3 pt-3 border-t border-mission-control-border">
                   {/* Promote to Publish */}
-                  <Button
+                  <button
                     onClick={() => handlePromoteToPublish(draft)}
-                    variant="ghost"
-                    color="gray"
-                    size="1"
                     title="Move to Publish"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     <Send className="w-3.5 h-3.5" />
                     Publish
-                  </Button>
+                  </button>
 
                   {/* Approve (if pending) */}
                   {isPending && (

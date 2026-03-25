@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, TrendingUp, Award, CheckCircle, Clock, Activity, Crown, Trophy, Dumbbell, Zap } from 'lucide-react';
-import { Button, IconButton, Box, Flex } from '@radix-ui/themes';
+import { Button, Box, Flex } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 import { getAgentTheme } from '../utils/agentThemes';
 import { agentApi } from '../lib/api';
@@ -123,7 +123,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
       align="center"
       justify="center"
       p="4"
-      className={`fixed inset-0 modal-backdrop backdrop-blur-md z-50 ${
+      className={`fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
       }`}
       onClick={handleBackdropClick}
@@ -134,7 +134,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
     >
       <Flex
         direction="column"
-        className={`glass-modal rounded-xl max-w-5xl w-full max-h-[85vh] overflow-hidden ${
+        className={`bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl max-w-5xl w-full max-h-[85vh] overflow-hidden ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`}
         onClick={handleInnerClick}
@@ -142,29 +142,22 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border flex-shrink-0">
-          <Box>
-            <h2 className="text-base font-semibold text-mission-control-text flex items-center gap-2">
-              <Activity size={16} />
-              Agent Comparison
-            </h2>
-            <p className="text-xs text-mission-control-text-dim">
-              Comparing {agentIds.length} agents
-            </p>
-          </Box>
-          <IconButton
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-mission-control-text">Agent Comparison</h2>
+            <p className="text-xs text-mission-control-text-dim mt-0.5">Comparing {agentIds.length} agents</p>
+          </div>
+          <button
             onClick={handleClose}
-            size="2"
-            variant="ghost"
-           
             aria-label="Close modal"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={16} />
-          </IconButton>
-        </Flex>
+          </button>
+        </div>
 
         {/* Content */}
-        <Box px="5" py="4" className="flex-1 overflow-y-auto">
+        <Box className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
             <Flex align="center" justify="center" style={{ height: '16rem' }}>
               <div className="text-mission-control-text-dim">Loading comparison...</div>
@@ -198,8 +191,8 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
               {/* Success Rate */}
               <div>
-                <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3 flex items-center gap-2">
-                  <TrendingUp size={16} />
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
+                  <TrendingUp size={12} />
                   Success Rate
                 </h3>
                 <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${agentIds.length}, 1fr)` }}>
@@ -210,7 +203,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
                     return (
                       <div key={agentId} className={`bg-mission-control-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-success' : ''}`}>
-                        <div className="text-3xl font-bold text-success mb-1 tabular-nums">
+                        <div className="text-3xl font-bold text-[var(--color-success)] mb-1 tabular-nums">
                           {Math.round(agentData.successRate * 100)}%
                         </div>
                         <div className="text-xs text-mission-control-text-dim">
@@ -224,8 +217,8 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
               {/* Average Time */}
               <div>
-                <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3 flex items-center gap-2">
-                  <Clock size={16} />
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
+                  <Clock size={12} />
                   Average Completion Time
                 </h3>
                 <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${agentIds.length}, 1fr)` }}>
@@ -235,7 +228,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
                     return (
                       <div key={agentId} className="bg-mission-control-bg rounded-lg p-4">
-                        <div className="text-3xl font-bold text-info mb-1 tabular-nums">
+                        <div className="text-3xl font-bold text-[var(--color-info)] mb-1 tabular-nums">
                           {agentData.avgTime}
                         </div>
                         <div className="text-xs text-mission-control-text-dim">
@@ -249,8 +242,8 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
               {/* Total Tasks */}
               <div>
-                <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3 flex items-center gap-2">
-                  <CheckCircle size={16} />
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
+                  <CheckCircle size={12} />
                   Total Tasks Completed
                 </h3>
                 <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${agentIds.length}, 1fr)` }}>
@@ -261,7 +254,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
                     return (
                       <div key={agentId} className={`bg-mission-control-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-review' : ''}`}>
-                        <div className="text-3xl font-bold text-review mb-1 tabular-nums">
+                        <div className="text-3xl font-bold text-[var(--color-review)] mb-1 tabular-nums">
                           {agentData.totalTasks}
                         </div>
                         <div className="text-xs text-mission-control-text-dim">
@@ -275,8 +268,8 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
               {/* Skills Comparison */}
               <div>
-                <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3 flex items-center gap-2">
-                  <Award size={16} />
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
+                  <Award size={12} />
                   Skills Inventory
                 </h3>
                 <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${agentIds.length}, 1fr)` }}>
@@ -309,8 +302,8 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
               {/* Recent Activity */}
               <div>
-                <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3 flex items-center gap-2">
-                  <Activity size={16} />
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
+                  <Activity size={12} />
                   Recent Activity
                 </h3>
                 <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${agentIds.length}, 1fr)` }}>
@@ -321,7 +314,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
                     return (
                       <div key={agentId} className={`bg-mission-control-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-warning' : ''}`}>
-                        <div className="text-3xl font-bold text-warning mb-1 tabular-nums">
+                        <div className="text-3xl font-bold text-[var(--color-warning)] mb-1 tabular-nums">
                           {agentData.recentActivity}
                         </div>
                         <div className="text-xs text-mission-control-text-dim">
@@ -334,8 +327,8 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
               </div>
 
               {/* Summary */}
-              <div className="bg-info-subtle border border-info-border rounded-lg p-4">
-                <h3 className="text-sm font-semibold mb-2 text-info">Summary</h3>
+              <div className="bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg p-4">
+                <h3 className="text-sm font-semibold mb-2 text-[var(--color-info)]">Summary</h3>
                 <div className="text-sm space-y-1">
                   {getWinner('successRate') && (
                     <Flex align="center" gap="2">
@@ -359,15 +352,11 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
         </Box>
 
         {/* Footer */}
-        <Flex align="center" justify="end" gap="3" px="5" py="4" className="border-t border-mission-control-border flex-shrink-0">
-          <Button
-            onClick={handleClose}
-            size="2"
-            variant="solid"
-          >
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+          <Button onClick={handleClose} size="2" variant="ghost">
             Close
           </Button>
-        </Flex>
+        </div>
       </Flex>
     </Flex>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Folder, Plus, Edit2, Trash2, X, Check, FolderOpen, Tag, Zap, Star, Briefcase, User, Package, Flame, Lightbulb, Target, Pin, Bookmark, BookOpen, type LucideIcon } from 'lucide-react';
-import { Button, IconButton, TextField, Box, Flex, Grid, Text, Heading } from '@radix-ui/themes';
+import { Button, TextField, Box, Flex, Grid, Text, Heading } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import SmartFolderRuleEditor from './SmartFolderRuleEditor';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -192,14 +192,14 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
             New Folder
           </Button>
           {onClose && (
-            <IconButton
+            <button
+              type="button"
               onClick={onClose}
-              size="2"
-              variant="ghost"
               aria-label="Close"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <X size={16} />
-            </IconButton>
+            </button>
           )}
         </Flex>
       </Flex>
@@ -210,26 +210,29 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
           <Flex direction="column" gap="3">
             <Flex gap="3">
               {/* Icon Picker */}
-              <Box style={{ width: '6rem' }}>
+              <Box className="w-24">
                 <Text size="1" weight="medium" mb="1" className="text-mission-control-text-dim" as="div">Icon</Text>
-                <Grid columns="4" gap="1" p="1" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+                <div className="grid grid-cols-4 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
                   {iconOptions.map((opt) => {
                     const OptIcon = opt.icon;
                     return (
-                      <IconButton
+                      <button
                         key={opt.value}
+                        type="button"
                         onClick={() => setFormData({ ...formData, icon: opt.value })}
                         title={opt.label}
-                        size="1"
-                        variant={formData.icon === opt.value ? 'soft' : 'ghost'}
-                       
                         aria-label={opt.label}
+                        className={`flex items-center justify-center p-1.5 rounded-md transition-colors ${
+                          formData.icon === opt.value
+                            ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                            : 'text-mission-control-text-dim hover:text-mission-control-text'
+                        }`}
                       >
                         <OptIcon size={16} />
-                      </IconButton>
+                      </button>
                     );
                   })}
-                </Grid>
+                </div>
               </Box>
 
               {/* Name & Description */}
@@ -257,7 +260,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
               </Flex>
 
               {/* Color Picker */}
-              <Box style={{ width: '7rem' }}>
+              <Box className="w-28">
                 <Text size="1" weight="medium" mb="1" className="text-mission-control-text-dim" as="div">Color</Text>
                 <Grid columns="5" gap="1" p="1" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
                   {colorOptions.map((color) => (
@@ -265,7 +268,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                       key={color}
                       type="button"
                       onClick={() => setFormData({ ...formData, color })}
-                      className={`w-6 h-6 rounded transition-all ${
+                      className={`w-6 h-6 rounded transition-[colors,transform] ${
                         formData.color === color ? 'ring-2 ring-white dark:ring-white/80 scale-110' : 'hover:scale-110'
                       }`}
                       style={{ backgroundColor: color }}
@@ -278,9 +281,9 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
 
             {/* Actions */}
             <Flex justify="end" gap="2">
-              <Button onClick={cancelCreate} size="2" variant="ghost">
+              <button type="button" onClick={cancelCreate} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                 Cancel
-              </Button>
+              </button>
               <Button onClick={handleCreate} size="2" variant="solid">
                 <Check size={14} />
                 Create
@@ -293,7 +296,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
       {/* Folders List */}
       <Box flexGrow="1" className="overflow-y-auto">
         {loading ? (
-          <Flex align="center" justify="center" style={{ height: '8rem' }}>
+          <Flex align="center" justify="center" className="h-32">
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-mission-control-accent border-t-transparent" />
           </Flex>
         ) : folders.length === 0 ? (
@@ -315,24 +318,28 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                   <Flex direction="column" gap="3">
                     <Flex gap="3">
                       {/* Icon Picker */}
-                      <Box style={{ width: '6rem' }}>
-                        <Grid columns="4" gap="1" p="1" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+                      <Box className="w-24">
+                        <div className="grid grid-cols-4 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
                           {iconOptions.map((opt) => {
                             const OptIcon = opt.icon;
                             return (
-                              <IconButton
+                              <button
                                 key={opt.value}
+                                type="button"
                                 onClick={() => setFormData({ ...formData, icon: opt.value })}
                                 title={opt.label}
-                                size="1"
-                                variant={formData.icon === opt.value ? 'soft' : 'ghost'}
                                 aria-label={opt.label}
+                                className={`flex items-center justify-center p-1.5 rounded-md transition-colors ${
+                                  formData.icon === opt.value
+                                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                                    : 'text-mission-control-text-dim hover:text-mission-control-text'
+                                }`}
                               >
                                 <OptIcon size={16} />
-                              </IconButton>
+                              </button>
                             );
                           })}
-                        </Grid>
+                        </div>
                       </Box>
 
                       <Flex direction="column" gap="2" flexGrow="1">
@@ -349,14 +356,14 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                         />
                       </Flex>
 
-                      <Box style={{ width: '7rem' }}>
+                      <Box className="w-28">
                         <Grid columns="5" gap="1" p="1" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
                           {colorOptions.map((color) => (
                             <button
                               key={color}
                               type="button"
                               onClick={() => setFormData({ ...formData, color })}
-                              className={`w-6 h-6 rounded transition-all ${
+                              className={`w-6 h-6 rounded transition-[colors,transform] ${
                                 formData.color === color ? 'ring-2 ring-white dark:ring-white/80 scale-110' : 'hover:scale-110'
                               }`}
                               style={{ backgroundColor: color }}
@@ -367,9 +374,9 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                     </Flex>
 
                     <Flex justify="end" gap="2">
-                      <Button onClick={cancelEdit} size="2" variant="ghost">
+                      <button type="button" onClick={cancelEdit} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                         Cancel
-                      </Button>
+                      </button>
                       <Button onClick={() => handleUpdate(folder.id)} size="2" variant="solid">
                         <Check size={14} />
                         Save
@@ -401,51 +408,50 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                         {folder.conversation_count} conversation{folder.conversation_count !== 1 ? 's' : ''}
                       </Text>
                     </Box>
-                    <Flex gap="1" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {onSelect && (
-                        <IconButton
+                        <button
+                          type="button"
                           onClick={() => onSelect(folder.id)}
-                          size="2"
-                          variant="ghost"
-                         
                           title="View conversations"
                           aria-label="View conversations"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
                           <Tag size={14} />
-                        </IconButton>
+                        </button>
                       )}
-                      <IconButton
+                      <button
+                        type="button"
                         onClick={() => setEditingRuleId(folder.id)}
-                        size="2"
-                        variant={folder.is_smart === 1 ? 'soft' : 'ghost'}
-                       
                         title="Smart folder rules"
                         aria-label="Smart folder rules"
+                        className={`flex items-center justify-center p-1.5 rounded-md border transition-colors ${
+                          folder.is_smart === 1
+                            ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                            : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                        }`}
                       >
                         <Zap size={14} />
-                      </IconButton>
-                      <IconButton
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => startEdit(folder)}
-                        size="2"
-                        variant="ghost"
-                       
                         title="Edit folder"
                         aria-label="Edit folder"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Edit2 size={14} />
-                      </IconButton>
-                      <IconButton
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleDelete(folder.id, folder.name)}
-                        size="2"
-                        variant="ghost"
-                        color="red"
-                       
                         title="Delete folder"
                         aria-label="Delete folder"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Trash2 size={14} />
-                      </IconButton>
-                    </Flex>
+                      </button>
+                    </div>
                   </Flex>
                 )}
               </Box>
@@ -456,8 +462,8 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
 
       {/* Smart Folder Rule Editor Modal */}
       {editingRuleId && (
-        <Flex align="center" justify="center" className="fixed inset-0 z-50 bg-black/50">
-          <Box className="w-full max-w-4xl h-[90vh] bg-mission-control-surface rounded-lg shadow-2xl overflow-hidden">
+        <Flex align="center" justify="center" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm">
+          <Box className="w-full max-w-4xl h-[90vh] bg-mission-control-surface rounded-2xl shadow-2xl overflow-hidden">
             <SmartFolderRuleEditor
               folderId={editingRuleId}
               folderName={folders.find(f => f.id === editingRuleId)?.name || 'Folder'}

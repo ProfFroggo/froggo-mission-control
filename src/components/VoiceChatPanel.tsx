@@ -9,9 +9,9 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Loader2,
   Trash2, MessageSquare, Monitor, MonitorOff, Video, VideoOff,
-  Send, Settings, Zap,
+  Send, Settings, Zap, Brain, Volume1,
 } from 'lucide-react';
-import { Button, IconButton, Select, TextField, Box, Flex } from '@radix-ui/themes';
+import { Button, Select, Box, Flex } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, fetchAgentList } from './AgentSelector';
 import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
@@ -542,7 +542,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       {Array.from({ length: bars }).map((_, i) => {
         const h = Math.max(0.12, level * (0.5 + Math.sin((Date.now() / 100) + i * 0.8) * 0.5));
         return (
-          <div key={i} className="rounded-full transition-all duration-75"
+          <div key={i} className="rounded-full transition-colors duration-75"
             style={{ width: 3, height: `${Math.max(15, h * 100)}%`, backgroundColor: color, opacity: 0.6 + h * 0.4 }} />
         );
       })}
@@ -572,9 +572,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* API Key Warning */}
       {!apiKey.current && (
-        <div className="bg-error-subtle border-b border-error-border px-4 py-3 text-center">
-          <p className="text-error text-sm font-medium">Gemini API key not configured</p>
-          <p className="text-error/80 text-xs mt-1">Add it in Settings &rarr; API Keys</p>
+        <div className="bg-[var(--color-error)]/10 border-b border-[var(--color-error)]/20 px-4 py-3 text-center">
+          <p className="text-[var(--color-error)] text-sm font-medium">Gemini API key not configured</p>
+          <p className="text-[var(--color-error)]/80 text-xs mt-1">Add it in Settings &rarr; API Keys</p>
         </div>
       )}
       
@@ -606,11 +606,12 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
 
           {callActive && (
             <Flex align="center" gap="2" className="ml-2">
-              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              <span className="text-xs text-success">Gemini Live</span>
+              <div className="w-2 h-2 rounded-full bg-[var(--color-success)] animate-pulse" />
+              <span className="text-xs text-[var(--color-success)]">Gemini Live</span>
               {agentContext && agentContext.tasks.length > 0 && (
-                <span className="text-xs tabular-nums text-mission-control-text-dim bg-mission-control-border/50 px-1.5 py-0.5 rounded-full" title={`${agentContext.tasks.length} tasks`}>
-                  🧠 {agentContext.tasks.length}
+                <span className="inline-flex items-center gap-1 text-xs tabular-nums text-mission-control-text-dim bg-mission-control-border/50 px-1.5 py-0.5 rounded-full" title={`${agentContext.tasks.length} tasks`}>
+                  <Brain size={10} aria-hidden="true" />
+                  {agentContext.tasks.length}
                 </span>
               )}
               {speaking && <Waveform level={speakLevel} color="var(--color-success)" bars={5} height={20} />}
@@ -620,51 +621,50 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
 
         <Flex align="center" gap="2">
           {onSwitchToText && (
-            <IconButton
-              variant="ghost"
-              size="2"
-              color="gray"
+            <button
+              type="button"
               onClick={onSwitchToText}
               title="Switch to text chat"
               aria-label="Switch to text chat"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <MessageSquare size={16} />
-            </IconButton>
+            </button>
           )}
 
-          <IconButton
+          <button
+            type="button"
             data-voice-settings
-            variant="ghost"
-            size="2"
-            color="gray"
             onClick={() => setShowSettings(!showSettings)}
             title="Settings"
             aria-label="Settings"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Settings size={16} />
-          </IconButton>
+          </button>
 
-          <IconButton
-            variant={muted ? 'soft' : 'ghost'}
-            size="2"
-            color={muted ? 'red' : 'gray'}
+          <button
             onClick={() => setMuted(!muted)}
             title={muted ? 'Unmute' : 'Mute'}
             aria-label={muted ? 'Unmute' : 'Mute'}
+            className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+              muted
+                ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)]'
+                : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </IconButton>
+          </button>
 
-          <IconButton
-            variant="ghost"
-            size="2"
-            color="gray"
+          <button
+            type="button"
             onClick={clearHistory}
             title="Clear history"
             aria-label="Clear history"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Trash2 size={16} />
-          </IconButton>
+          </button>
         </Flex>
       </Flex>
       
@@ -676,7 +676,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             <div>
               <label htmlFor="mic-select" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Microphone</label>
               <Select.Root value={selectedMic || '__default__'} onValueChange={val => setSelectedMic(val === '__default__' ? '' : val)} disabled={callActive} size="1">
-                <Select.Trigger id="mic-select" style={{ width: '100%' }} />
+                <Select.Trigger id="mic-select" className="w-full" />
                 <Select.Content>
                   <Select.Item value="__default__">System default</Select.Item>
                   {audioInputs.map(d => (
@@ -689,7 +689,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             <div>
               <label htmlFor="speaker-select" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Speaker</label>
               <Select.Root value={selectedSpeaker || '__default__'} onValueChange={val => setSelectedSpeaker(val === '__default__' ? '' : val)} size="1">
-                <Select.Trigger id="speaker-select" style={{ width: '100%' }} />
+                <Select.Trigger id="speaker-select" className="w-full" />
                 <Select.Content>
                   <Select.Item value="__default__">System default</Select.Item>
                   {audioOutputs.map(d => (
@@ -723,11 +723,15 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       )}
       
       {/* Messages */}
-      <div data-voice-transcript className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div data-voice-transcript className="flex-1 overflow-y-auto p-4">
         {!historyLoaded && (
           <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
-            <Loader2 className="w-6 h-6 animate-spin mb-2" />
-            <p className="text-sm">Loading history...</p>
+            <Flex gap="1" className="mb-2">
+              <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+            </Flex>
+            <p className="text-xs text-mission-control-text-dim">Loading history...</p>
           </div>
         )}
         {historyLoaded && messages.length === 0 && (
@@ -742,47 +746,64 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             />
           </div>
         )}
-        
-        {historyLoaded && messages.map(msg => (
-          <Flex key={msg.id} gap="2" justify={msg.role === 'user' ? 'end' : 'start'}>
-            {msg.role === 'assistant' && (
-              <div className="relative flex-shrink-0 mt-1">
-                <AgentAvatar agentId={selectedAgent.id} size="xs" />
-                {speaking && msg.id === messages.filter(m => m.role === 'assistant').pop()?.id && (
-                  <div className="absolute -inset-1 rounded-full border-2 border-success-border animate-pulse" />
-                )}
+
+        {historyLoaded && messages.map((msg, idx) => {
+          if (msg.role === 'system') {
+            return (
+              <div key={msg.id} className="flex justify-center my-2">
+                <span className="text-xs text-mission-control-text-dim bg-mission-control-border/50 px-3 py-1 rounded-full italic">
+                  {msg.content}
+                </span>
               </div>
-            )}
-            
-            <div className={`max-w-[80%] px-4 py-3 ${
-              msg.role === 'user' ? 'bg-mission-control-accent/10 border border-mission-control-accent/20 text-mission-control-text rounded-xl rounded-tr-sm'
-                : msg.role === 'system' ? 'bg-mission-control-border/50 text-mission-control-text-dim text-xs italic px-3 py-1.5 rounded-xl'
-                : 'bg-mission-control-surface/80 text-mission-control-text border border-mission-control-border rounded-xl rounded-tl-sm'
-            }`}>
-              {msg.role === 'assistant' && msg.content ? (
-                <MarkdownMessage content={msg.content} />
-              ) : (
-                <p className="text-sm">{msg.content || '...'}</p>
+            );
+          }
+          const prev = idx > 0 ? messages[idx - 1] : null;
+          const isNewSpeaker = !prev || prev.role !== msg.role;
+          return (
+            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} ${isNewSpeaker ? 'mt-6' : 'mt-2'}`}>
+              {msg.role === 'assistant' && (
+                <div className={`flex-shrink-0 mr-2 ${isNewSpeaker ? '' : 'invisible'}`}>
+                  <div className="relative">
+                    <AgentAvatar agentId={selectedAgent.id} size="xs" />
+                    {speaking && msg.id === messages.filter(m => m.role === 'assistant').pop()?.id && (
+                      <div className="absolute -inset-1 rounded-full border-2 border-[var(--color-success)] animate-pulse" />
+                    )}
+                  </div>
+                </div>
               )}
-              <div className="text-xs tabular-nums text-mission-control-text-dim opacity-40 mt-1">
-                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <div className={`max-w-[80%] flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                {isNewSpeaker && msg.role === 'assistant' && (
+                  <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">{selectedAgent.name}</span>
+                )}
+                {isNewSpeaker && msg.role === 'user' && (
+                  <span className="text-xs font-medium text-mission-control-accent mb-1 px-1">You</span>
+                )}
+                {msg.role === 'user' ? (
+                  <div
+                    className="text-sm px-4 py-2.5 rounded-[18px_18px_4px_18px] text-mission-control-text"
+                    style={{ background: 'color-mix(in srgb, var(--mission-control-accent) 11%, transparent)', border: '1px solid color-mix(in srgb, var(--mission-control-accent) 18%, transparent)' }}
+                  >
+                    <p>{msg.content || '...'}</p>
+                  </div>
+                ) : (
+                  <div className="text-sm text-mission-control-text">
+                    {msg.content ? <MarkdownMessage content={msg.content} /> : <span className="text-mission-control-text-dim">...</span>}
+                  </div>
+                )}
+                <div className="text-[11px] tabular-nums text-mission-control-text-dim/70 mt-1 px-1">
+                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             </div>
-            
-            {msg.role === 'user' && (
-              <div className="w-6 h-6 rounded-full bg-mission-control-accent/20 flex items-center justify-center flex-shrink-0 mt-1">
-                <Mic size={12} className="text-mission-control-accent" />
-              </div>
-            )}
-          </Flex>
-        ))}
+          );
+        })}
         
         <div ref={messagesEndRef} />
       </div>
       
       {/* Enable Audio button - shown when AudioContext is suspended */}
       {callActive && audioState === 'suspended' && (
-        <div className="px-4 py-2 border-t border-warning-border bg-warning-subtle">
+        <div className="px-4 py-2 border-t border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10">
           <Button
             variant="solid"
             color="amber"
@@ -793,53 +814,66 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             <Volume2 size={18} />
             Enable Audio
           </Button>
-          <p className="text-center text-xs text-warning/70 mt-1">Browser requires a click to play audio</p>
+          <p className="text-center text-xs text-[var(--color-warning)]/70 mt-1">Browser requires a click to play audio</p>
         </div>
       )}
       
       {/* Audio visualizer */}
       {callActive && (
-        <div className="px-4 py-3 border-t border-mission-control-border bg-mission-control-surface/50">
+        <div className="px-4 py-3 border-t border-mission-control-border bg-mission-control-surface">
           <div className="flex items-center justify-center h-12">
             {listening && !speaking && (
               <Flex align="center" gap="3">
-                <span className="flex items-center gap-1 text-xs text-mission-control-accent font-medium"><Zap size={12} /> Listening…</span>
+                {/* Listening pill badge */}
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-error)]/10 text-[var(--color-error)] text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-error)] animate-pulse" />
+                  Listening
+                </span>
                 <Waveform level={micLevel} color="var(--color-info)" bars={12} height={40} />
               </Flex>
             )}
             {speaking && (
               <Flex align="center" gap="3">
-                <span className="text-xs text-success font-medium">{selectedAgent.name} speaking</span>
+                {/* Speaking pill badge */}
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)] text-xs font-medium">
+                  <Volume1 size={12} aria-hidden="true" />
+                  {selectedAgent.name} speaking
+                </span>
                 <Waveform level={speakLevel} color="var(--color-success)" bars={12} height={40} />
               </Flex>
             )}
-            {!listening && !speaking && <span className="text-xs text-mission-control-text-dim">Tap mic to speak</span>}
+            {connecting && !listening && !speaking && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] text-xs font-medium">
+                <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+                Processing
+              </span>
+            )}
+            {!listening && !speaking && !connecting && <span className="text-xs text-mission-control-text-dim">Tap mic to speak</span>}
           </div>
         </div>
       )}
       
       {/* Text input (during call) */}
       {callActive && (
-        <div className="px-4 py-3 border-t border-mission-control-border">
-          <Flex gap="2">
-            <TextField.Root
+        <div className="border-t border-mission-control-border bg-mission-control-bg px-4 py-3">
+          <Flex gap="2" align="center">
+            <input
+              type="text"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSendText()}
               placeholder="Type a message (optional)…"
-              className="flex-1"
+              className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-[14px] px-4 py-3 text-sm text-mission-control-text placeholder:text-mission-control-text-dim outline-none focus:border-[var(--mission-control-accent)] focus:ring-2 focus:ring-[var(--mission-control-accent)]/20 transition-colors"
             />
-            <IconButton
-              variant="solid"
-              size="3"
-              color="grass"
+            <button
               onClick={handleSendText}
               disabled={!textInput.trim()}
               title="Send text"
               aria-label="Send text"
+              className="w-8 h-8 rounded-lg bg-[var(--mission-control-accent)] text-white flex items-center justify-center hover:opacity-85 transition-opacity disabled:opacity-40 flex-shrink-0"
             >
-              <Send size={20} />
-            </IconButton>
+              <Send size={16} />
+            </button>
           </Flex>
         </div>
       )}
@@ -848,59 +882,64 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       <div className="border-t border-mission-control-border p-4">
         <Flex align="center" justify="center" gap="4">
           {callActive && (
-            <IconButton
+            <button
               data-voice-meeting
-              variant={listening ? 'solid' : 'soft'}
-              size="4"
-              color={listening ? 'blue' : 'gray'}
               onClick={toggleMic}
               disabled={speaking}
               title={listening ? 'Pause mic' : 'Resume mic'}
               aria-label={listening ? 'Pause mic' : 'Resume mic'}
-              className="rounded-full p-4"
+              className={`inline-flex items-center justify-center w-14 h-14 rounded-full p-4 transition-colors ${
+                listening
+                  ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)] ring-2 ring-[var(--color-error)]/50 ring-offset-2 ring-offset-mission-control-bg animate-pulse'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+              }`}
             >
               {listening ? <Mic size={22} /> : <MicOff size={22} />}
-            </IconButton>
+            </button>
           )}
 
-          <IconButton
+          <button
+            type="button"
             data-voice-orb
-            variant="solid"
-            size="4"
-            color={callActive ? 'red' : 'grass'}
             onClick={() => callActive ? endCall() : startCall()}
             disabled={connecting}
             title={callActive ? 'End call' : 'Start call'}
             aria-label={callActive ? 'End call' : 'Start call'}
-            className="rounded-full p-5"
+            className={`rounded-full p-5 flex items-center justify-center transition-colors ${
+              callActive
+                ? 'bg-[var(--color-error)] hover:bg-[var(--color-error)]/90 text-white'
+                : 'bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white'
+            } disabled:opacity-50`}
           >
             {connecting ? <Loader2 size={26} className="animate-spin" /> : callActive ? <PhoneOff size={26} /> : <Phone size={26} />}
-          </IconButton>
+          </button>
 
           {callActive && (
             <>
-              <IconButton
-                variant={videoActive && geminiLive.videoMode === 'screen' ? 'solid' : 'soft'}
-                size="4"
-                color={videoActive && geminiLive.videoMode === 'screen' ? 'blue' : 'gray'}
+              <button
                 onClick={toggleScreenShare}
                 title="Screen share"
                 aria-label="Screen share"
-                className="rounded-full p-4"
+                className={`inline-flex items-center justify-center w-14 h-14 rounded-full p-4 transition-colors ${
+                  videoActive && geminiLive.videoMode === 'screen'
+                    ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+                }`}
               >
                 {videoActive && geminiLive.videoMode === 'screen' ? <MonitorOff size={22} /> : <Monitor size={22} />}
-              </IconButton>
-              <IconButton
-                variant={videoActive && geminiLive.videoMode === 'camera' ? 'solid' : 'soft'}
-                size="4"
-                color={videoActive && geminiLive.videoMode === 'camera' ? 'violet' : 'gray'}
+              </button>
+              <button
                 onClick={toggleVideo}
                 title="Camera"
                 aria-label="Camera"
-                className="rounded-full p-4"
+                className={`inline-flex items-center justify-center w-14 h-14 rounded-full p-4 transition-colors ${
+                  videoActive && geminiLive.videoMode === 'camera'
+                    ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+                }`}
               >
                 {videoActive && geminiLive.videoMode === 'camera' ? <VideoOff size={22} /> : <Video size={22} />}
-              </IconButton>
+              </button>
             </>
           )}
         </Flex>

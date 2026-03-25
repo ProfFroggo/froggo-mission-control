@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { ShieldQuestion, Check, Lock, X, MessageSquare } from 'lucide-react';
-import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 
 export interface ToolPermissionRequest {
   approvalId: string;
@@ -25,7 +25,7 @@ function formatToolName(raw: string): { name: string; server: string } {
   return { name: raw.replace(/_/g, ' '), server: '' };
 }
 
-export default function ToolPermissionCard({ request, onResolved }: ToolPermissionCardProps) {
+const ToolPermissionCard = memo(function ToolPermissionCard({ request, onResolved }: ToolPermissionCardProps) {
   const [loading, setLoading] = useState(false);
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -33,7 +33,7 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
 
   const { name, server } = formatToolName(request.toolName);
 
-  const resolve = async (action: 'grant' | 'grant_session' | 'reject' | 'reject_reason', reason?: string) => {
+  const resolve = useCallback(async (action: 'grant' | 'grant_session' | 'reject' | 'reject_reason', reason?: string) => {
     setLoading(true);
     try {
       await fetch(`/api/agents/${request.agentId}/tools/approve`, {
@@ -55,20 +55,20 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
     } finally {
       setLoading(false);
     }
-  };
+  }, [request, onResolved]);
 
   if (resolved) {
     return (
-      <Flex align="center" gap="2" className="px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-surface/60 text-xs text-mission-control-text-dim">
+      <Flex align="center" gap="2" className="px-3 py-2 rounded-xl border border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim">
         {resolved === 'rejected' ? (
           <>
-            <Lock size={13} className="text-error shrink-0" />
+            <Lock size={13} className="text-[var(--color-error)] shrink-0" />
             <span className="font-mono opacity-70">{name}</span>
             <span>— access denied</span>
           </>
         ) : (
           <>
-            <Check size={13} className="text-success shrink-0" />
+            <Check size={13} className="text-[var(--color-success)] shrink-0" />
             <span className="font-mono opacity-70">{name}</span>
             <span>— {resolved === 'granted' ? 'permanently granted' : 'granted for this session'}</span>
             <span className="ml-auto opacity-60">Resend your message to continue</span>
@@ -79,18 +79,18 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
   }
 
   return (
-    <div className="rounded-lg border border-info/30 bg-info/5 p-3 space-y-2.5 text-sm">
+    <div className="rounded-xl border border-[var(--color-info)]/30 bg-mission-control-surface p-3 space-y-2.5 text-sm hover:border-mission-control-accent/20 transition-colors">
       {/* Header */}
       <div className="flex items-start gap-2.5">
-        <ShieldQuestion size={16} className="text-info mt-0.5 shrink-0" />
+        <ShieldQuestion size={16} className="text-[var(--color-info)] mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-mission-control-text">Tool Permission Required</span>
             {server && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-info/10 text-info font-mono">{server}</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 font-mono">{server}</span>
             )}
           </div>
-          <p className="text-mission-control-text-dim mt-0.5">
+          <p className="text-xs text-mission-control-text-dim mt-0.5">
             <span className="font-mono text-mission-control-text">{name}</span>
             {request.reason && <> — {request.reason}</>}
           </p>
@@ -118,14 +118,13 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
           >
             Send
           </Button>
-          <IconButton
+          <button
+            type="button"
             onClick={() => setShowRejectInput(false)}
-            variant="ghost"
-            size="2"
-           
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={12} />
-          </IconButton>
+          </button>
         </Flex>
       )}
 
@@ -162,17 +161,19 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
             <X size={12} />
             Reject
           </Button>
-          <Button
+          <button
+            type="button"
             onClick={() => setShowRejectInput(true)}
             disabled={loading}
-            variant="ghost"
-            size="1"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <MessageSquare size={12} />
             Reject with Reason
-          </Button>
+          </button>
         </div>
       )}
     </div>
   );
-}
+});
+
+export default ToolPermissionCard;

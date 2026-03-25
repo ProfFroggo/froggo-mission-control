@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, IconButton, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
+import { Button, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
 import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star, StarOff, LayoutTemplate } from 'lucide-react';
 import EmptyState from './EmptyState';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -27,8 +27,8 @@ interface Template {
 
 const typeConfig: Record<string, { icon: any; color: string; label: string }> = {
   tweet: { icon: XIcon, color: 'text-white', label: 'Post' },
-  email: { icon: Mail, color: 'text-error', label: 'Email' },
-  message: { icon: MessageSquare, color: 'text-success', label: 'Message' },
+  email: { icon: Mail, color: 'text-[var(--color-error)]', label: 'Email' },
+  message: { icon: MessageSquare, color: 'text-[var(--color-success)]', label: 'Message' },
   generic: { icon: FileText, color: 'text-mission-control-text-dim', label: 'Generic' },
 };
 
@@ -172,7 +172,7 @@ export default function LibraryTemplatesTab() {
   return (
     <Flex direction="column" height="100%">
       {/* Toolbar */}
-      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
+      <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
         <Flex align="center" justify="between" className="mb-4">
           <p className="text-sm text-mission-control-text-dim">
             Reusable content templates
@@ -215,7 +215,7 @@ export default function LibraryTemplatesTab() {
       </div>
 
       {/* Templates List */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4">
         {sortedTemplates.length === 0 ? (
           <EmptyState icon={LayoutTemplate} title="No templates" description="Create your first template" />
         ) : (
@@ -228,7 +228,7 @@ export default function LibraryTemplatesTab() {
               return (
                 <div
                   key={template.id}
-                  className={`p-4 rounded-lg border transition-all ${
+                  className={`p-4 rounded-xl border transition-colors cursor-pointer ${
                     isEditing
                       ? 'bg-mission-control-accent/5 border-mission-control-accent/30'
                       : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/30'
@@ -246,21 +246,20 @@ export default function LibraryTemplatesTab() {
                           variant="soft"
                         />
                       ) : (
-                        <span className="font-medium">{template.name}</span>
+                        <span className="text-sm font-semibold text-mission-control-text truncate">{template.name}</span>
                       )}
                     </Flex>
-                    <IconButton
+                    <button
                       onClick={() => handleStar(template.id)}
-                      size="1"
-                      variant="ghost"
-                     
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                      title={template.starred ? 'Unstar' : 'Star'}
                     >
                       {template.starred ? (
-                        <Star size={14} className="text-warning fill-yellow-400" />
+                        <Star size={14} className="text-[var(--color-warning)] fill-yellow-400" />
                       ) : (
                         <StarOff size={14} className="text-mission-control-text-dim" />
                       )}
-                    </IconButton>
+                    </button>
                   </Flex>
 
                   {/* Content */}
@@ -268,8 +267,7 @@ export default function LibraryTemplatesTab() {
                     <TextArea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full"
-                      style={{ height: '6rem' }}
+                      className="w-full h-24"
                       resize="none"
                       size="1"
                     />
@@ -285,7 +283,7 @@ export default function LibraryTemplatesTab() {
                       {template.tags.map(tag => (
                         <span
                           key={tag}
-                          className="px-2 py-0.5 bg-mission-control-border text-mission-control-text-dim text-xs rounded"
+                          className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/30 text-mission-control-text-dim"
                         >
                           {tag}
                         </span>
@@ -301,14 +299,12 @@ export default function LibraryTemplatesTab() {
                     <Flex gap="1">
                       {isEditing ? (
                         <>
-                          <Button
+                          <button
                             onClick={() => setEditingId(null)}
-                            size="1"
-                            variant="ghost"
-                            color="gray"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                           >
                             Cancel
-                          </Button>
+                          </button>
                           <Button
                             onClick={handleSave}
                             size="1"
@@ -319,34 +315,27 @@ export default function LibraryTemplatesTab() {
                         </>
                       ) : (
                         <>
-                          <IconButton
+                          <button
                             onClick={() => handleCopy(template)}
-                            size="1"
-                            variant="ghost"
-                           
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                             title="Copy"
                           >
                             <Copy size={14} />
-                          </IconButton>
-                          <IconButton
+                          </button>
+                          <button
                             onClick={() => handleEdit(template)}
-                            size="1"
-                            variant="ghost"
-                           
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                             title="Edit"
                           >
                             <Edit3 size={14} />
-                          </IconButton>
-                          <IconButton
+                          </button>
+                          <button
                             onClick={() => handleDelete(template.id)}
-                            size="1"
-                            variant="ghost"
-                            color="red"
-                           
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
                             title="Delete"
                           >
                             <Trash2 size={14} />
-                          </IconButton>
+                          </button>
                         </>
                       )}
                     </Flex>
@@ -360,8 +349,8 @@ export default function LibraryTemplatesTab() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div className="fixed inset-0 modal-backdrop backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="glass-modal rounded-2xl w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-md p-6">
             <h2 className="text-lg font-semibold mb-4">New Template</h2>
             <div className="space-y-4">
               <div>
@@ -392,8 +381,7 @@ export default function LibraryTemplatesTab() {
                   id="template-content"
                   value={newTemplate.content}
                   onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
-                  className="w-full"
-                  style={{ height: '8rem' }}
+                  className="w-full h-32"
                   resize="none"
                   placeholder="Use {variable} for placeholders"
                   size="2"
@@ -401,14 +389,13 @@ export default function LibraryTemplatesTab() {
               </div>
             </div>
             <Flex justify="end" gap="2" className="mt-6">
-              <Button
+              <button
+                type="button"
                 onClick={() => setShowCreate(false)}
-                size="2"
-                variant="ghost"
-                color="gray"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 Cancel
-              </Button>
+              </button>
               <Button
                 onClick={handleCreate}
                 disabled={!newTemplate.name || !newTemplate.content}

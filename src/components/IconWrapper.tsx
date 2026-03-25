@@ -35,7 +35,7 @@ interface IconWrapperProps {
  * Usage:
  * ```tsx
  * <IconWrapper icon={Plus} size="sm" />
- * <IconWrapper icon={AlertTriangle} size="md" className="text-error" />
+ * <IconWrapper icon={AlertTriangle} size="md" className="text-[var(--color-error)]" />
  * ```
  */
 export function IconWrapper({ icon: Icon, size = 'sm', className = '', customSize }: IconWrapperProps) {
@@ -65,7 +65,7 @@ interface IconTextProps {
  * Usage:
  * ```tsx
  * <IconText icon={Plus} iconSize="sm">Add Task</IconText>
- * <IconText icon={User} spacing="tight" iconClassName="text-info">3 users</IconText>
+ * <IconText icon={User} spacing="tight" iconClassName="text-[var(--color-info)]">3 users</IconText>
  * ```
  */
 export function IconText({ 
@@ -128,7 +128,7 @@ export function IconButton({
   const variantClass = {
     default: '',
     primary: 'bg-mission-control-accent text-white hover:bg-mission-control-accent/90',
-    danger: 'text-error hover:bg-error-subtle',
+    danger: 'text-[var(--color-error)] hover:bg-[var(--color-error)]/10',
     ghost: 'hover:bg-transparent hover:text-mission-control-accent',
   }[variant];
   

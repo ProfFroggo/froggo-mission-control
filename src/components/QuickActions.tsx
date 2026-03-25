@@ -3,7 +3,7 @@ import {
   MessageSquare, CheckCircle, Search, Send, X,
   ChevronLeft, ChevronRight, GripVertical, Mic, MicOff, Phone, PhoneOff, ListTodo, Play, Sparkles, Monitor, Camera, CameraOff,
 } from 'lucide-react';
-import { IconButton, Button, Text, Flex, TextArea, Select, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, Text, Flex, TextArea, Select, Spinner } from '@radix-ui/themes';
 import { TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
@@ -108,9 +108,9 @@ const VIEW_AGENT_SUGGESTIONS: Record<string, string[]> = {
 // Task quick-status options
 const TASK_STATUSES = [
   { label: 'To Do', value: 'todo', icon: ListTodo, color: 'text-mission-control-text-dim' },
-  { label: 'In Progress', value: 'in-progress', icon: Play, color: 'text-info' },
-  { label: 'Review', value: 'review', icon: Search, color: 'text-warning' },
-  { label: 'Done', value: 'done', icon: CheckCircle, color: 'text-success' },
+  { label: 'In Progress', value: 'in-progress', icon: Play, color: 'text-[var(--color-info)]' },
+  { label: 'Review', value: 'review', icon: Search, color: 'text-[var(--color-warning)]' },
+  { label: 'Done', value: 'done', icon: CheckCircle, color: 'text-[var(--color-success)]' },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -217,19 +217,21 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
           {activeCall ? 'Active Call' : 'Call Agent'}
         </Text>
         <Flex align="center" gap="1">
-          <IconButton
-            variant={showSettings ? 'soft' : 'ghost'}
-            color={showSettings ? 'indigo' : 'gray'}
-            size="1"
+          <button
             onClick={() => setShowSettings(s => !s)}
             title="Mic settings"
             aria-label="Microphone settings"
+            className={`inline-flex items-center justify-center w-6 h-6 rounded transition-colors ${
+              showSettings
+                ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Mic size={13} />
-          </IconButton>
-          <IconButton variant="ghost" color="gray" size="1" onClick={onClose} aria-label="Close">
+          </button>
+          <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <X size={14} />
-          </IconButton>
+          </button>
         </Flex>
       </Flex>
 
@@ -258,20 +260,21 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
       )}
 
       {activeCall && (
-        <Flex align="center" gap="2" className="mb-2 p-2 bg-error-subtle border border-error-border rounded-lg">
-          <span className="w-2 h-2 bg-error rounded-full animate-pulse" />
-          <span className="text-xs text-error">In call with {activeCall.agentName}</span>
+        <Flex align="center" gap="2" className="mb-2 p-2 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
+          <span className="w-2 h-2 bg-[var(--color-error)] rounded-full animate-pulse" />
+          <span className="text-xs text-[var(--color-error)]">In call with {activeCall.agentName}</span>
         </Flex>
       )}
       <div className="space-y-1">
         {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
-          <Button
+          <button
             key={agent.id}
             onClick={() => onSelect(agent)}
-            variant={activeCall?.agentId === agent.id ? 'soft' : 'ghost'}
-            color={activeCall?.agentId === agent.id ? 'red' : 'gray'}
-            size="1"
-            style={{ width: '100%', justifyContent: 'flex-start' }}
+            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs font-medium border transition-colors ${
+              activeCall?.agentId === agent.id
+                ? 'bg-destructive/10 border-destructive/30 text-destructive'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+            }`}
           >
             <AgentAvatar agentId={agent.id} size="sm" />
             <div className="flex-1 min-w-0 text-left">
@@ -279,9 +282,9 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
               <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>
             </div>
             {activeCall?.agentId === agent.id && (
-              <PhoneOff size={14} className="text-error" />
+              <PhoneOff size={14} className="text-[var(--color-error)]" />
             )}
-          </Button>
+          </button>
         ))}
       </div>
     </div>
@@ -315,9 +318,9 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
           <Sparkles size={14} className="text-mission-control-accent" />
           Context Chat
         </Text>
-        <IconButton variant="ghost" color="gray" size="1" onClick={onClose} aria-label="Close">
+        <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
           <X size={14} />
-        </IconButton>
+        </button>
       </Flex>
 
       {/* Context indicator */}
@@ -333,17 +336,18 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
         </div>
         <div className="flex gap-1.5 flex-wrap">
           {suggestedAgents.map(agent => (
-            <Button
+            <button
               key={agent.id}
               onClick={() => setSelectedAgent(agent)}
-              variant={selectedAgent.id === agent.id ? 'solid' : 'soft'}
-              color={selectedAgent.id === agent.id ? 'violet' : 'gray'}
-              size="1"
-              radius="full"
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                selectedAgent.id === agent.id
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+              }`}
             >
               <AgentAvatar agentId={agent.id} size="xs" />
               {agent.name}
-            </Button>
+            </button>
           ))}
           <Button
             onClick={() => setShowAllAgents(!showAllAgents)}
@@ -358,17 +362,18 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
         {showAllAgents && (
           <div className="flex gap-1.5 flex-wrap mt-1.5">
             {fetchAgentList().filter(a => !suggestedAgentIds.includes(a.id)).map(agent => (
-              <Button
+              <button
                 key={agent.id}
                 onClick={() => { setSelectedAgent(agent); setShowAllAgents(false); }}
-                variant={selectedAgent.id === agent.id ? 'solid' : 'soft'}
-                color={selectedAgent.id === agent.id ? 'violet' : 'gray'}
-                size="1"
-                radius="full"
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  selectedAgent.id === agent.id
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                }`}
               >
                 <AgentAvatar agentId={agent.id} size="xs" />
                 {agent.name}
-              </Button>
+              </button>
             ))}
           </div>
         )}
@@ -459,9 +464,9 @@ function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
           <ListTodo size={14} className="text-mission-control-accent" />
           Task Shortcuts
         </Text>
-        <IconButton variant="ghost" color="gray" size="1" onClick={onClose} aria-label="Close">
+        <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
           <X size={14} />
-        </IconButton>
+        </button>
       </Flex>
 
       {/* Quick status filters */}
@@ -491,16 +496,18 @@ function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
               <div className="text-xs font-medium truncate mb-1">{task.title}</div>
               <div className="flex gap-1 flex-wrap">
                 {TASK_STATUSES.map(s => (
-                  <Button
+                  <button
                     key={s.value}
                     onClick={() => updateTaskStatus(task.id, s.value)}
-                    variant={task.status === s.value ? 'solid' : 'soft'}
-                    color={task.status === s.value ? 'violet' : 'gray'}
-                    size="1"
                     title={`Set to ${s.label}`}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${
+                      task.status === s.value
+                        ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                        : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                    }`}
                   >
                     {s.label}
-                  </Button>
+                  </button>
                 ))}
               </div>
             </div>
@@ -1045,9 +1052,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <MessageSquare size={16} className="text-mission-control-accent" />
               Quick Message
             </Text>
-            <IconButton variant="ghost" color="gray" size="1" onClick={() => setQuickMessageOpen(false)} aria-label="Close">
+            <button type="button" onClick={() => setQuickMessageOpen(false)} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={16} />
-            </IconButton>
+            </button>
           </Flex>
           <TextArea
             value={quickMessage}
@@ -1106,10 +1113,10 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 <img
                   src={`/api/agents/${activeCall.agentId}/avatar`}
                   alt={activeCall.agentName}
-                  className={`w-32 h-32 rounded-full object-cover border-4 transition-all duration-300 ${
-                    callRinging ? 'border-warning animate-pulse scale-95'
-                    : callSpeaking ? 'border-success scale-110 shadow-lg'
-                    : callListening ? 'border-info scale-105 shadow-lg'
+                  className={`w-32 h-32 rounded-full object-cover border-4 transition-colors duration-300 ${
+                    callRinging ? 'border-[var(--color-warning)] animate-pulse scale-95'
+                    : callSpeaking ? 'border-[var(--color-success)] scale-110 shadow-lg'
+                    : callListening ? 'border-[var(--color-info)] scale-105 shadow-lg'
                     : 'border-mission-control-border'
                   }`}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -1127,7 +1134,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                   </div>
                 </div>
                 {callVideoMode !== 'none' && (
-                  <span className="text-xs bg-success-subtle text-white px-2 py-0.5 rounded-full">
+                  <span className="text-xs bg-[var(--color-success)]/10 text-white px-2 py-0.5 rounded-full">
                     {callVideoMode === 'screen' ? 'Screen' : 'Camera'}
                   </span>
                 )}
@@ -1135,16 +1142,14 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             </div>
 
             {/* Close button */}
-            <IconButton
-              variant="ghost"
-              color="gray"
-              size="1"
+            <button
+              type="button"
               onClick={() => setCallDialogOpen(false)}
-              className="absolute top-2 right-2 bg-black/40 hover:bg-black/60 text-white/80 hover:text-white"
+              className="absolute top-2 right-2 inline-flex items-center justify-center w-5 h-5 rounded-md bg-black/40 hover:bg-black/60 text-white/80 hover:text-white transition-colors"
               aria-label="Close call window"
             >
               <X size={12} />
-            </IconButton>
+            </button>
           </div>
 
           {/* Transcript */}
@@ -1169,36 +1174,42 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
           {/* Controls bar */}
           <Flex align="center" justify="center" gap="3" className="px-3 py-3 border-t border-mission-control-border bg-mission-control-bg/50">
-            <IconButton
-              variant={callMuted ? 'soft' : 'ghost'}
-              color={callMuted ? 'red' : 'gray'}
-              size="2"
+            <button
               onClick={toggleCallMute}
               disabled={!callConnected}
               title={callMuted ? 'Unmute' : 'Mute'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                callMuted
+                  ? 'bg-destructive/10 border border-destructive/30 text-destructive'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {callMuted ? <MicOff size={16} /> : <Mic size={16} />}
-            </IconButton>
-            <IconButton
-              variant={callVideoMode === 'screen' ? 'soft' : 'ghost'}
-              color={callVideoMode === 'screen' ? 'green' : 'gray'}
-              size="2"
+            </button>
+            <button
               onClick={toggleCallScreen}
               disabled={!callConnected}
               title="Share Screen"
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                callVideoMode === 'screen'
+                  ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               <Monitor size={16} />
-            </IconButton>
-            <IconButton
-              variant={callVideoMode === 'camera' ? 'soft' : 'ghost'}
-              color={callVideoMode === 'camera' ? 'green' : 'gray'}
-              size="2"
+            </button>
+            <button
               onClick={toggleCallCamera}
               disabled={!callConnected}
               title="Camera"
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                callVideoMode === 'camera'
+                  ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {callVideoMode === 'camera' ? <CameraOff size={16} /> : <Camera size={16} />}
-            </IconButton>
+            </button>
             <IconButton
               variant="solid"
               color="red"
@@ -1228,26 +1239,24 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <MessageSquare size={14} className="text-mission-control-accent" />
               Chat with Agent
             </Text>
-            <IconButton variant="ghost" color="gray" size="1" onClick={() => setAgentChatModalOpen(false)} aria-label="Close">
+            <button type="button" onClick={() => setAgentChatModalOpen(false)} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={14} />
-            </IconButton>
+            </button>
           </Flex>
           <div className="space-y-1">
             {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
-              <Button
+              <button
                 key={agent.id}
+                type="button"
                 onClick={() => handleStartAgentChat(agent)}
-                variant="ghost"
-                color="gray"
-                size="1"
-                style={{ width: '100%', justifyContent: 'flex-start' }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors w-full"
               >
                 <AgentAvatar agentId={agent.id} size="sm" />
                 <div className="flex-1 min-w-0 text-left">
                   <div className="font-medium text-xs">{agent.name}</div>
                   <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>
                 </div>
-              </Button>
+              </button>
             ))}
           </div>
         </div>
@@ -1265,9 +1274,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 <div className="text-xs text-mission-control-text-dim">{chatLoading ? 'Typing...' : 'Online'}</div>
               </div>
             </Flex>
-            <IconButton variant="ghost" color="gray" size="1" onClick={() => setAgentChatOpen(false)} aria-label="Close chat">
+            <button type="button" onClick={() => setAgentChatOpen(false)} aria-label="Close chat" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={12} />
-            </IconButton>
+            </button>
           </Flex>
 
           {/* Messages */}
@@ -1343,7 +1352,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* ─── Toolbar Pill ─── */}
       <div
-        className={`flex items-center gap-1 bg-mission-control-surface border border-mission-control-border rounded-full transition-all duration-300 px-1.5 py-1 ${
+        className={`flex items-center gap-1 bg-mission-control-surface border border-mission-control-border rounded-full transition-colors duration-300 px-1.5 py-1 ${
           isFloating ? 'shadow-none' : 'shadow-lg'
         } ${dragging ? 'cursor-grabbing shadow-2xl scale-105 opacity-90' : ''}`}
         style={isFloating ? noDrag : {}}
@@ -1361,101 +1370,98 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         {state.isCollapsed ? (
           <>
             {/* Primary: Call button (collapsed) */}
-            <IconButton
+            <button
               onClick={() => {
                 closeAllModals();
                 if (activeCall) { setCallDialogOpen(!callDialogOpen); }
                 else { setAgentCallModalOpen(!agentCallModalOpen); }
               }}
-              size="2"
-              variant={callRinging ? 'solid' : activeCall ? 'solid' : 'ghost'}
-              color={callRinging ? 'yellow' : activeCall ? 'red' : 'gray'}
-              radius="full"
               title={activeCall ? activeCall.agentName : 'Call Agent'}
-              className={callRinging ? 'animate-pulse' : ''}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                callRinging || activeCall
+                  ? 'bg-destructive/10 border border-destructive/30 text-destructive'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              } ${callRinging ? 'animate-pulse' : ''}`}
               style={isFloating ? noDrag : {}}
             >
               {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
-            </IconButton>
+            </button>
             {activeCall && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-error" style={isFloating ? noDrag : {}}>
-                <span className="w-1.5 h-1.5 bg-error rounded-full animate-pulse" />
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-error)]" style={isFloating ? noDrag : {}}>
+                <span className="w-1.5 h-1.5 bg-[var(--color-error)] rounded-full animate-pulse" />
                 {activeCall.agentName}
               </span>
             )}
-            <IconButton
+            <button
+              type="button"
               onClick={toggleCollapse}
-              size="2"
-              variant="ghost"
-              color="gray"
-              radius="full"
               title="Expand toolbar"
               style={isFloating ? noDrag : {}}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <ChevronLeft size={16} />
-            </IconButton>
+            </button>
           </>
         ) : (
           <>
             {/* Standard actions */}
-            <IconButton
+            <button
+              type="button"
               onClick={onSearch}
-              size="2"
-              variant="ghost"
-              color="gray"
-              radius="full"
               title="Search (⌘/)"
               style={isFloating ? noDrag : {}}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <Search size={16} />
-            </IconButton>
+            </button>
 
             {/* Agent Chat button */}
-            <IconButton
+            <button
               onClick={() => {
                 closeAllModals();
                 if (agentChatOpen) { setAgentChatOpen(false); }
                 else { setAgentChatModalOpen(!agentChatModalOpen); }
               }}
-              size="2"
-              variant={agentChatOpen || agentChatModalOpen ? 'soft' : 'ghost'}
-              color={agentChatOpen || agentChatModalOpen ? 'violet' : 'gray'}
-              radius="full"
               title="Chat with Agent"
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                agentChatOpen || agentChatModalOpen
+                  ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
               style={isFloating ? noDrag : {}}
             >
               <MessageSquare size={16} />
-            </IconButton>
+            </button>
 
             {/* Primary: Call button */}
-            <IconButton
+            <button
               onClick={() => {
                 closeAllModals();
                 if (activeCall) { setCallDialogOpen(!callDialogOpen); }
                 else { setAgentCallModalOpen(!agentCallModalOpen); }
               }}
-              size="2"
-              variant={callRinging ? 'solid' : activeCall ? 'solid' : agentCallModalOpen ? 'soft' : 'ghost'}
-              color={callRinging ? 'yellow' : activeCall ? 'red' : agentCallModalOpen ? 'violet' : 'gray'}
-              radius="full"
               title={activeCall ? `In call with ${activeCall.agentName}` : 'Call Agent'}
-              className={callRinging ? 'animate-pulse' : ''}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                callRinging || activeCall
+                  ? 'bg-destructive/10 border border-destructive/30 text-destructive'
+                  : agentCallModalOpen
+                    ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              } ${callRinging ? 'animate-pulse' : ''}`}
               style={isFloating ? noDrag : {}}
             >
               {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
-            </IconButton>
+            </button>
 
-            <IconButton
+            <button
+              type="button"
               onClick={toggleCollapse}
-              size="2"
-              variant="ghost"
-              color="gray"
-              radius="full"
               title="Collapse toolbar"
               style={isFloating ? noDrag : {}}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <ChevronRight size={16} />
-            </IconButton>
+            </button>
           </>
         )}
       </div>
@@ -1481,7 +1487,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   return (
     <div
       ref={toolbarRef}
-      className={`fixed z-40 ${dragging ? '' : 'transition-all duration-300 ease-out'}`}
+      className={`fixed z-40 ${dragging ? '' : 'transition-colors duration-300 ease-out'}`}
       style={{ ...snapStyle, position: 'fixed' }}
     >
       {pillContent}

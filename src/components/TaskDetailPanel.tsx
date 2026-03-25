@@ -776,21 +776,21 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   // Activity icon based on action type
   const getActivityIcon = (action: string) => {
     switch (action) {
-      case 'task_started': return <Play size={14} className="text-success" />;
-      case 'task_completed': return <CheckCircle size={14} className="text-success" />;
-      case 'subtask_added': return <Plus size={14} className="text-info" />;
-      case 'subtask_completed': return <Check size={14} className="text-success" />;
-      case 'subtask_uncompleted': return <XCircle size={14} className="text-warning" />;
-      case 'subtask_deleted': return <X size={14} className="text-error" />;
-      case 'reviewer_assigned': return <Eye size={14} className="text-review" />;
-      case 'review_status': return <Eye size={14} className="text-review" />;
-      case 'review-approved': return <CheckCircle size={14} className="text-success" />;
-      case 'review-rejected': return <XCircle size={14} className="text-error" />;
-      case 'pre-review-approved': return <CheckCircle size={14} className="text-info" />;
-      case 'pre-review-rejected': return <XCircle size={14} className="text-warning" />;
-      case 'pre-review-timeout': return <Activity size={14} className="text-warning" />;
+      case 'task_started': return <Play size={14} className="text-[var(--color-success)]" />;
+      case 'task_completed': return <CheckCircle size={14} className="text-[var(--color-success)]" />;
+      case 'subtask_added': return <Plus size={14} className="text-[var(--color-info)]" />;
+      case 'subtask_completed': return <Check size={14} className="text-[var(--color-success)]" />;
+      case 'subtask_uncompleted': return <XCircle size={14} className="text-[var(--color-warning)]" />;
+      case 'subtask_deleted': return <X size={14} className="text-[var(--color-error)]" />;
+      case 'reviewer_assigned': return <Eye size={14} className="text-[var(--color-review)]" />;
+      case 'review_status': return <Eye size={14} className="text-[var(--color-review)]" />;
+      case 'review-approved': return <CheckCircle size={14} className="text-[var(--color-success)]" />;
+      case 'review-rejected': return <XCircle size={14} className="text-[var(--color-error)]" />;
+      case 'pre-review-approved': return <CheckCircle size={14} className="text-[var(--color-info)]" />;
+      case 'pre-review-rejected': return <XCircle size={14} className="text-[var(--color-warning)]" />;
+      case 'pre-review-timeout': return <Activity size={14} className="text-[var(--color-warning)]" />;
       case 'agent_message': return <Bot size={14} className="text-mission-control-accent" />;
-      case 'progress': return <Activity size={14} className="text-warning" />;
+      case 'progress': return <Activity size={14} className="text-[var(--color-warning)]" />;
       default: return <MessageSquare size={14} className="text-mission-control-text-dim" />;
     }
   };
@@ -799,7 +799,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     <>
     {/* Backdrop — aria-hidden so screen readers skip it; click closes dialog */}
     {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
     {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
     <div
       ref={focusTrapRef as React.RefObject<HTMLDivElement>}
@@ -807,23 +807,40 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       aria-modal="true"
       aria-labelledby={panelTitleId}
       tabIndex={-1}
-      className="fixed z-50 inset-x-0 bottom-0 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-[700px] md:max-w-[95vw] h-[95dvh] md:h-auto md:max-h-[90vh] bg-mission-control-surface border border-mission-control-border md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom md:zoom-in-95 duration-200 outline-none"
+      className="fixed z-50 inset-x-0 bottom-0 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-[1100px] md:max-w-[95vw] h-[95dvh] md:h-auto md:max-h-[90vh] bg-mission-control-surface border border-mission-control-border md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom md:zoom-in-95 duration-200 outline-none"
       onClick={e => e.stopPropagation()}
     >
       {/* Header */}
-      <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-bg rounded-t-2xl flex-shrink-0">
+      <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-surface rounded-t-2xl flex-shrink-0">
         {/* Row 1: badges + close */}
         <Flex align="center" gap="2" className="mb-1.5">
           <ActiveAgentIndicator taskId={task.id} showLabel size="sm" />
-          <span className={`px-1.5 py-0.5 text-xs rounded ${
-            task.status === 'done' ? 'bg-success-subtle text-success' :
-            task.status === 'in-progress' ? 'bg-info-subtle text-info' :
-            task.status === 'review' ? 'bg-review-subtle text-review' :
-            task.status === 'failed' ? 'bg-error-subtle text-error' :
-            'bg-info-subtle text-info'
+          <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
+            task.status === 'done'            ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
+            task.status === 'in-progress'     ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' :
+            task.status === 'review'          ? 'bg-[var(--color-review)]-subtle text-[var(--color-review)]' :
+            task.status === 'human-review'    ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+            task.status === 'internal-review' ? 'bg-[var(--color-review)]-subtle text-[var(--color-review)]' :
+            task.status === 'failed'          ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+            task.status === 'cancelled'       ? 'bg-mission-control-border/40 text-mission-control-text-dim' :
+            'bg-mission-control-border/30 text-mission-control-text-dim'
           }`}>
-            {task.status.replace(/-/g, ' ')}
+            {task.status === 'internal-review' ? 'Pre-review' : task.status.replace(/-/g, ' ')}
           </span>
+          {task.priority && (() => {
+            const pCfg = {
+              p0: { label: 'P0', color: 'bg-[var(--color-error)]/10 text-[var(--color-error)]' },
+              p1: { label: 'P1', color: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' },
+              p2: { label: 'P2', color: 'bg-[var(--color-info)]/10 text-[var(--color-info)]' },
+              p3: { label: 'P3', color: 'bg-mission-control-border/30 text-mission-control-text-dim' },
+            }[task.priority];
+            if (!pCfg) return null;
+            return (
+              <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${pCfg.color}`}>
+                {pCfg.label}
+              </span>
+            );
+          })()}
           <span className="text-xs text-mission-control-text-dim">{task.project}</span>
           {task.projectName && (
             <span className="flex items-center gap-1 text-xs text-mission-control-accent">
@@ -833,9 +850,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           )}
           {dueDateUrgency && (
             <span className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${
-              dueDateUrgency.level === 'overdue' ? 'bg-error-subtle text-error' :
-              dueDateUrgency.level === 'soon' ? 'bg-warning-subtle text-warning' :
-              'bg-warning-subtle/50 text-warning'
+              dueDateUrgency.level === 'overdue' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+              dueDateUrgency.level === 'soon' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+              'bg-[var(--color-warning)]/10/50 text-[var(--color-warning)]'
             }`}>
               {dueDateUrgency.level === 'overdue'
                 ? <AlertTriangle size={11} />
@@ -846,7 +863,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           {(JSON.parse(task.tags || '[]') as string[]).map((tag: string) => (
             <span key={tag} className="px-1.5 py-0.5 text-xs bg-mission-control-accent/20 text-mission-control-accent rounded-full flex items-center gap-1 flex-shrink-0">
               {tag}
-              <button type="button" onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} aria-label={`Remove tag ${tag}`} className="hover:text-error leading-none">×</button>
+              <button type="button" onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} aria-label={`Remove tag ${tag}`} className="hover:text-[var(--color-error)] leading-none">×</button>
             </span>
           ))}
           <TextField.Root
@@ -865,16 +882,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               }
             }}
           />
-          <IconButton
+          <button
+            type="button"
             onClick={onClose}
             aria-label="Close task detail"
-            variant="ghost"
-            color="gray"
-            size="2"
-            className="ml-auto flex-shrink-0"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors ml-auto flex-shrink-0"
           >
             <X size={16} />
-          </IconButton>
+          </button>
         </Flex>
 
         {/* Row 2: title */}
@@ -891,26 +906,26 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <>
               <div className="h-2 flex-1 bg-gradient-to-r from-mission-control-border/60 to-mission-control-border rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[var(--color-success-hover)] to-[var(--color-success)] transition-all duration-500 rounded-full"
+                  className="h-full bg-gradient-to-r from-[var(--color-success-hover)] to-[var(--color-success)] transition-colors duration-500 rounded-full"
                   style={{ width: `${subtaskProgress}%` }}
                 />
               </div>
               <span className="text-xs text-mission-control-text-dim whitespace-nowrap flex-shrink-0">
                 {completedSubtasks}/{subtasks.length} subtasks done
-                {isWorking && <span className="text-warning animate-pulse ml-1">· working</span>}
+                {isWorking && <span className="text-[var(--color-warning)] animate-pulse ml-1">· working</span>}
               </span>
             </>
           ) : typeof task.progress === 'number' && task.progress > 0 ? (
             <>
               <div className="h-2 flex-1 bg-mission-control-border rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-mission-control-accent transition-all duration-500 rounded-full"
+                  className="h-full bg-mission-control-accent transition-colors duration-500 rounded-full"
                   style={{ width: `${task.progress}%` }}
                 />
               </div>
               <span className="text-xs text-mission-control-text-dim whitespace-nowrap flex-shrink-0">
                 {task.progress}%
-                {isWorking && <span className="text-warning animate-pulse ml-1">· working</span>}
+                {isWorking && <span className="text-[var(--color-warning)] animate-pulse ml-1">· working</span>}
               </span>
             </>
           ) : null}
@@ -935,11 +950,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     <Play size={11} />
                   </IconButton>
                 )}
-                {(isWorking || task.status === 'in-progress') && <Loader2 size={12} className="animate-spin text-info flex-shrink-0" />}
+                {(isWorking || task.status === 'in-progress') && <Loader2 size={12} className="animate-spin text-[var(--color-info)] flex-shrink-0" />}
               </Flex>
             ) : isRemoteAgent ? (
               <Flex align="center" gap="1" className="min-w-0">
-                <Globe size={12} className="text-review flex-shrink-0" />
+                <Globe size={12} className="text-[var(--color-review)] flex-shrink-0" />
                 <span className="text-xs truncate capitalize">{task.assignedTo}</span>
               </Flex>
             ) : (
@@ -958,9 +973,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 <span className="text-xs font-medium truncate">{reviewer.name}</span>
                 {task.reviewStatus && (
                   <span className={`text-xs px-1 py-0.5 rounded flex-shrink-0 ${
-                    task.reviewStatus === 'approved' ? 'bg-success-subtle text-success' :
-                    task.reviewStatus === 'needs-changes' ? 'bg-error-subtle text-error' :
-                    task.reviewStatus === 'in-review' ? 'bg-warning-subtle text-warning' :
+                    task.reviewStatus === 'approved' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
+                    task.reviewStatus === 'needs-changes' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+                    task.reviewStatus === 'in-review' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
                     'bg-muted-subtle text-muted'
                   }`}>{task.reviewStatus}</span>
                 )}
@@ -985,24 +1000,24 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* Clara review notes callout */}
       {task.reviewNotes && task.reviewStatus && ['needs-changes', 'rejected', 'pre-rejected'].includes(task.reviewStatus) && (
-        <div className="mx-4 mt-3 p-3 bg-error-subtle border border-error-border rounded-lg flex items-start gap-2 flex-shrink-0">
-          <AlertTriangle size={14} className="text-error flex-shrink-0 mt-0.5" />
+        <div className="mx-4 mt-3 p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg flex items-start gap-2 flex-shrink-0">
+          <AlertTriangle size={14} className="text-[var(--color-error)] flex-shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <span className="text-xs font-semibold text-error block mb-0.5">
+            <span className="text-xs font-semibold text-[var(--color-error)] block mb-0.5">
               {task.reviewerId ? (agents.find(a => a.id === task.reviewerId)?.name || 'Reviewer') : 'Reviewer'}&apos;s feedback:
             </span>
-            <p className="text-xs text-error/90 whitespace-pre-wrap">{task.reviewNotes}</p>
+            <p className="text-xs text-[var(--color-error)]/90 whitespace-pre-wrap">{task.reviewNotes}</p>
           </div>
         </div>
       )}
       {task.reviewNotes && task.reviewStatus === 'approved' && (
-        <div className="mx-4 mt-3 p-3 bg-success-subtle border border-success-border rounded-lg flex items-start gap-2 flex-shrink-0">
-          <CheckCircle size={14} className="text-success flex-shrink-0 mt-0.5" />
+        <div className="mx-4 mt-3 p-3 bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-lg flex items-start gap-2 flex-shrink-0">
+          <CheckCircle size={14} className="text-[var(--color-success)] flex-shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <span className="text-xs font-semibold text-success block mb-0.5">
+            <span className="text-xs font-semibold text-[var(--color-success)] block mb-0.5">
               {task.reviewerId ? (agents.find(a => a.id === task.reviewerId)?.name || 'Reviewer') : 'Reviewer'}&apos;s notes:
             </span>
-            <p className="text-xs text-success/90 whitespace-pre-wrap">{task.reviewNotes}</p>
+            <p className="text-xs text-[var(--color-success)]/90 whitespace-pre-wrap">{task.reviewNotes}</p>
           </div>
         </div>
       )}
@@ -1022,7 +1037,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       {/* Tabs */}
       {/* IMPORTANT: Planning tab must ALWAYS be visible, regardless of task status.
           It serves as a historical record and should never be hidden when task is complete. */}
-      <div className="border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
+      <div className="bg-mission-control-surface flex-shrink-0">
         <TabNav
           tabs={[
             { id: 'subtasks',  label: 'Subtasks',  icon: CheckCircle, badge: subtasks.length > 0 ? `${completedSubtasks}/${subtasks.length}` : undefined },
@@ -1050,16 +1065,16 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   <span>Progress</span>
                   <span>{completedSubtasks}/{subtasks.length} complete</span>
                 </Flex>
-                <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
+                <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-success rounded-full transition-all duration-300"
+                    className="h-full bg-mission-control-accent rounded-full transition-colors duration-300"
                     style={{ width: `${subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0}%` }}
                   />
                 </div>
                 {completedSubtasks === subtasks.length && task?.status === 'in-progress' && (
-                  <Flex align="center" gap="3" className="mt-3 p-3 rounded-lg bg-success-subtle border border-success-border">
-                    <CheckCircle size={16} className="text-success flex-shrink-0" />
-                    <span className="text-sm text-success flex-1">All subtasks complete — ready for review?</span>
+                  <Flex align="center" gap="3" className="mt-3 p-3 rounded-lg bg-[var(--color-success)]/10 border border-[var(--color-success)]/30">
+                    <CheckCircle size={16} className="text-[var(--color-success)] flex-shrink-0" />
+                    <span className="text-sm text-[var(--color-success)] flex-1">All subtasks complete — ready for review?</span>
                     <Button
                       type="button"
                       onClick={() => updateTask(task.id, { status: 'agent-review' as any })}
@@ -1148,7 +1163,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 </Button>
                 {bulkDeleteConfirm ? (
                   <>
-                    <span className="text-xs text-error">Delete {selectedSubtaskIds.size}?</span>
+                    <span className="text-xs text-[var(--color-error)]">Delete {selectedSubtaskIds.size}?</span>
                     <Button
                       onClick={handleBulkDelete}
                       color="red"
@@ -1177,23 +1192,21 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     Delete
                   </Button>
                 )}
-                <IconButton
+                <button
                   onClick={() => { setSelectedSubtaskIds(new Set()); setBulkDeleteConfirm(false); }}
-                  variant="ghost"
-                  color="gray"
-                  size="1"
                   aria-label="Clear selection"
+                  className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <X size={14} />
-                </IconButton>
+                </button>
               </Flex>
             )}
 
             {/* Subtask List */}
             {loadingSubtasks ? (
-              <div className="space-y-2">
+              <div className="divide-y divide-mission-control-border/40">
                 {[1, 2, 3, 4].map((i) => (
-                  <Flex key={i} align="center" gap="3" className="p-3 rounded-lg border border-mission-control-border">
+                  <Flex key={i} align="center" gap="2.5" className="py-2">
                     <div className="w-5 h-5 rounded bg-mission-control-surface animate-pulse flex-shrink-0" />
                     <div className="h-4 rounded bg-mission-control-surface animate-pulse flex-1" />
                   </Flex>
@@ -1206,7 +1219,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 <p className="text-xs">Break down this task into smaller steps</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div>
                 {subtasks.map((st, idx) => {
                   const isSelected = selectedSubtaskIds.has(st.id);
                   const isOverdue = st.dueDate != null && !st.completed && st.dueDate < Date.now();
@@ -1220,44 +1233,42 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   return (
                     <div
                       key={st.id}
-                      className={`group flex items-start gap-2 p-3 rounded-lg border transition-all ${
-                        isSelected
-                          ? 'bg-mission-control-accent/10 border-mission-control-accent/50'
-                          : st.completed
-                            ? 'bg-success-subtle border-success-border'
-                            : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
+                      className={`group flex items-start gap-2.5 py-2 border-b border-mission-control-border/40 last:border-0 transition-colors ${
+                        isSelected ? 'bg-mission-control-accent/5' : ''
                       }`}
                     >
                       {/* Selection checkbox — appears on hover or when selected */}
-                      <IconButton
+                      <button
+                        type="button"
                         onClick={() => handleToggleSubtaskSelect(st.id)}
                         aria-label="Select subtask"
-                        variant={isSelected ? 'solid' : 'outline'}
-                        color={isSelected ? 'blue' : 'gray'}
-                        size="1"
-                        radius="small"
-                        className={`mt-0.5 flex-shrink-0 transition-all ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                        className={`mt-0.5 flex-shrink-0 w-5 h-5 flex items-center justify-center rounded border transition-colors ${
+                          isSelected
+                            ? 'opacity-100 bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                            : 'opacity-0 group-hover:opacity-100 border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                        }`}
                       >
                         {isSelected && <Check size={10} />}
-                      </IconButton>
+                      </button>
 
                       {/* Completion toggle */}
-                      <IconButton
+                      <button
+                        type="button"
                         onClick={() => handleToggleSubtask(st.id)}
                         aria-label="Toggle subtask completion"
-                        variant={st.completed ? 'solid' : 'outline'}
-                        color={st.completed ? 'green' : 'gray'}
-                        size="1"
-                        radius="small"
-                        className="mt-0.5 flex-shrink-0"
+                        className={`mt-0.5 flex-shrink-0 w-5 h-5 flex items-center justify-center rounded border transition-colors ${
+                          st.completed
+                            ? 'bg-[var(--color-success)]/20 border-[var(--color-success)] text-[var(--color-success)]'
+                            : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/50 hover:text-mission-control-text'
+                        }`}
                       >
-                        {st.completed && <Check size={13} />}
-                      </IconButton>
+                        {st.completed && <Check size={12} />}
+                      </button>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <span
-                          className={`block text-sm leading-snug ${st.completed ? 'line-through text-mission-control-text-dim' : ''}`}
+                          className={`block text-sm leading-snug ${st.completed ? 'line-through text-mission-control-text-dim' : 'text-mission-control-text'}`}
                         >
                           {st.title}
                         </span>
@@ -1297,21 +1308,18 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                               size="1"
                             />
                           ) : (
-                            <Button
+                            <button
                               onClick={() => setEditingDueDateId(st.id)}
-                              variant="ghost"
-                              color={isOverdue ? 'red' : 'gray'}
-                              size="1"
                               title={isOverdue ? 'Overdue — click to change' : 'Set due date'}
-                              className={`${!isOverdue && !dueDateDisplay ? 'opacity-0 group-hover:opacity-60 hover:!opacity-100' : ''}`}
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors hover:bg-mission-control-surface ${isOverdue ? 'text-[var(--color-error)] hover:text-[var(--color-error)]/80' : 'text-mission-control-text-dim hover:text-mission-control-text'}${!isOverdue && !dueDateDisplay ? ' opacity-0 group-hover:opacity-60 hover:!opacity-100' : ''}`}
                             >
                               <Calendar size={10} />
                               {dueDateDisplay ?? 'Due date'}
-                            </Button>
+                            </button>
                           )}
 
                           {st.completedAt && (
-                            <span className="text-xs text-success/60">
+                            <span className="text-xs text-[var(--color-success)]/60">
                               Done {formatTime(st.completedAt)}
                               {st.completedBy &&
                                 ` · ${agents.find((a) => a.id === st.completedBy)?.name || st.completedBy}`}
@@ -1322,42 +1330,36 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
                       {/* Reorder buttons */}
                       <div className="flex flex-col gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <IconButton
+                        <button
                           onClick={() => handleMoveSubtask(idx, 'up')}
                           disabled={idx === 0}
-                          variant="ghost"
-                          color="gray"
-                          size="1"
                           title="Move up"
                           aria-label="Move subtask up"
+                          className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-30"
                         >
                           <ChevronUp size={14} />
-                        </IconButton>
-                        <IconButton
+                        </button>
+                        <button
                           onClick={() => handleMoveSubtask(idx, 'down')}
                           disabled={idx === subtasks.length - 1}
-                          variant="ghost"
-                          color="gray"
-                          size="1"
                           title="Move down"
                           aria-label="Move subtask down"
+                          className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-30"
                         >
                           <ChevronDown size={14} />
-                        </IconButton>
+                        </button>
                       </div>
 
                       {/* Delete */}
-                      <IconButton
+                      <button
+                        type="button"
                         onClick={() => handleDeleteSubtask(st.id)}
-                        variant="ghost"
-                        color="red"
-                        size="1"
                         title="Delete subtask"
                         aria-label="Delete subtask"
-                        className="mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors mt-0.5 opacity-0 group-hover:opacity-100 flex-shrink-0"
                       >
                         <X size={14} />
-                      </IconButton>
+                      </button>
                     </div>
                   );
                 })}
@@ -1369,12 +1371,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         {/* Planning Tab - ALWAYS VISIBLE regardless of task status (historical record) */}
         {activeTab === 'planning' && (
           <div className="p-4">
-            <Flex align="center" justify="between" className="mb-3">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <FileText size={16} className="text-mission-control-accent" />
-                Planning & Brainstorming
-              </h3>
-            </Flex>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+              <FileText size={12} className="text-mission-control-text-dim" />
+              Planning &amp; Brainstorming
+            </div>
             
             <TextArea
               value={task.planningNotes || ''}
@@ -1402,10 +1402,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Dependencies */}
             <div className="mt-6">
-              <h3 className="text-sm font-medium flex items-center gap-2 mb-3">
-                <AlertCircle size={16} className="text-mission-control-accent" />
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <AlertCircle size={12} className="text-mission-control-text-dim" />
                 Blocked By
-              </h3>
+              </div>
               {(task.blockedBy || []).length > 0 ? (
                 <div className="space-y-2 mb-3">
                   {(task.blockedBy as string[]).map(depId => {
@@ -1414,11 +1414,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                       <Flex key={depId} align="center" gap="2" className="p-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm">
                         <span className="flex-1 truncate">{depTask?.title || depId}</span>
                         {depTask && (
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${depTask.status === 'done' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${depTask.status === 'done' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'}`}>
                             {depTask.status}
                           </span>
                         )}
-                        <IconButton
+                        <button
                           type="button"
                           onClick={() => {
                             const current = (task.blockedBy as string[]) || [];
@@ -1426,14 +1426,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                               .then(() => showToast('success', 'Dependency removed'))
                               .catch(() => showToast('error', 'Failed to remove dependency'));
                           }}
-                          variant="ghost"
-                          color="red"
-                          size="1"
                           aria-label="Remove dependency"
-                          className="flex-shrink-0"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0"
                         >
                           <X size={12} />
-                        </IconButton>
+                        </button>
                       </Flex>
                     );
                   })}
@@ -1484,16 +1481,16 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               if (related.length === 0) return null;
               return (
                 <div className="mt-6">
-                  <h3 className="text-sm font-medium flex items-center gap-2 mb-3">
-                    <Link2 size={16} className="text-mission-control-accent" />
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                    <Link2 size={12} className="text-mission-control-text-dim" />
                     Related Tasks
-                  </h3>
+                  </div>
                   <div className="space-y-1.5">
                     {related.map(rt => (
                       <Flex key={rt.id} align="center" gap="2" className="p-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-sm hover:border-mission-control-accent/50 transition-colors">
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                          rt.status === 'in-progress' ? 'bg-info' :
-                          rt.status === 'review' ? 'bg-review' :
+                          rt.status === 'in-progress' ? 'bg-[var(--color-info)]' :
+                          rt.status === 'review' ? 'bg-[var(--color-review)]' :
                           'bg-mission-control-border'
                         }`} />
                         <span className="flex-1 truncate text-xs">{rt.title}</span>
@@ -1518,17 +1515,15 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             />
             
             <Flex align="center" justify="between" className="mb-4">
-              <h3 className="text-sm font-medium">Activity Log</h3>
-              <IconButton
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Activity Log</div>
+              <button
                 onClick={loadActivity}
                 disabled={loadingActivity}
-                variant="ghost"
-                color="gray"
-                size="2"
                 aria-label="Refresh activity"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={14} className={loadingActivity ? 'animate-spin' : ''} />
-              </IconButton>
+              </button>
             </Flex>
 
             {loadingActivity ? (
@@ -1550,9 +1545,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     key={act.id}
                     className={`flex items-start gap-3 p-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors ${
                       act.action === 'review-rejected' || act.action === 'pre-review-rejected'
-                        ? 'bg-error-subtle border border-error/20'
+                        ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/20'
                         : act.action === 'review-approved' || act.action === 'pre-review-approved'
-                        ? 'bg-success-subtle border border-success/20'
+                        ? 'bg-[var(--color-success)]/10 border border-[var(--color-success)]/20'
                         : ''
                     }`}
                   >
@@ -1596,10 +1591,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         {activeTab === 'files' && (
           <div className="p-4">
             <Flex align="center" justify="between" className="mb-4">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <Paperclip size={16} className="text-mission-control-accent" />
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim flex items-center gap-2">
+                <Paperclip size={12} className="text-mission-control-text-dim" />
                 Task Attachments
-              </h3>
+              </div>
               <Flex gap="2">
                 <Button
                   onClick={handleAutoDetect}
@@ -1635,7 +1630,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Upload Instructions */}
             {attachments.length === 0 && !loadingAttachments && (
-              <div className="mb-4 p-4 bg-mission-control-bg/50 rounded-lg border border-dashed border-mission-control-border text-center">
+              <div className="mb-4 p-4 bg-mission-control-surface rounded-lg border border-dashed border-mission-control-border text-center">
                 <Paperclip size={32} className="mx-auto mb-2 opacity-30" />
                 <p className="text-sm text-mission-control-text-dim">
                   No attachments yet. Upload deliverables, screenshots, or reference files.
@@ -1661,7 +1656,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   key={attachment.id}
                   align="center"
                   gap="3"
-                  className="group p-3 bg-mission-control-bg rounded-lg border border-mission-control-border hover:border-mission-control-accent/50 transition-all"
+                  className="group p-3 bg-mission-control-bg rounded-lg border border-mission-control-border hover:border-mission-control-accent/50 transition-colors"
                 >
                   <div className="text-mission-control-text-dim flex-shrink-0">
                     {getFileIcon(null)}
@@ -1687,31 +1682,28 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                         </>
                       )}
                     </Flex>
-                    <div className="text-xs text-mission-control-text-dim/50 mt-0.5 truncate" title={attachment.filePath}>
+                    <div className="text-xs text-mission-control-text-dim/70 mt-0.5 truncate" title={attachment.filePath}>
                       {attachment.filePath}
                     </div>
                   </div>
                   <Flex align="center" gap="1" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <IconButton
+                    <button
                       onClick={() => handleOpenFile(attachment.filePath)}
-                      variant="ghost"
-                      color="violet"
-                      size="2"
                       title="Open file"
                       aria-label="Open file"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     >
                       <Download size={16} />
-                    </IconButton>
-                    <IconButton
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleDeleteAttachment(attachment.id)}
-                      variant="ghost"
-                      color="red"
-                      size="2"
                       title="Delete attachment"
                       aria-label="Delete attachment"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                     >
                       <Trash2 size={16} />
-                    </IconButton>
+                    </button>
                   </Flex>
                 </Flex>
               ))}
@@ -1719,7 +1711,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Stats Summary */}
             {attachments.length > 0 && (
-              <div className="mt-4 p-3 bg-mission-control-bg/50 rounded-lg border border-mission-control-border">
+              <div className="mt-4 p-3 bg-mission-control-surface rounded-lg border border-mission-control-border">
                 <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim">
                   <span>
                     {attachments.length} file{attachments.length !== 1 ? 's' : ''} attached
@@ -1747,25 +1739,25 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             {/* Definition of Ready Checklist - show for internal-review status */}
             {task.status === 'internal-review' && (
               <div className="mb-4 p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                <Flex align="center" gap="2" className="mb-3">
-                  <CheckCircle size={16} className="text-mission-control-accent" />
-                  <span className="font-medium">Definition of Ready</span>
-                </Flex>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                  <CheckCircle size={12} className="text-mission-control-text-dim" />
+                  Definition of Ready
+                </div>
                 <div className="space-y-2 text-sm">
-                  <Flex align="center" gap="2" className={(task.subtasks?.length || 0) >= 2 ? 'text-success' : 'text-error'}>
-                    {(task.subtasks?.length || 0) >= 2 ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
+                  <Flex align="center" gap="2" className={(task.subtasks?.length || 0) >= 2 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}>
+                    {(task.subtasks?.length || 0) >= 2 ? <CheckCircle size={14} className="text-[var(--color-success)] inline" /> : <XCircle size={14} className="text-[var(--color-error)] inline" />}
                     Subtasks: {task.subtasks?.length || 0}/2 (minimum 2)
                   </Flex>
-                  <Flex align="center" gap="2" className={task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? 'text-success' : 'text-error'}>
-                    {task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
+                  <Flex align="center" gap="2" className={task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}>
+                    {task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? <CheckCircle size={14} className="text-[var(--color-success)] inline" /> : <XCircle size={14} className="text-[var(--color-error)] inline" />}
                     Priority: {task.priority || 'Not set'}
                   </Flex>
-                  <Flex align="center" gap="2" className={task.assignedTo && !isProtectedAgent(task.assignedTo) ? 'text-success' : 'text-error'}>
-                    {task.assignedTo && !isProtectedAgent(task.assignedTo) ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
+                  <Flex align="center" gap="2" className={task.assignedTo && !isProtectedAgent(task.assignedTo) ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}>
+                    {task.assignedTo && !isProtectedAgent(task.assignedTo) ? <CheckCircle size={14} className="text-[var(--color-success)] inline" /> : <XCircle size={14} className="text-[var(--color-error)] inline" />}
                     Assigned: {task.assignedTo || 'Not assigned'}
                   </Flex>
-                  <Flex align="center" gap="2" className={(task.description?.length || 0) >= 20 ? 'text-success' : 'text-warning'}>
-                    {(task.description?.length || 0) >= 20 ? <CheckCircle size={14} className="text-success inline" /> : <AlertTriangle size={14} className="text-warning inline" />}
+                  <Flex align="center" gap="2" className={(task.description?.length || 0) >= 20 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'}>
+                    {(task.description?.length || 0) >= 20 ? <CheckCircle size={14} className="text-[var(--color-success)] inline" /> : <AlertTriangle size={14} className="text-[var(--color-warning)] inline" />}
                     Description: {(task.description?.length || 0)} chars (min 20)
                   </Flex>
                 </div>
@@ -1774,10 +1766,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Quick Approve/Reject Actions (when in review status) */}
             {task.status === 'review' && task.reviewStatus !== 'approved' && (
-              <div className="mb-4 p-4 bg-warning-subtle border border-warning-border rounded-lg">
+              <div className="mb-4 p-4 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg">
                 <Flex align="center" gap="2" className="mb-3">
-                  <AlertCircle size={16} className="text-warning" />
-                  <span className="font-medium text-warning">Awaiting Review</span>
+                  <AlertCircle size={16} className="text-[var(--color-warning)]" />
+                  <span className="font-medium text-[var(--color-warning)]">Awaiting Review</span>
                 </Flex>
                 <Flex gap="2">
                   <Button
@@ -1817,10 +1809,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Approved Notice */}
             {task.reviewStatus === 'approved' && (
-              <div className="mb-4 p-4 bg-success-subtle border border-success-border rounded-lg">
+              <div className="mb-4 p-4 bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-lg">
                 <Flex align="center" gap="2">
-                  <CheckCircle size={16} className="text-success" />
-                  <span className="font-medium text-success">Review Approved</span>
+                  <CheckCircle size={16} className="text-[var(--color-success)]" />
+                  <span className="font-medium text-[var(--color-success)]">Review Approved</span>
                 </Flex>
                 <p className="mt-2 text-sm text-mission-control-text-dim">
                   This task has been approved and can now be marked as done.
@@ -1832,26 +1824,26 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <div className="space-y-4">
                 {/* Review Status */}
                 <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                  <Flex align="center" gap="2" className="mb-3">
-                    <Eye size={16} className="text-mission-control-accent" />
-                    <span className="font-medium">Review Status</span>
-                  </Flex>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                    <Eye size={12} className="text-mission-control-text-dim" />
+                    Review Status
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     {(['pending', 'in-review', 'needs-changes', 'approved'] as const).map((status) => {
                       const isActive = task.reviewStatus === status;
-                      const color = status === 'approved' ? 'green' :
-                                    status === 'needs-changes' ? 'red' :
-                                    status === 'in-review' ? 'orange' : 'violet';
                       return (
-                        <Button
+                        <button
                           key={status}
+                          type="button"
                           onClick={() => setReviewStatus(status)}
-                          variant={isActive ? 'solid' : 'outline'}
-                          color={isActive ? color : 'gray'}
-                          size="2"
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                            isActive
+                              ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                              : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                          }`}
                         >
                           {status.replace('-', ' ')}
-                        </Button>
+                        </button>
                       );
                     })}
                   </div>
@@ -1859,10 +1851,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
                 {/* Review Notes */}
                 <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                  <Flex align="center" gap="2" className="mb-3">
-                    <FileText size={16} className="text-mission-control-accent" />
-                    <span className="font-medium">Review Notes</span>
-                  </Flex>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                    <FileText size={12} className="text-mission-control-text-dim" />
+                    Review Notes
+                  </div>
                   <TextArea
                     value={task.reviewNotes || ''}
                     onChange={(e) => updateTask(task.id, { reviewNotes: e.target.value })}
@@ -1875,11 +1867,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 </div>
 
                 {/* Pre-approval Checklist */}
-                <div className="p-4 bg-warning-subtle border border-warning-border rounded-lg">
-                  <Flex align="center" gap="2" className="mb-2">
-                    <AlertCircle size={16} className="text-warning" />
-                    <span className="font-medium text-warning">Pre-Approval Checklist</span>
-                  </Flex>
+                <div className="p-4 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-warning)] mb-2 flex items-center gap-2">
+                    <AlertCircle size={12} className="text-[var(--color-warning)]" />
+                    Pre-Approval Checklist
+                  </div>
                   <div className="text-sm text-mission-control-text-dim space-y-1">
                     <Flex align="center" gap="2">
                       <Checkbox size="1" />
@@ -1979,7 +1971,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             className="w-full"
           />
           {reopenReason.trim().length === 0 && (
-            <p className="text-xs text-error mt-2">
+            <p className="text-xs text-[var(--color-error)] mt-2">
               Reason is required and cannot be empty
             </p>
           )}
@@ -2007,7 +1999,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* Agent Still Active Warning Modal */}
       {showAgentActiveModal && activeAgentInfo && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => { setShowAgentActiveModal(false); setActiveAgentInfo(null); }}>
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setShowAgentActiveModal(false); setActiveAgentInfo(null); }}>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
             ref={agentActiveModalTrapRef as React.RefObject<HTMLDivElement>}
@@ -2022,29 +2014,28 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             {/* Header */}
             <Flex align="center" justify="between" className="p-6 border-b border-mission-control-border">
               <Flex align="center" gap="3">
-                <div className="p-2 bg-warning-subtle rounded-lg">
-                  <AlertCircle size={24} className="text-warning" />
+                <div className="p-2 bg-[var(--color-warning)]/10 rounded-lg">
+                  <AlertCircle size={24} className="text-[var(--color-warning)]" />
                 </div>
                 <h3 id="agent-active-title" className="text-lg font-semibold">Agent Still Active</h3>
               </Flex>
-              <IconButton
+              <button
+                type="button"
                 onClick={() => {
                   setShowAgentActiveModal(false);
                   setActiveAgentInfo(null);
                 }}
                 aria-label="Close agent active warning"
-                variant="ghost"
-                color="gray"
-                size="2"
+                className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <X size={16} />
-              </IconButton>
+              </button>
             </Flex>
 
             {/* Content */}
             <div className="p-6">
-              <div className="bg-warning-subtle border border-warning-border rounded-lg p-4 mb-4">
-                <p className="text-sm text-warning mb-2">
+              <div className="bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg p-4 mb-4">
+                <p className="text-sm text-[var(--color-warning)] mb-2">
                   <AlertTriangle size={14} className="inline mr-1" />An agent is currently working on this task
                 </p>
                 <div className="text-xs text-mission-control-text-dim space-y-1">
@@ -2253,9 +2244,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             >
               Copy
             </Button>
-            <IconButton onClick={() => setFileViewer(null)} aria-label="Close file viewer" variant="ghost" color="gray" size="2">
+            <button type="button" onClick={() => setFileViewer(null)} aria-label="Close file viewer" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={16} />
-            </IconButton>
+            </button>
           </Flex>
         </Flex>
         <pre className="flex-1 overflow-auto p-4 text-xs font-mono text-mission-control-text whitespace-pre-wrap break-words">

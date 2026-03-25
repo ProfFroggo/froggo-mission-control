@@ -11,13 +11,15 @@
  *   ];
  *   <TabNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
  *
- * When used with PanelHeader, wrap both in a border-b container:
+ * When used with PanelHeader in a shared border-b container, pass border={false}
+ * to avoid a double border line:
  *   <div className="border-b border-mission-control-border bg-mission-control-surface">
  *     <PanelHeader ... border={false} />
- *     <TabNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+ *     <TabNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} border={false} />
  *   </div>
  *
- * When used standalone (no PanelHeader), the TabNav includes its own border-b.
+ * When used standalone (no PanelHeader wrapper), the default border={true} renders
+ * the TabNav with its own border-b.
  */
 
 import { LucideIcon } from 'lucide-react';
@@ -35,12 +37,17 @@ interface TabNavProps {
   onTabChange: (id: string) => void;
   /** px-* class for horizontal padding. Defaults to px-6 to match Library panel. */
   paddingX?: string;
+  /**
+   * Whether to render the container's border-b. Default true.
+   * Pass false when a parent container already provides the border-b.
+   */
+  border?: boolean;
 }
 
-export default function TabNav({ tabs, activeTab, onTabChange, paddingX = 'px-6' }: TabNavProps) {
+export default function TabNav({ tabs, activeTab, onTabChange, paddingX = 'px-6', border = true }: TabNavProps) {
   return (
     <div
-      className={`flex items-center gap-1 ${paddingX}`}
+      className={`flex items-center gap-1 flex-shrink-0 ${border ? 'border-b border-mission-control-border' : ''} ${paddingX}`}
       role="tablist"
       aria-label="Panel navigation"
     >
@@ -54,10 +61,10 @@ export default function TabNav({ tabs, activeTab, onTabChange, paddingX = 'px-6'
             aria-selected={isActive}
             aria-controls={`tabpanel-${id}`}
             onClick={() => onTabChange(id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50 focus-visible:ring-inset ${
+            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50 focus-visible:ring-inset ${
               isActive
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                ? 'border-mission-control-accent text-mission-control-text'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-border'
             }`}
           >
             {Icon && <Icon size={16} aria-hidden="true" />}

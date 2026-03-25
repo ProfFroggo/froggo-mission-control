@@ -4,18 +4,18 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/cn';
 
 export const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50 disabled:pointer-events-none disabled:opacity-40 select-none',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50 disabled:pointer-events-none disabled:opacity-40 select-none',
   {
     variants: {
       variant: {
         default:
-          'bg-mission-control-accent text-white hover:bg-mission-control-accent-dim shadow-sm active:scale-[0.98]',
+          'bg-mission-control-accent text-white hover:bg-mission-control-accent-dim shadow-sm active:scale-[0.97]',
         secondary:
           'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:bg-mission-control-border/40 hover:border-mission-control-border shadow-sm active:scale-[0.98]',
         ghost:
           'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 active:bg-mission-control-border/60',
         destructive:
-          'bg-error/10 text-error border border-error/20 hover:bg-error/20 hover:border-error/30 active:scale-[0.98]',
+          'bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/20 hover:bg-[var(--color-error)]/20 hover:border-[var(--color-error)]/30 active:scale-[0.98]',
         outline:
           'border border-mission-control-border text-mission-control-text bg-mission-control-surface hover:bg-mission-control-border/40 active:scale-[0.98]',
         link:

@@ -2,7 +2,7 @@
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { ChevronRight, Clock, Users, Zap, CalendarDays, Archive } from 'lucide-react';
-import { IconButton, Box, Flex } from '@radix-ui/themes';
+import { Box, Flex } from '@radix-ui/themes';
 import { formatTimeAgo } from '../../utils/formatting';
 import AgentAvatar from '../AgentAvatar';
 import { CHANNEL_ICONS, CHANNEL_LABELS } from './channelIcons';
@@ -10,12 +10,12 @@ import type { Campaign } from '../../types/campaigns';
 
 export const TYPE_COLORS: Record<string, string> = {
   paid:       'text-danger bg-danger/10 border-danger/20',
-  organic:    'text-success bg-success/10 border-success/20',
-  social:     'text-info bg-info/10 border-info/20',
-  email:      'text-review bg-review/10 border-review/20',
+  organic:    'text-[var(--color-success)] bg-[var(--color-success)]/10 border-[var(--color-success)]/20',
+  social:     'text-[var(--color-info)] bg-[var(--color-info)]/10 border-[var(--color-info)]/20',
+  email:      'text-[var(--color-review)] bg-[var(--color-review)]/10 border-[var(--color-review)]/20',
   clm:        'text-pink-400 bg-pink-400/10 border-pink-400/20',
   content:    'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
-  pr:         'text-warning bg-warning/10 border-warning/20',
+  pr:         'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/20',
   influencer: 'text-rose-400 bg-rose-400/10 border-rose-400/20',
   seo:        'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
   product:    'text-mission-control-accent bg-mission-control-accent/10 border-mission-control-accent/20',
@@ -38,10 +38,10 @@ export const TYPE_LABELS: Record<string, string> = {
 
 export const STATUS_CONFIG: Record<string, { label: string; cls: string; dot?: boolean }> = {
   draft:     { label: 'Draft',     cls: 'text-mission-control-text-dim bg-muted-subtle border-muted-border' },
-  planning:  { label: 'Planning',  cls: 'text-info bg-info/10 border-info/20' },
-  live:      { label: 'Live',      cls: 'text-success bg-success/10 border-success/20', dot: true },
-  paused:    { label: 'Paused',    cls: 'text-warning bg-warning/10 border-warning/20' },
-  completed: { label: 'Completed', cls: 'text-review bg-review/10 border-review/20' },
+  planning:  { label: 'Planning',  cls: 'text-[var(--color-info)] bg-[var(--color-info)]/10 border-[var(--color-info)]/20' },
+  live:      { label: 'Live',      cls: 'text-[var(--color-success)] bg-[var(--color-success)]/10 border-[var(--color-success)]/20', dot: true },
+  paused:    { label: 'Paused',    cls: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/20' },
+  completed: { label: 'Completed', cls: 'text-[var(--color-review)] bg-[var(--color-review)]/10 border-[var(--color-review)]/20' },
   archived:  { label: 'Archived',  cls: 'text-mission-control-text-dim/50 bg-muted-subtle/50 border-muted-border/50' },
 };
 
@@ -89,13 +89,19 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
   const daysRemaining = end ? Math.max(0, Math.ceil((end - now) / (1000 * 60 * 60 * 24))) : null;
   const isOverdue = end != null && now > end && campaign.status !== 'completed' && campaign.status !== 'archived';
 
+  // ROI: (revenue - spend) / spend * 100. Show if we have both.
+  const revenueActual = campaign.kpis?.revenue?.actual ?? 0;
+  const roiPct = budgetSpent > 0 && revenueActual > 0
+    ? Math.round(((revenueActual - budgetSpent) / budgetSpent) * 100)
+    : null;
+
   // ── List view layout ────────────────────────────────────────────────────────
   if (viewMode === 'list') {
     return (
       <button
         type="button"
         onClick={onClick}
-        className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 transition-all duration-200 focus:outline-none"
+        className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3 hover:border-mission-control-accent/50 hover:bg-mission-control-border/10 transition-colors duration-200 focus:outline-none"
       >
         <Flex align="center" gap="4">
           {/* Color dot */}
@@ -118,7 +124,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
                 {typeLabel}
               </span>
               <span className={`flex-shrink-0 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${sc.cls}`}>
-                {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />}
+                {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />}
                 {sc.label}
               </span>
             </Flex>
@@ -137,7 +143,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
                 </Flex>
                 <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all duration-500"
+                    className="h-full rounded-full transition-colors duration-500"
                     style={{ width: `${progress}%`, backgroundColor: campaign.color }}
                   />
                 </div>
@@ -165,27 +171,26 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
           {/* Date / time info */}
           <Flex align="center" gap="3" className="flex-shrink-0 text-xs text-mission-control-text-dim">
             {daysRemaining !== null && campaign.status !== 'completed' && campaign.status !== 'archived' && (
-              <span className={`flex items-center gap-1 ${isOverdue ? 'text-error' : daysRemaining <= 7 ? 'text-warning' : ''}`}>
+              <span className={`flex items-center gap-1 ${isOverdue ? 'text-[var(--color-error)]' : daysRemaining <= 7 ? 'text-[var(--color-warning)]' : ''}`}>
                 <CalendarDays size={11} />
                 {isOverdue ? 'Overdue' : daysRemaining === 0 ? 'Today' : `${daysRemaining}d`}
               </span>
             )}
             {inProgressTasks > 0 && (
-              <span className="flex items-center gap-1 text-warning"><Zap size={11} /> {inProgressTasks}</span>
+              <span className="flex items-center gap-1 text-[var(--color-warning)]"><Zap size={11} /> {inProgressTasks}</span>
             )}
             <span className="flex items-center gap-1"><Clock size={11} /> {formatTimeAgo(lastActivity)}</span>
           </Flex>
 
           {onArchive && campaign.status !== 'archived' && (
-            <IconButton
-              size="1"
-              variant="ghost"
-             
+            <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); onArchive(); }}
               title="Archive"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <Archive size={13} />
-            </IconButton>
+            </button>
           )}
           <ChevronRight size={14} className="flex-shrink-0 text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
         </Flex>
@@ -198,7 +203,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
     <button
       type="button"
       onClick={onClick}
-      className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-5 transition-all duration-200 focus:outline-none"
+      className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/50 transition-colors duration-200 focus:outline-none"
     >
       {/* Header */}
       <Flex align="start" justify="between" gap="3" mb="3">
@@ -231,7 +236,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
       {/* Status + channels row */}
       <Flex align="center" gap="2" mb="3">
         <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${sc.cls}`}>
-          {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />}
+          {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />}
           {sc.label}
         </span>
         <Flex align="center" gap="1" className="ml-1">
@@ -259,7 +264,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
           </Flex>
           <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full transition-all duration-500"
+              className="h-full rounded-full transition-colors duration-500"
               style={{ width: `${progress}%`, backgroundColor: campaign.color }}
             />
           </div>
@@ -274,7 +279,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
               <CalendarDays size={10} />
               {start ? new Date(start).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
             </Flex>
-            <span className={isOverdue ? 'text-error' : daysRemaining !== null && daysRemaining <= 7 ? 'text-warning' : ''}>
+            <span className={isOverdue ? 'text-[var(--color-error)]' : daysRemaining !== null && daysRemaining <= 7 ? 'text-[var(--color-warning)]' : ''}>
               {isOverdue
                 ? 'Overdue'
                 : daysRemaining === 0
@@ -286,7 +291,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
           </Flex>
           <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full transition-all duration-500"
+              className="h-full rounded-full transition-colors duration-500"
               style={{
                 width: `${timelineProgress}%`,
                 backgroundColor: isOverdue
@@ -309,7 +314,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
           </Flex>
           <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full transition-all duration-500"
+              className="h-full rounded-full transition-colors duration-500"
               style={{
                 width: `${spendPct}%`,
                 backgroundColor: spendPct > 90 ? 'var(--color-error)' : spendPct > 70 ? 'var(--color-warning)' : 'var(--color-success)',
@@ -346,8 +351,13 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
 
         {/* Stats */}
         <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
+          {roiPct !== null && (
+            <span className={`font-medium tabular-nums ${roiPct >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
+              {roiPct >= 0 ? '+' : ''}{roiPct}% ROI
+            </span>
+          )}
           {inProgressTasks > 0 && (
-            <span className="flex items-center gap-1 text-warning">
+            <span className="flex items-center gap-1 text-[var(--color-warning)]">
               <Zap size={11} /> {inProgressTasks}
             </span>
           )}

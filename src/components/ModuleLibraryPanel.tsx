@@ -81,11 +81,11 @@ import ModuleDependencyGraph from './ModuleDependencyGraph';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORY_COLORS: Record<string, string> = {
-  core:           'text-review border-review-border bg-review-subtle',
-  productivity:   'text-info border-info-border bg-info-subtle',
-  communications: 'text-success border-success-border bg-success-subtle',
+  core:           'text-[var(--color-review)] border-[var(--color-review)]-border bg-[var(--color-review)]-subtle',
+  productivity:   'text-[var(--color-info)] border-[var(--color-info)]/30 bg-[var(--color-info)]/10',
+  communications: 'text-[var(--color-success)] border-[var(--color-success)]/30 bg-[var(--color-success)]/10',
   social:         'text-violet-400 border-violet-400/30 bg-violet-400/10',
-  finance:        'text-warning border-warning bg-warning',
+  finance:        'text-[var(--color-warning)] border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10',
   system:         'text-mission-control-text-dim border-mission-control-border bg-mission-control-surface',
   agent:          'text-cyan-400 border-cyan-400/30 bg-cyan-400/10',
 };
@@ -191,7 +191,7 @@ function StarRating({ rating, max = 5, size = 12 }: { rating: number; max?: numb
         <Star
           key={i}
           size={size}
-          className={i < Math.round(rating) ? 'text-warning fill-warning' : 'text-mission-control-border'}
+          className={i < Math.round(rating) ? 'text-[var(--color-warning)] fill-warning' : 'text-mission-control-border'}
         />
       ))}
     </span>
@@ -206,21 +206,20 @@ function InteractiveStarRating({ value, onChange }: { value: number; onChange: (
         const v = i + 1;
         const filled = v <= (hover || value);
         return (
-          <IconButton
+          <button
             key={i}
-            size="2"
-            variant="ghost"
-           
+            type="button"
             onMouseEnter={() => setHover(v)}
             onMouseLeave={() => setHover(0)}
             onClick={() => onChange(v)}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-[var(--color-warning)] hover:bg-mission-control-surface transition-colors"
             aria-label={`Rate ${v} star${v > 1 ? 's' : ''}`}
           >
             <Star
               size={20}
-              className={filled ? 'text-warning fill-warning' : 'text-mission-control-border hover:text-warning transition-colors'}
+              className={filled ? 'text-[var(--color-warning)] fill-warning' : 'text-mission-control-border hover:text-[var(--color-warning)] transition-colors'}
             />
-          </IconButton>
+          </button>
         );
       })}
     </span>
@@ -231,9 +230,9 @@ function InteractiveStarRating({ value, onChange }: { value: number; onChange: (
 
 function HealthDot({ status }: { status: ModuleHealthStatus }) {
   const cls =
-    status === 'healthy' ? 'bg-success' :
-    status === 'warning' ? 'bg-warning' :
-    'bg-error';
+    status === 'healthy' ? 'bg-[var(--color-success)]' :
+    status === 'warning' ? 'bg-[var(--color-warning)]' :
+    'bg-[var(--color-error)]';
   return (
     <span
       className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${cls}`}
@@ -272,16 +271,16 @@ function ReviewModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-lg border border-mission-control-border bg-mission-control-bg p-6 shadow-xl"
+        className="w-full max-w-md rounded-2xl border border-mission-control-border bg-mission-control-surface p-6 shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         <Flex align="center" justify="between" mb="5">
           <h3 className="font-semibold text-base">Write a Review</h3>
-          <IconButton onClick={onClose} variant="ghost" color="gray" size="2" aria-label="Close">
+          <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <X size={16} />
-          </IconButton>
+          </button>
         </Flex>
 
         <p className="text-sm text-mission-control-text-dim mb-4">
@@ -315,7 +314,7 @@ function ReviewModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
-              Your rating <span className="text-error">*</span>
+              Your rating <span className="text-[var(--color-error)]">*</span>
             </label>
             <InteractiveStarRating value={rating} onChange={setRating} />
           </div>
@@ -408,7 +407,7 @@ function ConfigurePanel({
             aria-checked={value}
           >
             <span
-              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-mission-control-surface transition-transform ${
                 value ? 'translate-x-4' : 'translate-x-1'
               }`}
             />
@@ -461,9 +460,9 @@ function ConfigurePanel({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-end p-0 sm:p-4 bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-end p-0 sm:p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full sm:w-96 max-h-screen sm:max-h-[80vh] rounded-t-xl sm:rounded-lg border border-mission-control-border bg-mission-control-bg shadow-xl flex flex-col overflow-hidden"
+        className="w-full sm:w-96 max-h-screen sm:max-h-[80vh] rounded-t-2xl sm:rounded-2xl border border-mission-control-border bg-mission-control-surface shadow-2xl flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -472,9 +471,9 @@ function ConfigurePanel({
             <Settings size={16} className="text-mission-control-text-dim" />
             <h3 className="font-semibold text-sm">Configure {module.name}</h3>
           </Flex>
-          <IconButton onClick={onClose} variant="ghost" color="gray" size="2" aria-label="Close">
+          <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <X size={15} />
-          </IconButton>
+          </button>
         </div>
 
         {/* Fields */}
@@ -493,9 +492,13 @@ function ConfigurePanel({
 
           {/* Footer */}
           <div className="flex items-center gap-2 px-5 py-4 border-t border-mission-control-border flex-shrink-0">
-            <Button type="button" onClick={resetToDefaults} variant="ghost" color="gray" size="1">
+            <button
+              type="button"
+              onClick={resetToDefaults}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            >
               Reset to defaults
-            </Button>
+            </button>
             <div className="flex-1" />
             <Button type="button" onClick={onClose} variant="soft" color="gray" size="1">
               Cancel
@@ -534,7 +537,7 @@ function FeaturedCarousel({
   return (
     <div className="mb-6">
       <Flex align="center" justify="between" mb="3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-mission-control-text-dim">
+        <h3 className="text-[10px] font-bold uppercase tracking-wide text-mission-control-text-dim">
           Featured Modules
         </h3>
         <Flex align="center" gap="1">
@@ -613,7 +616,7 @@ function FeaturedCarousel({
 
                 {/* CTA */}
                 {mod.installed ? (
-                  <Flex align="center" gap="1" className="text-xs text-success mt-auto">
+                  <Flex align="center" gap="1" className="text-xs text-[var(--color-success)] mt-auto">
                     <CheckCircle2 size={12} />
                     Installed
                   </Flex>
@@ -806,7 +809,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
   if (error) {
     return (
       <div className="p-6 text-center">
-        <p className="text-error mb-3">{error}</p>
+        <p className="text-[var(--color-error)] mb-3">{error}</p>
         <Button type="button" onClick={() => load()} variant="soft" color="gray" size="2">
           Retry
         </Button>
@@ -827,7 +830,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
 
       {/* Stats bar */}
       <div className="flex items-center gap-4 mb-4 text-sm flex-wrap">
-        <span className="icon-text text-success">
+        <span className="icon-text text-[var(--color-success)]">
           <CheckCircle size={14} className="flex-shrink-0" />
           {installedCount} installed
         </span>
@@ -835,7 +838,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
           <Package size={14} className="flex-shrink-0" />
           {availableCount} available
         </span>
-        <span className="icon-text text-review">
+        <span className="icon-text text-[var(--color-review)]">
           <Shield size={14} className="flex-shrink-0" />
           {coreCount} core
         </span>
@@ -844,13 +847,13 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
         {healthSummary && healthSummary.total > 0 && (
           <span className="icon-text text-mission-control-text-dim">
             <Activity size={14} className="flex-shrink-0" />
-            <span className="text-success">{healthSummary.healthy}</span>
+            <span className="text-[var(--color-success)]">{healthSummary.healthy}</span>
             {' '}healthy
             {healthSummary.warning > 0 && (
-              <span>, <span className="text-warning">{healthSummary.warning}</span> warning{healthSummary.warning > 1 ? 's' : ''}</span>
+              <span>, <span className="text-[var(--color-warning)]">{healthSummary.warning}</span> warning{healthSummary.warning > 1 ? 's' : ''}</span>
             )}
             {healthSummary.error > 0 && (
-              <span>, <span className="text-error">{healthSummary.error}</span> error{healthSummary.error > 1 ? 's' : ''}</span>
+              <span>, <span className="text-[var(--color-error)]">{healthSummary.error}</span> error{healthSummary.error > 1 ? 's' : ''}</span>
             )}
           </span>
         )}
@@ -893,34 +896,33 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
             </TextField.Slot>
           </TextField.Root>
         </div>
-        <div className="border-b border-mission-control-border">
-          <TabNav
-            tabs={[
-              { id: 'all',       label: 'All'       },
-              { id: 'installed', label: 'Installed' },
-              { id: 'available', label: 'Available' },
-            ]}
-            activeTab={filter}
-            onTabChange={(id) => setFilter(id as 'all' | 'installed' | 'available')}
-            paddingX="px-0"
-          />
-        </div>
+        <TabNav
+          tabs={[
+            { id: 'all',       label: 'All'       },
+            { id: 'installed', label: 'Installed' },
+            { id: 'available', label: 'Available' },
+          ]}
+          activeTab={filter}
+          onTabChange={(id) => setFilter(id as 'all' | 'installed' | 'available')}
+          paddingX="px-0"
+          border={false}
+        />
       </Flex>
 
       {/* Category filter pills */}
       <div className="flex items-center gap-1.5 mb-5 flex-wrap">
         <Filter size={12} className="text-mission-control-text-dim flex-shrink-0" />
         {FILTER_CATEGORIES.map(cat => (
-          <Button
+          <button
             key={cat}
-            size="1"
-            variant={categoryFilter === cat ? 'soft' : 'ghost'}
-            color={categoryFilter === cat ? 'indigo' : 'gray'}
-            radius="full"
+            type="button"
             onClick={() => setCategoryFilter(cat)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+              categoryFilter === cat ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             {cat}
-          </Button>
+          </button>
         ))}
       </div>
 
@@ -952,10 +954,10 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
             return (
               <div
                 key={module.id}
-                className={`rounded-lg border-2 p-4 transition-all duration-200 flex flex-col ${
+                className={`rounded-xl bg-mission-control-surface border p-4 transition-colors duration-200 flex flex-col hover:-translate-y-0.5 hover:shadow-lg cursor-pointer ${
                   module.installed
-                    ? 'border-success-border bg-success-subtle/20'
-                    : 'border-mission-control-border hover:border-mission-control-accent/40'
+                    ? 'border-[var(--color-success)]/30'
+                    : 'border-mission-control-border hover:border-mission-control-accent/30'
                 }`}
               >
                 {/* Header */}
@@ -973,10 +975,10 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                      <span className="font-semibold text-sm leading-tight">{module.name}</span>
+                      <span className="font-semibold text-sm leading-tight text-mission-control-text">{module.name}</span>
                       {/* Core badge */}
                       {module.core && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium text-review border border-review-border bg-review-subtle">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium text-[var(--color-review)] border border-[var(--color-review)]-border bg-[var(--color-review)]-subtle">
                           Core
                         </span>
                       )}
@@ -987,7 +989,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                         </span>
                       )}
                       {module.installed && !module.core && (
-                        <CheckCircle size={12} className="text-success flex-shrink-0" />
+                        <CheckCircle size={12} className="text-[var(--color-success)] flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-xs text-mission-control-text-dim line-clamp-2">
@@ -1008,29 +1010,25 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                   <div className="flex flex-col gap-1">
                     {/* Configure gear for installed non-core modules */}
                     {module.installed && !module.core && (
-                      <IconButton
+                      <button
                         type="button"
                         aria-label={`Configure ${module.name}`}
                         onClick={() => setConfigTarget(module)}
-                        variant="ghost"
-                        color="gray"
-                        size="1"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Settings size={14} />
-                      </IconButton>
+                      </button>
                     )}
                     {/* Settings nav for installed non-core modules */}
                     {module.installed && !module.core && (
-                      <IconButton
+                      <button
                         type="button"
                         aria-label={`Open settings for ${module.name}`}
                         onClick={() => navigateToModuleSettings(module.id)}
-                        variant="ghost"
-                        color="gray"
-                        size="1"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Activity size={14} />
-                      </IconButton>
+                      </button>
                     )}
                   </div>
                 </Flex>
@@ -1054,7 +1052,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                     {module.requiredApis.map(api => (
                       <span
                         key={`api-${api}`}
-                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border border-warning/30 bg-warning/10 text-warning"
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10 text-[var(--color-warning)]"
                         title="API key required"
                       >
                         <Key size={9} />
@@ -1078,8 +1076,8 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                           key={`agent-${agentId}`}
                           className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border ${
                             installed
-                              ? 'border-success-border bg-success-subtle text-success'
-                              : 'border-warning/30 bg-warning/10 text-warning'
+                              ? 'border-[var(--color-success)]/30 bg-[var(--color-success)]/10 text-[var(--color-success)]'
+                              : 'border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
                           }`}
                           title={installed ? `Agent ${agentId} installed` : `Requires agent: ${agentId}`}
                         >
@@ -1094,7 +1092,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
 
                 {/* Dependencies warnings (not-installed modules) */}
                 {!module.installed && missingDeps.length > 0 && (
-                  <Flex align="center" gap="1" mb="2" className="text-[11px] text-warning">
+                  <Flex align="center" gap="1" mb="2" className="text-[11px] text-[var(--color-warning)]">
                     <AlertTriangle size={10} className="flex-shrink-0" />
                     <span>Missing agents: {missingDeps.join(', ')}</span>
                   </Flex>
@@ -1104,21 +1102,21 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                 <div className="flex-1" />
 
                 {/* Action area */}
-                <div className="pt-2 border-t border-mission-control-border">
+                <div className="pt-2 border-t border-mission-control-border/40">
                   {module.core ? (
-                    <Flex align="center" gap="2" className="text-xs text-review">
+                    <Flex align="center" gap="2" className="text-xs text-[var(--color-review)]">
                       <Shield size={12} className="flex-shrink-0" />
                       <span>Core module — always active</span>
                     </Flex>
                   ) : module.installed ? (
                     <Flex align="center" gap="2">
                       {phase === 'installing' ? (
-                        <div className="flex items-center gap-1.5 text-xs text-info flex-1">
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--color-info)] flex-1">
                           <RadixSpinner size="1" />
                           <span>Installing…</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1.5 text-xs text-success flex-1">
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--color-success)] flex-1">
                           <CheckCircle size={12} className="flex-shrink-0" />
                           <span>Installed{module.enabled ? ' & enabled' : ' (disabled)'}</span>
                         </div>
@@ -1167,12 +1165,12 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                       </Button>
                     </Flex>
                   ) : phase === 'installing' ? (
-                    <Flex align="center" gap="2" className="text-xs text-info">
+                    <Flex align="center" gap="2" className="text-xs text-[var(--color-info)]">
                       <RadixSpinner size="1" />
                       <span>Installing…</span>
                     </Flex>
                   ) : phase === 'error' ? (
-                    <Flex align="center" gap="2" className="text-xs text-error">
+                    <Flex align="center" gap="2" className="text-xs text-[var(--color-error)]">
                       <XCircle size={12} className="flex-shrink-0" />
                       <span className="line-clamp-1">{installErr ?? 'Installation failed'}</span>
                     </Flex>
@@ -1258,15 +1256,15 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
       {/* Recent activity log */}
       {activityLog.length > 0 && (
         <div className="mt-8 border-t border-mission-control-border pt-5">
-          <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide mb-3">
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wide mb-3">
             Recent Activity
           </h3>
           <div className="space-y-1.5">
             {activityLog.map(entry => (
               <div key={entry.id} className="flex items-center gap-2.5 text-xs text-mission-control-text-dim">
-                {entry.action === 'install' && <CheckCircle size={12} className="text-success flex-shrink-0" />}
-                {entry.action === 'uninstall' && <Trash2 size={12} className="text-error flex-shrink-0" />}
-                {entry.action === 'enable' && <CheckCircle size={12} className="text-info flex-shrink-0" />}
+                {entry.action === 'install' && <CheckCircle size={12} className="text-[var(--color-success)] flex-shrink-0" />}
+                {entry.action === 'uninstall' && <Trash2 size={12} className="text-[var(--color-error)] flex-shrink-0" />}
+                {entry.action === 'enable' && <CheckCircle size={12} className="text-[var(--color-info)] flex-shrink-0" />}
                 {entry.action === 'disable' && <XCircle size={12} className="text-mission-control-text-dim flex-shrink-0" />}
                 <span className="flex-1">
                   <span className="text-mission-control-text font-medium">{entry.moduleName}</span>

@@ -24,12 +24,12 @@ interface WidgetLoaderProps {
  */
 function WidgetError({ widgetName }: { widgetName: string }) {
   return (
-    <div className="rounded-lg border border-error-border bg-error-subtle p-4 text-sm">
-      <Flex align="center" gap="2" className="text-error">
+    <div className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 p-4 text-sm">
+      <Flex align="center" gap="2" className="text-[var(--color-error)]">
         <AlertCircle size={16} />
         <span className="font-medium">Widget failed to load: {widgetName}</span>
       </Flex>
-      <p className="mt-1 text-xs text-error/70">
+      <p className="mt-1 text-xs text-[var(--color-error)]/70">
         The widget encountered an error during initialization.
       </p>
     </div>
@@ -41,7 +41,7 @@ function WidgetError({ widgetName }: { widgetName: string }) {
  */
 function WidgetLoading() {
   return (
-    <div className="rounded-lg border border-mission-control-border bg-mission-control-bg0 p-4">
+    <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
       <Flex align="center" gap="3">
         <div className="h-4 w-4 animate-spin rounded-full border-2 border-mission-control-accent border-t-transparent" />
         <span className="text-sm text-mission-control-text-dim">Loading widget...</span>
@@ -122,7 +122,7 @@ function WidgetPlaceholder({
   agentId: string;
 }) {
   return (
-    <div className="rounded-lg border border-mission-control-border bg-mission-control-bg0 p-4">
+    <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
       <Flex align="start" gap="3">
         <div className="flex-shrink-0">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-mission-control-accent/10 text-mission-control-accent">
@@ -133,10 +133,10 @@ function WidgetPlaceholder({
           <h4 className="font-semibold text-sm">{widget.name}</h4>
           <p className="text-xs text-mission-control-text-dim mt-1">{widget.description}</p>
           <div className="mt-3 text-xs text-mission-control-text-dim">
-            <span className="px-2 py-1 rounded-lg bg-info-subtle text-info">
+            <span className="px-2 py-1 rounded-lg bg-[var(--color-info)]/10 text-[var(--color-info)]">
               Widget: {widget.id}
             </span>
-            <span className="ml-2 px-2 py-1 rounded-lg bg-review-subtle text-review">
+            <span className="ml-2 px-2 py-1 rounded-lg bg-[var(--color-review)]-subtle text-[var(--color-review)]">
               Agent: {agentId}
             </span>
           </div>

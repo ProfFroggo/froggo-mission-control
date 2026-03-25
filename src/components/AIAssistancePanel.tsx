@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, MessageSquare, TrendingUp, Zap, X, ChevronRight, Copy, Check, Loader2, Briefcase, Smile, AlignLeft, FileText, type LucideIcon } from 'lucide-react';
-import { Button, Flex, IconButton } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { copyToClipboard } from '../utils/clipboard';
@@ -284,17 +284,17 @@ Provide a brief, actionable summary.`;
   }
 
   const sentimentColors = {
-    positive: 'text-success bg-success-subtle',
-    neutral: 'text-info bg-info-subtle',
-    negative: 'text-error bg-error-subtle',
-    urgent: 'text-warning bg-warning-subtle',
-    questioning: 'text-review bg-review-subtle',
+    positive: 'text-[var(--color-success)] bg-[var(--color-success)]/10',
+    neutral: 'text-[var(--color-info)] bg-[var(--color-info)]/10',
+    negative: 'text-[var(--color-error)] bg-[var(--color-error)]/10',
+    urgent: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',
+    questioning: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle',
   };
 
   const urgencyColors = {
-    low: 'text-success',
-    medium: 'text-warning',
-    high: 'text-error',
+    low: 'text-[var(--color-success)]',
+    medium: 'text-[var(--color-warning)]',
+    high: 'text-[var(--color-error)]',
   };
 
   const toneIcons: Record<string, LucideIcon> = {
@@ -312,59 +312,51 @@ Provide a brief, actionable summary.`;
           <Sparkles size={20} className="text-mission-control-accent" />
           <h2 className="font-semibold">AI Assistance</h2>
         </Flex>
-        <IconButton
+        <button
           onClick={onClose}
-          variant="ghost"
-          size="2"
-
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           aria-label="Close panel"
         >
           <X size={16} />
-        </IconButton>
+        </button>
       </Flex>
 
       {/* Tab Navigation */}
-      <Flex className="border-b border-mission-control-border bg-mission-control-bg">
-        <Button
+      <div className="flex border-b border-mission-control-border bg-mission-control-bg">
+        <button
           onClick={() => setActiveTab('suggestions')}
-          variant="ghost"
-          size="2"
-          className={`flex-1 rounded-none border-b-2 -mb-px ${
+          className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
             activeTab === 'suggestions'
-              ? 'border-[var(--mission-control-accent)] text-[var(--mission-control-accent)]'
-              : 'border-transparent'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
         >
           <Zap size={16} />
           Suggestions
-        </Button>
-        <Button
+        </button>
+        <button
           onClick={() => setActiveTab('sentiment')}
-          variant="ghost"
-          size="2"
-          className={`flex-1 rounded-none border-b-2 -mb-px ${
+          className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
             activeTab === 'sentiment'
-              ? 'border-[var(--mission-control-accent)] text-[var(--mission-control-accent)]'
-              : 'border-transparent'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
         >
           <TrendingUp size={16} />
           Sentiment
-        </Button>
-        <Button
+        </button>
+        <button
           onClick={() => setActiveTab('summary')}
-          variant="ghost"
-          size="2"
-          className={`flex-1 rounded-none border-b-2 -mb-px ${
+          className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
             activeTab === 'summary'
-              ? 'border-[var(--mission-control-accent)] text-[var(--mission-control-accent)]'
-              : 'border-transparent'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
         >
           <MessageSquare size={16} />
           Summary
-        </Button>
-      </Flex>
+        </button>
+      </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -395,28 +387,24 @@ Provide a brief, actionable summary.`;
                           <span className="capitalize">{suggestion.tone}</span>
                         </span>
                         <Flex gap="1">
-                          <IconButton
+                          <button
                             onClick={() => handleCopySuggestion(suggestion)}
-                            variant="ghost"
-                            size="2"
-                           
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                             title="Copy to clipboard"
                           >
                             {copiedId === suggestion.id ? (
-                              <Check size={14} className="text-success" />
+                              <Check size={14} className="text-[var(--color-success)]" />
                             ) : (
                               <Copy size={14} />
                             )}
-                          </IconButton>
-                          <IconButton
+                          </button>
+                          <button
                             onClick={() => handleApplySuggestion(suggestion)}
-                            variant="ghost"
-                            size="2"
-                           
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                             title="Apply suggestion"
                           >
                             <ChevronRight size={14} />
-                          </IconButton>
+                          </button>
                         </Flex>
                       </Flex>
                       <p className="text-sm text-mission-control-text leading-relaxed">

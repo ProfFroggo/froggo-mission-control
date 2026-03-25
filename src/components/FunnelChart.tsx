@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
-import { Filter, Loader2, Download, Copy, Check } from 'lucide-react';
-import { Button, Flex } from '@radix-ui/themes';
+import { Filter, Download, Copy, Check } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 
 interface StatusCount {
   status: string;
@@ -85,8 +85,13 @@ export default function FunnelChart() {
 
   if (loading) {
     return (
-      <div className="h-64 flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-mission-control-text-dim" />
+      <div className="space-y-3">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="space-y-1">
+            <div className="h-4 bg-mission-control-border/40 rounded animate-pulse w-24" />
+            <div className="h-10 bg-mission-control-border/20 rounded-lg animate-pulse" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -114,28 +119,28 @@ export default function FunnelChart() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <Flex align="center" gap="2">
           <Filter size={16} className="text-mission-control-accent" />
-          <span className="font-medium">Task Funnel</span>
-          <span className="text-xs text-mission-control-text-dim">current pipeline counts</span>
+          <span className="text-sm font-semibold text-mission-control-text">Task Funnel</span>
+          <span className="text-[10px] uppercase tracking-wider text-mission-control-text-dim">current pipeline</span>
         </Flex>
         <Flex align="center" gap="2">
-          <Button
+          <button
+            type="button"
             onClick={handleExportCsv}
-            size="1"
-            variant="ghost"
             title="Export funnel as CSV"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Download size={12} />
             CSV
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
             onClick={handleCopy}
-            size="1"
-            variant="ghost"
             title="Copy to clipboard"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
-            {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
+            {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
-          </Button>
+          </button>
         </Flex>
       </div>
 
@@ -158,7 +163,7 @@ export default function FunnelChart() {
               {/* Bar */}
               <div className="h-10 bg-mission-control-bg rounded-lg overflow-hidden relative">
                 <div
-                  className="h-full rounded-lg flex items-center px-3 transition-all duration-500"
+                  className="h-full rounded-lg flex items-center px-3 transition-colors duration-500"
                   style={{
                     width: `${widthPct}%`,
                     background: stage.color,
@@ -179,7 +184,7 @@ export default function FunnelChart() {
                     style={{
                       borderLeft: '4px solid transparent',
                       borderRight: '4px solid transparent',
-                      borderTop: `6px solid var(--color-text-dim, #64748b)`,
+                      borderTop: `6px solid var(--mission-control-text-dim, #64748b)`,
                       display: 'inline-block',
                     }}
                   />
@@ -198,12 +203,12 @@ export default function FunnelChart() {
         {STAGES.map((stage, idx) => (
           <div
             key={stage.status}
-            className="text-center p-3 rounded-lg bg-mission-control-bg"
+            className="text-center p-3 rounded-xl bg-mission-control-surface border border-mission-control-border"
           >
-            <div className="text-2xl font-bold" style={{ color: stage.color }}>
+            <div className="text-2xl font-bold tabular-nums text-mission-control-text">
               {stageCounts[idx]}
             </div>
-            <div className="text-xs text-mission-control-text-dim mt-0.5">{stage.label}</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mt-0.5">{stage.label}</div>
           </div>
         ))}
       </div>

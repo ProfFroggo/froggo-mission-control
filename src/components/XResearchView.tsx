@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Save, Trash2, ExternalLink, MessageCircle, User, Hash, Check, Send, Lightbulb } from 'lucide-react';
-import { Button, IconButton, Spinner, TextField, Flex } from '@radix-ui/themes';
+import { Button, Spinner, TextField, Flex } from '@radix-ui/themes';
 import { scheduleApi } from '../lib/api';
 import { showToast } from './Toast';
 
@@ -187,7 +187,7 @@ export function XResearchView() {
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border">
+      <div className="px-4 py-3 border-b border-mission-control-border flex-shrink-0">
         <Flex align="center" justify="between" className="mb-4">
           <div>
             <h1 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
@@ -217,7 +217,7 @@ export function XResearchView() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && performSearch()}
               placeholder="Search tweets, users, topics..."
-              style={{ width: '100%' }}
+              className="w-full"
             >
               <TextField.Slot>
                 <Search size={16} />
@@ -241,7 +241,7 @@ export function XResearchView() {
         {showLibrary ? (
           /* Library View */
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-mission-control-text">Research Library</h2>
+            <h2 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Research Library</h2>
             {savedItems.length === 0 ? (
               <div className="text-center py-12 text-mission-control-text-dim">
                 <Save size={32} className="mx-auto mb-3 opacity-30" />
@@ -253,7 +253,7 @@ export function XResearchView() {
                 {savedItems.map((saved) => (
                   <div
                     key={saved.id}
-                    className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4"
+                    className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/30 transition-colors"
                   >
                     <Flex align="center" justify="between" className="mb-3">
                       <div>
@@ -263,24 +263,20 @@ export function XResearchView() {
                         </div>
                       </div>
                       <Flex align="center" gap="2">
-                        <IconButton
+                        <button
                           onClick={() => loadSavedResults(saved)}
-                          variant="ghost"
-                          color="gray"
-                          size="2"
                           title="Load results"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
                           <ExternalLink size={16} />
-                        </IconButton>
-                        <IconButton
+                        </button>
+                        <button
                           onClick={() => deleteSaved(saved.id)}
-                          variant="ghost"
-                          color="red"
-                          size="2"
                           title="Delete"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
                           <Trash2 size={16} />
-                        </IconButton>
+                        </button>
                       </Flex>
                     </Flex>
                     <div className="flex flex-wrap gap-2">
@@ -355,7 +351,7 @@ export function XResearchView() {
                   key={result.id}
                   role="button"
                   tabIndex={0}
-                  className={`bg-mission-control-surface border rounded-lg p-4 cursor-pointer transition-all hover:border-mission-control-accent/50 ${
+                  className={`bg-mission-control-surface border rounded-xl p-4 cursor-pointer transition-colors hover:border-mission-control-accent/30 ${
                     selectedIds.has(result.id)
                       ? 'border-mission-control-accent bg-mission-control-accent/5'
                       : 'border-mission-control-border'
@@ -377,29 +373,29 @@ export function XResearchView() {
                     <div className="flex-1 min-w-0">
                       {/* Type Badge */}
                       <Flex align="center" gap="2" className="mb-2">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                          result.type === 'tweet' ? 'bg-info-subtle text-info' :
-                          result.type === 'thread' ? 'bg-success-subtle text-success' :
-                          result.type === 'user' ? 'bg-review-subtle text-review' :
-                          'bg-mission-control-accent/20 text-mission-control-accent'
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          result.type === 'tweet' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' :
+                          result.type === 'thread' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
+                          result.type === 'user' ? 'bg-mission-control-border/50 text-mission-control-text-dim' :
+                          'bg-mission-control-accent/10 text-mission-control-accent'
                         }`}>
                           {getTypeIcon(result.type)} {getTypeLabel(result.type)}
                         </span>
                         {result.username && (
-                          <span className="text-sm text-mission-control-text-dim">{result.username}</span>
+                          <span className="text-xs text-mission-control-text-dim">{result.username}</span>
                         )}
                       </Flex>
 
                       {/* Tweet Content */}
                       {result.content && (
-                        <p className="text-sm text-mission-control-text mb-3 line-clamp-3">
+                        <p className="text-sm text-mission-control-text leading-relaxed mt-2 mb-3 line-clamp-3">
                           {result.content}
                         </p>
                       )}
 
                       {/* Metrics */}
                       {(result.likes || result.retweets || result.replies || result.followers) && (
-                        <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim">
+                        <Flex align="center" gap="4" className="text-[10px] text-mission-control-text-dim tabular-nums">
                           {result.followers !== undefined && (
                             <span className="flex items-center gap-1">
                               <User size={12} />
@@ -423,7 +419,7 @@ export function XResearchView() {
 
                       {/* Topic/Thread Count */}
                       {(result.tweetCount || result.engagement) && (
-                        <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim mt-2">
+                        <Flex align="center" gap="4" className="text-[10px] text-mission-control-text-dim tabular-nums mt-2">
                           {result.tweetCount !== undefined && (
                             <span>{result.tweetCount.toLocaleString()} tweets</span>
                           )}
@@ -439,23 +435,21 @@ export function XResearchView() {
                           {result.date && new Date(result.date).toLocaleDateString()}
                         </span>
                         <Flex align="center" gap="2">
-                          <Button
+                          <button
                             onClick={(e) => { e.stopPropagation(); saveAsIdea(result); }}
-                            variant="ghost"
-                            color="gray"
-                            size="1"
                             title="Save as idea draft"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                           >
                             <Lightbulb size={12} />
                             Save as Idea
-                          </Button>
+                          </button>
                           {result.url && (
                             <a
                               href={result.url}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-info hover:underline flex items-center gap-1"
+                              className="text-xs text-[var(--color-info)] hover:underline flex items-center gap-1"
                             >
                               View on X <ExternalLink size={10} />
                             </a>

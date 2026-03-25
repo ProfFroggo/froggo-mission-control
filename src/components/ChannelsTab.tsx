@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, ChevronDown, ChevronRight, LogOut, Wifi, WifiOff, MessageSquare, Gamepad2, MessageCircle, Briefcase, Mail, Globe, Radio, Send as SendPlane } from 'lucide-react';
-import { Button, Flex, IconButton, Badge, Spinner } from '@radix-ui/themes';
+import { Button, Flex, Badge, Spinner } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -156,7 +156,7 @@ export default function ChannelsTab() {
                     </div>
                   </div>
                   <Flex align="center" gap="2">
-                    {hasError && <span className="w-2 h-2 rounded-full bg-error" title="Has errors" />}
+                    {hasError && <span className="w-2 h-2 rounded-full bg-[var(--color-error)]" title="Has errors" />}
                     <Badge
                       color={connectedCount > 0 ? 'green' : 'gray'}
                       variant="soft"
@@ -174,14 +174,14 @@ export default function ChannelsTab() {
                     ) : channel.accounts.map((account, i) => (
                       <div key={i} className="p-4 border-b border-mission-control-border last:border-b-0 hover:bg-mission-control-border/40">
                         <Flex align="center" gap="3">
-                          <div className={`p-1.5 rounded ${account.connected ? 'bg-success-subtle' : 'bg-mission-control-bg'}`}>
-                            {account.connected ? <Wifi size={14} className="text-success" /> : <WifiOff size={14} className="text-mission-control-text-dim" />}
+                          <div className={`p-1.5 rounded ${account.connected ? 'bg-[var(--color-success)]/10' : 'bg-mission-control-bg'}`}>
+                            {account.connected ? <Wifi size={14} className="text-[var(--color-success)]" /> : <WifiOff size={14} className="text-mission-control-text-dim" />}
                           </div>
                           <div className="flex-1">
                             <div className="text-sm font-medium">{account.name || account.accountId}</div>
                             <div className="text-xs text-mission-control-text-dim flex flex-wrap gap-x-3 gap-y-0.5">
                               {account.enabled !== undefined && (
-                                <span className={account.enabled ? 'text-success' : 'text-mission-control-text-dim'}>
+                                <span className={account.enabled ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim'}>
                                   {account.enabled ? 'Enabled' : 'Disabled'}
                                 </span>
                               )}
@@ -190,23 +190,22 @@ export default function ChannelsTab() {
                               {account.lastInboundAt && <span>Last in: {formatTimeAgo(account.lastInboundAt)}</span>}
                               {account.lastOutboundAt && <span>Last out: {formatTimeAgo(account.lastOutboundAt)}</span>}
                               {account.reconnectAttempts !== undefined && account.reconnectAttempts > 0 && (
-                                <span className="text-warning">Reconnects: {account.reconnectAttempts}</span>
+                                <span className="text-[var(--color-warning)]">Reconnects: {account.reconnectAttempts}</span>
                               )}
                             </div>
                             {account.lastError && (
-                              <div className="text-xs text-error mt-1">{account.lastError}</div>
+                              <div className="text-xs text-[var(--color-error)] mt-1">{account.lastError}</div>
                             )}
                           </div>
-                          <IconButton
-                            variant="ghost"
-                            size="2"
-                            color="red"
+                          <button
+                            type="button"
                             onClick={e => { e.stopPropagation(); handleLogout(channel.id, account.accountId); }}
                             title="Logout"
                             aria-label={`Logout ${account.name || account.accountId}`}
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                           >
                             <LogOut size={14} />
-                          </IconButton>
+                          </button>
                         </Flex>
                       </div>
                     ))}

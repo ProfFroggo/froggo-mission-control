@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Shield, Key, Lock, AlertTriangle, CheckCircle, RefreshCw, Filter, Eye, EyeOff, Trash2, Plus, Ban } from 'lucide-react';
-import { Button, Flex, IconButton, Badge, Select, TextField } from '@radix-ui/themes';
+import { Shield, Key, AlertTriangle, CheckCircle, RefreshCw, Filter, Eye, EyeOff, Trash2, Plus, Ban, X, Copy } from 'lucide-react';
+import { Button, Flex, Badge, Select, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { settingsApi } from '../lib/api';
 
@@ -302,20 +302,17 @@ export default function SecuritySettings() {
       {/* Security Alerts */}
       {alerts.length > 0 && (
         <section>
-          <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-            <AlertTriangle size={16} className="text-warning" />
-            Active Security Alerts
-          </h2>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Active Security Alerts</p>
           <div className="space-y-2">
             {alerts.map((alert) => (
               <div
                 key={alert.id}
                 className={`p-4 rounded-lg border flex items-start gap-3 ${
                   alert.severity === 'critical' || alert.severity === 'high'
-                    ? 'bg-error-subtle border-error-border'
+                    ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30'
                     : alert.severity === 'medium'
-                    ? 'bg-warning-subtle border-warning-border'
-                    : 'bg-info-subtle border-info-border'
+                    ? 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30'
+                    : 'bg-[var(--color-info)]/10 border-[var(--color-info)]/30'
                 }`}
               >
                 <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
@@ -325,16 +322,15 @@ export default function SecuritySettings() {
                     {alert.source} • {new Date(alert.timestamp).toLocaleString()}
                   </div>
                 </div>
-                <IconButton
-                  variant="ghost"
-                  size="2"
-                  color="gray"
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() => dismissAlert(alert.id)}
                   title="Dismiss"
                   aria-label="Dismiss alert"
                 >
                   <CheckCircle size={16} />
-                </IconButton>
+                </button>
               </div>
             ))}
           </div>
@@ -343,11 +339,8 @@ export default function SecuritySettings() {
 
       {/* AI Security Audit */}
       <section>
-        <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-          <Shield size={16} />
-          AI Security Audit
-        </h2>
-        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">AI Security Audit</p>
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
           <p className="text-sm text-mission-control-text-dim mb-4">
             Run a comprehensive AI-powered security audit to scan configuration files, credentials, logs, and permissions for vulnerabilities.
           </p>
@@ -385,14 +378,11 @@ export default function SecuritySettings() {
 
       {/* API Keys Management */}
       <section>
-        <Flex align="center" justify="between" className="mb-4">
-          <h2 className="text-lg font-medium flex items-center gap-2">
-            <Key size={16} />
-            API Keys
-          </h2>
+        <Flex align="center" justify="between" className="mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">API Keys</p>
           <Button
-            variant="solid"
-            color="grass"
+            variant="soft"
+            color="gray"
             size="2"
             onClick={() => setAddKeyModal(true)}
           >
@@ -401,51 +391,64 @@ export default function SecuritySettings() {
           </Button>
         </Flex>
 
-        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border divide-y divide-mission-control-border">
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border divide-y divide-mission-control-border/50">
           {apiKeys.length === 0 ? (
             <div className="p-8 text-center text-mission-control-text-dim">
-              <Key size={32} className="mx-auto mb-2 opacity-50" />
+              <Key size={32} className="mx-auto mb-2 opacity-30" />
               <p className="text-sm">No API keys stored</p>
+              <p className="text-xs mt-1 opacity-70">Add keys to use with agents and automations</p>
             </div>
           ) : (
             apiKeys.map((key) => (
-              <div key={key.id} className="p-4">
-                <Flex align="start" justify="between" gap="4">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium">{key.name}</div>
-                    <div className="text-xs text-mission-control-text-dim mt-1">{key.service}</div>
-                    <Flex align="center" gap="2" className="mt-2">
-                      <code className="px-2 py-1 bg-mission-control-bg rounded text-xs font-mono">
-                        {showKeyValues[key.id] ? key.key : '••••••••••••••••'}
-                      </code>
-                      <IconButton
-                        variant="ghost"
-                        size="2"
-                        color="gray"
-                        onClick={() => setShowKeyValues(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
-                        title={showKeyValues[key.id] ? 'Hide' : 'Show'}
-                        aria-label={showKeyValues[key.id] ? 'Hide key' : 'Show key'}
-                      >
-                        {showKeyValues[key.id] ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </IconButton>
-                    </Flex>
-                    {key.lastUsed && (
-                      <div className="text-xs text-mission-control-text-dim mt-2">
-                        Last used: {new Date(key.lastUsed).toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-                  <IconButton
-                    variant="ghost"
-                    size="2"
-                    color="red"
-                    onClick={() => handleDeleteKey(key.id)}
-                    title="Delete key"
-                    aria-label="Delete API key"
-                  >
-                    <Trash2 size={16} />
-                  </IconButton>
-                </Flex>
+              <div key={key.id} className="flex items-center justify-between px-4 py-3">
+                <div className="flex-1 min-w-0 pr-4">
+                  <div className="text-sm font-medium text-mission-control-text">{key.name}</div>
+                  <div className="text-xs text-mission-control-text-dim mt-0.5">{key.service}</div>
+                  <Flex align="center" gap="1.5" className="mt-2">
+                    <code className="px-2 py-0.5 bg-mission-control-bg border border-mission-control-border/60 rounded text-xs font-mono text-mission-control-text-dim tracking-wider">
+                      {showKeyValues[key.id]
+                        ? key.key
+                        : key.key.slice(0, 6) + '••••••••••••' + key.key.slice(-4)}
+                    </code>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+                      onClick={() => setShowKeyValues(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
+                      title={showKeyValues[key.id] ? 'Hide' : 'Reveal'}
+                      aria-label={showKeyValues[key.id] ? 'Hide key value' : 'Reveal key value'}
+                    >
+                      {showKeyValues[key.id] ? <EyeOff size={12} /> : <Eye size={12} />}
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+                      onClick={() => {
+                        navigator.clipboard.writeText(key.key).then(
+                          () => showToast('success', 'Copied', 'Key copied to clipboard'),
+                          () => showToast('error', 'Copy failed', 'Could not access clipboard')
+                        );
+                      }}
+                      title="Copy key"
+                      aria-label="Copy key to clipboard"
+                    >
+                      <Copy size={12} />
+                    </button>
+                  </Flex>
+                  {key.lastUsed && (
+                    <div className="text-xs text-mission-control-text-dim mt-1.5">
+                      Last used: {new Date(key.lastUsed).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/5 transition-colors"
+                  onClick={() => handleDeleteKey(key.id)}
+                  title="Delete key"
+                  aria-label="Delete API key"
+                >
+                  <Trash2 size={15} />
+                </button>
               </div>
             ))
           )}
@@ -454,21 +457,19 @@ export default function SecuritySettings() {
 
       {/* Blocked Commands */}
       <section>
-        <Flex align="center" justify="between" className="mb-4">
-          <h2 className="text-lg font-medium flex items-center gap-2">
-            <Ban size={16} />
-            Blocked Commands
-          </h2>
+        <Flex align="center" justify="between" className="mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Blocked Commands</p>
           <Button
-            onClick={handleRestoreDefaults}
-            size="1"
+            type="button"
             variant="ghost"
+            size="2"
+            onClick={handleRestoreDefaults}
           >
             Restore defaults
           </Button>
         </Flex>
-        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
-          <div className="p-3 border-b border-mission-control-border bg-mission-control-bg0/30">
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+          <div className="p-3 border-b border-mission-control-border bg-mission-control-bg/50">
             <p className="text-xs text-mission-control-text-dim mb-2">
               These patterns are blocked for all agents via <code className="font-mono bg-mission-control-bg px-1 rounded">--disallowedTools</code>. Supports Claude tool patterns like <code className="font-mono bg-mission-control-bg px-1 rounded">Bash(rm -rf *)</code>.
             </p>
@@ -498,16 +499,15 @@ export default function SecuritySettings() {
               disallowedTools.map(tool => (
                 <Flex key={tool} align="center" justify="between" className="px-3 py-2">
                   <code className="text-xs font-mono text-mission-control-text">{tool}</code>
-                  <IconButton
-                    variant="ghost"
-                    size="2"
-                    color="red"
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     onClick={() => handleRemoveDisallowed(tool)}
                     title="Unblock"
                     aria-label={`Unblock ${tool}`}
                   >
                     <Ban size={14} />
-                  </IconButton>
+                  </button>
                 </Flex>
               ))
             )}
@@ -517,11 +517,8 @@ export default function SecuritySettings() {
 
       {/* Audit Log Viewer */}
       <section>
-        <Flex align="center" justify="between" className="mb-4">
-          <h2 className="text-lg font-medium flex items-center gap-2">
-            <Lock size={16} />
-            Audit Log
-          </h2>
+        <Flex align="center" justify="between" className="mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Audit Log</p>
           <Flex align="center" gap="2">
             <Filter size={14} className="text-mission-control-text-dim" />
             <Select.Root value={severityFilter} onValueChange={setSeverityFilter}>
@@ -538,7 +535,7 @@ export default function SecuritySettings() {
           </Flex>
         </Flex>
 
-        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border divide-y divide-mission-control-border max-h-96 overflow-y-auto">
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border divide-y divide-mission-control-border/50 max-h-96 overflow-y-auto">
           {filteredLogs.length === 0 ? (
             <div className="p-8 text-center text-mission-control-text-dim">
               <CheckCircle size={32} className="mx-auto mb-2 opacity-50" />
@@ -603,15 +600,24 @@ export default function SecuritySettings() {
 
       {/* Add Key Modal */}
       {addKeyModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-              <Plus size={16} />
-              Add Credential
-            </h3>
-            <div className="space-y-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+              <h3 className="text-base font-semibold">Add Credential</h3>
+              <button
+                type="button"
+                onClick={() => { setAddKeyModal(false); setNewKey({ name: '', service: '', key: '' }); }}
+                aria-label="Close"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               <div>
-                <label className="block text-sm text-mission-control-text-dim mb-1">Preset</label>
+                <label className="text-xs font-medium text-mission-control-text-dim mb-1 block">Preset</label>
                 <Select.Root
                   onValueChange={(val) => {
                     const service = val === '_custom' ? '' : val;
@@ -628,7 +634,7 @@ export default function SecuritySettings() {
                 </Select.Root>
               </div>
               <div>
-                <label htmlFor="api-key-name" className="block text-sm text-mission-control-text-dim mb-1">Label</label>
+                <label htmlFor="api-key-name" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Label</label>
                 <TextField.Root
                   id="api-key-name"
                   size="2"
@@ -639,7 +645,7 @@ export default function SecuritySettings() {
                 />
               </div>
               <div>
-                <label htmlFor="api-key-service" className="block text-sm text-mission-control-text-dim mb-1">Service</label>
+                <label htmlFor="api-key-service" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Service</label>
                 <TextField.Root
                   id="api-key-service"
                   size="2"
@@ -650,7 +656,7 @@ export default function SecuritySettings() {
                 />
               </div>
               <div>
-                <label htmlFor="api-key-value" className="block text-sm text-mission-control-text-dim mb-1">Key / Token / Secret</label>
+                <label htmlFor="api-key-value" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Key / Token / Secret</label>
                 <TextField.Root
                   id="api-key-value"
                   size="2"
@@ -663,25 +669,23 @@ export default function SecuritySettings() {
                 />
               </div>
             </div>
-            <Flex gap="2" className="mt-6">
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
               <Button
-                variant="solid"
-                color="grass"
-                size="2"
-                className="flex-1"
-                onClick={handleAddKey}
-              >
-                Add Credential
-              </Button>
-              <Button
-                variant="soft"
-                color="gray"
+                variant="ghost"
                 size="2"
                 onClick={() => { setAddKeyModal(false); setNewKey({ name: '', service: '', key: '' }); }}
               >
                 Cancel
               </Button>
-            </Flex>
+              <Button
+                variant="solid"
+                size="2"
+                onClick={handleAddKey}
+              >
+                Add Credential
+              </Button>
+            </div>
           </div>
         </div>
       )}

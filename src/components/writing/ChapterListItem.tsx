@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Pencil, Trash2, GripVertical } from 'lucide-react';
-import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
+import { Flex, TextField } from '@radix-ui/themes';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { WritingChapter } from '../../store/writingStore';
@@ -101,23 +101,21 @@ export default function ChapterListItem({
   return (
     <>
       <div ref={setNodeRef} style={style} className="flex items-center group">
-        <IconButton
+        <button
           {...attributes}
           {...listeners}
-          size="1"
-          variant="ghost"
-         
-          className="ml-1 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="ml-1 inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-0 group-hover:opacity-100"
           aria-label={`Drag to reorder ${chapter.title}`}
         >
           <GripVertical size={14} />
-        </IconButton>
-        <Button
-          variant={isActive ? 'soft' : 'ghost'}
-          size="1"
+        </button>
+        <button
+          type="button"
           onClick={onSelect}
-          className={`flex-1 text-left px-2 py-2 relative ${
-            isActive ? 'border-l-2 border-l-mission-control-accent' : 'border-l-2 border-l-transparent'
+          className={`flex-1 text-left px-2 py-2 relative transition-colors ${
+            isActive
+              ? 'bg-mission-control-surface border-l-2 border-l-mission-control-accent text-mission-control-text'
+              : 'border-l-2 border-l-transparent text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
           }`}
         >
           <div className="flex items-start justify-between min-w-0">
@@ -137,27 +135,23 @@ export default function ChapterListItem({
 
             {/* Action buttons — visible on hover */}
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-              <IconButton
-                size="1"
-                variant="ghost"
-               
+              <button
                 onClick={handleStartRename}
                 title="Rename chapter"
+                className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Pencil size={12} />
-              </IconButton>
-              <IconButton
-                size="1"
-                variant="ghost"
-               
+              </button>
+              <button
                 onClick={handleDelete}
                 title="Delete chapter"
+                className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Trash2 size={12} />
-              </IconButton>
+              </button>
             </div>
           </div>
-        </Button>
+        </button>
       </div>
 
       {/* Delete Dialog */}

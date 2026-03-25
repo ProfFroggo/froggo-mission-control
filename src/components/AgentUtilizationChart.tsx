@@ -145,7 +145,7 @@ export default function AgentUtilizationChart() {
       </div>
 
       {/* Chart */}
-      <div className="flex-1 min-h-0 bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
+      <div className="flex-1 min-h-0 bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
         {viewMode === 'bar' ? (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={CHART_MARGIN} barGap={3} barCategoryGap="30%">
@@ -208,17 +208,17 @@ export default function AgentUtilizationChart() {
       </div>
 
       {/* Agent table */}
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-mission-control-border">
-                <th className="text-left px-4 py-2.5 font-medium text-mission-control-text-dim">Agent</th>
-                <th className="text-right px-4 py-2.5 font-medium text-mission-control-text-dim">Assigned</th>
-                <th className="text-right px-4 py-2.5 font-medium text-mission-control-text-dim">Done</th>
-                <th className="text-right px-4 py-2.5 font-medium text-mission-control-text-dim w-32">Rate</th>
-                <th className="text-right px-4 py-2.5 font-medium text-mission-control-text-dim">Avg</th>
-                <th className="text-right px-4 py-2.5 font-medium text-mission-control-text-dim">Total</th>
+                <th className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Agent</th>
+                <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Assigned</th>
+                <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Done</th>
+                <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim w-32">Rate</th>
+                <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Avg</th>
+                <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -228,7 +228,7 @@ export default function AgentUtilizationChart() {
                   agent.completionRate >= 80 ? 'var(--color-success)' :
                   agent.completionRate >= 50 ? 'var(--color-warning)' : 'var(--color-error)';
                 return (
-                  <tr key={agent.agentId} className="border-b border-mission-control-border/50 last:border-b-0 hover:bg-mission-control-border/20 transition-colors">
+                  <tr key={agent.agentId} className="border-b border-mission-control-border/40 last:border-0 hover:bg-mission-control-border/10 transition-colors">
                     <td className="px-4 py-2.5">
                       <Flex align="center" gap="2">
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
@@ -242,7 +242,7 @@ export default function AgentUtilizationChart() {
                       <Flex align="center" justify="end" gap="2">
                         <div className="w-16 h-1.5 rounded-full bg-mission-control-border overflow-hidden">
                           <div
-                            className="h-full rounded-full transition-all"
+                            className="h-full rounded-full transition-colors"
                             style={{ width: `${Math.min(agent.completionRate, 100)}%`, backgroundColor: rateColor }}
                           />
                         </div>

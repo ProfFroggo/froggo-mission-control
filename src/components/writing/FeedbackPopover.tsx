@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import { Send, Loader2, ShieldCheck } from 'lucide-react';
-import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
+import { Flex, IconButton, TextField } from '@radix-ui/themes';
 import { gateway } from '../../lib/gateway';
 import { buildMemoryContext } from '../../lib/writingContext';
 import { useWritingStore } from '../../store/writingStore';
@@ -341,16 +341,16 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
       {/* Agent picker row + fact check */}
       <Flex align="center" justify="between">
         <AgentPicker selected={selectedAgent} onSelect={setSelectedAgent} disabled={streaming} />
-        <Button
-          size="1"
-          variant="ghost"
+        <button
+          type="button"
           onClick={handleFactCheck}
           disabled={streaming}
           title="Fact-check highlighted claim"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ShieldCheck className="w-3 h-3" />
           Fact Check
-        </Button>
+        </button>
       </Flex>
 
       {/* Instruction input + send button */}
@@ -396,19 +396,19 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
           {alternatives.map((alt) => (
             <FeedbackAlternative key={alt.text} index={alternatives.indexOf(alt)} text={alt.text} commentary={alt.commentary} onAccept={handleAccept} />
           ))}
-          <Button
-            size="1"
-            variant="ghost"
+          <button
+            type="button"
             onClick={handleDismiss}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             Dismiss
-          </Button>
+          </button>
         </div>
       )}
 
       {/* Error state */}
       {error && (
-        <div className="mt-2 text-sm text-error">{error}</div>
+        <div className="mt-2 text-sm text-[var(--color-error)]">{error}</div>
       )}
     </div>
   );

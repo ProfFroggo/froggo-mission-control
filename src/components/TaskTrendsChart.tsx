@@ -199,7 +199,7 @@ export default function TaskTrendsChart({ days = 30 }: { days?: number }) {
       </div>
 
       {/* Chart */}
-      <div className="flex-1 min-h-0 bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
+      <div className="flex-1 min-h-0 bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
         <ResponsiveContainer width="100%" height="100%">
           {renderChart()}
         </ResponsiveContainer>

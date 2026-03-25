@@ -91,15 +91,13 @@ export default function WritingWorkspace() {
               <RotateCcw size={12} />
               Resume
             </Button>
-            <Button
-              size="1"
-              variant="ghost"
+            <button
               onClick={handleDiscard}
-              className="flex-shrink-0"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors flex-shrink-0"
             >
               <Trash2 size={12} />
               Discard
-            </Button>
+            </button>
           </div>
         )}
         <div className="flex-1 min-h-0">

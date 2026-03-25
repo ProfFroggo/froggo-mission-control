@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Package, Clock, CheckCircle2 } from 'lucide-react';
-import { Button, Flex, IconButton } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import ErrorDisplay from '../ErrorDisplay';
 import { showToast } from '../Toast';
 
@@ -65,7 +65,7 @@ function MiniProgress({ moduleId, taskIds, onBuild }: MiniProgressProps) {
     <div className="mt-3">
       <Flex align="center" justify="between" className="text-[10px] text-mission-control-text-dim mb-1">
         {allDone ? (
-          <span className="flex items-center gap-1 text-success">
+          <span className="flex items-center gap-1 text-[var(--color-success)]">
             <CheckCircle2 size={10} /> Complete
           </span>
         ) : (
@@ -75,7 +75,7 @@ function MiniProgress({ moduleId, taskIds, onBuild }: MiniProgressProps) {
       </Flex>
       <div className="w-full h-1.5 bg-mission-control-bg rounded-full overflow-hidden">
         <div
-          className="h-full rounded-full transition-all"
+          className="h-full rounded-full transition-colors"
           style={{
             width: `${pct}%`,
             background: allDone ? 'var(--color-success)' : 'var(--color-accent)',
@@ -188,22 +188,19 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
                 <Flex align="center" justify="between" className="mb-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
                     mod.status === 'built' || mod.status === 'finished'
-                      ? 'bg-success/20 text-success'
-                      : 'bg-warning/20 text-warning'
+                      ? 'bg-[var(--color-success)]/20 text-[var(--color-success)]'
+                      : 'bg-[var(--color-warning)]/20 text-[var(--color-warning)]'
                   }`}>
                     {mod.status === 'built' || mod.status === 'finished' ? 'Built' : 'In Progress'}
                   </span>
-                  <IconButton
-                    size="2"
-                    variant="ghost"
-                   
-                    color="red"
-                    className="opacity-0 group-hover:opacity-100 transition-all"
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover:opacity-100"
                     title="Delete module"
                     onClick={(e) => handleDelete(e, mod.id, mod.name)}
                   >
                     <Trash2 size={14} />
-                  </IconButton>
+                  </button>
                 </Flex>
 
                 {/* Name */}

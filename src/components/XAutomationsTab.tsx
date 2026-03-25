@@ -22,7 +22,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
-import { Button, IconButton, Badge, Heading, Text, Spinner, TextField, TextArea, Select, Box, Flex } from '@radix-ui/themes';
+import { Button, Badge, Heading, Text, Spinner, TextField, TextArea, Select, Box, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface Automation {
@@ -338,9 +338,9 @@ export default function XAutomationsTab() {
               <Zap size={20} className="text-mission-control-accent" />
               {editingAutomation ? 'Edit Automation' : 'New Automation'}
             </Heading>
-            <Button onClick={closeBuilder} variant="ghost" color="gray" size="2">
+            <button type="button" onClick={closeBuilder} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               Cancel
-            </Button>
+            </button>
           </Flex>
 
           {/* Basic Info */}
@@ -388,17 +388,18 @@ export default function XAutomationsTab() {
                 const isSelected = builderTriggerType === option.type;
 
                 return (
-                  <Button
+                  <button
                     key={option.type}
+                    type="button"
                     onClick={() => {
                       setBuilderTriggerType(option.type);
                       setBuilderTriggerConfig({});
                     }}
-                    size="2"
-                    variant={isSelected ? 'soft' : 'ghost'}
-                   
-                    className="flex items-start gap-3 p-4 w-full text-left h-auto"
-                    style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}
+                    className={`flex items-start gap-3 p-4 w-full text-left rounded-md border transition-colors ${
+                      isSelected
+                        ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                        : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                    }`}
                   >
                     <Icon
                       size={20}
@@ -412,7 +413,7 @@ export default function XAutomationsTab() {
                         {option.description}
                       </div>
                     </div>
-                  </Button>
+                  </button>
                 );
               })}
             </div>
@@ -523,13 +524,14 @@ export default function XAutomationsTab() {
               Select the AI model used for reply generation and content actions.
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Button
+              <button
+                type="button"
                 onClick={() => setBuilderAiEngine('gemini')}
-                size="2"
-                variant={builderAiEngine === 'gemini' ? 'soft' : 'ghost'}
-               
-                className="flex items-start gap-3 p-4 w-full h-auto"
-                style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}
+                className={`flex items-start gap-3 p-4 w-full text-left rounded-md border transition-colors ${
+                  builderAiEngine === 'gemini'
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 <Bot
                   size={20}
@@ -539,14 +541,15 @@ export default function XAutomationsTab() {
                   <div className="font-medium text-sm">Gemini Flash Lite</div>
                   <div className="text-xs text-mission-control-text-dim">Fast, cheap — ideal for background automation</div>
                 </div>
-              </Button>
-              <Button
+              </button>
+              <button
+                type="button"
                 onClick={() => setBuilderAiEngine('claude')}
-                size="2"
-                variant={builderAiEngine === 'claude' ? 'soft' : 'ghost'}
-               
-                className="flex items-start gap-3 p-4 w-full h-auto"
-                style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}
+                className={`flex items-start gap-3 p-4 w-full text-left rounded-md border transition-colors ${
+                  builderAiEngine === 'claude'
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 <Sparkles
                   size={20}
@@ -556,7 +559,7 @@ export default function XAutomationsTab() {
                   <div className="font-medium text-sm">Claude Haiku</div>
                   <div className="text-xs text-mission-control-text-dim">Interactive, nuanced — ideal for replies requiring context</div>
                 </div>
-              </Button>
+              </button>
             </div>
           </div>
 
@@ -589,15 +592,13 @@ export default function XAutomationsTab() {
                           <Icon size={16} />
                           {ACTION_OPTIONS.find(o => o.type === action.type)?.label}
                         </Flex>
-                        <IconButton
+                        <button
+                          type="button"
                           onClick={() => removeAction(index)}
-                          size="2"
-                          variant="ghost"
-                          color="red"
-
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                         >
                           <Trash2 size={16} />
-                        </IconButton>
+                        </button>
                       </Flex>
 
                       {(action.type === 'reply' || action.type === 'dm') && (
@@ -696,18 +697,16 @@ export default function XAutomationsTab() {
                 const Icon = option.icon;
 
                 return (
-                  <Button
+                  <button
                     key={option.type}
+                    type="button"
                     onClick={() => addAction(option.type)}
-                    size="2"
-                    variant="ghost"
-                   
-                    className="flex items-center gap-2 w-full"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors w-full"
                     style={{ justifyContent: 'flex-start' }}
                   >
                     <Icon size={16} />
                     {option.label}
-                  </Button>
+                  </button>
                 );
               })}
             </div>
@@ -750,15 +749,13 @@ export default function XAutomationsTab() {
 
           {/* Save Button */}
           <Flex gap="3">
-            <Button
+            <button
+              type="button"
               onClick={closeBuilder}
-              size="2"
-              variant="ghost"
-
-              className="flex-1"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-1"
             >
               Cancel
-            </Button>
+            </button>
             <Button
               onClick={saveAutomation}
               size="2"
@@ -789,19 +786,18 @@ export default function XAutomationsTab() {
             </p>
           </div>
           <Flex align="center" gap="2">
-            <Button
+            <button
+              type="button"
               onClick={() => {
                 window.dispatchEvent(new CustomEvent('x-agent-chat-inject', {
                   detail: { message: 'I want to create a new automation for my X/Twitter account. Help me define the trigger, conditions, and actions. When ready, output the automation as a ```automation JSON block.' }
                 }));
               }}
-              size="2"
-              variant="ghost"
-             
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <Sparkles size={16} />
               Create with AI
-            </Button>
+            </button>
             <Button
               onClick={() => openBuilder()}
               size="2"
@@ -837,16 +833,16 @@ export default function XAutomationsTab() {
               return (
                 <div
                   key={automation.id}
-                  className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 hover:border-mission-control-accent/50 transition-all"
+                  className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 hover:border-mission-control-accent/50 transition-colors"
                 >
                   <Flex align="start" justify="between" className="mb-4">
                     <div className="flex-1">
                       <Flex align="center" gap="3" className="mb-2">
-                        <h3 className="text-lg font-semibold">{automation.name}</h3>
+                        <h3 className="text-sm font-semibold">{automation.name}</h3>
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
                             automation.enabled
-                              ? 'bg-success-subtle text-success'
+                              ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]'
                               : 'bg-mission-control-border text-mission-control-text-dim'
                           }`}
                         >
@@ -861,44 +857,41 @@ export default function XAutomationsTab() {
                     </div>
 
                     <Flex align="center" gap="2">
-                      <IconButton
+                      <button
                         onClick={() => toggleAutomation(automation.id, automation.enabled)}
-                        size="2"
-                        variant={automation.enabled ? 'soft' : 'ghost'}
-                        color={automation.enabled ? 'green' : 'gray'}
-                       
                         title={automation.enabled ? 'Disable' : 'Enable'}
+                        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border text-xs font-medium transition-colors ${
+                          automation.enabled
+                            ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]'
+                            : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                        }`}
                       >
                         <Power size={16} />
-                      </IconButton>
-                      <IconButton
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => testAutomation(automation.id)}
-                        size="2"
-                        variant="ghost"
-                       
                         title="Test automation"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Play size={16} />
-                      </IconButton>
-                      <IconButton
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => openBuilder(automation)}
-                        size="2"
-                        variant="ghost"
-                       
                         title="Edit"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Edit size={16} />
-                      </IconButton>
-                      <IconButton
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => deleteAutomation(automation.id)}
-                        size="2"
-                        variant="ghost"
-                        color="red"
-                       
                         title="Delete"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                       >
                         <Trash2 size={16} />
-                      </IconButton>
+                      </button>
                     </Flex>
                   </Flex>
 
@@ -947,19 +940,17 @@ export default function XAutomationsTab() {
         )}
         {/* Execution Log */}
         <div className="mt-6 bg-mission-control-surface rounded-lg border border-mission-control-border">
-          <Button
+          <button
+            type="button"
             onClick={() => setShowLog(!showLog)}
-            size="2"
-            variant="ghost"
-           
-            className="flex items-center gap-2 w-full text-left px-4 py-3"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex items-center gap-2 w-full text-left px-4 py-3"
             style={{ justifyContent: 'flex-start' }}
           >
             {showLog ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <History size={14} className="text-mission-control-accent" />
             <span>Execution Log</span>
             <span className="text-mission-control-text-dim ml-1">({executionLog.length})</span>
-          </Button>
+          </button>
 
           {showLog && (
             <div className="px-4 pb-4">
@@ -1001,12 +992,10 @@ export default function XAutomationsTab() {
 
                         return (
                           <div key={entry.id} className="rounded-lg border border-mission-control-border bg-mission-control-bg overflow-hidden">
-                            <Button
+                            <button
+                              type="button"
                               onClick={() => setExpandedLogEntry(isExpanded ? null : entry.id)}
-                              size="1"
-                              variant="ghost"
-                             
-                              className="flex items-center gap-3 w-full text-left px-3 py-2"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex items-center gap-3 w-full text-left px-3 py-2"
                               style={{ justifyContent: 'flex-start' }}
                             >
                               {isExpanded ? <ChevronDown size={12} className="flex-shrink-0" /> : <ChevronRight size={12} className="flex-shrink-0" />}
@@ -1019,11 +1008,11 @@ export default function XAutomationsTab() {
                                 {actionsTaken.map((a: any) => a.type).join(', ') || 'no actions'}
                               </span>
                               <span className={`ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                                entry.status === 'executed' ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
+                                entry.status === 'executed' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-error)]/10 text-[var(--color-error)]'
                               }`}>
                                 {entry.status}
                               </span>
-                            </Button>
+                            </button>
 
                             {isExpanded && (
                               <div className="px-3 pb-3 pt-1 border-t border-mission-control-border space-y-2">
@@ -1045,7 +1034,7 @@ export default function XAutomationsTab() {
                                   </div>
                                 )}
                                 {entry.error && (
-                                  <div className="text-xs text-error bg-error-subtle rounded px-2 py-1">
+                                  <div className="text-xs text-[var(--color-error)] bg-[var(--color-error)]/10 rounded px-2 py-1">
                                     {entry.error}
                                   </div>
                                 )}
@@ -1057,15 +1046,13 @@ export default function XAutomationsTab() {
                     </div>
 
                     {filteredLog.length > logDisplayLimit && (
-                      <Button
+                      <button
+                        type="button"
                         onClick={() => setLogDisplayLimit(prev => prev + 20)}
-                        size="1"
-                        variant="ghost"
-                       
-                        className="mt-3 w-full"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors mt-3 w-full"
                       >
                         Load more ({filteredLog.length - logDisplayLimit} remaining)
-                      </Button>
+                      </button>
                     )}
                   </>
                 );

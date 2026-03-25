@@ -14,6 +14,7 @@ import ErrorDisplay from './ErrorDisplay';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
 import { libraryApi } from '../lib/api';
+import { humanizeFilename } from '@/utils/formatting';
 
 type FileCategory = 'code' | 'design' | 'docs' | 'campaigns' | 'projects' | 'other';
 type ViewMode = 'grid' | 'list';
@@ -50,12 +51,12 @@ interface MiniChatMessage {
 }
 
 const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
-  code:      { icon: Code,      color: 'text-success bg-success',    label: 'Code' },
-  design:    { icon: Palette,   color: 'text-review bg-review',      label: 'Design' },
-  docs:      { icon: BookOpen,  color: 'text-cyan-400 bg-cyan-500/10',      label: 'Docs' },
-  campaigns: { icon: Megaphone, color: 'text-pink-400 bg-pink-500/10',      label: 'Campaigns' },
-  projects:  { icon: FolderOpen,color: 'text-warning bg-warning',    label: 'Projects' },
-  other:     { icon: File,      color: 'text-mission-control-text-dim bg-mission-control-bg0/10', label: 'Other' },
+  code:      { icon: Code,      color: 'text-[var(--color-success)] bg-[var(--color-success)]/10',    label: 'Code' },
+  design:    { icon: Palette,   color: 'text-[var(--color-info)] bg-[var(--color-info)]/10',          label: 'Design' },
+  docs:      { icon: BookOpen,  color: 'text-cyan-400 bg-cyan-500/10',                                label: 'Docs' },
+  campaigns: { icon: Megaphone, color: 'text-pink-400 bg-pink-500/10',                                label: 'Campaigns' },
+  projects:  { icon: FolderOpen,color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',    label: 'Projects' },
+  other:     { icon: File,      color: 'text-mission-control-text-dim bg-mission-control-border/30',  label: 'Other' },
 };
 
 const getFileIcon = (mimeType?: string) => {
@@ -674,7 +675,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
-      className={`h-full flex flex-col transition-all ${isDragOver ? 'ring-4 ring-mission-control-accent ring-inset bg-mission-control-accent/5' : ''}`}
+      className={`h-full flex flex-col transition-colors ${isDragOver ? 'ring-4 ring-mission-control-accent ring-inset bg-mission-control-accent/5' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -770,14 +771,15 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           <div className="w-px h-5 bg-mission-control-border flex-shrink-0" />
 
           {/* Ask Agent */}
-          <Button
-            variant={searchMode === 'ask' ? 'solid' : 'surface'}
-            color={searchMode === 'ask' ? undefined : 'gray'}
-            size="1"
+          <button
+            type="button"
             onClick={() => { setSearchMode(searchMode === 'ask' ? 'filter' : 'ask'); setAskResponse(null); }}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              searchMode === 'ask' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Bot size={12} /> Ask
-          </Button>
+          </button>
 
           {/* Refresh */}
           <IconButton
@@ -808,9 +810,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           <Flex align="start" gap="2">
             <Bot size={14} className="text-mission-control-accent flex-shrink-0 mt-0.5" />
             <p className="leading-relaxed flex-1">{askResponse}</p>
-            <IconButton variant="ghost" size="1" onClick={() => setAskResponse(null)} aria-label="Dismiss ask response">
+            <button
+              onClick={() => setAskResponse(null)}
+              aria-label="Dismiss ask response"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            >
               <X size={14} />
-            </IconButton>
+            </button>
           </Flex>
         </div>
       )}
@@ -828,26 +834,22 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         {sidebarOpen && (
           <div className="w-48 flex-shrink-0 border-r border-mission-control-border bg-mission-control-surface flex flex-col overflow-hidden">
             <Flex align="center" justify="between" px="3" py="2" className="border-b border-mission-control-border">
-              <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Folders</span>
+              <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Folders</span>
               <Flex align="center" gap="1">
-                <IconButton
-                  size="1"
-                  variant="ghost"
-
+                <button
                   onClick={() => setNewFolderInputVisible(v => !v)}
                   title="New folder"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <FolderPlus size={13} />
-                </IconButton>
-                <IconButton
-                  size="1"
-                  variant="ghost"
-                 
+                </button>
+                <button
                   onClick={() => setSidebarOpen(false)}
                   title="Collapse sidebar"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <PanelLeftClose size={13} />
-                </IconButton>
+                </button>
               </Flex>
             </Flex>
             {/* New folder inline input */}
@@ -875,15 +877,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 >
                   {newFolderCreating ? <RefreshCw size={11} className="animate-spin" /> : <Check size={11} />}
                 </IconButton>
-                <IconButton
-                  size="1"
-                  variant="ghost"
-                 
+                <button
                   onClick={() => { setNewFolderInputVisible(false); setNewFolderName(''); }}
                   title="Cancel"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <X size={11} />
-                </IconButton>
+                </button>
               </Flex>
             )}
             <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
@@ -939,15 +939,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         {/* Collapsed sidebar toggle */}
         {!sidebarOpen && (
           <div className="flex-shrink-0 border-r border-mission-control-border bg-mission-control-surface flex flex-col items-center py-2">
-            <IconButton
-              size="1"
-              variant="ghost"
-             
+            <button
               onClick={() => setSidebarOpen(true)}
               title="Expand sidebar"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <PanelLeftOpen size={14} />
-            </IconButton>
+            </button>
           </div>
         )}
 
@@ -956,8 +954,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           {/* Recent files strip */}
           {selectedFolder === 'all' && recentFiles.length > 0 && (
             <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-bg flex-shrink-0">
-              <p className="text-xs font-medium text-mission-control-text-dim mb-2 flex items-center gap-1">
-                <Clock size={11} />
+              <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1">
+                <Clock size={10} />
                 Recent
               </p>
               <div className="flex gap-2 overflow-x-auto pb-1">
@@ -969,18 +967,17 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       type="button"
                       key={file.id}
                       onClick={() => handleFileClick(file)}
-                      className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-left ${
+                      className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-left min-w-[140px] max-w-[180px] ${
                         detailFile?.id === file.id
                           ? 'border-mission-control-accent bg-mission-control-accent/5'
                           : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30'
                       }`}
-                      style={{ minWidth: 140, maxWidth: 180 }}
                     >
                       <div className={`p-1.5 rounded ${catConf.color} flex-shrink-0`}>
                         <FileIcon size={12} />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-medium truncate max-w-[110px]">{file.name}</div>
+                        <div className="text-xs font-medium truncate max-w-[110px]">{humanizeFilename(file.name)}</div>
                         <div className="text-xs text-mission-control-text-dim">{formatRelative(file.updatedAt)}</div>
                       </div>
                     </button>
@@ -1007,14 +1004,14 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 }
               />
             ) : viewMode === 'list' ? (
-              <div className="rounded-lg border border-mission-control-border overflow-hidden">
+              <div className="rounded-xl border border-mission-control-border overflow-hidden">
                 {/* Header */}
-                <div className="grid gap-0 border-b border-mission-control-border bg-mission-control-bg px-3 py-1.5" style={{ gridTemplateColumns: '1rem 1fr 6rem 5rem 5rem 4rem' }}>
+                <div className="grid gap-0 border-b border-mission-control-border bg-mission-control-bg px-3 py-2" style={{ gridTemplateColumns: '1rem 1fr 6rem 5rem 5rem 4rem' }}>
                   <span />
-                  <span className="text-xs text-mission-control-text-dim font-medium">Name</span>
-                  <span className="text-xs text-mission-control-text-dim font-medium">Category</span>
-                  <span className="text-xs text-mission-control-text-dim font-medium text-right">Size</span>
-                  <span className="text-xs text-mission-control-text-dim font-medium text-right">Modified</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Name</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Category</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim text-right">Size</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim text-right">Modified</span>
                   <span />
                 </div>
                 {filteredFiles.map((file, idx) => {
@@ -1026,7 +1023,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   return (
                     <div
                       key={file.id}
-                      className={`group grid items-center gap-0 px-3 py-1.5 hover:bg-mission-control-surface/60 transition-colors cursor-pointer ${
+                      className={`group grid items-center gap-0 px-3 py-2.5 hover:bg-mission-control-border/10 transition-colors cursor-pointer ${
                         !isLast ? 'border-b border-mission-control-border/50' : ''
                       } ${isSelected ? 'bg-mission-control-accent/5' : ''}`}
                       style={{ gridTemplateColumns: '1rem 1fr 6rem 5rem 5rem 4rem' }}
@@ -1034,7 +1031,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     >
                       <FileIcon size={12} className="text-mission-control-text-dim flex-shrink-0" />
                       <span className="text-xs font-medium truncate px-2 text-left hover:text-mission-control-accent transition-colors">
-                        {file.name}
+                        {humanizeFilename(file.name)}
                       </span>
                       <Flex align="center" gap="1" onClick={(e) => e.stopPropagation()}>
                         <Select.Root
@@ -1055,34 +1052,28 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                         {file.updatedAt ? new Date(file.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
                       </span>
                       <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                        <IconButton
-                          size="1"
-                          variant="ghost"
-                         
+                        <button
                           onClick={() => toggleStar(file.id)}
                           title={isStarred ? 'Unstar' : 'Star'}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
-                          <Star size={11} className={isStarred ? 'text-warning fill-warning' : ''} />
-                        </IconButton>
-                        <IconButton
-                          size="1"
-                          variant="ghost"
-                         
+                          <Star size={11} className={isStarred ? 'text-[var(--color-warning)] fill-[var(--color-warning)]' : ''} />
+                        </button>
+                        <button
                           onClick={() => handleLinkToTask(file)}
                           title="Link to task"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
                           <Link size={11} />
-                        </IconButton>
-                        <IconButton
-                          size="1"
-                          variant="ghost"
-                          color="red"
-                         
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleDelete(file)}
                           title="Delete"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                         >
                           <Trash2 size={11} />
-                        </IconButton>
+                        </button>
                       </div>
                     </div>
                   );
@@ -1102,24 +1093,21 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFileClick(file); } }}
                       role="button"
                       tabIndex={0}
-                      className={`p-3 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/40 cursor-pointer transition-colors group relative ${
+                      className={`p-3 bg-mission-control-surface border border-mission-control-border rounded-xl hover:border-mission-control-accent/40 cursor-pointer transition-colors group relative ${
                         detailFile?.id === file.id ? 'border-mission-control-accent' : ''
                       }`}
                     >
-                      <IconButton
-                        size="1"
-                        variant="ghost"
-                       
+                      <button
                         onClick={(e) => { e.stopPropagation(); toggleStar(file.id); }}
-                        className={`absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity ${isStarred ? 'opacity-100' : ''}`}
+                        className={`absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100 transition-opacity ${isStarred ? 'opacity-100' : ''}`}
                         title={isStarred ? 'Unstar' : 'Star'}
                       >
-                        <Star size={12} className={isStarred ? 'text-warning fill-warning' : ''} />
-                      </IconButton>
+                        <Star size={12} className={isStarred ? 'text-[var(--color-warning)] fill-[var(--color-warning)]' : ''} />
+                      </button>
                       <Flex align="center" justify="center" className={`p-2.5 rounded-lg ${catConf.color} mb-2`}>
                         <FileIcon size={20} />
                       </Flex>
-                      <div className="text-xs font-medium truncate leading-tight">{file.name}</div>
+                      <div className="text-xs font-medium truncate leading-tight">{humanizeFilename(file.name)}</div>
                       <div className="text-xs text-mission-control-text-dim mt-0.5">{formatSize(file.size)}</div>
                     </div>
                   );
@@ -1141,14 +1129,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 })()}
                 <span className="text-sm font-medium truncate">{detailFile.name}</span>
               </Flex>
-              <IconButton
-                size="1"
-                variant="ghost"
-               
+              <button
+                type="button"
                 onClick={closeDetail}
+                className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <X size={14} />
-              </IconButton>
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto">
@@ -1175,25 +1162,23 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
               <div className="px-4 py-3 border-b border-mission-control-border">
                 <Flex align="center" gap="1" mb="2">
                   <Tag size={11} className="text-mission-control-text-dim" />
-                  <span className="text-xs font-medium text-mission-control-text-dim">Tags</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Tags</span>
                 </Flex>
                 <div className="flex flex-wrap gap-1 mb-2">
                   {(detailFile.tags || []).map(tag => (
                     <span
                       key={tag}
-                      className="flex items-center gap-0.5 px-1.5 py-0.5 bg-mission-control-border rounded text-xs"
+                      className="flex items-center gap-0.5 px-2 py-0.5 bg-mission-control-border/40 text-mission-control-text-dim text-[11px] rounded-full"
                     >
                       {tag}
-                      <IconButton
-                        size="1"
-                        variant="ghost"
-                        color="red"
-                       
+                      <button
+                        type="button"
                         onClick={() => handleTagRemove(detailFile, tag)}
                         style={{ width: 'auto', height: 'auto', minWidth: 0, minHeight: 0, padding: '1px' }}
+                        className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                       >
                         <X size={9} />
-                      </IconButton>
+                      </button>
                     </span>
                   ))}
                 </div>
@@ -1204,7 +1189,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     onKeyDown={e => { if (e.key === 'Enter') { handleTagAdd(detailFile, tagInput); } }}
                     placeholder="Add tag..."
                     size="1"
-                    style={{ flex: 1 }}
+                    className="flex-1"
                   />
                   <Button
                     size="1"
@@ -1220,7 +1205,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
               <div className="px-4 py-3 border-b border-mission-control-border">
                 <Flex align="center" gap="1" mb="2">
                   <Info size={11} className="text-mission-control-text-dim" />
-                  <span className="text-xs font-medium text-mission-control-text-dim">Preview</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Preview</span>
                 </Flex>
                 {detailContentLoading ? (
                   <Flex align="center" gap="2" py="2" className="text-xs text-mission-control-text-dim">
@@ -1236,8 +1221,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 ) : (detailFile.mimeType === 'application/pdf' || detailFile.name.toLowerCase().endsWith('.pdf')) ? (
                   <iframe
                     src={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
-                    className="w-full rounded-lg bg-[--color-surface]"
-                    style={{ height: 200 }}
+                    className="w-full rounded-lg bg-mission-control-surface h-[200px]"
                     title={detailFile.name}
                   />
                 ) : detailFile.mimeType?.startsWith('audio/') ? (
@@ -1249,8 +1233,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 ) : detailFile.mimeType?.startsWith('video/') ? (
                   <video
                     controls
-                    className="w-full rounded-lg"
-                    style={{ maxHeight: 160 }}
+                    className="w-full rounded-lg max-h-[160px]"
                     src={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
                   />
                 ) : detailContent ? (
@@ -1355,7 +1338,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     onKeyDown={e => { if (e.key === 'Enter') sendMiniChat(); }}
                     placeholder="Ask a question..."
                     size="1"
-                    style={{ flex: 1 }}
+                    className="flex-1"
                   />
                   <IconButton
                     size="2"
@@ -1375,8 +1358,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
       {/* ── Viewer Modal (video, audio, binary) ─────────────────────────────── */}
       {viewerOpen && detailFile && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-glow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
             <Flex align="center" justify="between" p="6" className="border-b border-mission-control-border">
               <div className="flex-1 min-w-0 mr-4">
                 <h3 className="font-bold text-lg truncate">{detailFile.name}</h3>
@@ -1393,14 +1376,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   <Download size={16} />
                   Download
                 </a>
-                <IconButton
-                  size="2"
-                  variant="ghost"
-                 
+                <button
+                  type="button"
                   onClick={() => { setViewerOpen(false); setDetailFile(null); }}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                 >
                   <X size={20} />
-                </IconButton>
+                </button>
               </Flex>
             </Flex>
             <div className="flex-1 overflow-auto p-6">
@@ -1444,7 +1426,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
               )}
             </div>
             {detailFile.linkedTasks && detailFile.linkedTasks.length > 0 && (
-              <div className="p-4 border-t border-mission-control-border bg-mission-control-bg/50">
+              <div className="p-4 border-t border-mission-control-border bg-mission-control-bg">
                 <p className="text-sm text-mission-control-text-dim mb-2">Linked to tasks:</p>
                 <div className="flex flex-wrap gap-2">
                   {detailFile.linkedTasks.map(taskId => (

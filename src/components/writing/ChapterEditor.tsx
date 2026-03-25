@@ -184,9 +184,9 @@ export default function ChapterEditor() {
           </BubbleMenu>
         )}
       </div>
-      <div className="border-t border-mission-control-border px-4 py-2 text-xs text-mission-control-text-dim flex justify-between flex-shrink-0">
-        <span>{wordCount.toLocaleString()} words</span>
-        <span>{chapterDirty ? 'Saving...' : 'Saved'}</span>
+      <div className="border-t border-mission-control-border px-4 py-2 flex justify-between flex-shrink-0">
+        <span className="text-[10px] tabular-nums text-mission-control-text-dim">{wordCount.toLocaleString()} words</span>
+        <span className="text-[10px] tabular-nums text-mission-control-text-dim">{chapterDirty ? 'Saving...' : 'Saved'}</span>
       </div>
     </div>
   );

@@ -55,7 +55,32 @@ export function LoadingButton({
   icon,
   type = 'button',
 }: LoadingButtonProps) {
-  const radixVariant = variant === 'primary' ? 'solid' : variant === 'ghost' ? 'ghost' : variant === 'danger' ? 'solid' : 'surface';
+  const sizeClass = size === 'sm' ? 'text-xs px-2 py-1' : size === 'lg' ? 'text-base px-4 py-2.5' : 'text-sm px-3 py-1.5';
+
+  if (variant === 'ghost') {
+    return (
+      <button
+        type={type}
+        onClick={onClick}
+        disabled={disabled || loading}
+        className={`inline-flex items-center gap-1.5 rounded-md font-medium text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${sizeClass} ${className}`}
+      >
+        {loading ? (
+          <>
+            <Spinner size={size === 'sm' ? 14 : size === 'lg' ? 20 : 16} />
+            <span>Loading...</span>
+          </>
+        ) : (
+          <>
+            {icon}
+            {children}
+          </>
+        )}
+      </button>
+    );
+  }
+
+  const radixVariant = variant === 'primary' ? 'solid' : variant === 'danger' ? 'solid' : 'surface';
   const radixColor = variant === 'danger' ? 'red' : variant === 'primary' ? 'grass' : 'gray';
   const radixSize = size === 'sm' ? '1' : size === 'lg' ? '3' : '2';
 
@@ -64,7 +89,7 @@ export function LoadingButton({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      variant={radixVariant as 'solid' | 'ghost' | 'surface'}
+      variant={radixVariant as 'solid' | 'surface'}
       color={radixColor as 'red' | 'grass' | 'gray'}
       size={radixSize as '1' | '2' | '3'}
       className={className}
@@ -105,7 +130,7 @@ export function Skeleton({ className = '', width = 'w-full', height = 'h-4', rou
 
   return (
     <div
-      className={`${width} ${height} ${roundedStyles[rounded]} bg-mission-control-border animate-pulse ${className}`}
+      className={`${width} ${height} ${roundedStyles[rounded]} bg-mission-control-border/30 animate-pulse ${className}`}
     />
   );
 }
@@ -188,10 +213,10 @@ export function LoadingOverlay({ message = 'Loading...', fullScreen = false }: L
     : 'absolute inset-0';
 
   return (
-    <Flex align="center" justify="center" className={`${containerClass} bg-mission-control-bg/80 backdrop-blur-sm`}>
-      <Flex direction="column" align="center" gap="3" p="5" className="bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl">
-        <RadixSpinner size="3" />
-        <Text size="2" weight="medium">{message}</Text>
+    <Flex align="center" justify="center" className={`${containerClass} bg-mission-control-bg/80`}>
+      <Flex direction="column" align="center" gap="3" p="5" className="bg-mission-control-surface border border-mission-control-border rounded-xl shadow-lg">
+        <RadixSpinner size="3" className="text-mission-control-accent" />
+        <Text size="2" weight="medium" className="text-mission-control-text-dim">{message}</Text>
       </Flex>
     </Flex>
   );
@@ -221,7 +246,7 @@ export function ProgressBar({ progress, label, showPercentage = true, className 
       )}
       <div className="w-full h-2 bg-mission-control-border rounded-full overflow-hidden">
         <div
-          className="h-full bg-mission-control-accent transition-all duration-300 ease-out"
+          className="h-full bg-mission-control-accent transition-colors duration-300 ease-out"
           style={{ width: `${clampedProgress}%` }}
           role="progressbar"
           aria-valuenow={clampedProgress}
@@ -247,9 +272,9 @@ export function InlineLoader({ text, size = 'md' }: InlineLoaderProps) {
   const textSizeMap = { sm: '1' as const, md: '2' as const, lg: '3' as const };
 
   return (
-    <Flex align="center" gap="2">
-      <RadixSpinner size={radixSize as '1' | '2' | '3'} />
-      {text && <Text size={textSizeMap[size]} color="gray">{text}</Text>}
+    <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
+      <RadixSpinner size={radixSize as '1' | '2' | '3'} className="text-mission-control-accent" />
+      {text && <Text size={textSizeMap[size]} className="text-mission-control-text-dim">{text}</Text>}
     </Flex>
   );
 }

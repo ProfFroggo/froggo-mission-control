@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronUp, AlertCircle,
 } from 'lucide-react';
 import type { Automation, AutomationStep, TriggerType } from './AutomationsPanel';
-import { Button, Checkbox, IconButton, Heading, Text, Spinner, Select, TextField, TextArea } from '@radix-ui/themes';
+import { Button, Checkbox, Heading, Text, Spinner, Select, TextField, TextArea } from '@radix-ui/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -109,80 +109,59 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
 
 
   return (
-    <div
-      style={{
-        border: '1px solid var(--mission-control-border)',
-        borderRadius: 10,
-        background: 'var(--mission-control-bg)',
-        overflow: 'hidden',
-      }}
-    >
+    <div className="bg-mission-control-bg border border-mission-control-border rounded-xl overflow-hidden">
       {/* Step header */}
       <div
-        style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '10px 14px',
-          background: 'var(--mission-control-surface)',
-          cursor: 'pointer',
-        }}
+        className="flex items-center gap-2 px-4 py-3 bg-mission-control-surface cursor-pointer"
         onClick={() => setCollapsed(c => !c)}
       >
-        <span
-          style={{
-            width: 22, height: 22, borderRadius: '50%',
-            background: 'color-mix(in srgb, var(--mission-control-accent) 20%, transparent)',
-            color: 'var(--mission-control-accent)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, fontWeight: 700, flexShrink: 0,
-          }}
-        >
+        <span className="w-6 h-6 rounded-full bg-mission-control-accent/10 text-mission-control-accent text-xs font-bold flex items-center justify-center flex-shrink-0">
           {index + 1}
         </span>
-        <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--mission-control-text)' }}>
-          {step.label || STEP_TYPES.find(s => s.value === step.type)?.label || 'New step'}
-        </span>
-        <div style={{ display: 'flex', gap: 2 }} onClick={e => e.stopPropagation()}>
-          <IconButton
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim leading-none mb-0.5">
+            {STEP_TYPES.find(s => s.value === step.type)?.label ?? 'Step'}
+          </p>
+          <p className="text-sm font-medium text-mission-control-text truncate">
+            {step.label || STEP_TYPES.find(s => s.value === step.type)?.label || 'New step'}
+          </p>
+        </div>
+        <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+          <button
+            type="button"
             disabled={index === 0}
             onClick={onMoveUp}
             aria-label="Move step up"
-            variant="ghost"
-            color="gray"
-            size="1"
-           
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors disabled:opacity-40"
           >
             <ChevronUp size={12} />
-          </IconButton>
-          <IconButton
+          </button>
+          <button
+            type="button"
             disabled={index === total - 1}
             onClick={onMoveDown}
             aria-label="Move step down"
-            variant="ghost"
-            color="gray"
-            size="1"
-           
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors disabled:opacity-40"
           >
             <ChevronDown size={12} />
-          </IconButton>
-          <IconButton
+          </button>
+          <button
+            type="button"
             onClick={onRemove}
             aria-label="Remove step"
-            variant="ghost"
-            color="red"
-            size="1"
-           
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
           >
             <Trash2 size={12} />
-          </IconButton>
+          </button>
         </div>
-        {collapsed ? <ChevronDown size={14} style={{ color: 'var(--mission-control-text-dim)' }} /> : <ChevronUp size={14} style={{ color: 'var(--mission-control-text-dim)' }} />}
+        {collapsed ? <ChevronDown size={14} className="text-mission-control-text-dim" /> : <ChevronUp size={14} className="text-mission-control-text-dim" />}
       </div>
 
       {!collapsed && (
-        <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="px-4 py-3 flex flex-col gap-2.5">
           {/* Action type */}
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
               Action type
             </label>
             <Select.Root value={step.type} onValueChange={val => setType(val as StepType)} size="1">
@@ -197,7 +176,7 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
 
           {/* Step label */}
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
               Label
             </label>
             <TextField.Root
@@ -212,7 +191,7 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
           {step.type === 'run-agent' && (
             <>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                   Agent role
                 </label>
                 <TextField.Root
@@ -223,7 +202,7 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                   Prompt / instruction
                 </label>
                 <TextArea
@@ -240,7 +219,7 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
           {step.type === 'post-chat' && (
             <>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                   Chat room
                 </label>
                 <TextField.Root
@@ -251,7 +230,7 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                   Message template (optional)
                 </label>
                 <TextArea
@@ -267,7 +246,7 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
 
           {step.type === 'save-library' && (
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                 Folder
               </label>
               <TextField.Root
@@ -280,14 +259,14 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
           )}
 
           {step.type === 'send-approval' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="flex items-center gap-2.5">
               <Checkbox
                 id={`auto-approve-${step.id}`}
                 checked={!!(step.config.autoApprove)}
                 onCheckedChange={(val) => setConfig('autoApprove', val === true)}
                 size="1"
               />
-              <label htmlFor={`auto-approve-${step.id}`} style={{ fontSize: 12, color: 'var(--mission-control-text)' }}>
+              <label htmlFor={`auto-approve-${step.id}`} className="text-xs text-mission-control-text">
                 Auto-approve if criteria pass (escalate on failure)
               </label>
             </div>
@@ -295,7 +274,7 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
 
           {step.type === 'delay' && (
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                 Delay (minutes)
               </label>
               <TextField.Root
@@ -367,29 +346,7 @@ export default function AutomationBuilderModal({
     }
   }, [editTarget, prefillTemplate]);
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '8px 12px',
-    borderRadius: 8,
-    border: '1px solid var(--mission-control-border)',
-    backgroundColor: 'var(--mission-control-surface)',
-    color: 'var(--mission-control-text)',
-    fontSize: 13,
-    outline: 'none',
-    boxSizing: 'border-box',
-  };
-
-  const selectStyle: React.CSSProperties = { ...inputStyle };
-
-  const labelStyle: React.CSSProperties = {
-    display: 'block',
-    fontSize: 11,
-    fontWeight: 700,
-    color: 'var(--mission-control-text-dim)',
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-  };
+  const fieldLabelClass = 'block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1.5';
 
   // Natural language parse — calls /api/automations with ?action=parse
   const handleBuildWithAI = async () => {
@@ -489,81 +446,58 @@ export default function AutomationBuilderModal({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        style={{
-          position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'var(--black-a6)',
-          backdropFilter: 'blur(4px)',
-        }}
+        className="fixed inset-0 z-[1000] bg-[var(--black-a6)] backdrop-blur-sm"
       />
 
       {/* Modal */}
       <div
-        style={{
-          position: 'fixed',
-          top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 1001,
-          width: 'min(680px, 96vw)',
-          maxHeight: '90vh',
-          background: 'var(--mission-control-surface)',
-          border: '1px solid var(--mission-control-border)',
-          borderRadius: 16,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow: '0 24px 64px var(--black-a5)',
-        }}
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1001] w-[min(680px,96vw)] max-h-[90vh] bg-mission-control-surface border border-mission-control-border rounded-2xl flex flex-col overflow-hidden shadow-[0_24px_64px_var(--black-a5)]"
       >
         {/* Header */}
         <div
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '20px 24px',
-            borderBottom: '1px solid var(--mission-control-border)',
-          }}
+          className="flex items-center justify-between px-6 py-5 border-b border-mission-control-border"
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Zap size={18} style={{ color: 'var(--mission-control-accent)' }} />
-            <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--mission-control-text)' }}>
+          <div className="flex items-center gap-2.5">
+            <Zap size={18} className="text-mission-control-accent" />
+            <span className="font-bold text-base text-mission-control-text">
               {editTarget ? 'Edit Automation' : 'New Automation'}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="flex items-center gap-2.5">
             {/* Mode toggle */}
-            <div style={{ display: 'flex', gap: 2, background: 'var(--mission-control-bg)', borderRadius: 8, padding: 2, border: '1px solid var(--mission-control-border)' }}>
+            <div className="flex gap-0.5 bg-mission-control-bg rounded-lg p-0.5 border border-mission-control-border">
               {(['natural', 'manual'] as BuildMode[]).map(m => (
-                <Button
+                <button
                   key={m}
+                  type="button"
                   onClick={() => setMode(m)}
-                  variant={mode === m ? 'soft' : 'ghost'}
-                  color={mode === m ? 'blue' : 'gray'}
-                  size="1"
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                    mode === m ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}
                 >
                   {m === 'natural' ? 'Natural language' : 'Manual builder'}
-                </Button>
+                </button>
               ))}
             </div>
-            <IconButton
+            <button
+              type="button"
               onClick={onClose}
               aria-label="Close"
-              variant="ghost"
-              color="gray"
-              size="2"
-             
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <X size={16} />
-            </IconButton>
+            </button>
           </div>
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        <div className="flex-1 overflow-y-auto p-6">
 
           {/* ── Natural language path ── */}
           {mode === 'natural' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div className="flex flex-col gap-5">
               <div>
-                <p style={{ fontSize: 13, color: 'var(--mission-control-text-dim)', lineHeight: 1.6, marginBottom: 16 }}>
+                <p className="text-[13px] text-mission-control-text-dim leading-relaxed mb-4">
                   Describe your automation in plain English. The agent will parse it into structured steps that you can review and refine.
                 </p>
                 <TextArea
@@ -573,12 +507,12 @@ export default function AutomationBuilderModal({
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNlDescription(e.target.value)}
                   placeholder={'Every Monday morning, have the researcher agent find trending topics and post a summary to the team chat.'}
                   rows={5}
-                  style={{ fontSize: 14, lineHeight: 1.6, fontFamily: 'inherit', width: '100%' }}
+                  className="w-full text-sm leading-relaxed font-[inherit]"
                 />
                 {nlError && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'color-mix(in srgb, var(--warning) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 30%, transparent)' }}>
-                    <AlertCircle size={14} style={{ color: 'var(--warning)', flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: 'var(--warning)' }}>{nlError}</span>
+                  <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg bg-[color-mix(in_srgb,var(--color-warning)_12%,transparent)] border border-[color-mix(in_srgb,var(--color-warning)_30%,transparent)]">
+                    <AlertCircle size={14} className="text-[var(--color-warning)] flex-shrink-0" />
+                    <span className="text-[13px] text-[var(--color-warning)]">{nlError}</span>
                   </div>
                 )}
               </div>
@@ -587,19 +521,19 @@ export default function AutomationBuilderModal({
                 size="3"
                 onClick={handleBuildWithAI}
                 disabled={!nlDescription.trim() || nlParsing}
-                style={{ width: '100%' }}
+                className="w-full"
               >
                 {nlParsing ? <Spinner size="1" /> : <Bot size={16} />}
                 <Wand2 size={16} />
                 {nlParsing ? 'Building...' : 'Build with AI'}
               </Button>
 
-              <div style={{ borderTop: '1px solid var(--mission-control-border)', paddingTop: 16, marginTop: 4 }}>
-                <p style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', textAlign: 'center' }}>
+              <div className="border-t border-mission-control-border pt-4 mt-1">
+                <p className="text-xs text-mission-control-text-dim text-center">
                   Or{' '}
-                  <Button variant="ghost" size="1" onClick={() => setMode('manual')} style={{ padding: 0, height: 'auto', display: 'inline' }}>
+                  <button type="button" onClick={() => setMode('manual')} className="text-mission-control-accent hover:underline transition-colors">
                     switch to the manual builder
-                  </Button>
+                  </button>
                   {' '}to configure each step yourself.
                 </p>
               </div>
@@ -608,12 +542,12 @@ export default function AutomationBuilderModal({
 
           {/* ── Manual builder path ── */}
           {mode === 'manual' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div className="flex flex-col gap-5">
 
               {/* Name & description */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="flex flex-col gap-3.5">
                 <div>
-                  <label style={labelStyle}>Automation name</label>
+                  <label className={fieldLabelClass}>Automation name</label>
                   <TextField.Root
                     placeholder="e.g. Daily Content Brief"
                     value={draft.name}
@@ -621,40 +555,35 @@ export default function AutomationBuilderModal({
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>Description (optional)</label>
+                  <label className={fieldLabelClass}>Description (optional)</label>
                   <TextArea
                     variant="soft"
                     placeholder="What does this automation do?"
                     value={draft.description}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDraft(d => ({ ...d, description: e.target.value }))}
                     rows={2}
-                    style={{ fontFamily: 'inherit', width: '100%' }}
+                    className="w-full font-[inherit]"
                   />
                 </div>
               </div>
 
               {/* Trigger */}
               <div
-                style={{
-                  background: 'var(--mission-control-bg)',
-                  border: '1px solid var(--mission-control-border)',
-                  borderRadius: 12, padding: '16px',
-                }}
+                className="bg-mission-control-bg border border-mission-control-border rounded-xl p-4"
               >
-                <label style={{ ...labelStyle, marginBottom: 12 }}>
+                <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-3">
                   Step 1 — Trigger
                 </label>
 
                 {/* Trigger type selector */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+                <div className="flex gap-2 flex-wrap mb-3">
                   {(['schedule', 'event', 'webhook', 'manual'] as TriggerType[]).map(t => {
                     const TIcon = triggerIcons[t];
                     const active = draft.trigger_type === t;
                     return (
-                      <Button
+                      <button
                         key={t}
-                        variant={active ? 'solid' : 'outline'}
-                        size="1"
+                        type="button"
                         onClick={() => {
                           const defaultConfigs: Record<TriggerType, TriggerConfig> = {
                             schedule: { time: '09:00', frequency: 'daily' } as TriggerScheduleConfig,
@@ -664,32 +593,34 @@ export default function AutomationBuilderModal({
                           };
                           setDraft(d => ({ ...d, trigger_type: t, trigger_config: defaultConfigs[t] }));
                         }}
-                        style={{ textTransform: 'capitalize' }}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors capitalize ${
+                          active ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                        }`}
                       >
                         <TIcon size={13} /> {t}
-                      </Button>
+                      </button>
                     );
                   })}
                 </div>
 
                 {/* Trigger config */}
                 {draft.trigger_type === 'schedule' && (
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    <div style={{ flex: '1 1 120px' }}>
-                      <label style={labelStyle}>Time (HH:MM)</label>
+                  <div className="flex gap-2 flex-wrap">
+                    <div className="flex-[1_1_120px]">
+                      <label className={fieldLabelClass}>Time (HH:MM)</label>
                       <TextField.Root
                         type="time"
                         value={scheduleConfig.time ?? '09:00'}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDraft(d => ({ ...d, trigger_config: { ...scheduleConfig, time: e.target.value } }))}
                       />
                     </div>
-                    <div style={{ flex: '1 1 140px' }}>
-                      <label style={labelStyle}>Frequency</label>
+                    <div className="flex-[1_1_140px]">
+                      <label className={fieldLabelClass}>Frequency</label>
                       <Select.Root
                         value={scheduleConfig.frequency ?? 'daily'}
                         onValueChange={val => setDraft(d => ({ ...d, trigger_config: { ...scheduleConfig, frequency: val as Frequency } }))}
                       >
-                        <Select.Trigger style={{ width: '100%' }} />
+                        <Select.Trigger className="w-full" />
                         <Select.Content>
                           <Select.Item value="daily">Daily</Select.Item>
                           <Select.Item value="weekly">Weekly</Select.Item>
@@ -698,13 +629,13 @@ export default function AutomationBuilderModal({
                       </Select.Root>
                     </div>
                     {scheduleConfig.frequency === 'weekly' && (
-                      <div style={{ flex: '1 1 140px' }}>
-                        <label style={labelStyle}>Day of week</label>
+                      <div className="flex-[1_1_140px]">
+                        <label className={fieldLabelClass}>Day of week</label>
                         <Select.Root
                           value={scheduleConfig.dayOfWeek ?? 'monday'}
                           onValueChange={val => setDraft(d => ({ ...d, trigger_config: { ...scheduleConfig, dayOfWeek: val as DayOfWeek } }))}
                         >
-                          <Select.Trigger style={{ width: '100%' }} />
+                          <Select.Trigger className="w-full" />
                           <Select.Content>
                             {DAYS_OF_WEEK.map(d => (
                               <Select.Item key={d.value} value={d.value}>{d.label}</Select.Item>
@@ -718,12 +649,12 @@ export default function AutomationBuilderModal({
 
                 {draft.trigger_type === 'event' && (
                   <div>
-                    <label style={labelStyle}>Event type</label>
+                    <label className={fieldLabelClass}>Event type</label>
                     <Select.Root
                       value={eventConfig.event ?? 'task.created'}
                       onValueChange={val => setDraft(d => ({ ...d, trigger_config: { event: val } }))}
                     >
-                      <Select.Trigger style={{ width: '100%' }} />
+                      <Select.Trigger className="w-full" />
                       <Select.Content>
                         {EVENTS.map(ev => (
                           <Select.Item key={ev.value} value={ev.value}>{ev.label}</Select.Item>
@@ -735,17 +666,17 @@ export default function AutomationBuilderModal({
 
                 {draft.trigger_type === 'webhook' && (
                   <div>
-                    <label style={labelStyle}>Webhook URL (generated on save)</label>
+                    <label className={fieldLabelClass}>Webhook URL (generated on save)</label>
                     <TextField.Root
                       disabled
                       placeholder="/api/automations/webhook/[id]"
-                      style={{ opacity: 0.5 }}
+                      className="opacity-50"
                     />
                   </div>
                 )}
 
                 {draft.trigger_type === 'manual' && (
-                  <p style={{ fontSize: 12, color: 'var(--mission-control-text-dim)' }}>
+                  <p className="text-xs text-mission-control-text-dim">
                     This automation will only run when triggered manually via the Run now button.
                   </p>
                 )}
@@ -753,37 +684,36 @@ export default function AutomationBuilderModal({
 
               {/* Steps */}
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <label style={labelStyle}>
+                <div className="flex items-center justify-between mb-3">
+                  <label className={fieldLabelClass}>
                     Step 2 — Actions ({draft.steps.length} step{draft.steps.length !== 1 ? 's' : ''})
                   </label>
-                  <Button variant="outline" size="1" onClick={addStep}>
+                  <Button variant="ghost" size="1" onClick={addStep}>
                     <Plus size={13} /> Add step
                   </Button>
                 </div>
 
                 {draft.steps.length === 0 ? (
-                  <div
-                    style={{
-                      padding: '24px', border: '2px dashed var(--mission-control-border)', borderRadius: 10,
-                      textAlign: 'center', color: 'var(--mission-control-text-dim)', fontSize: 13,
-                    }}
-                  >
+                  <div className="p-6 border-2 border-dashed border-mission-control-border rounded-[10px] text-center text-[14px] text-mission-control-text-dim">
                     No steps yet. Click "Add step" to define what this automation does.
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div className="flex flex-col">
                     {draft.steps.map((step, i) => (
-                      <StepEditor
-                        key={step.id}
-                        step={step}
-                        index={i}
-                        total={draft.steps.length}
-                        onChange={s => updateStep(i, s)}
-                        onRemove={() => removeStep(i)}
-                        onMoveUp={() => moveStep(i, -1)}
-                        onMoveDown={() => moveStep(i, 1)}
-                      />
+                      <div key={step.id}>
+                        <StepEditor
+                          step={step}
+                          index={i}
+                          total={draft.steps.length}
+                          onChange={s => updateStep(i, s)}
+                          onRemove={() => removeStep(i)}
+                          onMoveUp={() => moveStep(i, -1)}
+                          onMoveDown={() => moveStep(i, 1)}
+                        />
+                        {i < draft.steps.length - 1 && (
+                          <div className="w-px h-4 bg-mission-control-border mx-auto" />
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -795,12 +725,7 @@ export default function AutomationBuilderModal({
         {/* Footer */}
         {mode === 'manual' && (
           <div
-            style={{
-              display: 'flex', justifyContent: 'flex-end', gap: 10,
-              padding: '16px 24px',
-              borderTop: '1px solid var(--mission-control-border)',
-              background: 'var(--mission-control-surface)',
-            }}
+            className="flex justify-end gap-2.5 px-6 py-4 border-t border-mission-control-border bg-mission-control-surface"
           >
             <Button variant="outline" size="2" onClick={onClose}>Cancel</Button>
             <Button variant="soft" size="2" onClick={() => handleSave(false)}>Save as draft</Button>

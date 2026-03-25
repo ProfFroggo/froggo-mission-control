@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, ArrowRight, ArrowLeft, Check, Loader2, Mail, Calendar, HardDrive, Users, CheckCircle, AlertTriangle } from 'lucide-react';
-import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import { AccountProvider, DataType, AddAccountRequest } from '../types/accounts';
 import { useUserSettings } from '../store/userSettings';
 import { accountsApi } from '../lib/api';
@@ -169,8 +169,8 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
   };
 
   return (
-    <Flex align="center" justify="center" p="4" className="fixed inset-0 bg-black/50 z-50">
-      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+    <Flex align="center" justify="center" p="4" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50">
+      <div className="bg-mission-control-surface rounded-2xl shadow-2xl border border-mission-control-border max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <div>
@@ -184,17 +184,14 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
               {step === 'success' && 'Account connected!'}
             </p>
           </div>
-          <IconButton
+          <button
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50"
             onClick={onClose}
             disabled={step === 'connecting'}
-            size="2"
-            variant="ghost"
-            color="gray"
-           
             aria-label="Close wizard"
           >
             <X size={20} />
-          </IconButton>
+          </button>
         </div>
 
         {/* Progress Bar */}
@@ -222,18 +219,18 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
               {(Object.keys(PROVIDER_INFO) as AccountProvider[]).map((p) => {
                 const info = PROVIDER_INFO[p];
                 return (
-                  <Button
+                  <button
                     key={p}
+                    type="button"
                     onClick={() => {
                       if (info.comingSoon) return;
                       setProvider(p);
                       setAuthMethod(info.authMethods[0] as 'oauth' | 'app-password');
                     }}
                     disabled={info.comingSoon}
-                    variant={provider === p ? 'soft' : 'ghost'}
-                    color={provider === p ? 'violet' : 'gray'}
-                    size="2"
-                    style={{ width: '100%', justifyContent: 'flex-start', padding: '1rem', height: 'auto' }}
+                    className={`w-full flex items-center gap-2 px-3 py-4 rounded-lg border text-left transition-colors ${
+                      provider === p ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     <Flex align="center" gap="4">
                       <div
@@ -246,7 +243,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                         <Flex align="center" gap="2" className="font-semibold text-lg mb-1">
                           {info.name}
                           {info.comingSoon && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-warning-subtle text-warning">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)]">
                               Coming Soon
                             </span>
                           )}
@@ -257,7 +254,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                         <Check size={24} className="text-mission-control-accent" />
                       )}
                     </Flex>
-                  </Button>
+                  </button>
                 );
               })}
             </div>
@@ -275,7 +272,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
               </div>
 
               <div>
-                <label htmlFor="email-input" className="block text-sm font-medium mb-2">Email Address</label>
+                <label htmlFor="email-input" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Email Address</label>
                 <TextField.Root
                   id="email-input"
                   type="email"
@@ -284,7 +281,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={`your.email@${provider === 'google' ? 'gmail.com' : provider === 'microsoft' ? 'outlook.com' : 'example.com'}`}
                   size="3"
-                  style={{ width: '100%' }}
+                  className="w-full"
                 />
               </div>
 
@@ -295,16 +292,14 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 </span>
                 <div className="space-y-2">
                   {provider === 'google' && useUserSettings.getState().emailAccounts.map(a => a.email).map(acc => (
-                    <Button
+                    <button
                       key={acc}
+                      type="button"
                       onClick={() => setEmail(acc)}
-                      variant="ghost"
-                      color="gray"
-                      size="2"
-                      style={{ width: '100%', justifyContent: 'flex-start' }}
+                      className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     >
                       {acc}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -328,13 +323,13 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   const isSelected = selectedDataTypes.includes(type);
 
                   return (
-                    <Button
+                    <button
                       key={type}
+                      type="button"
                       onClick={() => toggleDataType(type)}
-                      variant={isSelected ? 'soft' : 'ghost'}
-                      color={isSelected ? 'violet' : 'gray'}
-                      size="2"
-                      style={{ width: '100%', justifyContent: 'flex-start', padding: '1rem', height: 'auto' }}
+                      className={`w-full flex items-center gap-2 px-3 py-4 rounded-lg border text-left transition-colors ${
+                        isSelected ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                      }`}
                     >
                       <Flex align="center" gap="3">
                         <Icon size={24} className={isSelected ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
@@ -346,15 +341,15 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                           <Check size={20} className="text-mission-control-accent" />
                         )}
                       </Flex>
-                    </Button>
+                    </button>
                   );
                 })}
               </div>
 
-              <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
+              <div className="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg">
                 <Flex align="start" gap="2" className="text-sm">
-                  <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
-                  <div className="text-info">
+                  <AlertTriangle size={16} className="text-[var(--color-info)] mt-0.5 flex-shrink-0" />
+                  <div className="text-[var(--color-info)]">
                     You can always add or remove services later from account settings
                   </div>
                 </Flex>
@@ -376,7 +371,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
               {authMethod === 'oauth' ? (
                 <div className="space-y-4">
-                  <div className="p-6 bg-mission-control-bg rounded-lg border border-mission-control-border text-center">
+                  <div className="bg-mission-control-bg border border-mission-control-border rounded-xl p-4 text-center">
                     <div className="text-4xl mb-4">🔐</div>
                     <h4 className="font-medium mb-2">OAuth Authentication</h4>
                     <p className="text-sm text-mission-control-text-dim mb-4">
@@ -403,10 +398,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     </ul>
                   </div>
 
-                  <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
+                  <div className="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg">
                     <Flex align="start" gap="2" className="text-sm">
-                      <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
-                      <div className="text-info">
+                      <AlertTriangle size={16} className="text-[var(--color-info)] mt-0.5 flex-shrink-0" />
+                      <div className="text-[var(--color-info)]">
                         <strong>Permissions requested:</strong>
                         <ul className="mt-2 space-y-1">
                           {selectedDataTypes.map(type => (
@@ -419,10 +414,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-4 bg-warning-subtle border border-warning-border rounded-lg">
+                  <div className="p-4 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg">
                     <Flex align="start" gap="2">
-                      <AlertTriangle size={16} className="text-warning mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-warning">
+                      <AlertTriangle size={16} className="text-[var(--color-warning)] mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-[var(--color-warning)]">
                         <strong>App-Specific Password Required</strong>
                         <p className="mt-2">
                           {provider === 'icloud' &&
@@ -435,7 +430,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   </div>
 
                   <div>
-                    <label htmlFor="app-password" className="block text-sm font-medium mb-2">App-Specific Password</label>
+                    <label htmlFor="app-password" className="text-xs font-medium text-mission-control-text-dim mb-1 block">App-Specific Password</label>
                     <TextField.Root
                       id="app-password"
                       type="password"
@@ -444,21 +439,21 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                       onChange={(e) => setAppPassword(e.target.value)}
                       placeholder="xxxx-xxxx-xxxx-xxxx"
                       size="3"
-                      style={{ width: '100%', fontFamily: 'monospace' }}
+                      className="w-full"
+                      style={{ fontFamily: 'monospace' }}
                     />
                   </div>
 
-                  <Button
+                  <button
+                    type="button"
                     onClick={() => window.open(
                       provider === 'icloud' ? 'https://appleid.apple.com/account/manage' : '#',
                       '_blank'
                     )}
-                    variant="ghost"
-                    color="violet"
-                    size="2"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     How to generate an app-specific password →
-                  </Button>
+                  </button>
                 </div>
               )}
             </div>
@@ -480,8 +475,8 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           {/* Step 6: Success */}
           {step === 'success' && (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 rounded-full bg-success-subtle flex items-center justify-center mb-4">
-                <Check size={32} className="text-success" />
+              <div className="w-16 h-16 rounded-full bg-[var(--color-success)]/10 flex items-center justify-center mb-4">
+                <Check size={32} className="text-[var(--color-success)]" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Account Connected!</h3>
               <p className="text-sm text-mission-control-text-dim text-center">
@@ -492,10 +487,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
           {/* Error Display */}
           {error && step !== 'connecting' && step !== 'success' && (
-            <div className="mt-6 p-4 bg-error-subtle border border-error-border rounded-lg">
+            <div className="mt-6 p-4 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
               <Flex align="start" gap="2">
-                <AlertTriangle size={16} className="text-error mt-0.5" />
-                <div className="text-sm text-error">{error}</div>
+                <AlertTriangle size={16} className="text-[var(--color-error)] mt-0.5" />
+                <div className="text-sm text-[var(--color-error)]">{error}</div>
               </Flex>
             </div>
           )}
@@ -505,11 +500,11 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
         {step !== 'connecting' && step !== 'success' && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-mission-control-border flex-shrink-0">
             <Button
+              type="button"
+              variant="ghost"
+              size="2"
               onClick={handleBack}
               disabled={step === 'provider'}
-              variant="ghost"
-              color="gray"
-              size="2"
             >
               <ArrowLeft size={16} />
               Back
@@ -517,7 +512,6 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
             <Button
               onClick={handleNext}
               variant="solid"
-              color="violet"
               size="2"
             >
               {step === 'auth' ? 'Connect' : 'Next'}

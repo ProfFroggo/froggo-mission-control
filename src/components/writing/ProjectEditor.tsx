@@ -2,7 +2,6 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import type { PanelImperativeHandle, Layout, PanelSize } from 'react-resizable-panels';
 import { BookOpen, History, PanelLeftClose, PanelLeftOpen, MessageSquare } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
 import ChapterSidebar from './ChapterSidebar';
 import ChapterEditor from './ChapterEditor';
 import ChatPane from './ChatPane';
@@ -188,48 +187,56 @@ export default function ProjectEditor() {
         <div className="relative h-full">
           {/* Collapse toggle buttons */}
           <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
-            <IconButton
-              size="2"
-              variant="ghost"
-             
+            <button
+              type="button"
               onClick={toggleChaptersPanel}
               title={isChaptersCollapsed ? 'Show chapters sidebar' : 'Hide chapters sidebar'}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               {isChaptersCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-            </IconButton>
-            <IconButton
-              size="2"
-              variant={isChatCollapsed ? 'ghost' : 'soft'}
-             
+            </button>
+            <button
+              type="button"
               onClick={toggleChatPanel}
               title={isChatCollapsed ? 'Show chat pane' : 'Hide chat pane'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                isChatCollapsed
+                  ? 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+                  : 'bg-mission-control-accent/10 text-mission-control-accent'
+              }`}
             >
               <MessageSquare size={16} />
-            </IconButton>
+            </button>
           </div>
 
           {/* Panel toggle buttons (context/version) */}
           <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
             {activeChapterId && (
-              <IconButton
-                size="2"
-                variant={versionOpen ? 'soft' : 'ghost'}
-               
+              <button
+                type="button"
                 onClick={toggleVersion}
                 title={versionOpen ? 'Hide version history' : 'Show version history'}
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                  versionOpen
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+                }`}
               >
                 <History size={16} />
-              </IconButton>
+              </button>
             )}
-            <IconButton
-              size="2"
-              variant={contextOpen ? 'soft' : 'ghost'}
-             
+            <button
+              type="button"
               onClick={toggleContext}
               title={contextOpen ? 'Hide context panel' : 'Show context panel'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                contextOpen
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+              }`}
             >
               <BookOpen size={16} />
-            </IconButton>
+            </button>
           </div>
 
           {/* Editor content */}

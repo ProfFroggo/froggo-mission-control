@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { getAgentTheme } from '../utils/agentThemes';
 
 interface AgentAvatarProps {
@@ -36,7 +36,7 @@ function getInitials(name?: string, id?: string): string {
   return source.slice(0, 2).toUpperCase();
 }
 
-export default function AgentAvatar({ agentId, agentName, fallbackEmoji, size = 'md', className = '', ring = false, status }: AgentAvatarProps) {
+const AgentAvatar = memo(function AgentAvatar({ agentId, agentName, fallbackEmoji, size = 'md', className = '', ring = false, status }: AgentAvatarProps) {
   const [imgError, setImgError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -96,4 +96,6 @@ export default function AgentAvatar({ agentId, agentName, fallbackEmoji, size = 
       )}
     </div>
   );
-}
+});
+
+export default AgentAvatar;

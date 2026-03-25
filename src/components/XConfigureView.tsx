@@ -87,7 +87,7 @@ export default function XConfigureView() {
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Sub-tab bar */}
-      <div className="border-b border-mission-control-border bg-mission-control-surface">
+      <div className="bg-mission-control-surface">
         <TabNav
           tabs={SUB_TABS}
           activeTab={activeSubTab}

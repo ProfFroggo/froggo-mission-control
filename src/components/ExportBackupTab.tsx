@@ -5,7 +5,8 @@
 
 import { useState, useEffect } from 'react';
 import { Download, Upload, Database, Clock, HardDrive, CheckCircle, AlertTriangle, Trash2, RefreshCw } from 'lucide-react';
-import { Button, Switch, Checkbox, TextField, Flex } from '@radix-ui/themes';
+import { Button, Checkbox, TextField, Flex } from '@radix-ui/themes';
+import { Toggle } from './Toggle';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { taskApi, agentApi, chatApi, settingsApi } from '../lib/api';
@@ -220,73 +221,75 @@ export default function ExportBackupTab() {
     <div className="space-y-6">
       {/* Statistics */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
             <Flex align="center" gap="2" className="text-mission-control-text-dim mb-2">
-              <Database size={16} />
-              <span className="text-sm">Database Size</span>
+              <Database size={14} />
+              <span className="text-xs font-medium uppercase tracking-wider">Database</span>
             </Flex>
-            <div className="text-2xl font-semibold">{formatBytes(stats.databaseSize)}</div>
+            <div className="text-xl font-semibold text-mission-control-text">{formatBytes(stats.databaseSize)}</div>
           </div>
 
-          <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
+          <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
             <Flex align="center" gap="2" className="text-mission-control-text-dim mb-2">
-              <HardDrive size={16} />
-              <span className="text-sm">Backups</span>
+              <HardDrive size={14} />
+              <span className="text-xs font-medium uppercase tracking-wider">Backups</span>
             </Flex>
-            <div className="text-2xl font-semibold">{stats.backupCount}</div>
-            <div className="text-xs text-mission-control-text-dim">{formatBytes(stats.totalBackupSize)} total</div>
+            <div className="text-xl font-semibold text-mission-control-text">{stats.backupCount}</div>
+            <div className="text-xs text-mission-control-text-dim mt-0.5">{formatBytes(stats.totalBackupSize)} total</div>
           </div>
 
-          <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
+          <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
             <Flex align="center" gap="2" className="text-mission-control-text-dim mb-2">
-              <Clock size={16} />
-              <span className="text-sm">Last Backup</span>
+              <Clock size={14} />
+              <span className="text-xs font-medium uppercase tracking-wider">Last Backup</span>
             </Flex>
-            <div className="text-sm font-semibold">
+            <div className="text-sm font-semibold text-mission-control-text">
               {stats.lastBackupDate ? formatDate(stats.lastBackupDate) : 'Never'}
             </div>
           </div>
 
-          <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
+          <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
             <Flex align="center" gap="2" className="text-mission-control-text-dim mb-2">
-              <Download size={16} />
-              <span className="text-sm">Exports</span>
+              <Download size={14} />
+              <span className="text-xs font-medium uppercase tracking-wider">Exports</span>
             </Flex>
-            <div className="text-2xl font-semibold">{stats.exportCount}</div>
+            <div className="text-xl font-semibold text-mission-control-text">{stats.exportCount}</div>
           </div>
         </div>
       )}
 
       {/* Export Section */}
-      <section className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6">
-        <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-          <Download size={20} />
+      <section className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim px-6 py-3 border-b border-mission-control-border bg-mission-control-bg/50">
           Export Data
-        </h2>
+        </div>
+        <div className="p-6">
 
         <div className="space-y-4">
           {/* Format Selector */}
           <div>
             <span className="block text-sm text-mission-control-text-dim mb-2">Export Format</span>
-            <Flex gap="2" role="radiogroup" aria-label="Export format">
-              <Button
+            <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border" role="radiogroup" aria-label="Export format">
+              <button
+                type="button"
                 onClick={() => setExportFormat('json')}
-                variant={exportFormat === 'json' ? 'soft' : 'outline'}
-                color={exportFormat === 'json' ? 'grass' : 'gray'}
-                size="2"
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  exportFormat === 'json' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 JSON
-              </Button>
-              <Button
+              </button>
+              <button
+                type="button"
                 onClick={() => setExportFormat('csv')}
-                variant={exportFormat === 'csv' ? 'soft' : 'outline'}
-                color={exportFormat === 'csv' ? 'grass' : 'gray'}
-                size="2"
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  exportFormat === 'csv' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 CSV
-              </Button>
-            </Flex>
+              </button>
+            </div>
           </div>
 
           {/* Export Buttons */}
@@ -329,14 +332,15 @@ export default function ExportBackupTab() {
             Exports are saved to: <code className="bg-mission-control-bg px-1 py-0.5 rounded">~/mission-control/exports/</code>
           </div>
         </div>
+        </div>
       </section>
 
       {/* Backup Section */}
-      <section className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6">
-        <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-          <HardDrive size={20} />
+      <section className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim px-6 py-3 border-b border-mission-control-border bg-mission-control-bg/50">
           Database Backup
-        </h2>
+        </div>
+        <div className="p-6">
 
         <div className="space-y-4">
           {/* Backup Options */}
@@ -367,19 +371,19 @@ export default function ExportBackupTab() {
           <div className="pt-4 border-t border-mission-control-border">
             <Flex align="center" justify="between" className="mb-4">
               <div>
-                <div className="font-medium">Scheduled Auto-Backups</div>
-                <div className="text-sm text-mission-control-text-dim">Automatically backup database daily</div>
+                <div className="text-sm font-medium text-mission-control-text">Scheduled Auto-Backups</div>
+                <div className="text-xs text-mission-control-text-dim mt-0.5">Automatically backup database daily at 3:00 AM</div>
               </div>
-              <Switch
-                size="2"
+              <Toggle
                 checked={autoBackupEnabled}
-                onCheckedChange={setAutoBackupEnabled}
+                onChange={setAutoBackupEnabled}
+                colorScheme="green"
               />
             </Flex>
 
             {autoBackupEnabled && (
-              <div className="bg-info-subtle border border-info-border rounded-lg p-4">
-                <div className="text-sm text-info">
+              <div className="bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg p-4">
+                <div className="text-sm text-[var(--color-info)]">
                   Auto-backup will run daily at 3:00 AM. Backups are created via mission-control cron system.
                 </div>
               </div>
@@ -420,100 +424,99 @@ export default function ExportBackupTab() {
             Backups are saved to: <code className="bg-mission-control-bg px-1 py-0.5 rounded">~/mission-control/backups/</code>
           </div>
         </div>
+        </div>
       </section>
 
       {/* Available Backups */}
-      <section className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6">
-        <Flex align="center" justify="between" className="mb-4">
-          <h2 className="text-lg font-medium flex items-center gap-2">
-            <Database size={20} />
-            Available Backups
-          </h2>
-          <Button
+      <section className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-mission-control-border bg-mission-control-bg/50">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Available Backups</span>
+          <button
             onClick={loadBackups}
-            variant="ghost"
-            color="gray"
-            size="2"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={12} />
             Refresh
-          </Button>
-        </Flex>
+          </button>
+        </div>
 
-        {backups.length === 0 ? (
-          <div className="text-center py-8 text-mission-control-text-dim">
-            <Database size={48} className="mx-auto mb-3 opacity-50" />
-            <p>No backups found</p>
-            <p className="text-sm mt-1">Create your first backup above</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {backups.map((backup, idx) => (
-              <Flex
-                key={backup.filename}
-                align="center"
-                justify="between"
-                className="p-4 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="font-medium">{backup.filename}</div>
-                  <Flex align="center" gap="4" className="mt-1 text-sm text-mission-control-text-dim">
-                    <span>{formatDate(backup.created)}</span>
-                    <span>{formatBytes(backup.size)}</span>
-                    {backup.metadata?.includesAttachments && (
-                      <span className="text-xs px-2 py-0.5 bg-info-subtle text-info rounded">
-                        + Attachments
+        <div className="p-6">
+          {backups.length === 0 ? (
+            <div className="text-center py-8 text-mission-control-text-dim">
+              <Database size={40} className="mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No backups found</p>
+              <p className="text-xs mt-1 opacity-70">Create your first backup above</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {backups.map((backup, idx) => (
+                <Flex
+                  key={backup.filename}
+                  align="center"
+                  justify="between"
+                  className="p-4 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/40 transition-colors"
+                >
+                  <div className="flex-1 min-w-0 pr-4">
+                    <div className="text-sm font-medium text-mission-control-text truncate">{backup.filename}</div>
+                    <Flex align="center" gap="3" className="mt-1 text-xs text-mission-control-text-dim">
+                      <span>{formatDate(backup.created)}</span>
+                      <span>{formatBytes(backup.size)}</span>
+                      {backup.metadata?.includesAttachments && (
+                        <span className="px-1.5 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded">
+                          + Attachments
+                        </span>
+                      )}
+                    </Flex>
+                  </div>
+                  <Flex align="center" gap="2" className="flex-shrink-0">
+                    {idx === 0 && (
+                      <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full">
+                        Latest
                       </span>
                     )}
+                    <Button
+                      onClick={() => handleRestoreBackup(backup.path)}
+                      disabled={loading}
+                      variant="soft"
+                      color="gray"
+                      size="1"
+                    >
+                      <Upload size={12} />
+                      Restore
+                    </Button>
                   </Flex>
-                </div>
-                <Flex align="center" gap="2">
-                  {idx === 0 && (
-                    <span className="text-xs px-2 py-1 bg-success-subtle text-success rounded">
-                      Latest
-                    </span>
-                  )}
-                  <Button
-                    onClick={() => handleRestoreBackup(backup.path)}
-                    disabled={loading}
-                    variant="soft"
-                    color="violet"
-                    size="2"
-                  >
-                    <Upload size={14} />
-                    Restore
-                  </Button>
                 </Flex>
-              </Flex>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Danger Zone */}
-      <section className="bg-error-subtle border border-error-border rounded-lg p-6">
-        <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-error">
-          <AlertTriangle size={20} />
+      <section className="bg-[var(--color-error)]/5 border border-[var(--color-error)]/20 rounded-xl p-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-error)] mb-3">
           Danger Zone
-        </h2>
-
+        </p>
         <div className="space-y-3 text-sm">
-          <Flex align="start" gap="2">
-            <CheckCircle size={16} className="text-success flex-shrink-0 mt-0.5" />
-            <div>
-              <strong>Safe backup:</strong> A backup of your current database is automatically created before any restore operation
+          <Flex align="start" gap="2.5">
+            <CheckCircle size={14} className="text-[var(--color-success)] flex-shrink-0 mt-0.5" />
+            <div className="text-mission-control-text-dim">
+              <span className="font-medium text-mission-control-text">Safe backup:</span>{' '}
+              A backup of your current database is automatically created before any restore operation
             </div>
           </Flex>
-          <Flex align="start" gap="2">
-            <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
-            <div>
-              <strong>Test restores:</strong> Always verify backups can be restored in a test environment first
+          <Flex align="start" gap="2.5">
+            <AlertTriangle size={14} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
+            <div className="text-mission-control-text-dim">
+              <span className="font-medium text-mission-control-text">Test restores:</span>{' '}
+              Always verify backups can be restored in a test environment first
             </div>
           </Flex>
-          <Flex align="start" gap="2">
-            <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
-            <div>
-              <strong>Data loss risk:</strong> Restoring a backup will replace ALL current data with the backup&apos;s contents
+          <Flex align="start" gap="2.5">
+            <AlertTriangle size={14} className="text-[var(--color-error)] flex-shrink-0 mt-0.5" />
+            <div className="text-mission-control-text-dim">
+              <span className="font-medium text-mission-control-text">Data loss risk:</span>{' '}
+              Restoring a backup will replace ALL current data with the backup&apos;s contents
             </div>
           </Flex>
         </div>

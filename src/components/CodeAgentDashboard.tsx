@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle, AlertCircle, Loader2, Info, Monitor, Bug, Clock } from 'lucide-react';
-import { Button, IconButton, Flex } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import CronTab from './CronTab';
 import DebugTab from './DebugTab';
 import EmptyState from './EmptyState';
@@ -135,32 +135,32 @@ export default function CodeAgentDashboard() {
   };
 
   const statusColors = {
-    running: 'bg-warning',
-    idle: 'bg-success',
-    completed: 'bg-success',
-    failed: 'bg-error',
+    running: 'bg-[var(--color-warning)]',
+    idle: 'bg-[var(--color-success)]',
+    completed: 'bg-[var(--color-success)]',
+    failed: 'bg-[var(--color-error)]',
   };
 
   const taskStatusColors = {
-    pending: 'bg-mission-control-bg0',
-    'in-progress': 'bg-info',
-    review: 'bg-review',
-    done: 'bg-success',
+    pending: 'bg-mission-control-surface',
+    'in-progress': 'bg-[var(--color-info)]',
+    review: 'bg-[var(--color-review)]',
+    done: 'bg-[var(--color-success)]',
   };
 
   return (
     <Flex direction="column" height="100%">
       {/* Read-only notice */}
-      <Flex align="center" gap="2" className="px-4 py-2 bg-info-subtle border-b border-mission-control-border text-info text-xs">
+      <Flex align="center" gap="2" className="px-4 py-2 bg-[var(--color-info)]/10 border-b border-mission-control-border text-[var(--color-info)] text-xs">
         <Info size={13} />
         <span>Dev module — read-only diagnostics. The Cron Jobs tab manages scheduled jobs; all other panels are display-only.</span>
       </Flex>
       {/* Header */}
-      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <Flex align="center" justify="between" className="mb-4">
+      <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="mb-3">
           <Flex align="center" gap="3">
-            <div className="p-2 bg-info-subtle rounded-lg">
-              <Code size={24} className="text-info" />
+            <div className="p-2 bg-[var(--color-info)]/10 rounded-lg">
+              <Code size={24} className="text-[var(--color-info)]" />
             </div>
             <div>
               <h1 className="text-xl font-semibold">Code Agent Dashboard</h1>
@@ -169,15 +169,15 @@ export default function CodeAgentDashboard() {
               </p>
             </div>
           </Flex>
-          <Button
+          <button
+            type="button"
             onClick={loadData}
             disabled={loading}
-            size="2"
-            variant="ghost"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
-          </Button>
+          </button>
         </Flex>
 
         {/* Tabs */}

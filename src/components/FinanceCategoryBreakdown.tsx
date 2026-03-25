@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingDown, Loader2 } from 'lucide-react';
-import { Button, Flex } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import { financeApi } from '../lib/api';
 
 interface Props {
@@ -93,26 +93,28 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
   const total = breakdown.reduce((sum, r) => sum + r.total, 0);
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 mb-6">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 mb-6">
       {/* Header */}
       <Flex align="center" justify="between" className="mb-4">
-        <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase tracking-wide">
+        <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
           Spend by Category
         </h3>
         {/* Period selector */}
-        <Flex align="center" gap="1">
+        <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
           {PERIOD_OPTIONS.map(({ label, days }) => (
-            <Button
+            <button
               key={days}
+              type="button"
               onClick={() => setSelectedDays(days)}
-              size="1"
-              variant={selectedDays === days ? 'solid' : 'ghost'}
               aria-label={`Show ${label} breakdown`}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                selectedDays === days ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {label}
-            </Button>
+            </button>
           ))}
-        </Flex>
+        </div>
       </Flex>
 
       {/* Loading */}
@@ -163,29 +165,38 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
           </div>
 
           {/* Category list ~55% */}
-          <div className="flex-1 min-w-0 space-y-2 max-h-44 overflow-auto pr-1">
+          <div className="flex-1 min-w-0 space-y-2.5 max-h-44 overflow-auto pr-1">
             {breakdown.map((row) => {
               const pct = total > 0 ? (row.total / total) * 100 : 0;
               return (
-                <Flex key={row.category} align="center" gap="2" className="text-sm">
-                  {/* Color dot */}
-                  <span
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ background: row.color }}
-                  />
-                  {/* Name */}
-                  <span className="flex-1 text-mission-control-text capitalize truncate">
-                    {row.category}
-                  </span>
-                  {/* Pct */}
-                  <span className="text-mission-control-text-dim text-xs w-8 text-right flex-shrink-0">
-                    {pct.toFixed(0)}%
-                  </span>
-                  {/* Amount */}
-                  <span className="text-mission-control-text font-medium text-right flex-shrink-0 w-20">
-                    {formatCurrency(row.total)}
-                  </span>
-                </Flex>
+                <div key={row.category} className="space-y-1">
+                  <Flex align="center" gap="2">
+                    {/* Color dot */}
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ background: row.color }}
+                    />
+                    {/* Name */}
+                    <span className="flex-1 text-sm text-mission-control-text capitalize truncate">
+                      {row.category}
+                    </span>
+                    {/* Pct badge */}
+                    <span className="text-[11px] text-mission-control-text-dim/70 tabular-nums flex-shrink-0">
+                      {pct.toFixed(0)}%
+                    </span>
+                    {/* Amount */}
+                    <span className="text-sm text-mission-control-text font-medium tabular-nums text-right flex-shrink-0 w-20">
+                      {formatCurrency(row.total)}
+                    </span>
+                  </Flex>
+                  {/* Mini progress bar */}
+                  <div className="ml-4 h-1 rounded-full bg-mission-control-border/40 overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${pct}%`, backgroundColor: row.color }}
+                    />
+                  </div>
+                </div>
               );
             })}
           </div>

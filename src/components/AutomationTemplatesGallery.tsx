@@ -2,7 +2,7 @@
 'use client';
 import { useState } from 'react';
 import { X, ChevronRight, Plus, Layers } from 'lucide-react';
-import { Button, IconButton, Badge, Heading, Text, Spinner } from '@radix-ui/themes';
+import { Button, Heading, Text, Spinner } from '@radix-ui/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -167,10 +167,10 @@ const BUILT_IN_TEMPLATES: AutomationTemplate[] = [
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const CATEGORY_COLORS: Record<TemplateCategory, string> = {
-  Workflow:     'var(--review)',
-  Notification: 'var(--warning)',
-  AI:           'var(--review)',
-  Data:         'var(--info)',
+  Workflow:     'var(--color-review)',
+  Notification: 'var(--color-warning)',
+  AI:           'var(--color-review)',
+  Data:         'var(--color-info)',
 };
 
 const ALL_CATEGORIES: TemplateCategory[] = ['Workflow', 'Notification', 'AI', 'Data'];
@@ -189,51 +189,37 @@ function TemplateCard({ template, selected, onSelect }: TemplateCardProps) {
     <button
       type="button"
       onClick={onSelect}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-        padding: '16px',
-        borderRadius: 10,
-        border: `2px solid ${selected ? 'var(--mission-control-accent)' : 'var(--mission-control-border)'}`,
-        background: selected
-          ? 'color-mix(in srgb, var(--mission-control-accent) 8%, var(--mission-control-surface))'
-          : 'var(--mission-control-surface)',
-        cursor: 'pointer',
-        textAlign: 'left',
-        transition: 'border-color 0.15s, background 0.15s',
-      }}
+      className={[
+        'flex flex-col gap-2.5 p-4 rounded-xl text-left transition-colors',
+        selected
+          ? 'bg-mission-control-surface border-2 border-mission-control-accent'
+          : 'bg-mission-control-surface border-2 border-mission-control-border hover:border-mission-control-accent/30',
+      ].join(' ')}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="flex items-center gap-2">
         <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 8,
-            background: `color-mix(in srgb, ${color} 15%, transparent)`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color,
-            flexShrink: 0,
-          }}
+          className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{ background: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
         >
           <Layers size={18} />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Text size="2" weight="bold">{template.name}</Text>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-            <Badge variant="soft" style={{ background: `color-mix(in srgb, ${color} 15%, transparent)`, color }}>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-mission-control-text m-0">{template.name}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+              style={{ background: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
+            >
               {template.category}
-            </Badge>
-            <Text size="1" style={{ color: 'var(--mission-control-text-dim)' }}>
+            </span>
+            <span className="text-[10px] text-mission-control-text-dim">
               {template.steps.length} step{template.steps.length !== 1 ? 's' : ''}
-            </Text>
+            </span>
           </div>
         </div>
-        <ChevronRight size={14} style={{ color: 'var(--mission-control-text-dim)', flexShrink: 0 }} />
+        <ChevronRight size={14} className="text-mission-control-text-dim flex-shrink-0" />
       </div>
-      <p style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', margin: 0, lineHeight: 1.5 }}>
+      <p className="text-xs text-mission-control-text-dim m-0 leading-snug">
         {template.description}
       </p>
     </button>
@@ -244,42 +230,20 @@ function TemplateCard({ template, selected, onSelect }: TemplateCardProps) {
 
 function StepPreview({ steps }: { steps: TemplateStep[] }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div className="flex flex-col gap-1.5">
       {steps.map((step, i) => (
         <div
           key={i}
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 10,
-            padding: '10px 12px',
-            borderRadius: 8,
-            background: 'var(--mission-control-bg)',
-            border: '1px solid var(--mission-control-border)',
-          }}
+          className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-mission-control-surface border border-mission-control-border"
         >
-          <span
-            style={{
-              flexShrink: 0,
-              width: 20,
-              height: 20,
-              borderRadius: 5,
-              background: 'var(--mission-control-accent)',
-              color: 'white',
-              fontSize: 11,
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+          <span className="w-5 h-5 rounded-full bg-mission-control-accent/10 text-mission-control-accent text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-px">
             {i + 1}
           </span>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mission-control-text)' }}>
+            <div className="text-[13px] font-semibold text-mission-control-text">
               {step.label}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', marginTop: 1 }}>
+            <div className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/30 text-mission-control-text-dim inline-block mt-0.5">
               {step.type}
             </div>
           </div>
@@ -315,87 +279,59 @@ export default function AutomationTemplatesGallery({ onClose, onUseTemplate }: P
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 60,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--black-a5)',
-      }}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--black-a5)]"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        style={{
-          width: '90vw',
-          maxWidth: 900,
-          maxHeight: '85vh',
-          background: 'var(--mission-control-bg)',
-          border: '1px solid var(--mission-control-border)',
-          borderRadius: 16,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
+        className="w-[90vw] max-w-[900px] max-h-[85vh] bg-mission-control-bg border border-mission-control-border rounded-2xl flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '20px 24px',
-            borderBottom: '1px solid var(--mission-control-border)',
-          }}
+          className="flex items-center justify-between px-6 py-5 border-b border-mission-control-border"
         >
           <div>
             <Heading size="5" weight="bold">Automation Templates</Heading>
-            <Text size="2" style={{ color: 'var(--mission-control-text-dim)', display: 'block', marginTop: 2 }}>
+            <Text size="2" className="text-mission-control-text-dim block mt-0.5">
               Pick a template to get started instantly
             </Text>
           </div>
-          <IconButton variant="ghost" size="2" onClick={onClose}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+          >
             <X size={18} />
-          </IconButton>
+          </button>
         </div>
 
         {/* Category filter */}
         <div
-          style={{
-            display: 'flex',
-            gap: 6,
-            padding: '12px 24px',
-            borderBottom: '1px solid var(--mission-control-border)',
-            overflowX: 'auto',
-          }}
+          className="flex gap-1.5 px-6 py-3 border-b border-mission-control-border overflow-x-auto"
         >
           {(['All', ...ALL_CATEGORIES] as const).map(cat => (
-            <Button
+            <button
               key={cat}
-              variant={activeCategory === cat ? 'solid' : 'outline'}
-              size="1"
+              type="button"
               onClick={() => setActiveCategory(cat)}
-              style={{ borderRadius: 999, whiteSpace: 'nowrap' }}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
+                activeCategory === cat
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {cat}
-            </Button>
+            </button>
           ))}
         </div>
 
         {/* Body */}
-        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <div className="flex flex-1 min-h-0">
           {/* Template list */}
           <div
+            className="overflow-y-auto px-6 py-4 grid gap-2.5 content-start transition-[width] duration-200"
             style={{
               width: selectedTemplate ? '55%' : '100%',
-              overflowY: 'auto',
-              padding: '16px 24px',
-              display: 'grid',
               gridTemplateColumns: selectedTemplate ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: 10,
-              alignContent: 'start',
-              transition: 'width 0.2s',
             }}
           >
             {filtered.map(template => (
@@ -411,49 +347,32 @@ export default function AutomationTemplatesGallery({ onClose, onUseTemplate }: P
           {/* Preview panel */}
           {selectedTemplate && (
             <div
-              style={{
-                width: '45%',
-                borderLeft: '1px solid var(--mission-control-border)',
-                overflowY: 'auto',
-                padding: '20px 24px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 16,
-              }}
+              className="w-[45%] border-l border-mission-control-border overflow-y-auto px-6 py-5 flex flex-col gap-4"
             >
               <div>
-                <Heading size="3" weight="bold" style={{ display: 'block' }}>{selectedTemplate.name}</Heading>
-                <p style={{ fontSize: 12, color: 'var(--mission-control-text-dim)', margin: '6px 0 0', lineHeight: 1.6 }}>
+                <Heading size="3" weight="bold" className="block">{selectedTemplate.name}</Heading>
+                <p className="text-xs text-mission-control-text-dim mt-1.5 leading-relaxed mb-0">
                   {selectedTemplate.description}
                 </p>
               </div>
 
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mission-control-text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">
                   Trigger
                 </div>
-                <div
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    background: 'var(--mission-control-surface)',
-                    border: '1px solid var(--mission-control-border)',
-                    fontSize: 12,
-                    color: 'var(--mission-control-text)',
-                  }}
-                >
-                  <span style={{ fontWeight: 600 }}>{selectedTemplate.trigger_type}</span>
+                <div className="text-xs text-mission-control-text px-3 py-2.5 rounded-lg bg-mission-control-surface border border-mission-control-border">
+                  <span className="font-semibold">{selectedTemplate.trigger_type}</span>
                   {selectedTemplate.trigger_config.event && (
-                    <span style={{ color: 'var(--mission-control-text-dim)' }}> — {selectedTemplate.trigger_config.event}</span>
+                    <span className="text-mission-control-text-dim"> — {selectedTemplate.trigger_config.event}</span>
                   )}
                   {selectedTemplate.trigger_config.frequency && (
-                    <span style={{ color: 'var(--mission-control-text-dim)' }}> — {selectedTemplate.trigger_config.frequency} at {selectedTemplate.trigger_config.time}</span>
+                    <span className="text-mission-control-text-dim"> — {selectedTemplate.trigger_config.frequency} at {selectedTemplate.trigger_config.time}</span>
                   )}
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mission-control-text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">
                   Steps ({selectedTemplate.steps.length})
                 </div>
                 <StepPreview steps={selectedTemplate.steps} />
@@ -464,7 +383,7 @@ export default function AutomationTemplatesGallery({ onClose, onUseTemplate }: P
                 size="3"
                 onClick={handleUse}
                 disabled={creating}
-                style={{ marginTop: 'auto', width: '100%' }}
+                className="mt-auto w-full"
               >
                 {creating ? <Spinner size="1" /> : <Plus size={16} />}
                 {creating ? 'Creating...' : 'Use this template'}
