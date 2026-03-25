@@ -10,7 +10,7 @@ import {
   RefreshCw, TrendingUp, TrendingDown, Minus, Users,
   Pencil, GripVertical, X, LayoutGrid, Check
 } from 'lucide-react';
-import { Button, IconButton, Badge, Spinner, Select } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Badge, Spinner, Select } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 import AgentDetailModal from './AgentDetailModal';
 import { useStore } from '../store/store';
@@ -73,14 +73,14 @@ function HeaderBar({
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
-    <div className="flex items-center justify-between px-4 sm:px-6 py-4">
+    <Flex align="center" justify="between" px="4" py="4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
           {greeting}
         </h1>
         <p className="text-sm text-mission-control-text-dim mt-0.5">{dateStr}</p>
       </div>
-      <div className="flex items-center gap-2">
+      <Flex align="center" gap="2">
         {onRefresh && !editMode && (
           <Button
             onClick={onRefresh}
@@ -112,8 +112,8 @@ function HeaderBar({
           {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
           {connected ? 'Online' : 'Connecting...'}
         </Badge>
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 }
 
@@ -155,15 +155,15 @@ function AddWidgetModal({
         className="w-full max-w-lg mx-4 bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border">
+          <Flex align="center" gap="2">
             <LayoutGrid size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold text-sm">Add Widget</h2>
-          </div>
+          </Flex>
           <IconButton onClick={onClose} variant="ghost" size="1">
             <X size={16} />
           </IconButton>
-        </div>
+        </Flex>
 
         <div className="overflow-y-auto max-h-[60vh] p-4 space-y-5">
           {available.length === 0 ? (
@@ -327,12 +327,12 @@ function StatCard({ label, value, icon: Icon, color, pulse, highlight, onClick, 
           : 'bg-mission-control-surface/80 border-mission-control-border hover:border-mission-control-accent/50'
       }`}
     >
-      <div className="flex items-center justify-between mb-2">
+      <Flex align="center" justify="between" mb="2">
         <Icon size={18} className={color} />
         {pulse && value > 0 && (
           <span className="w-2.5 h-2.5 rounded-full bg-warning animate-pulse" />
         )}
-      </div>
+      </Flex>
       <div className={`text-3xl font-bold tabular-nums ${color}`}>{value}</div>
       <div className="text-xs text-mission-control-text-dim mt-1 font-medium">{label}</div>
       {sub && <div className="text-xs text-mission-control-text-dim/70 mt-0.5 tabular-nums">{sub}</div>}
@@ -467,12 +467,12 @@ function ApprovalCard({
 
   return (
     <div className="p-4 border-b border-mission-control-border/30 hover:bg-mission-control-border/40 transition-colors">
-      <div className="flex items-start gap-3">
+      <Flex align="start" gap="3">
         <div className="mt-1 p-2 rounded-lg bg-mission-control-bg/50">
           <Icon size={16} className="text-mission-control-text-dim" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
+          <Flex align="start" justify="between" gap="2">
             <div className="min-w-0">
               <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">
                 {item.type}
@@ -482,21 +482,21 @@ function ApprovalCard({
             <span className="text-xs text-mission-control-text-dim flex-shrink-0">
               {formatTimeAgo(item.createdAt)}
             </span>
-          </div>
+          </Flex>
           <p className="text-sm text-mission-control-text-dim mt-1 line-clamp-2">{item.content}</p>
           {item.metadata?.to && (
             <p className="text-xs text-mission-control-text-dim/70 mt-1">To: {item.metadata.to}</p>
           )}
-          <div className="flex items-center gap-2 mt-3">
+          <Flex align="center" gap="2" mt="3">
             <Button onClick={() => onApprove(item.id)} size="1" color="grass">
               Approve
             </Button>
             <Button onClick={() => onReject(item.id)} size="1" variant="outline" color="red">
               Reject
             </Button>
-          </div>
+          </Flex>
         </div>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -520,7 +520,7 @@ function ApprovalsQueue({
       pending.length > 0 ? 'border-warning-border shadow-lg' : 'border-mission-control-border'
     }`}>
       <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Inbox size={16} className={pending.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'} />
           <h2 className="font-semibold text-sm">Needs Your Decision</h2>
           {pending.length > 0 && (
@@ -528,7 +528,7 @@ function ApprovalsQueue({
               {pending.length}
             </span>
           )}
-        </div>
+        </Flex>
         <Button
           onClick={() => onNavigate?.('approvals')}
           size="1"
@@ -627,7 +627,7 @@ function ActivityFeed({
   return (
     <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden flex flex-col h-[400px]">
       <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Activity size={16} className="text-info" />
           <h2 className="font-semibold text-sm">Activity Feed</h2>
           {inProgressTasks.length > 0 && (
@@ -635,7 +635,7 @@ function ActivityFeed({
               {inProgressTasks.length} active
             </span>
           )}
-        </div>
+        </Flex>
         <Button
           onClick={() => onNavigate?.('kanban')}
           size="1"
@@ -648,10 +648,10 @@ function ActivityFeed({
       {/* Agent leaderboard — top 3 most active today */}
       {agentLeaderboard.length > 0 && (
         <div className="px-4 py-3 border-b border-mission-control-border/30 bg-mission-control-bg/20">
-          <div className="flex items-center gap-1.5 mb-2">
+          <Flex align="center" gap="2" mb="2">
             <Trophy size={12} className="text-warning" />
             <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Most Active Today</span>
-          </div>
+          </Flex>
           <div className="flex items-center gap-3 overflow-hidden">
             {agentLeaderboard.map(({ agentId, count }, idx) => {
               const agent = agentMap.get(agentId);
@@ -703,7 +703,7 @@ function ActivityFeed({
                     role="button"
                     tabIndex={0}
                   >
-                    <div className="flex items-start gap-3">
+                    <Flex align="start" gap="3">
                       <div className="flex-shrink-0 mt-0.5">
                         {agent ? (
                           <Button
@@ -748,7 +748,7 @@ function ActivityFeed({
                           in progress
                         </span>
                       </div>
-                    </div>
+                    </Flex>
                   </div>
                 );
               } else {
@@ -899,22 +899,22 @@ function TaskCompletionSparkline({ sparkline, loading }: { sparkline: SparklineD
   return (
     <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden">
       <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <BarChart2 size={16} className="text-mission-control-accent" />
           <h2 className="font-semibold text-sm">Task Completion Trend</h2>
           <span className="text-xs text-mission-control-text-dim">last 7 days</span>
-        </div>
+        </Flex>
         <span className="text-xs font-semibold text-mission-control-text">{total} total</span>
       </div>
       <div className="px-4 pt-3 pb-4">
         {loading ? (
-          <div className="flex items-center justify-center h-14">
+          <Flex align="center" justify="center" className="h-14">
             <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
-          </div>
+          </Flex>
         ) : !points ? (
-          <div className="flex items-center justify-center h-14 text-xs text-mission-control-text-dim">
+          <Flex align="center" justify="center" className="h-14 text-xs text-mission-control-text-dim">
             No data yet
-          </div>
+          </Flex>
         ) : (
           <svg
             viewBox={`0 0 ${W} ${H}`}
@@ -1074,9 +1074,9 @@ function AgentProductivitySummary({
       </div>
       <div className="p-4">
         {loading ? (
-          <div className="flex items-center justify-center py-4">
+          <Flex align="center" justify="center" py="4">
             <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
-          </div>
+          </Flex>
         ) : agentProductivity.length === 0 ? (
           <div className="py-4 text-center text-xs text-mission-control-text-dim">No completed tasks yet</div>
         ) : (
@@ -1099,14 +1099,14 @@ function AgentProductivitySummary({
                   </span>
                   <AgentAvatar agentId={agent} fallbackEmoji={agentData?.avatar} size="xs" />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
+                    <Flex align="center" justify="between" mb="1">
                       <span className="text-xs font-medium text-mission-control-text truncate group-hover:text-mission-control-accent transition-colors">
                         {agentData?.name ?? agent}
                       </span>
                       <span className="text-xs font-semibold tabular-nums text-mission-control-text-dim flex-shrink-0 ml-2">
                         {completed}
                       </span>
-                    </div>
+                    </Flex>
                     <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
                       <div
                         className="h-full bg-mission-control-accent/60 rounded-full transition-all"
@@ -1163,11 +1163,11 @@ function TaskThroughputChart({ tasks }: { tasks: Task[] }) {
   return (
     <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden">
       <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <BarChart2 size={16} className="text-review" />
           <h2 className="font-semibold text-sm">Tasks Completed</h2>
           <span className="text-xs text-mission-control-text-dim">last 7 days</span>
-        </div>
+        </Flex>
         <span className="text-xs font-semibold text-mission-control-text">
           {chartData.reduce((s, d) => s + d.count, 0)} total
         </span>
@@ -1298,10 +1298,10 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
   return (
     <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden flex flex-col min-h-[280px] max-h-[480px]">
       <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Calendar size={16} className="text-info" />
           <h2 className="font-semibold text-sm">Today&apos;s Schedule</h2>
-        </div>
+        </Flex>
         <Button
           onClick={() => onNavigate?.('schedule')}
           size="1"
@@ -1334,7 +1334,7 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
                     happening ? 'bg-info-subtle/30 border-l-2 border-l-info' : ''
                   }`}
                 >
-                  <div className="flex items-start gap-3">
+                  <Flex align="start" gap="3">
                     <div className={`w-14 text-right flex-shrink-0 ${
                       happening ? 'text-info font-semibold' : 'text-mission-control-text-dim'
                     }`}>
@@ -1350,10 +1350,10 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
                         )}
                       </p>
                       {event.location && (
-                        <div className="flex items-center gap-1 mt-0.5 text-xs text-mission-control-text-dim">
+                        <Flex align="center" gap="1" className="mt-0.5 text-xs text-mission-control-text-dim">
                           <MapPin size={10} />
                           <span className="truncate">{event.location}</span>
-                        </div>
+                        </Flex>
                       )}
                     </div>
                     {meetingLink && (
@@ -1368,7 +1368,7 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
                         <Video size={14} />
                       </a>
                     )}
-                  </div>
+                  </Flex>
                 </div>
               );
             })}
@@ -1463,7 +1463,7 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
   return (
     <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden flex flex-col min-h-[280px] max-h-[480px]">
       <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Shield size={16} className={
             health === 'healthy' ? 'text-success' :
             health === 'warning' ? 'text-warning' :
@@ -1471,7 +1471,7 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
             'text-mission-control-text-dim'
           } />
           <h2 className="font-semibold text-sm">System Health</h2>
-        </div>
+        </Flex>
         <div className={`flex items-center gap-1.5 text-xs font-medium ${
           health === 'healthy' ? 'text-success' :
           health === 'warning' ? 'text-warning' :
@@ -1490,59 +1490,59 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
 
       <div className="p-4 space-y-3">
         {/* Gateway */}
-        <div className="flex items-center justify-between text-xs">
+        <Flex align="center" justify="between" className="text-xs">
           <span className="text-mission-control-text-dim">Gateway</span>
           <span className={connected ? 'text-success' : 'text-error'}>
             {connected ? 'Connected' : 'Disconnected'}
           </span>
-        </div>
+        </Flex>
 
         {/* Sessions */}
-        <div className="flex items-center justify-between text-xs">
+        <Flex align="center" justify="between" className="text-xs">
           <span className="text-mission-control-text-dim">Active Sessions</span>
           <span className="text-mission-control-text tabular-nums">{activeSessions.length}</span>
-        </div>
+        </Flex>
 
         {/* Watcher */}
         {sysStatus && (
           <>
-            <div className="flex items-center justify-between text-xs">
+            <Flex align="center" justify="between" className="text-xs">
               <span className="text-mission-control-text-dim">Task Watcher</span>
               <span className={sysStatus.watcherRunning ? 'text-success' : 'text-error'}>
                 {sysStatus.watcherRunning ? 'Running' : 'Stopped'}
               </span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
+            </Flex>
+            <Flex align="center" justify="between" className="text-xs">
               <span className="text-mission-control-text-dim">Safety Lock</span>
               <span className={sysStatus.killSwitchOn ? 'text-error' : 'text-success'}>
                 {sysStatus.killSwitchOn ? 'Engaged' : 'Normal'}
               </span>
-            </div>
+            </Flex>
           </>
         )}
 
         {/* Token usage */}
         {tokenSummary && (
           <div className="pt-3 border-t border-mission-control-border/50 space-y-2">
-            <div className="flex items-center justify-between text-xs">
+            <Flex align="center" justify="between" className="text-xs">
               <span className="text-mission-control-text-dim flex items-center gap-1">
                 <Zap size={10} /> Tokens Today
               </span>
               <span className="text-mission-control-text font-medium tabular-nums">{formatTokens(tokenSummary.totalTokens)}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
+            </Flex>
+            <Flex align="center" justify="between" className="text-xs">
               <span className="text-mission-control-text-dim flex items-center gap-1">
                 <DollarSign size={10} /> Cost
               </span>
               <span className="text-mission-control-text font-medium tabular-nums">{formatCost(tokenSummary.totalCost)}</span>
-            </div>
+            </Flex>
             {tokenSummary.topAgent && (
-              <div className="flex items-center justify-between text-xs">
+              <Flex align="center" justify="between" className="text-xs">
                 <span className="text-mission-control-text-dim">Top Agent</span>
                 <span className="text-mission-control-text capitalize">
                   {tokenSummary.topAgent} ({formatTokens(tokenSummary.topAgentTokens || 0)})
                 </span>
-              </div>
+              </Flex>
             )}
           </div>
         )}
