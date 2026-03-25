@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Button, IconButton, TextField, Select } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField, Select } from '@radix-ui/themes';
 import {
   FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link,
   RefreshCw, Plus, Search, Grid, List, Download, X, Megaphone, Palette,
@@ -692,7 +692,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
         {/* Single row: search + filters + actions */}
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           {/* Search input */}
           <div className="flex-1">
             <TextField.Root
@@ -799,19 +799,19 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           >
             <Upload size={12} /> Upload
           </Button>
-        </div>
+        </Flex>
       </div>
 
       {/* Ask response banner */}
       {askResponse && (
         <div className="mx-4 mt-2 p-3 bg-mission-control-accent/5 border border-mission-control-accent/20 rounded-lg text-sm text-mission-control-text">
-          <div className="flex items-start gap-2">
+          <Flex align="start" gap="2">
             <Bot size={14} className="text-mission-control-accent flex-shrink-0 mt-0.5" />
             <p className="leading-relaxed flex-1">{askResponse}</p>
             <IconButton variant="ghost" size="1" onClick={() => setAskResponse(null)} aria-label="Dismiss ask response">
               <X size={14} />
             </IconButton>
-          </div>
+          </Flex>
         </div>
       )}
       {askLoading && (
@@ -827,13 +827,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         {/* ── Folder Sidebar ──────────────────────────────────────────────── */}
         {sidebarOpen && (
           <div className="w-48 flex-shrink-0 border-r border-mission-control-border bg-mission-control-surface flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-mission-control-border">
+            <Flex align="center" justify="between" px="3" py="2" className="border-b border-mission-control-border">
               <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Folders</span>
-              <div className="flex items-center gap-1">
+              <Flex align="center" gap="1">
                 <IconButton
                   size="1"
                   variant="ghost"
-                 
+
                   onClick={() => setNewFolderInputVisible(v => !v)}
                   title="New folder"
                 >
@@ -848,11 +848,11 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 >
                   <PanelLeftClose size={13} />
                 </IconButton>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
             {/* New folder inline input */}
             {newFolderInputVisible && (
-              <div className="px-2 py-1.5 border-b border-mission-control-border flex items-center gap-1">
+              <Flex align="center" gap="1" px="2" py="1" className="border-b border-mission-control-border">
                 <TextField.Root
                   ref={newFolderInputRef}
                   value={newFolderName}
@@ -884,7 +884,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 >
                   <X size={11} />
                 </IconButton>
-              </div>
+              </Flex>
             )}
             <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
               {/* Virtual: All Files */}
@@ -1036,7 +1036,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       <span className="text-xs font-medium truncate px-2 text-left hover:text-mission-control-accent transition-colors">
                         {file.name}
                       </span>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <Flex align="center" gap="1" onClick={(e) => e.stopPropagation()}>
                         <Select.Root
                           value={file.category || 'other'}
                           onValueChange={(v) => handleCategoryChange(file, v)}
@@ -1049,7 +1049,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                             ))}
                           </Select.Content>
                         </Select.Root>
-                      </div>
+                      </Flex>
                       <span className="text-xs text-mission-control-text-dim text-right tabular-nums">{formatSize(file.size)}</span>
                       <span className="text-xs text-mission-control-text-dim text-right tabular-nums">
                         {file.updatedAt ? new Date(file.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
@@ -1134,13 +1134,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           <div className="w-80 flex-shrink-0 border-l border-mission-control-border bg-mission-control-surface flex flex-col overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
+              <Flex align="center" gap="2" className="min-w-0">
                 {(() => {
                   const FileIcon = getFileIcon(detailFile.mimeType);
                   return <FileIcon size={14} className="text-mission-control-accent flex-shrink-0" />;
                 })()}
                 <span className="text-sm font-medium truncate">{detailFile.name}</span>
-              </div>
+              </Flex>
               <IconButton
                 size="1"
                 variant="ghost"
@@ -1173,10 +1173,10 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
               {/* Tags */}
               <div className="px-4 py-3 border-b border-mission-control-border">
-                <div className="flex items-center gap-1 mb-2">
+                <Flex align="center" gap="1" mb="2">
                   <Tag size={11} className="text-mission-control-text-dim" />
                   <span className="text-xs font-medium text-mission-control-text-dim">Tags</span>
-                </div>
+                </Flex>
                 <div className="flex flex-wrap gap-1 mb-2">
                   {(detailFile.tags || []).map(tag => (
                     <span
@@ -1197,7 +1197,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     </span>
                   ))}
                 </div>
-                <div className="flex gap-1">
+                <Flex gap="1">
                   <TextField.Root
                     value={tagInput}
                     onChange={e => setTagInput(e.target.value)}
@@ -1213,20 +1213,20 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   >
                     Add
                   </Button>
-                </div>
+                </Flex>
               </div>
 
               {/* Preview */}
               <div className="px-4 py-3 border-b border-mission-control-border">
-                <div className="flex items-center gap-1 mb-2">
+                <Flex align="center" gap="1" mb="2">
                   <Info size={11} className="text-mission-control-text-dim" />
                   <span className="text-xs font-medium text-mission-control-text-dim">Preview</span>
-                </div>
+                </Flex>
                 {detailContentLoading ? (
-                  <div className="flex items-center gap-2 text-xs text-mission-control-text-dim py-2">
+                  <Flex align="center" gap="2" py="2" className="text-xs text-mission-control-text-dim">
                     <RefreshCw size={12} className="animate-spin" />
                     Loading preview...
-                  </div>
+                  </Flex>
                 ) : detailFile.mimeType?.startsWith('image/') && detailContent ? (
                   <img
                     src={detailContent}
@@ -1272,7 +1272,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   <Download size={13} />
                   Download
                 </a>
-                <div className="flex gap-1.5">
+                <Flex gap="2">
                   <Button
                     size="1"
                     variant={starred.has(detailFile.id) ? 'soft' : 'outline'}
@@ -1293,15 +1293,15 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     <Copy size={12} />
                     Copy path
                   </Button>
-                </div>
+                </Flex>
               </div>
 
               {/* Activity */}
               <div className="px-4 py-3 border-b border-mission-control-border">
-                <div className="flex items-center gap-1 mb-2">
+                <Flex align="center" gap="1" mb="2">
                   <Clock size={11} className="text-mission-control-text-dim" />
                   <span className="text-xs font-medium text-mission-control-text-dim">Activity</span>
-                </div>
+                </Flex>
                 <div className="space-y-1.5">
                   <div className="text-xs text-mission-control-text-dim">
                     Created {formatRelative(detailFile.createdAt)}
@@ -1321,10 +1321,10 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
               {/* Mini chat */}
               <div className="px-4 py-3 flex flex-col">
-                <div className="flex items-center gap-1 mb-2">
+                <Flex align="center" gap="1" mb="2">
                   <Bot size={11} className="text-mission-control-accent" />
                   <span className="text-xs font-medium text-mission-control-text-dim">Ask about this file</span>
-                </div>
+                </Flex>
                 {miniChatMessages.length > 0 && (
                   <div className="space-y-2 mb-2 max-h-48 overflow-y-auto">
                     {miniChatMessages.map((msg, i) => (
@@ -1348,7 +1348,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     <div ref={miniChatEndRef} />
                   </div>
                 )}
-                <div className="flex gap-1">
+                <Flex gap="1">
                   <TextField.Root
                     value={miniChatInput}
                     onChange={e => setMiniChatInput(e.target.value)}
@@ -1360,13 +1360,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   <IconButton
                     size="2"
                     variant="solid"
-                   
+
                     onClick={sendMiniChat}
                     disabled={miniChatLoading || !miniChatInput.trim()}
                   >
                     <Send size={12} />
                   </IconButton>
-                </div>
+                </Flex>
               </div>
             </div>
           </div>
@@ -1377,14 +1377,14 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       {viewerOpen && detailFile && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-glow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
+            <Flex align="center" justify="between" p="6" className="border-b border-mission-control-border">
               <div className="flex-1 min-w-0 mr-4">
                 <h3 className="font-bold text-lg truncate">{detailFile.name}</h3>
                 <p className="text-sm text-mission-control-text-dim mt-1">
                   {formatSize(detailFile.size)} • {detailFile.mimeType || 'Unknown type'}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <Flex gap="2">
                 <a
                   href={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
                   download={detailFile.name}
@@ -1401,8 +1401,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 >
                   <X size={20} />
                 </IconButton>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
             <div className="flex-1 overflow-auto p-6">
               {viewerLoading ? (
                 <div className="flex items-center justify-center h-full">
@@ -1413,15 +1413,15 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   {viewerContent.content}
                 </pre>
               ) : viewerContent?.viewType === 'image' ? (
-                <div className="flex items-center justify-center">
+                <Flex align="center" justify="center">
                   <img src={viewerContent.content} alt={detailFile.name} className="max-w-full max-h-[60vh] object-contain rounded-lg" />
-                </div>
+                </Flex>
               ) : viewerContent?.viewType === 'video' ? (
-                <div className="flex items-center justify-center">
+                <Flex align="center" justify="center">
                   <video controls className="max-w-full max-h-[60vh] rounded-lg">
                     <source src={viewerContent.content} />
                   </video>
-                </div>
+                </Flex>
               ) : viewerContent?.viewType === 'audio' ? (
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
                   <audio controls className="w-full max-w-lg">
@@ -1519,9 +1519,9 @@ interface MetaRowProps {
 
 function MetaRow({ label, value }: MetaRowProps) {
   return (
-    <div className="flex items-start justify-between gap-2">
+    <Flex align="start" justify="between" gap="2">
       <span className="text-xs text-mission-control-text-dim flex-shrink-0">{label}</span>
       <span className="text-xs text-mission-control-text text-right break-all">{value}</span>
-    </div>
+    </Flex>
   );
 }
