@@ -1127,10 +1127,10 @@ Respond as ${agentName(agentId)}:`;
                 K
               </div>
               <span className="text-sm font-medium text-mission-control-text flex-1">You (Host)</span>
-              <div className={`flex items-center gap-1 text-xs ${listening ? 'text-mission-control-accent' : 'text-mission-control-text-dim'}`}>
+              <Flex align="center" gap="1" className={`text-xs ${listening ? 'text-mission-control-accent' : 'text-mission-control-text-dim'}`}>
                 {listening ? <Mic size={12} /> : <MicOff size={12} />}
                 {listening ? 'Speaking' : 'Muted'}
-              </div>
+              </Flex>
             </Flex>
             {/* Agents */}
             {room.agents.map(id => {
@@ -1326,10 +1326,10 @@ Respond as ${agentName(agentId)}:`;
         {processingAgent && !speakingAgent && (
           <Flex gap="2" align="center">
             <AgentAvatar agentId={processingAgent} size="xs" />
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl px-4 py-2 flex items-center gap-2">
+            <Flex align="center" gap="2" className="bg-mission-control-surface border border-mission-control-border rounded-2xl px-4 py-2">
               <Loader2 size={14} className="animate-spin text-mission-control-accent" />
               <span className="text-xs text-mission-control-text-dim">{agentName(processingAgent)} is thinking…</span>
-            </div>
+            </Flex>
           </Flex>
         )}
 
