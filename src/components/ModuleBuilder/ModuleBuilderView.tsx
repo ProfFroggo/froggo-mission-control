@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import ConversationPanel from './ConversationPanel';
 import SpecPreviewPanel from './SpecPreviewPanel';
 import { useModuleSpec } from './useModuleSpec';
@@ -135,8 +135,8 @@ function ModuleBuilderInner({ saved, onBack }: { saved: SavedModule; onBack: () 
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" gap="3">
           <Button
             onClick={() => { doSave(); onBack(); }}
             size="2"
@@ -148,8 +148,8 @@ function ModuleBuilderInner({ saved, onBack }: { saved: SavedModule; onBack: () 
           <h1 className="text-lg font-semibold text-mission-control-text truncate">
             {spec.name || 'Untitled Module'}
           </h1>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Split layout */}
       <div className="flex-1 flex overflow-hidden">

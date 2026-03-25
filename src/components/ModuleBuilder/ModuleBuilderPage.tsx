@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import ConversationPanel from './ConversationPanel';
 import SpecPreviewPanel from './SpecPreviewPanel';
 import ModuleBuildProgress from './ModuleBuildProgress';
@@ -169,22 +169,22 @@ export default function ModuleBuilderPage() {
     <div className="flex flex-col h-full">
       {/* Resume draft banner */}
       {resumeDraft && (
-        <div className="flex items-center gap-3 px-5 py-2.5 bg-mission-control-surface border-b border-mission-control-accent/40 text-sm">
+        <Flex align="center" gap="3" className="px-5 py-2.5 bg-mission-control-surface border-b border-mission-control-accent/40 text-sm">
           <span className="text-mission-control-text-dim">Unfinished module: <strong className="text-mission-control-text">{resumeDraft.name}</strong></span>
           <Button size="1" variant="solid" onClick={handleResumeDraft}>Resume</Button>
           <Button size="1" variant="surface" color="gray" onClick={handleDismissResume}>Start New</Button>
-        </div>
+        </Flex>
       )}
 
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
+      <Flex align="center" justify="between" className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
         <h1 className="text-lg font-semibold text-mission-control-text">Module Builder</h1>
-        <div className="flex gap-2">
+        <Flex gap="2">
           <Button size="2" variant="surface" color="gray" onClick={handleReset}>
             <Plus size={14} /> New Module
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Split layout */}
       <div className="flex-1 flex overflow-hidden">

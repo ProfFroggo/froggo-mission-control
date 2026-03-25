@@ -52,14 +52,14 @@ export default function ConversationPanel({
     <Flex direction="column" height="100%" className="bg-mission-control-bg border-r border-mission-control-border">
       {/* Progress bar */}
       <div className="px-4 py-3 border-b border-mission-control-border">
-        <div className="flex items-center justify-between mb-2">
+        <Flex align="center" justify="between" className="mb-2">
           <span className="text-sm font-medium text-mission-control-text">
             {currentLabel}
           </span>
           <span className="text-xs text-mission-control-text-dim">
             {completedCount}/{totalSections} sections · {overallProgress}%
           </span>
-        </div>
+        </Flex>
         <div className="w-full h-2 bg-mission-control-border rounded-full overflow-hidden">
           <div
             className="h-full bg-mission-control-accent rounded-full transition-all duration-500"
@@ -121,7 +121,7 @@ export default function ConversationPanel({
           </div>
         ))}
         {isStreaming && (
-          <div className="flex gap-3">
+          <Flex gap="3">
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-mission-control-accent/20 flex items-center justify-center">
               <Bot size={16} className="text-mission-control-accent animate-pulse" />
             </div>
@@ -132,7 +132,7 @@ export default function ConversationPanel({
                 <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
               </span>
             </div>
-          </div>
+          </Flex>
         )}
         <div ref={bottomRef} />
       </div>
@@ -140,7 +140,7 @@ export default function ConversationPanel({
       {/* Input */}
       {isStarted && (
         <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-mission-control-border">
-          <div className="flex gap-2">
+          <Flex gap="2">
             <TextField.Root
               size="2"
               className="flex-1"
@@ -158,7 +158,7 @@ export default function ConversationPanel({
             >
               <Send size={16} />
             </IconButton>
-          </div>
+          </Flex>
         </form>
       )}
     </Flex>

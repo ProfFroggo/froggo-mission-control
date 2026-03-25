@@ -54,7 +54,7 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
         style={{ width: '680px', maxWidth: '95vw', maxHeight: '85vh' }}
       >
         {/* Header */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-mission-control-border">
+        <Flex align="start" justify="between" className="px-6 py-4 border-b border-mission-control-border">
           <div>
             <h2 className="text-base font-semibold text-mission-control-text">Build Plan Review</h2>
             <p className="text-sm text-mission-control-text-dim mt-0.5">{spec.name}</p>
@@ -62,16 +62,16 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
           <IconButton size="2" variant="ghost" onClick={onCancel} aria-label="Close">
             <X size={18} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           {/* Wireframe thumbnail */}
           {wireframe && (
             <div className="mb-4">
-              <div className="flex items-center gap-2 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2">
+              <Flex align="center" gap="2" className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2">
                 <LayoutGrid size={12} /> Wireframe Preview
-              </div>
+              </Flex>
               <div
                 style={{
                   background: 'var(--mission-control-bg)',
@@ -141,14 +141,14 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border">
+        <Flex align="center" justify="end" gap="3" className="px-6 py-4 border-t border-mission-control-border">
           <Button size="2" variant="surface" color="gray" onClick={onCancel}>
             Edit Spec
           </Button>
           <Button size="2" variant="solid" onClick={onConfirm}>
             Confirm & Build ({tasks.length} tasks)
           </Button>
-        </div>
+        </Flex>
       </div>
     </Flex>
   );
