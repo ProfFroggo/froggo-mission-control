@@ -109,7 +109,7 @@ function StatCard({ label, value, sub, icon: Icon, accent }: {
   label: string; value: string; sub?: string; icon: React.ElementType; accent: string;
 }) {
   return (
-    <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4 flex items-start gap-3">
+    <Flex align="start" gap="3" className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
       <div className="p-2 rounded-lg shrink-0" style={{ backgroundColor: `${accent}20` }}>
         <Icon size={16} style={{ color: accent }} />
       </div>
@@ -118,7 +118,7 @@ function StatCard({ label, value, sub, icon: Icon, accent }: {
         <div className="text-lg font-semibold text-mission-control-text leading-none">{value}</div>
         {sub && <div className="text-[11px] text-mission-control-text-dim mt-0.5">{sub}</div>}
       </div>
-    </div>
+    </Flex>
   );
 }
 
@@ -1426,11 +1426,11 @@ export default function BudgetPanel() {
                               );
                             })}
                           </div>
-                          <div className="px-4 py-2.5 border-t border-mission-control-border flex items-center gap-3 text-xs">
+                          <Flex align="center" gap="3" className="px-4 py-2.5 border-t border-mission-control-border text-xs">
                             <span className="flex-1 font-medium text-mission-control-text">Total</span>
                             <span className="text-mission-control-text-dim">{fmt(dActual, dCur)} / {fmt(dPlanned, dCur)}</span>
                             <span className="font-semibold w-10 text-right" style={{ color: progressColor(dUsedPct) }}>{dUsedPct}%</span>
-                          </div>
+                          </Flex>
                         </div>
                       )}
 
@@ -1986,14 +1986,14 @@ export default function BudgetPanel() {
                       )}
 
                       {/* View invoices action */}
-                      <div className="border-t border-mission-control-border/50 pt-2 flex items-center justify-between">
+                      <Flex align="center" justify="between" className="border-t border-mission-control-border/50 pt-2">
                         <Button variant="ghost" size="1" onClick={() => { setCategoryFilter(cat.id); setTab('invoices'); }}>
                           <FileText size={10} /> View invoices
                         </Button>
                         <Button variant="ghost" size="1" onClick={() => { setActiveQuarterId(cat.quarter_id); setCategoryFilter(cat.id); setTab('invoices'); setInvoiceModal({ mode: 'create' }); }}>
                           <Plus size={10} /> Add invoice
                         </Button>
-                      </div>
+                      </Flex>
                     </div>
                   );
                 })}
