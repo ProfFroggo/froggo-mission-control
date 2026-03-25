@@ -110,10 +110,10 @@ export default function XPlanThreadComposer() {
   return (
     <Flex direction="column" height="100%" p="5" className="bg-mission-control-bg">
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
+        <Flex align="center" gap="2" className="mb-2">
           <FileText className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Create Content Plan</h3>
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text-dim">
           Turn approved research into a content plan with thread structure.
         </p>
@@ -230,14 +230,14 @@ export default function XPlanThreadComposer() {
                 disabled={submitting}
                 style={{ fontFamily: 'monospace' }}
               />
-              <div className="flex items-center justify-between mt-2">
+              <Flex align="center" justify="between" className="mt-2">
                 <p className="text-xs text-mission-control-text-dim">
                   {description.length} characters
                 </p>
                 <p className="text-xs text-mission-control-text-dim">
                   ~{Math.ceil(description.length / 280)} tweet{Math.ceil(description.length / 280) !== 1 ? 's' : ''} worth of content
                 </p>
-              </div>
+              </Flex>
             </div>
           </div>
 

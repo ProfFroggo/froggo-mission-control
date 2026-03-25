@@ -2,6 +2,7 @@
 'use client';
 
 import { Leaf, Github, ExternalLink } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 
 const NAV_LINKS = [
   { label: 'Species', href: '#species' },
@@ -28,12 +29,12 @@ export function Footer() {
         <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-start sm:justify-between">
           {/* Brand */}
           <div className="flex flex-col items-center sm:items-start gap-3">
-            <div className="flex items-center gap-2 text-[var(--frog-moss)]">
+            <Flex align="center" gap="2" className="text-[var(--frog-moss)]">
               <Leaf className="h-5 w-5" aria-hidden="true" />
               <span className="font-bold text-[var(--frog-mist)]">
                 The World of Frogs
               </span>
-            </div>
+            </Flex>
             <p className="text-xs text-[var(--frog-lily)] opacity-50 max-w-xs text-center sm:text-left">
               An educational landing page celebrating amphibian biodiversity.
             </p>

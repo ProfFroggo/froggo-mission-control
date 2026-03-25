@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Inbox, AlertCircle } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import WidgetLoading from './WidgetLoading';
 import { inboxApi } from '../lib/api';
 
@@ -53,17 +54,17 @@ export default function InboxWidget() {
   if (error) {
     return (
       <div className="p-6">
-        <div className="flex items-center gap-2 text-error mb-2">
+        <Flex align="center" gap="2" className="text-error mb-2">
           <AlertCircle size={20} />
           <span className="text-sm">{error}</span>
-        </div>
+        </Flex>
       </div>
     );
   }
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
+      <Flex align="center" justify="between" className="mb-4">
         <Inbox
           size={28}
           className={unreadCount > 0 ? 'text-info' : 'text-mission-control-text-dim'}
@@ -73,7 +74,7 @@ export default function InboxWidget() {
             {unreadCount}
           </span>
         )}
-      </div>
+      </Flex>
 
       <div className="text-5xl font-bold tabular-nums mb-2 bg-gradient-to-br from-mission-control-text to-info bg-clip-text text-transparent">
         {unreadCount}
@@ -84,10 +85,10 @@ export default function InboxWidget() {
       </div>
 
       {unreadCount > 0 && (
-        <div className="flex items-center gap-2 text-xs text-info font-medium">
+        <Flex align="center" gap="2" className="text-xs text-info font-medium">
           <Inbox size={14} />
           Needs attention
-        </div>
+        </Flex>
       )}
 
       {unreadCount === 0 && (

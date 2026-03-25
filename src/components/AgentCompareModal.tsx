@@ -338,19 +338,19 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                 <h3 className="text-sm font-semibold mb-2 text-info">Summary</h3>
                 <div className="text-sm space-y-1">
                   {getWinner('successRate') && (
-                    <div className="flex items-center gap-1.5">
+                    <Flex align="center" gap="2">
                       <Trophy size={16} /> <strong>{data[getWinner('successRate')!]?.name}</strong> has the highest success rate
-                    </div>
+                    </Flex>
                   )}
                   {getWinner('totalTasks') && (
-                    <div className="flex items-center gap-1.5">
+                    <Flex align="center" gap="2">
                       <Dumbbell size={16} /> <strong>{data[getWinner('totalTasks')!]?.name}</strong> has completed the most tasks
-                    </div>
+                    </Flex>
                   )}
                   {getWinner('recentActivity') && (
-                    <div className="flex items-center gap-1.5">
+                    <Flex align="center" gap="2">
                       <Zap size={16} /> <strong>{data[getWinner('recentActivity')!]?.name}</strong> has been most active recently
-                    </div>
+                    </Flex>
                   )}
                 </div>
               </div>

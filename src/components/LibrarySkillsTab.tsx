@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, BookOpen, RefreshCw, ChevronRight } from 'lucide-react';
-import { Button, TextField } from '@radix-ui/themes';
+import { Button, Flex, TextField } from '@radix-ui/themes';
 import EmptyState from './EmptyState';
 import { libraryApi } from '../lib/api';
 
@@ -42,7 +42,7 @@ export default function LibrarySkillsTab() {
     <div className="h-full flex flex-col">
       {/* Search */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex gap-3">
+        <Flex gap="3">
           <div className="flex-1">
             <TextField.Root
               type="text"
@@ -65,7 +65,7 @@ export default function LibrarySkillsTab() {
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             Refresh
           </Button>
-        </div>
+        </Flex>
       </div>
 
       {/* Skills Grid */}
@@ -85,15 +85,15 @@ export default function LibrarySkillsTab() {
                 key={skill.id}
                 className="p-4 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30 transition-colors"
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
+                <Flex align="start" justify="between" className="mb-2">
+                  <Flex align="center" gap="2">
                     <div className="w-7 h-7 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
                       <BookOpen size={14} className="text-mission-control-accent" />
                     </div>
                     <span className="font-medium text-sm">{skill.name}</span>
-                  </div>
+                  </Flex>
                   <ChevronRight size={14} className="text-mission-control-text-dim mt-0.5" />
-                </div>
+                </Flex>
                 {skill.description && (
                   <p className="text-xs text-mission-control-text-dim leading-relaxed line-clamp-2">
                     {skill.description}

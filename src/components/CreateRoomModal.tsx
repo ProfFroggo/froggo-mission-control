@@ -45,8 +45,8 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
     <Flex align="center" justify="center" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm">
       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-mission-control-border">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" className="p-5 border-b border-mission-control-border">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/10 rounded-lg">
               <Users size={20} className="text-mission-control-accent" />
             </div>
@@ -54,7 +54,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
               <h2 className="text-lg font-semibold">Create Chat Room</h2>
               <p className="text-xs text-mission-control-text-dim">Multi-agent discussion space</p>
             </div>
-          </div>
+          </Flex>
           <IconButton
             onClick={onClose}
             aria-label="Close"
@@ -65,7 +65,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
           >
             <X size={18} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Body */}
         <div className="p-5 space-y-5 overflow-y-auto flex-1 min-h-0">
@@ -131,7 +131,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
           <span className="text-xs text-mission-control-text-dim">
             You + {selectedAgents.size} agent{selectedAgents.size !== 1 ? 's' : ''}
           </span>
-          <div className="flex gap-2">
+          <Flex gap="2">
             <Button
               onClick={onClose}
               variant="ghost"
@@ -149,7 +149,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
               <MessageSquarePlus size={16} />
               Create Room
             </Button>
-          </div>
+          </Flex>
         </div>
       </div>
     </Flex>

@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { Circle, Clock, Eye, User, CheckCircle2, ExternalLink } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import { useEventBus } from '@/lib/useEventBus';
 
 interface TaskRow {
@@ -94,13 +95,13 @@ export default function ModuleBuildProgress({ moduleId }: Props) {
     <div className="rounded-lg border border-mission-control-border bg-mission-control-surface overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-mission-control-border">
-        <div className="flex items-center justify-between mb-2">
+        <Flex align="center" justify="between" className="mb-2">
           <h3 className="text-sm font-semibold text-mission-control-text">Build Progress</h3>
           <span className="text-xs text-mission-control-text-dim">
             {data.completed}/{data.total} tasks complete
             {data.inProgress > 0 && ` · ${data.inProgress} in progress`}
           </span>
-        </div>
+        </Flex>
         {/* Progress bar */}
         <div className="w-full h-2 bg-mission-control-bg rounded-full overflow-hidden">
           <div
@@ -117,7 +118,7 @@ export default function ModuleBuildProgress({ moduleId }: Props) {
       {/* Task phase list */}
       <div className="divide-y divide-mission-control-border/50">
         {data.tasks.map(task => (
-          <div key={task.id} className="flex items-start gap-3 px-4 py-2.5">
+          <Flex key={task.id} align="start" gap="3" className="px-4 py-2.5">
             <div className="mt-0.5 flex-shrink-0">
               {STATUS_ICON[task.status] ?? <Circle size={14} className="text-mission-control-text-dim" />}
             </div>
@@ -128,17 +129,17 @@ export default function ModuleBuildProgress({ moduleId }: Props) {
                 {task.assignedTo && ` · ${task.assignedTo}`}
               </p>
             </div>
-          </div>
+          </Flex>
         ))}
       </div>
 
       {/* Footer actions */}
-      <div className="px-4 py-3 border-t border-mission-control-border flex items-center gap-3">
+      <Flex align="center" gap="3" className="px-4 py-3 border-t border-mission-control-border">
         {allDone ? (
-          <div className="flex items-center gap-2 text-sm text-success font-medium">
+          <Flex align="center" gap="2" className="text-sm text-success font-medium">
             <CheckCircle2 size={16} />
             Module complete
-          </div>
+          </Flex>
         ) : null}
         <a
           href={`/?filter=moduleId:${moduleId}`}
@@ -146,7 +147,7 @@ export default function ModuleBuildProgress({ moduleId }: Props) {
         >
           View in Kanban <ExternalLink size={11} />
         </a>
-      </div>
+      </Flex>
     </div>
   );
 }

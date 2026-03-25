@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Activity, Calendar } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import { getProductivityHeatmap, ProductivityHeatmap as HeatmapData } from '../services/analyticsService';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -81,7 +82,7 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <Flex align="center" justify="between" className="mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Activity className="text-mission-control-accent" size={20} />
@@ -92,7 +93,7 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
           </p>
         </div>
 
-      </div>
+      </Flex>
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -154,18 +155,18 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
           ))}
 
           {/* Legend */}
-          <div className="flex items-center gap-2 mt-6">
+          <Flex align="center" gap="2" className="mt-6">
             <span className="text-xs text-mission-control-text-dim">Less</span>
-            <div className="flex gap-1">
+            <Flex gap="1">
               <div className="w-4 h-4 rounded bg-mission-control-border" />
               <div className="w-4 h-4 rounded bg-success-subtle" />
               <div className="w-4 h-4 rounded bg-success-subtle" />
               <div className="w-4 h-4 rounded bg-success-subtle" />
               <div className="w-4 h-4 rounded bg-success-subtle" />
               <div className="w-4 h-4 rounded bg-success" />
-            </div>
+            </Flex>
             <span className="text-xs text-mission-control-text-dim">More</span>
-          </div>
+          </Flex>
 
           {/* Selected cell info */}
           {selectedCell && (

@@ -11,7 +11,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { X, Minimize2, Maximize2, Monitor, Video, Move, Camera } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, Flex, IconButton } from '@radix-ui/themes';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('VideoWindow');
@@ -127,7 +127,7 @@ export default function DraggableVideoWindow({
         tabIndex={0}
         aria-label="Expand video window"
       >
-        <div className="flex items-center gap-2 px-3 py-2">
+        <Flex align="center" gap="2" className="px-3 py-2">
           {videoMode === 'camera' ? <Video size={16} className="text-review" /> : <Monitor size={16} className="text-info" />}
           <span className="text-xs font-medium text-mission-control-text">
             {videoMode === 'camera' ? 'Camera' : 'Screen'}
@@ -144,7 +144,7 @@ export default function DraggableVideoWindow({
           >
             <X size={14} />
           </IconButton>
-        </div>
+        </Flex>
       </div>
     );
   }
@@ -174,14 +174,14 @@ export default function DraggableVideoWindow({
         tabIndex={viewMode !== 'fullwidth' ? 0 : -1}
         aria-label="Drag video window"
       >
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Move size={12} className="text-mission-control-text-dim" />
           <span className="text-xs font-medium text-white flex items-center gap-1">
             {videoMode === 'camera' ? <><Camera size={14} className="inline" />Camera</> : <><Monitor size={14} className="inline" />Screen</>}
           </span>
-        </div>
+        </Flex>
         
-        <div className="flex items-center gap-1">
+        <Flex align="center" gap="1">
           {videoMode === 'screen' && onSwitchSource && (
             <Button
               size="1"
@@ -219,7 +219,7 @@ export default function DraggableVideoWindow({
           >
             <X size={14} />
           </IconButton>
-        </div>
+        </Flex>
       </div>
 
       {/* Video */}

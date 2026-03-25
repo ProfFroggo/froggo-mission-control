@@ -253,7 +253,7 @@ export default function ThreadView({
       {/* Thread header */}
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface flex items-center justify-between">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <Flex align="center" gap="2" className="mb-1">
             <MessageCircle size={16} className="text-mission-control-accent flex-shrink-0" />
             <h3 className="font-semibold text-sm truncate">
               {metadata?.subject || `Thread on ${metadata?.platform}`}
@@ -263,8 +263,8 @@ export default function ThreadView({
                 {metadata?.unread_count} new
               </span>
             )}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+          </Flex>
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
             <span>{metadata?.message_count} messages</span>
             {metadata?.participants && (
               <>
@@ -272,7 +272,7 @@ export default function ThreadView({
                 <span>{metadata.participants.length} participants</span>
               </>
             )}
-          </div>
+          </Flex>
         </div>
         {onClose && (
           <Button
@@ -319,7 +319,7 @@ export default function ThreadView({
       {/* Reply input */}
       {onReply && (
         <div className="p-4 border-t border-mission-control-border bg-mission-control-surface">
-          <div className="flex gap-2">
+          <Flex gap="2">
             <TextArea
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
@@ -342,7 +342,7 @@ export default function ThreadView({
             >
               {sending ? 'Sending...' : 'Send'}
             </Button>
-          </div>
+          </Flex>
           <div className="text-xs text-mission-control-text-dim mt-2">
             Press ⌘+Enter to send
           </div>
