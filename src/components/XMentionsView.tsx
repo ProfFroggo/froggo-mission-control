@@ -167,12 +167,12 @@ export const XMentionsView: React.FC = () => {
         className="border-b border-mission-control-border p-4 hover:bg-mission-control-surface transition-colors"
       >
         {/* Header */}
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2">
+        <Flex align="start" justify="between" className="mb-2">
+          <Flex align="center" gap="2">
             <div className="font-medium text-mission-control-text">@{mention.author_username}</div>
             <div className="text-sm text-mission-control-text-dim">{mention.author_name}</div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <div className="text-xs text-mission-control-text-dim">
               {new Date(mention.created_at).toLocaleDateString('en-US', {
                 month: 'short',
@@ -181,14 +181,14 @@ export const XMentionsView: React.FC = () => {
                 minute: '2-digit',
               })}
             </div>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Tweet text */}
         <div className="text-sm text-mission-control-text mb-3 whitespace-pre-wrap">{mention.text}</div>
 
         {/* Metrics */}
-        <div className="flex items-center gap-4 text-xs text-mission-control-text-dim mb-3">
+        <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim mb-3">
           {metrics.like_count !== undefined && (
             <div><Heart size={12} className="inline" /> {metrics.like_count}</div>
           )}
@@ -206,10 +206,10 @@ export const XMentionsView: React.FC = () => {
           >
             View on X →
           </a>
-        </div>
+        </Flex>
 
         {/* Status badges */}
-        <div className="flex items-center gap-2 mb-3">
+        <Flex align="center" gap="2" className="mb-3">
           <Button
             onClick={() => updateStatus(mention.id, 'pending')}
             variant={mention.reply_status === 'pending' ? 'soft' : 'ghost'}
@@ -247,11 +247,11 @@ export const XMentionsView: React.FC = () => {
               )}
             </div>
           )}
-        </div>
+        </Flex>
 
         {/* Notes */}
         <div className="mb-3">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <div className="flex-1">
               <TextField.Root
                 value={notes[mention.id] || ''}
@@ -269,7 +269,7 @@ export const XMentionsView: React.FC = () => {
             >
               Save Note
             </Button>
-          </div>
+          </Flex>
           {metadata.notes && (
             <div className="mt-1 text-xs text-mission-control-text-dim bg-mission-control-surface p-2 rounded">
               <StickyNote size={12} className="inline" /> {metadata.notes}
@@ -290,11 +290,11 @@ export const XMentionsView: React.FC = () => {
                   maxLength={280}
                   resize="vertical"
                 />
-                <div className="flex items-center justify-between">
+                <Flex align="center" justify="between">
                   <div className="text-xs tabular-nums text-mission-control-text-dim">
                     {replyText.length}/280 characters
                   </div>
-                  <div className="flex gap-2">
+                  <Flex gap="2">
                     <Button
                       onClick={() => {
                         setSelectedMention(null);
@@ -315,8 +315,8 @@ export const XMentionsView: React.FC = () => {
                     >
                       Send Reply
                     </Button>
-                  </div>
-                </div>
+                  </Flex>
+                </Flex>
               </div>
             ) : (
               <Button
@@ -345,7 +345,7 @@ export const XMentionsView: React.FC = () => {
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <div className="text-lg font-semibold text-mission-control-text">X Mentions</div>
         <Button
           onClick={fetchNewMentions}
@@ -363,10 +363,10 @@ export const XMentionsView: React.FC = () => {
             <><RefreshCw size={16} /> Fetch New</>
           )}
         </Button>
-      </div>
+      </Flex>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 p-4 border-b border-mission-control-border bg-mission-control-surface">
+      <Flex gap="2" className="p-4 border-b border-mission-control-border bg-mission-control-surface">
         {(['all', 'pending', 'considering', 'ignored', 'replied'] as const).map((status) => {
           const count = status === 'all'
             ? mentions.length
@@ -384,7 +384,7 @@ export const XMentionsView: React.FC = () => {
             </Button>
           );
         })}
-      </div>
+      </Flex>
 
       {/* Mentions list */}
       <div className="flex-1 overflow-y-auto">
