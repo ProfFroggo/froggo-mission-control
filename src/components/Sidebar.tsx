@@ -33,25 +33,6 @@ const BUILTIN_PANEL_ICONS: Record<string, ComponentType<any>> = {
   modules:       Puzzle,
 };
 
-// Section grouping for nav items — IDs not in this map render ungrouped at end
-const SECTION_MAP: Record<string, string> = {
-  dashboard:     'Core',
-  inbox:         'Core',
-  kanban:        'Core',
-  approvals:     'Core',
-  notifications: 'Core',
-  agents:        'Team',
-  chat:          'Team',
-  schedule:      'Team',
-  projects:      'Work',
-  campaigns:     'Work',
-  analytics:     'Intelligence',
-  knowledge:     'Intelligence',
-  library:       'Tools',
-  automations:   'Tools',
-  modules:       'Tools',
-  social:        'Tools',
-};
 
 // View IDs are dynamic — any registered view ID is valid
 type View = string;
@@ -258,7 +239,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                 return acc;
               }, []);
 
-            return navItems.map(({ id, icon: Icon, label, shortcut }, idx) => {
+            return navItems.map(({ id, icon: Icon, label, shortcut }) => {
               const isActive = currentView === id;
               let badge = 0;
               if (id === 'inbox') badge = inboxCount;
@@ -266,34 +247,21 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               if (id === 'notifications') badge = inboxCount;
               if (id === 'kanban') badge = activeTasks;
 
-              const section = SECTION_MAP[id];
-              const prevSection = idx > 0 ? SECTION_MAP[navItems[idx - 1].id] : null;
-              const showSectionHeader = section && section !== prevSection;
-
               return (
-                <div key={id}>
-                  {showSectionHeader && (
-                    expanded ? (
-                      <div className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-mission-control-text-dim/50 select-none">
-                        {section}
-                      </div>
-                    ) : idx > 0 ? (
-                      <div className="mx-3 my-2 border-t border-mission-control-border/40" aria-hidden="true" />
-                    ) : null
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleNavigate(id)}
-                    className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-lg relative group transition-colors text-sm font-medium ${expanded ? '' : 'justify-center'} ${
-                      isActive
-                        ? 'bg-mission-control-accent/10 text-mission-control-accent'
-                        : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
-                    }`}
-                    title={expanded ? undefined : `${label} (${shortcut})`}
-                    aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
-                    aria-current={isActive ? 'page' : undefined}
-                    data-view={id}
-                  >
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => handleNavigate(id)}
+                  className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-lg relative group transition-colors text-sm font-medium ${expanded ? '' : 'justify-center'} ${
+                    isActive
+                      ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
+                  }`}
+                  title={expanded ? undefined : `${label} (${shortcut})`}
+                  aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
+                  aria-current={isActive ? 'page' : undefined}
+                  data-view={id}
+                >
                     <Icon size={20} className="flex-shrink-0" aria-hidden="true" />
 
                     {expanded && (
@@ -321,8 +289,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                         size="sm"
                       />
                     )}
-                  </button>
-                </div>
+                </button>
               );
             });
           })()}

@@ -12,7 +12,7 @@ export const Command = React.forwardRef<
     ref={ref}
     className={cn(
       'flex h-full w-full flex-col overflow-hidden rounded-xl',
-      'bg-mission-control-surface/85 backdrop-blur-2xl',
+      'bg-mission-control-surface',
       'text-mission-control-text',
       className
     )}
@@ -25,7 +25,7 @@ export const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, ref) => (
-  <Flex align="center" gap="3" className="border-b border-glass-border px-4 py-3">
+  <Flex align="center" gap="3" className="border-b border-mission-control-border px-4 py-3">
     <Search size={16} className="text-mission-control-text-dim/60 flex-shrink-0" />
     <CommandPrimitive.Input
       ref={ref}
@@ -84,7 +84,7 @@ export const CommandSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <CommandPrimitive.Separator
     ref={ref}
-    className={cn('-mx-1 h-px my-1 bg-glass-border', className)}
+    className={cn('-mx-1 h-px my-1 bg-mission-control-border', className)}
     {...props}
   />
 ));
@@ -98,7 +98,7 @@ export const CommandItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-3 py-2 text-sm outline-none transition-colors',
-      'text-mission-control-text aria-selected:bg-glass-hover',
+      'text-mission-control-text aria-selected:bg-mission-control-border/40',
       'data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-40',
       className
     )}

@@ -9,19 +9,19 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-mission-control-accent text-white hover:bg-mission-control-accent-dim shadow-card active:scale-[0.98]',
+          'bg-mission-control-accent text-white hover:bg-mission-control-accent-dim shadow-sm active:scale-[0.98]',
         secondary:
-          'bg-glass border border-glass-border text-mission-control-text hover:bg-glass-hover hover:border-glass-border-hover backdrop-blur-sm shadow-glass-sm active:scale-[0.98]',
+          'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:bg-mission-control-border/40 hover:border-mission-control-border shadow-sm active:scale-[0.98]',
         ghost:
-          'text-mission-control-text-dim hover:text-mission-control-text hover:bg-glass active:bg-glass-active',
+          'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 active:bg-mission-control-border/60',
         destructive:
           'bg-error/10 text-error border border-error/20 hover:bg-error/20 hover:border-error/30 active:scale-[0.98]',
         outline:
-          'border border-glass-border-strong text-mission-control-text bg-transparent hover:bg-glass backdrop-blur-sm active:scale-[0.98]',
+          'border border-mission-control-border text-mission-control-text bg-mission-control-surface hover:bg-mission-control-border/40 active:scale-[0.98]',
         link:
           'text-mission-control-accent underline-offset-4 hover:underline p-0 h-auto',
         glass:
-          'bg-glass border border-glass-border text-mission-control-text backdrop-blur-sm hover:bg-glass-hover hover:border-glass-border-hover shadow-glass-sm active:scale-[0.98]',
+          'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:bg-mission-control-border/40 shadow-sm active:scale-[0.98]',
         'glass-accent':
           'bg-mission-control-accent/10 border border-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/15 hover:border-mission-control-accent/30 active:scale-[0.98]',
       },

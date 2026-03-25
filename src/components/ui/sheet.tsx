@@ -13,7 +13,7 @@ export const SheetOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
-    className={cn('fixed inset-0 z-50 bg-glass-overlay backdrop-blur-sm data-[state=open]:animate-fade-in', className)}
+    className={cn('fixed inset-0 z-50 bg-black/60 data-[state=open]:animate-fade-in', className)}
     {...props}
     ref={ref}
   />
@@ -21,7 +21,7 @@ export const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  'fixed z-50 flex flex-col bg-mission-control-surface/85 backdrop-blur-2xl border-glass-border shadow-glass-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-300',
+  'fixed z-50 flex flex-col bg-mission-control-surface border-mission-control-border shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-300',
   {
     variants: {
       side: {
@@ -43,7 +43,7 @@ export const SheetContent = React.forwardRef<
     <SheetOverlay />
     <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
       {children}
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1.5 text-mission-control-text-dim opacity-60 hover:opacity-100 hover:bg-glass transition-all focus:outline-none">
+      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1.5 text-mission-control-text-dim opacity-60 hover:opacity-100 hover:bg-mission-control-border/40 transition-all focus:outline-none">
         <X size={16} />
         <span className="sr-only">Close</span>
       </SheetPrimitive.Close>
@@ -57,7 +57,7 @@ export function SheetHeader({ className, ...props }: React.HTMLAttributes<HTMLDi
 }
 
 export function SheetFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 pt-0 border-t border-glass-border', className)} {...props} />;
+  return <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 pt-0 border-t border-mission-control-border', className)} {...props} />;
 }
 
 export const SheetTitle = React.forwardRef<

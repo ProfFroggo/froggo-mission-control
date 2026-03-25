@@ -8,13 +8,13 @@ export const badgeVariants = cva(
     variants: {
       variant: {
         default:   'bg-mission-control-accent/15 border-mission-control-accent/25 text-mission-control-accent',
-        secondary: 'bg-glass border-glass-border text-mission-control-text-dim',
-        glass:     'bg-glass border-glass-border text-mission-control-text backdrop-blur-sm',
+        secondary: 'bg-mission-control-surface border-mission-control-border text-mission-control-text-dim',
+        glass:     'bg-mission-control-surface border-mission-control-border text-mission-control-text',
         success:   'bg-success/10 border-success/20 text-success',
         error:     'bg-error/10 border-error/20 text-error',
         warning:   'bg-warning/10 border-warning/20 text-warning',
         info:      'bg-info/10 border-info/20 text-info',
-        outline:   'border-glass-border-strong text-mission-control-text bg-transparent',
+        outline:   'border-mission-control-border text-mission-control-text bg-transparent',
       },
     },
     defaultVariants: { variant: 'default' },

@@ -15,7 +15,7 @@ export const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-glass-overlay backdrop-blur-sm',
+      'fixed inset-0 z-50 bg-black/60',
       'data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-in [animation-direction:reverse]',
       className
     )}
@@ -35,9 +35,9 @@ export const DialogContent = React.forwardRef<
       className={cn(
         'fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%]',
         'w-full max-w-lg',
-        'bg-mission-control-surface/80 backdrop-blur-2xl',
-        'border border-glass-border-strong',
-        'rounded-2xl shadow-glass-lg',
+        'bg-mission-control-surface',
+        'border border-mission-control-border',
+        'rounded-2xl shadow-lg',
         'data-[state=open]:animate-scale-in',
         'focus:outline-none',
         className
@@ -45,7 +45,7 @@ export const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1.5 text-mission-control-text-dim opacity-60 hover:opacity-100 hover:bg-glass transition-all focus:outline-none focus:ring-2 focus:ring-mission-control-accent/50">
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1.5 text-mission-control-text-dim opacity-60 hover:opacity-100 hover:bg-mission-control-border/40 transition-all focus:outline-none focus:ring-2 focus:ring-mission-control-accent/50">
         <X size={16} />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -59,7 +59,7 @@ export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLD
 }
 
 export function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('flex items-center justify-end gap-2 p-6 pt-4 border-t border-glass-border', className)} {...props} />;
+  return <div className={cn('flex items-center justify-end gap-2 p-6 pt-4 border-t border-mission-control-border', className)} {...props} />;
 }
 
 export const DialogTitle = React.forwardRef<

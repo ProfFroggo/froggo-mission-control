@@ -18,8 +18,8 @@ export const DropdownMenuContent = React.forwardRef<
       sideOffset={sideOffset}
       className={cn(
         'z-50 min-w-[10rem] overflow-hidden rounded-xl',
-        'bg-mission-control-surface/80 backdrop-blur-2xl',
-        'border border-glass-border-strong shadow-glass-lg',
+        'bg-mission-control-surface',
+        'border border-mission-control-border shadow-md',
         'p-1',
         'data-[state=open]:animate-scale-in data-[state=open]:animate-fade-in',
         className
@@ -38,7 +38,7 @@ export const DropdownMenuItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-3 py-2 text-sm outline-none transition-colors',
-      'focus:bg-glass-hover',
+      'focus:bg-mission-control-border/40',
       destructive
         ? 'text-error focus:bg-error/10 focus:text-error'
         : 'text-mission-control-text',
@@ -59,7 +59,7 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-3 text-sm outline-none transition-colors',
-      'text-mission-control-text focus:bg-glass-hover',
+      'text-mission-control-text focus:bg-mission-control-border/40',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
       className
     )}
@@ -98,7 +98,7 @@ export const DropdownMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Separator
     ref={ref}
-    className={cn('-mx-1 my-1 h-px bg-glass-border', className)}
+    className={cn('-mx-1 my-1 h-px bg-mission-control-border', className)}
     {...props}
   />
 ));
@@ -112,7 +112,7 @@ export const DropdownMenuSubTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       'flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-3 py-2 text-sm outline-none',
-      'text-mission-control-text focus:bg-glass-hover data-[state=open]:bg-glass-hover',
+      'text-mission-control-text focus:bg-mission-control-border/40 data-[state=open]:bg-mission-control-border/40',
       inset && 'pl-8',
       className
     )}
@@ -132,7 +132,7 @@ export const DropdownMenuSubContent = React.forwardRef<
     ref={ref}
     className={cn(
       'z-50 min-w-[8rem] overflow-hidden rounded-xl',
-      'bg-mission-control-surface/80 backdrop-blur-2xl',
+      'bg-mission-control-surface',
       'border border-glass-border-strong shadow-glass-lg p-1',
       'data-[state=open]:animate-scale-in',
       className

@@ -15,9 +15,9 @@ export const SelectTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       'flex h-9 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm',
-      'bg-glass border border-glass-border backdrop-blur-sm',
+      'bg-mission-control-surface border border-mission-control-border',
       'text-mission-control-text placeholder:text-mission-control-text-dim/50',
-      'hover:bg-glass-hover hover:border-glass-border-hover',
+      'hover:border-mission-control-accent/40',
       'focus:outline-none focus:ring-2 focus:ring-mission-control-accent/40',
       'disabled:cursor-not-allowed disabled:opacity-40',
       '[&>span]:truncate',
@@ -62,8 +62,8 @@ export const SelectContent = React.forwardRef<
       ref={ref}
       className={cn(
         'relative z-50 min-w-[8rem] overflow-hidden rounded-xl',
-        'bg-mission-control-surface/85 backdrop-blur-2xl',
-        'border border-glass-border-strong shadow-glass-lg',
+        'bg-mission-control-surface',
+        'border border-mission-control-border shadow-md',
         'data-[state=open]:animate-scale-in',
         position === 'popper' && 'data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
         className
@@ -97,7 +97,7 @@ export const SelectItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-3 text-sm outline-none',
-      'text-mission-control-text focus:bg-glass-hover',
+      'text-mission-control-text focus:bg-mission-control-border/40',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
       className
     )}
@@ -117,6 +117,6 @@ export const SelectSeparator = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>
 >(({ className, ...props }, ref) => (
-  <SelectPrimitive.Separator ref={ref} className={cn('-mx-1 my-1 h-px bg-glass-border', className)} {...props} />
+  <SelectPrimitive.Separator ref={ref} className={cn('-mx-1 my-1 h-px bg-mission-control-border', className)} {...props} />
 ));
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName;
