@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
 import { X, CheckCircle, Loader2, AlertTriangle, Sparkles, Flag, ArrowRight, Check, AlertCircle } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import { useStore } from '../store/store';
@@ -460,15 +460,15 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
       <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="p-4 border-b border-mission-control-border flex-shrink-0">
-          <div className="flex items-start gap-3">
+          <Flex align="start" gap="3">
             <AgentAvatar agentId="mission-control" size="lg" />
             <div className="flex-1">
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 <h2 className="font-semibold">Board Health Check</h2>
                 <IconButton variant="ghost" size="1" onClick={handleClose} aria-label="Close health check">
                   <X size={18} />
                 </IconButton>
-              </div>
+              </Flex>
               <p className="text-sm text-mission-control-text-dim mt-0.5">
                 {phase === 'scanning' && 'Scanning...'}
                 {phase === 'proposing' && `Found ${criticalCount} critical, ${warningCount} warnings`}
@@ -477,7 +477,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
                 {phase === 'done' && executionLog.length > 0 && 'Cleanup complete'}
               </p>
             </div>
-          </div>
+          </Flex>
         </div>
 
         {/* Content */}
@@ -485,10 +485,10 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
           {/* Scanning */}
           {phase === 'scanning' && (
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
+              <Flex align="center" gap="3">
                 <Loader2 size={18} className="text-success animate-spin" />
                 <span className="text-sm">Checking {tasks.length} active tasks</span>
-              </div>
+              </Flex>
               <div className="h-1.5 bg-mission-control-bg rounded-full overflow-hidden">
                 <div className="h-full bg-success transition-all" style={{ width: `${scanProgress}%` }} />
               </div>
@@ -505,48 +505,48 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
               {/* Critical */}
               {issues.filter(i => i.severity === 'critical').map(issue => (
                 <div key={issue.id} className="bg-error-subtle border border-error-border rounded-lg p-3">
-                  <div className="flex items-start gap-2">
+                  <Flex align="start" gap="2">
                     <AlertCircle size={16} className="text-error mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-error text-sm">{issue.title}</div>
                       <div className="text-xs text-error/70 mt-0.5">{issue.description}</div>
-                      <div className="flex items-center gap-1 mt-1.5 text-xs text-success">
+                      <Flex align="center" gap="1" className="mt-1.5 text-xs text-success">
                         <ArrowRight size={12} /> {issue.action}
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               ))}
               
               {/* Warnings */}
               {issues.filter(i => i.severity === 'warning').map(issue => (
                 <div key={issue.id} className="bg-warning-subtle border border-warning-border rounded-lg p-3">
-                  <div className="flex items-start gap-2">
+                  <Flex align="start" gap="2">
                     <AlertTriangle size={16} className="text-warning mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-warning text-sm">{issue.title}</div>
                       <div className="text-xs text-warning/70 mt-0.5">{issue.description}</div>
-                      <div className="flex items-center gap-1 mt-1.5 text-xs text-success">
+                      <Flex align="center" gap="1" className="mt-1.5 text-xs text-success">
                         <ArrowRight size={12} /> {issue.action}
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               ))}
 
               {/* Info */}
               {issues.filter(i => i.severity === 'info').map(issue => (
                 <div key={issue.id} className="bg-info-subtle border border-info-border rounded-lg p-3">
-                  <div className="flex items-start gap-2">
+                  <Flex align="start" gap="2">
                     <Flag size={16} className="text-info mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-info text-sm">{issue.title}</div>
                       <div className="text-xs text-info/70 mt-0.5">{issue.description}</div>
-                      <div className="flex items-center gap-1 mt-1.5 text-xs text-success">
+                      <Flex align="center" gap="1" className="mt-1.5 text-xs text-success">
                         <ArrowRight size={12} /> {issue.action}
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               ))}
             </div>
@@ -556,13 +556,13 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
           {phase === 'executing' && (
             <div className="space-y-2">
               {executionLog.map((log, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-sm">
+                <Flex key={idx} align="center" gap="2" className="text-sm">
                   {log.startsWith('✓') ? <CheckCircle size={14} className="text-success" /> :
                    log.startsWith('✗') ? <X size={14} className="text-error" /> :
                    log.startsWith('Skipped') ? <AlertTriangle size={14} className="text-warning" /> :
                    <Loader2 size={14} className="text-info animate-spin" />}
                   <span>{log.replace(/^[✓✗]\s*/, '')}</span>
-                </div>
+                </Flex>
               ))}
             </div>
           )}
@@ -605,14 +605,14 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
               placeholder="Feedback? (e.g., 'skip duplicates') or just proceed..."
               style={{ width: '100%' }}
             />
-            <div className="flex gap-2">
+            <Flex gap="2">
               <Button variant="surface" color="gray" size="2" onClick={handleClose} style={{ flex: 1, justifyContent: 'center' }}>
                 Cancel
               </Button>
               <Button variant="solid" color="green" size="2" onClick={handleConfirm} style={{ flex: 1, justifyContent: 'center' }}>
                 <Check size={16} /> Proceed
               </Button>
-            </div>
+            </Flex>
           </div>
         )}
 
