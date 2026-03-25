@@ -160,14 +160,14 @@ function PostCard({ post, onClick, onDragStart }: PostCardProps) {
       >
         {preview}
       </p>
-      <div className="flex items-center justify-between gap-1">
+      <Flex align="center" justify="between" gap="1">
         <span className="text-xs" style={{ color: colors.text }}>
           {statusLabel(post.status)}
         </span>
         <span className="text-xs" style={{ color: 'var(--mission-control-text-dim)' }}>
           {formatTime(post.scheduledAt)}
         </span>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -200,16 +200,18 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div
-          className="flex items-center justify-between p-4 border-b"
+        <Flex
+          align="center"
+          justify="between"
+          className="p-4 border-b"
           style={{ borderColor: 'var(--mission-control-border)' }}
         >
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <FileText size={16} style={{ color: 'var(--color-info)' }} />
             <span className="text-sm font-semibold" style={{ color: 'var(--mission-control-text)' }}>
               Post Detail
             </span>
-          </div>
+          </Flex>
           <IconButton
             onClick={onClose}
             variant="ghost"
@@ -218,11 +220,11 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
           >
             <X size={16} />
           </IconButton>
-        </div>
+        </Flex>
 
         <div className="flex-1 p-4 space-y-4">
           {/* Status badge */}
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <span
               className="px-3 py-1 rounded-full text-xs font-medium"
               style={{ background: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}
@@ -238,7 +240,7 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
                 minute: '2-digit',
               })}
             </span>
-          </div>
+          </Flex>
 
           {/* Content */}
           <div>
@@ -363,20 +365,22 @@ function NewPostModal({ defaultDate, onSubmit, onClose }: NewPostModalProps) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className="flex items-center justify-between p-4 border-b"
+        <Flex
+          align="center"
+          justify="between"
+          className="p-4 border-b"
           style={{ borderColor: 'var(--mission-control-border)' }}
         >
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Plus size={16} style={{ color: 'var(--color-info)' }} />
             <span className="text-sm font-semibold" style={{ color: 'var(--mission-control-text)' }}>
               Schedule New Post
             </span>
-          </div>
+          </Flex>
           <IconButton onClick={onClose} variant="ghost" color="gray" size="1">
             <X size={16} />
           </IconButton>
-        </div>
+        </Flex>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
@@ -412,7 +416,7 @@ function NewPostModal({ defaultDate, onSubmit, onClose }: NewPostModalProps) {
             />
           </div>
 
-          <div className="flex items-center gap-2 pt-1">
+          <Flex align="center" gap="2" className="pt-1">
             <Button
               type="submit"
               disabled={!content.trim() || overLimit || submitting}
@@ -433,7 +437,7 @@ function NewPostModal({ defaultDate, onSubmit, onClose }: NewPostModalProps) {
             >
               Cancel
             </Button>
-          </div>
+          </Flex>
         </form>
       </div>
     </div>
@@ -581,11 +585,13 @@ export function XContentCalendar() {
       style={{ background: 'var(--mission-control-bg)' }}
     >
       {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 py-3 border-b"
+      <Flex
+        align="center"
+        justify="between"
+        className="px-4 py-3 border-b"
         style={{ borderColor: 'var(--mission-control-border)' }}
       >
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <Calendar size={18} style={{ color: 'var(--color-info)' }} />
           <span className="text-sm font-semibold" style={{ color: 'var(--mission-control-text)' }}>
             Content Calendar
@@ -593,8 +599,8 @@ export function XContentCalendar() {
           <span className="text-sm" style={{ color: 'var(--mission-control-text-dim)' }}>
             {weekLabel()}
           </span>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           {loading && <Spinner size="1" />}
           <IconButton
             onClick={loadPosts}
@@ -629,12 +635,14 @@ export function XContentCalendar() {
           >
             <ChevronRight size={16} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Status legend */}
-      <div
-        className="flex items-center gap-4 px-4 py-2 border-b text-xs"
+      <Flex
+        align="center"
+        gap="4"
+        className="px-4 py-2 border-b text-xs"
         style={{
           borderColor: 'var(--mission-control-border)',
           color: 'var(--mission-control-text-dim)',
@@ -652,7 +660,7 @@ export function XContentCalendar() {
             </span>
           );
         })}
-      </div>
+      </Flex>
 
       {/* Calendar grid */}
       <div className="flex-1 overflow-auto">
