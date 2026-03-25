@@ -199,7 +199,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
         {/* Progress Bar */}
         <div className="px-6 pt-4">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             {(['provider', 'email', 'dataTypes', 'auth'] as const).map((s, idx) => (
               <div key={s} className="flex items-center flex-1">
                 <div
@@ -211,7 +211,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 />
               </div>
             ))}
-          </div>
+          </Flex>
         </div>
 
         {/* Content */}
@@ -235,7 +235,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     size="2"
                     style={{ width: '100%', justifyContent: 'flex-start', padding: '1rem', height: 'auto' }}
                   >
-                    <div className="flex items-center gap-4">
+                    <Flex align="center" gap="4">
                       <div
                         className="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
                         style={{ backgroundColor: `${info.color}20` }}
@@ -243,20 +243,20 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                         {info.logo}
                       </div>
                       <div className="flex-1">
-                        <div className="font-semibold text-lg mb-1 flex items-center gap-2">
+                        <Flex align="center" gap="2" className="font-semibold text-lg mb-1">
                           {info.name}
                           {info.comingSoon && (
                             <span className="text-xs px-2 py-0.5 rounded-full bg-warning-subtle text-warning">
                               Coming Soon
                             </span>
                           )}
-                        </div>
+                        </Flex>
                         <div className="text-sm text-mission-control-text-dim">{info.description}</div>
                       </div>
                       {provider === p && (
                         <Check size={24} className="text-mission-control-accent" />
                       )}
-                    </div>
+                    </Flex>
                   </Button>
                 );
               })}
@@ -336,7 +336,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                       size="2"
                       style={{ width: '100%', justifyContent: 'flex-start', padding: '1rem', height: 'auto' }}
                     >
-                      <div className="flex items-center gap-3">
+                      <Flex align="center" gap="3">
                         <Icon size={24} className={isSelected ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
                         <div className="flex-1">
                           <div className="font-medium mb-1">{info.label}</div>
@@ -345,19 +345,19 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                         {isSelected && (
                           <Check size={20} className="text-mission-control-accent" />
                         )}
-                      </div>
+                      </Flex>
                     </Button>
                   );
                 })}
               </div>
 
               <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
-                <div className="flex items-start gap-2 text-sm">
+                <Flex align="start" gap="2" className="text-sm">
                   <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
                   <div className="text-info">
                     You can always add or remove services later from account settings
                   </div>
-                </div>
+                </Flex>
               </div>
             </div>
           )}
@@ -404,7 +404,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   </div>
 
                   <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
-                    <div className="flex items-start gap-2 text-sm">
+                    <Flex align="start" gap="2" className="text-sm">
                       <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
                       <div className="text-info">
                         <strong>Permissions requested:</strong>
@@ -414,24 +414,24 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                           ))}
                         </ul>
                       </div>
-                    </div>
+                    </Flex>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="p-4 bg-warning-subtle border border-warning-border rounded-lg">
-                    <div className="flex items-start gap-2">
+                    <Flex align="start" gap="2">
                       <AlertTriangle size={16} className="text-warning mt-0.5 flex-shrink-0" />
                       <div className="text-sm text-warning">
                         <strong>App-Specific Password Required</strong>
                         <p className="mt-2">
-                          {provider === 'icloud' && 
+                          {provider === 'icloud' &&
                             'Generate an app-specific password at appleid.apple.com → Sign-In and Security → App-Specific Passwords'}
-                          {provider === 'apple' && 
+                          {provider === 'apple' &&
                             'Create an app-specific password in your Apple ID settings'}
                         </p>
                       </div>
-                    </div>
+                    </Flex>
                   </div>
 
                   <div>
@@ -493,10 +493,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           {/* Error Display */}
           {error && step !== 'connecting' && step !== 'success' && (
             <div className="mt-6 p-4 bg-error-subtle border border-error-border rounded-lg">
-              <div className="flex items-start gap-2">
+              <Flex align="start" gap="2">
                 <AlertTriangle size={16} className="text-error mt-0.5" />
                 <div className="text-sm text-error">{error}</div>
-              </div>
+              </Flex>
             </div>
           )}
         </div>
