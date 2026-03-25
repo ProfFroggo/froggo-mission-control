@@ -866,7 +866,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
         className="rounded-xl border border-mission-control-border bg-mission-control-surface p-3 mb-2"
       >
         {/* Row 1: Author + badges + date */}
-        <div className="flex items-center gap-2 mb-1.5 text-xs">
+        <Flex align="center" gap="2" className="mb-1.5 text-xs">
           {isPriority && <Star size={11} className="text-warning flex-shrink-0" />}
           <span className="font-medium text-mission-control-text">@{mention.author_username}</span>
           <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
@@ -889,7 +889,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
             {new Date(mention.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
           <a href={`https://twitter.com/${mention.author_username}/status/${mention.tweet_id}`} target="_blank" rel="noopener noreferrer" className="text-info hover:underline">X</a>
-        </div>
+        </Flex>
 
         {/* Parent context (compact) */}
         {mention.parent_tweet?.text && (
@@ -904,7 +904,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
         {mentionTranslation && <div className="text-xs text-mission-control-text-dim italic mb-1.5">{mentionTranslation}</div>}
 
         {/* Metrics row */}
-        <div className="flex items-center gap-3 text-xs text-mission-control-text-dim mb-2">
+        <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim mb-2">
           <span className="flex items-center gap-0.5"><Heart size={10} /> {mention.like_count}</span>
           <span className="flex items-center gap-0.5"><Repeat2 size={10} /> {mention.retweet_count}</span>
           <span className="flex items-center gap-0.5"><MessageCircle size={10} /> {mention.reply_count}</span>
@@ -914,7 +914,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           {pendingReplies[mention.id] && mention.reply_status !== 'replied' && (
             <span className="text-info flex items-center gap-0.5"><Clock size={10} /> Reply queued</span>
           )}
-        </div>
+        </Flex>
 
         {/* Show sent reply when replied */}
         {(mention.reply_status === 'replied' || pendingReplies[mention.id]?.status === 'sent') && pendingReplies[mention.id] && (
@@ -928,10 +928,10 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
         {mention.reply_status !== 'replied' && !pendingReplies[mention.id] && (
           <>
             {aiLoading.has(mention.id) ? (
-              <div className="flex items-center gap-2 text-xs text-mission-control-text-dim py-1">
+              <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim py-1">
                 <Spinner size="1" />
                 Generating...
-              </div>
+              </Flex>
             ) : aiData?.replies?.length ? (
               <div className="space-y-1 mb-2">
                 {aiData.replies.map((reply, idx) => {
@@ -991,7 +991,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
             )}
 
             {/* Actions — always visible */}
-            <div className="flex items-center gap-1.5 pt-1.5 border-t border-mission-control-border">
+            <Flex align="center" gap="2" className="pt-1.5 border-t border-mission-control-border">
               <Button
                 onClick={() => {
                   const text = activeReplyText;
@@ -1072,7 +1072,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                 <UserX size={12} />
               </IconButton>
               {isSelected && <span className="text-xs text-mission-control-text-dim ml-1">{replyText.length}/280</span>}
-            </div>
+            </Flex>
           </>
         )}
       </div>
@@ -1093,12 +1093,12 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="mb-3">
+          <Flex align="center" gap="2">
             <Inbox size={20} className="text-info" />
             <div className="text-lg font-semibold text-mission-control-text">Engagement Inbox</div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
           <IconButton
             onClick={() => setShowSettings(!showSettings)}
             variant={showSettings ? 'soft' : 'ghost'}
@@ -1118,18 +1118,18 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
             {fetching ? <Spinner size="1" /> : <RefreshCw size={16} />}
             {fetching ? 'Fetching...' : 'Fetch New'}
           </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Stats bar + quick actions */}
-        <div className="flex items-center justify-between px-3 py-1.5 mb-3 rounded-lg border border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim">
-          <div className="flex items-center gap-4">
+        <Flex align="center" justify="between" className="px-3 py-1.5 mb-3 rounded-lg border border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="4">
             <span className="whitespace-nowrap">Total: <span className="text-mission-control-text font-medium">{engageStats.total}</span></span>
             <span className="whitespace-nowrap">Pending: <span className="text-mission-control-text font-medium">{engageStats.pendingNoApproval}</span></span>
             <span className="whitespace-nowrap">Queued: <span className="text-info font-medium">{engageStats.queued}</span></span>
             <span className="whitespace-nowrap">Replied: <span className="text-success font-medium">{engageStats.replied}</span></span>
-          </div>
-          <div className="flex items-center gap-1.5">
+          </Flex>
+          <Flex align="center" gap="2">
             {counts.spam > 0 && (
               <Button
                 onClick={async () => {
@@ -1172,8 +1172,8 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                 Ignore all pending
               </Button>
             )}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Filter tabs — status + type */}
         <div className="border-b border-mission-control-border mb-3 -mx-4">
@@ -1240,7 +1240,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
         {/* Hot filter thresholds — only visible when Hot is active */}
         {activeFilter === 'hot' && (
           <div className="flex flex-wrap items-center gap-4 mb-3">
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <label htmlFor="engage-min-likes" className="text-xs text-mission-control-text-dim">Min Likes:</label>
               <TextField.Root
                 id="engage-min-likes"
@@ -1251,8 +1251,8 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                 size="1"
                 style={{ width: '5rem' }}
               />
-            </div>
-            <div className="flex items-center gap-2">
+            </Flex>
+            <Flex align="center" gap="2">
               <label htmlFor="engage-min-retweets" className="text-xs text-mission-control-text-dim">Min Retweets:</label>
               <TextField.Root
                 id="engage-min-retweets"
@@ -1263,7 +1263,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                 size="1"
                 style={{ width: '5rem' }}
               />
-            </div>
+            </Flex>
           </div>
         )}
 
@@ -1294,7 +1294,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               {/* Auto-ignore low engagement */}
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-1 block">Auto-Ignore Low Engagement</label>
-                <div className="flex items-center gap-3">
+                <Flex align="center" gap="3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
                       checked={settings.autoIgnoreLowEngagement}
@@ -1311,7 +1311,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                     style={{ width: 64 }}
                   />
                   <span className="text-xs text-mission-control-text-dim">followers</span>
-                </div>
+                </Flex>
               </div>
 
               {/* Show sentiment */}
@@ -1368,7 +1368,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               <p className="text-xs text-mission-control-text-dim mb-2">
                 Priority accounts always appear first in the list.
               </p>
-              <div className="flex gap-2 mb-2">
+              <Flex gap="2" className="mb-2">
                 <TextField.Root
                   value={priorityInput}
                   onChange={e => setPriorityInput(e.target.value)}
@@ -1386,7 +1386,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                 >
                   Add
                 </Button>
-              </div>
+              </Flex>
               {priorityAccounts.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {priorityAccounts.map(h => (
@@ -1428,7 +1428,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               <p className="text-xs text-mission-control-text-dim mb-2">
                 Mentions from ignored accounts are hidden from all filters except Ignored.
               </p>
-              <div className="flex gap-2 mb-2">
+              <Flex gap="2" className="mb-2">
                 <TextField.Root
                   value={ignoredInput}
                   onChange={e => setIgnoredInput(e.target.value)}
@@ -1446,7 +1446,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                 >
                   Ignore
                 </Button>
-              </div>
+              </Flex>
               {ignoredAccounts.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {ignoredAccounts.map(h => (
