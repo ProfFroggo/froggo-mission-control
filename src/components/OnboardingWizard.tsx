@@ -593,10 +593,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           { icon: Package, label: 'Modular by design' },
           { icon: Shield, label: 'You control approvals' },
         ].map(({ icon: Icon, label }) => (
-          <div key={label} className="flex items-center gap-2 p-2 rounded-lg bg-mission-control-bg border border-mission-control-border">
+          <Flex key={label} align="center" gap="2" className="p-2 rounded-lg bg-mission-control-bg border border-mission-control-border">
             <Icon size={14} className="text-mission-control-accent flex-shrink-0" />
             <span className="text-xs text-mission-control-text-dim">{label}</span>
-          </div>
+          </Flex>
         ))}
       </div>
       <Button onClick={goNext} variant="solid" color="grass" size="3" className="w-full max-w-xs">
@@ -629,7 +629,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         </p>
         <div className="space-y-2 mb-5">
           {checks.map(({ key, label, critical }) => (
-            <div key={key} className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
+            <Flex key={key} align="center" gap="3" className="p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
               {statusIcon(sysCheck[key])}
               <span className="text-sm text-mission-control-text flex-1">{label}</span>
               {critical && sysCheck[key] === 'fail' && (
@@ -638,7 +638,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
               {sysCheck[key] === 'ok' && (
                 <span className="text-xs text-success">Ready</span>
               )}
-            </div>
+            </Flex>
           ))}
         </div>
         {sysCheck.cli === 'fail' && (
@@ -944,7 +944,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         ]).map(({ type, icon: Icon, label, desc }) => {
           const status = permStatus[type];
           return (
-            <div key={type} className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
+            <Flex key={type} align="center" gap="3" className="p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
               <Icon size={16} className="text-mission-control-text-dim flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <span className="text-sm text-mission-control-text">{label}</span>
@@ -958,7 +958,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
                   </Button>
                 )}
               </div>
-            </div>
+            </Flex>
           );
         })}
       </div>
