@@ -135,7 +135,7 @@ export default function PerformanceTable() {
         </div>
 
         {/* Period selector */}
-        <div className="flex bg-mission-control-border rounded-lg p-1">
+        <Flex className="bg-mission-control-border rounded-lg p-1">
           {([7, 30, 90] as const).map((days) => (
             <Button
               key={days}
@@ -146,7 +146,7 @@ export default function PerformanceTable() {
               {days}d
             </Button>
           ))}
-        </div>
+        </Flex>
       </Flex>
 
       {/* Performance Table */}

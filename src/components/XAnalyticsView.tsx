@@ -161,8 +161,8 @@ export function XAnalyticsView() {
     <Flex direction="column" height="100%" className="overflow-y-auto bg-mission-control-bg">
       <div className="max-w-5xl mx-auto p-6 space-y-6 w-full">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/10 rounded-lg">
               <BarChart2 size={24} className="text-mission-control-accent" />
             </div>
@@ -170,13 +170,13 @@ export function XAnalyticsView() {
               <h1 className="text-xl font-semibold text-mission-control-text">X Analytics</h1>
               <p className="text-sm text-mission-control-text-dim">Performance overview for your social media account</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <IconButton
               onClick={loadData}
               size="2"
               variant="ghost"
-             
+
               title="Refresh data"
               aria-label="Refresh data"
             >
@@ -190,21 +190,21 @@ export function XAnalyticsView() {
               <Download size={16} />
               Download Report
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {loading ? (
-          <div className="flex items-center justify-center py-16">
+          <Flex align="center" justify="center" className="py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mission-control-accent" />
-          </div>
+          </Flex>
         ) : (
           <>
             {/* Estimated data banner */}
             {summary?.estimated && (
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-warning/10 border border-warning/20 rounded-lg text-warning text-sm">
+              <Flex align="center" gap="2" className="px-4 py-2.5 bg-warning/10 border border-warning/20 rounded-lg text-warning text-sm">
                 <Activity size={16} />
                 <span>Showing estimated metrics. Connect X API for real-time data.</span>
-              </div>
+              </Flex>
             )}
 
             {/* Stat Cards */}

@@ -151,7 +151,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
           {/* Priority */}
           <div>
             <label className="text-xs text-mission-control-text-dim mb-1.5 block">Priority</label>
-            <div className="flex gap-2">
+            <Flex gap="2">
               {PRIORITY_OPTIONS.map(p => (
                 <Button
                   key={p.value}
@@ -163,12 +163,12 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
                   {p.value.toUpperCase()}
                 </Button>
               ))}
-            </div>
+            </Flex>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 px-5 py-4 border-t border-mission-control-border">
+        <Flex align="center" gap="2" className="px-5 py-4 border-t border-mission-control-border">
           <Button
             size="2"
             variant="ghost"
@@ -186,7 +186,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
             <Send size={14} />
             {dispatching ? 'Dispatching...' : 'Dispatch Task'}
           </Button>
-        </div>
+        </Flex>
       </div>
     </Flex>
   );

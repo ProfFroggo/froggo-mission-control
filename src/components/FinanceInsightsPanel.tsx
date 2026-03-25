@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, AlertTriangle, Lightbulb, Bell, Target, BarChart3, X, Loader2, RefreshCw, Zap } from 'lucide-react';
-import { Button, IconButton, Box } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Box } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { financeApi } from '../lib/api';
 
@@ -141,20 +141,20 @@ export default function FinanceInsightsPanel() {
 
   if (loading && insights.length === 0) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <Flex align="center" justify="center" className="py-8">
         <Loader2 className="w-6 h-6 animate-spin text-mission-control-text-dim" />
         <span className="ml-2 text-mission-control-text-dim">Loading AI insights...</span>
-      </div>
+      </Flex>
     );
   }
 
   if (error) {
     return (
       <div className="bg-error-subtle border border-error-border rounded-lg p-4">
-        <div className="flex items-center gap-2 text-error">
+        <Flex align="center" gap="2" className="text-error">
           <AlertTriangle className="w-5 h-5" />
           <span>Failed to load insights: {error}</span>
-        </div>
+        </Flex>
         <Button
           size="1"
           variant="ghost"
@@ -180,7 +180,7 @@ export default function FinanceInsightsPanel() {
 
   return (
     <Box className="space-y-3">
-      <div className="flex items-center justify-between mb-4">
+      <Flex align="center" justify="between" className="mb-4">
         <h3 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
           <Lightbulb className="w-5 h-5 text-warning" />
           AI Insights
@@ -194,7 +194,7 @@ export default function FinanceInsightsPanel() {
             </span>
           )}
         </h3>
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Button
             size="2"
             variant="soft"
@@ -216,15 +216,15 @@ export default function FinanceInsightsPanel() {
             <RefreshCw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} />
             {analyzing ? 'Analyzing...' : 'Run Analysis'}
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {insights.map((insight) => (
         <div
           key={insight.id}
           className={`rounded-lg border p-4 ${getSeverityStyles(insight.severity)}`}
         >
-          <div className="flex items-start justify-between gap-3">
+          <Flex align="start" justify="between" gap="3">
             <div className="flex items-start gap-3 flex-1">
               <div className="mt-0.5">
                 {getInsightIcon(insight.type)}
@@ -248,7 +248,7 @@ export default function FinanceInsightsPanel() {
             >
               <X className="w-4 h-4" />
             </IconButton>
-          </div>
+          </Flex>
         </div>
       ))}
     </Box>
