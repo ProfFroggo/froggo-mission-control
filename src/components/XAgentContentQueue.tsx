@@ -219,8 +219,8 @@ function DraftCard({
       }`}
     >
       {/* Top row */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2">
+      <Flex align="start" justify="between" gap="2" className="mb-2">
+        <Flex align="center" gap="2">
           {!autoApprove && (
             <IconButton
               onClick={onToggleSelect}
@@ -243,21 +243,21 @@ function DraftCard({
           <span className="text-xs text-mission-control-text-dim">
             {formatScheduledTime(draft.scheduledAt)}
           </span>
-        </div>
-        <div className="flex items-center gap-1">
+        </Flex>
+        <Flex align="center" gap="1">
           <IconButton
             onClick={() => setShowPreview(!showPreview)}
             size="1"
             variant={showPreview ? 'soft' : 'ghost'}
             color={showPreview ? 'indigo' : 'gray'}
-           
+
             title="Toggle preview"
           >
             <Eye size={13} />
           </IconButton>
           <Bot size={14} className="text-mission-control-text-dim flex-shrink-0" />
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Content */}
       <p className="text-sm leading-relaxed mb-3 text-mission-control-text">
@@ -281,7 +281,7 @@ function DraftCard({
           Will auto-approve
         </span>
       ) : (
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Button
             onClick={handleApproveAndSchedule}
             disabled={scheduling}
@@ -313,7 +313,7 @@ function DraftCard({
             <X size={12} />
             Reject
           </Button>
-        </div>
+        </Flex>
       )}
 
       {/* Feedback field */}
@@ -330,7 +330,7 @@ function DraftCard({
             }
             resize="vertical"
           />
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Button
               onClick={handleFeedbackSubmit}
               variant="soft"
@@ -347,7 +347,7 @@ function DraftCard({
             >
               Cancel
             </Button>
-          </div>
+          </Flex>
         </div>
       )}
     </div>
@@ -543,7 +543,7 @@ export function XAgentContentQueue() {
     <Flex direction="column" height="100%" className="bg-mission-control-bg overflow-y-auto">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" className="mb-1">
           <Bot size={20} className="text-info" />
           <h2 className="text-lg font-semibold text-mission-control-text">Agent Mode</h2>
           <span
@@ -555,7 +555,7 @@ export function XAgentContentQueue() {
           >
             {settings.enabled ? 'Active' : 'Inactive'}
           </span>
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text-dim">
           Let agents draft, schedule, and post within your defined limits.
         </p>
@@ -563,7 +563,7 @@ export function XAgentContentQueue() {
 
       <div className="flex-1 p-4 space-y-6">
         {/* Master toggle */}
-        <div className="flex items-center justify-between p-4 rounded-lg border border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="p-4 rounded-lg border border-mission-control-border bg-mission-control-surface">
           <div>
             <div className="text-sm font-medium text-mission-control-text mb-0.5">Agent Mode</div>
             <div className="text-xs text-mission-control-text-dim">
@@ -585,7 +585,7 @@ export function XAgentContentQueue() {
               <ToggleLeft size={36} className="text-mission-control-text-dim" />
             )}
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Content brief */}
         <div>
@@ -612,7 +612,7 @@ export function XAgentContentQueue() {
               resize="vertical"
             />
           </div>
-          <div className="flex items-center justify-between mt-2">
+          <Flex align="center" justify="between" className="mt-2">
             <p className="text-xs text-mission-control-text-dim">
               Agents reference this brief when generating content.
             </p>
@@ -625,16 +625,16 @@ export function XAgentContentQueue() {
             >
               {saving ? <><Spinner size="1" /> Saving...</> : 'Save Brief'}
             </Button>
-          </div>
+          </Flex>
         </div>
 
         {/* Auto-approve toggle */}
-        <div className="flex items-center justify-between p-3 rounded-lg border border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface">
           <div>
-            <div className="flex items-center gap-2 mb-0.5">
+            <Flex align="center" gap="2" className="mb-0.5">
               <Zap size={14} className="text-warning" />
               <span className="text-sm font-medium text-mission-control-text">Auto-approve drafts</span>
-            </div>
+            </Flex>
             <p className="text-xs text-mission-control-text-dim">
               Approved drafts go directly to Scheduled without manual review.
             </p>
@@ -645,7 +645,7 @@ export function XAgentContentQueue() {
             size="2"
             variant="ghost"
             color={settings.autoApprove ? 'yellow' : 'gray'}
-           
+
             aria-label={settings.autoApprove ? 'Disable auto-approve' : 'Enable auto-approve'}
           >
             {settings.autoApprove ? (
@@ -654,21 +654,21 @@ export function XAgentContentQueue() {
               <ToggleLeft size={28} className="text-mission-control-text-dim" />
             )}
           </IconButton>
-        </div>
+        </Flex>
 
         {settings.autoApprove && (
-          <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-warning-subtle text-warning">
+          <Flex align="start" gap="2" className="p-3 rounded-lg text-xs bg-warning-subtle text-warning">
             <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
             <span>
               Auto-approve is ON — agent drafts will be scheduled without human review. Monitor the activity log regularly.
             </span>
-          </div>
+          </Flex>
         )}
 
         {/* Agent draft queue */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+          <Flex align="center" justify="between" className="mb-3">
+            <Flex align="center" gap="2">
               <Clock size={16} className="text-mission-control-text-dim" />
               <span className="text-sm font-medium text-mission-control-text">
                 Upcoming Drafts
@@ -678,8 +678,8 @@ export function XAgentContentQueue() {
                   {pendingDrafts.length}
                 </span>
               )}
-            </div>
-            <div className="flex items-center gap-2">
+            </Flex>
+            <Flex align="center" gap="2">
               {pendingSelectedCount > 0 && (
                 <Button
                   onClick={handleBatchApprove}
@@ -700,8 +700,8 @@ export function XAgentContentQueue() {
                 <RefreshCw size={12} />
                 Refresh
               </Button>
-            </div>
-          </div>
+            </Flex>
+          </Flex>
 
           {pendingDrafts.length === 0 ? (
             <div className="text-center py-8 text-mission-control-text-dim text-sm border border-dashed border-mission-control-border rounded-lg">
