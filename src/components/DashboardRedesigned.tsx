@@ -222,11 +222,6 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             <div className="relative z-10">
               <Flex align="center" justify="between" className="mb-4">
                 <Inbox size={28} className={`${pendingApprovals.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'}`} />
-                {pendingApprovals.length > 0 && (
-                  <span className="px-3 py-1 bg-danger text-white text-sm font-bold rounded-full animate-pulse shadow-lg tabular-nums">
-                    {pendingApprovals.length}
-                  </span>
-                )}
               </Flex>
 
               <div className="text-5xl font-bold mb-2 tabular-nums text-[var(--color-danger)]">

@@ -33,6 +33,26 @@ const BUILTIN_PANEL_ICONS: Record<string, ComponentType<any>> = {
   modules:       Puzzle,
 };
 
+// Section grouping for nav items — IDs not in this map render ungrouped at end
+const SECTION_MAP: Record<string, string> = {
+  dashboard:     'Core',
+  inbox:         'Core',
+  kanban:        'Core',
+  approvals:     'Core',
+  notifications: 'Core',
+  agents:        'Team',
+  chat:          'Team',
+  schedule:      'Team',
+  projects:      'Work',
+  campaigns:     'Work',
+  analytics:     'Intelligence',
+  knowledge:     'Intelligence',
+  library:       'Tools',
+  automations:   'Tools',
+  modules:       'Tools',
+  social:        'Tools',
+};
+
 // View IDs are dynamic — any registered view ID is valid
 type View = string;
 
@@ -226,72 +246,86 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       <nav className="flex-1 overflow-y-auto pt-2 pb-4 px-2" aria-label="Primary navigation">
         <div className="space-y-1">
           {/* Configurable panels - ordered and filtered by panel config */}
-          {[...panelConfig]
-            .sort((a, b) => a.order - b.order)
-            .filter(p => p.visible)
-            .map((p, idx) => {
-              const Icon = ViewRegistry.getIcon(p.id) ?? BUILTIN_PANEL_ICONS[p.id];
-              if (!Icon) return null;
-              const id = p.id as View;
-              const label = p.label;
-              const shortcutNum = idx < 10 ? `⌘${idx + 1 > 9 ? 0 : idx + 1}` : undefined;
-              const shortcut = shortcutNum || '';
-              return { id, icon: Icon, label, shortcut };
-            })
-            .filter(Boolean)
-            .map(({ id, icon: Icon, label, shortcut }: any) => {
-            const isActive = currentView === id;
-            let badge = 0;
-            if (id === 'inbox') badge = inboxCount;
-            if (id === 'approvals') badge = inboxCount;
-            if (id === 'notifications') badge = inboxCount;
-            if (id === 'kanban') badge = activeTasks;
+          {(() => {
+            const navItems = [...panelConfig]
+              .sort((a, b) => a.order - b.order)
+              .filter(p => p.visible)
+              .reduce<{ id: string; icon: any; label: string; shortcut: string }[]>((acc, p, idx) => {
+                const Icon = ViewRegistry.getIcon(p.id) ?? BUILTIN_PANEL_ICONS[p.id];
+                if (!Icon) return acc;
+                const shortcutNum = acc.length < 10 ? `⌘${acc.length + 1 > 9 ? 0 : acc.length + 1}` : undefined;
+                acc.push({ id: p.id as View, icon: Icon, label: p.label, shortcut: shortcutNum || '' });
+                return acc;
+              }, []);
 
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => handleNavigate(id)}
-                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-lg relative group transition-colors text-sm font-medium ${expanded ? '' : 'justify-center'} ${
-                  isActive
-                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
-                }`}
-                title={expanded ? undefined : `${label} (${shortcut})`}
-                aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
-                aria-current={isActive ? 'page' : undefined}
-                data-view={id}
-              >
-                <Icon size={20} className="flex-shrink-0" aria-hidden="true" />
+            return navItems.map(({ id, icon: Icon, label, shortcut }, idx) => {
+              const isActive = currentView === id;
+              let badge = 0;
+              if (id === 'inbox') badge = inboxCount;
+              if (id === 'approvals') badge = inboxCount;
+              if (id === 'notifications') badge = inboxCount;
+              if (id === 'kanban') badge = activeTasks;
 
-                {expanded && (
-                  <>
-                    <span className="flex-1 text-left truncate">{label}</span>
-                    {badge > 0 && (
+              const section = SECTION_MAP[id];
+              const prevSection = idx > 0 ? SECTION_MAP[navItems[idx - 1].id] : null;
+              const showSectionHeader = section && section !== prevSection;
+
+              return (
+                <div key={id}>
+                  {showSectionHeader && (
+                    expanded ? (
+                      <div className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-mission-control-text-dim/50 select-none">
+                        {section}
+                      </div>
+                    ) : idx > 0 ? (
+                      <div className="mx-3 my-2 border-t border-mission-control-border/40" aria-hidden="true" />
+                    ) : null
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate(id)}
+                    className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-lg relative group transition-colors text-sm font-medium ${expanded ? '' : 'justify-center'} ${
+                      isActive
+                        ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                        : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
+                    }`}
+                    title={expanded ? undefined : `${label} (${shortcut})`}
+                    aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
+                    aria-current={isActive ? 'page' : undefined}
+                    data-view={id}
+                  >
+                    <Icon size={20} className="flex-shrink-0" aria-hidden="true" />
+
+                    {expanded && (
+                      <>
+                        <span className="flex-1 text-left truncate">{label}</span>
+                        {badge > 0 && (
+                          <NumberBadge
+                            count={badge}
+                            maxCount={999}
+                            position="inline"
+                            variant={isActive ? 'secondary' : 'primary'}
+                            size="sm"
+                            className={isActive ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'bg-mission-control-accent/20 text-mission-control-accent'}
+                          />
+                        )}
+                      </>
+                    )}
+
+                    {!expanded && badge > 0 && (
                       <NumberBadge
                         count={badge}
                         maxCount={999}
-                        position="inline"
-                        variant={isActive ? 'secondary' : 'primary'}
+                        position="absolute-top-right"
+                        variant="primary"
                         size="sm"
-                        className={isActive ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'bg-mission-control-accent/20 text-mission-control-accent'}
                       />
                     )}
-                  </>
-                )}
-
-                {!expanded && badge > 0 && (
-                  <NumberBadge
-                    count={badge}
-                    maxCount={999}
-                    position="absolute-top-right"
-                    variant="primary"
-                    size="sm"
-                  />
-                )}
-              </button>
-            );
-          })}
+                  </button>
+                </div>
+              );
+            });
+          })()}
         </div>
       </nav>
 

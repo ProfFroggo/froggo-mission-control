@@ -1279,8 +1279,18 @@ export default function KnowledgeBase() {
               <TextField.Slot>
                 <Search size={13} />
               </TextField.Slot>
-              {search && (
-                <TextField.Slot side="right">
+              <TextField.Slot side="right">
+                <IconButton
+                  onClick={() => setShowStarred(v => !v)}
+                  variant="ghost"
+                  color={showStarred ? 'amber' : 'gray'}
+                  size="1"
+                  aria-label={showStarred ? 'Show all articles' : 'Show starred only'}
+                  title={showStarred ? 'Showing starred only' : 'Filter by starred'}
+                >
+                  <Star size={12} fill={showStarred ? 'currentColor' : 'none'} />
+                </IconButton>
+                {search && (
                   <IconButton
                     onClick={() => { setSearch(''); setSearchCursor(-1); }}
                     variant="ghost"
@@ -1290,26 +1300,9 @@ export default function KnowledgeBase() {
                   >
                     <X size={12} />
                   </IconButton>
-                </TextField.Slot>
-              )}
+                )}
+              </TextField.Slot>
             </TextField.Root>
-          </div>
-
-          {/* Filter pills */}
-          <div className="flex gap-1 flex-wrap">
-            <Button
-              size="1"
-              variant={showStarred ? 'soft' : 'ghost'}
-              color={showStarred ? 'amber' : 'gray'}
-              radius="full"
-              onClick={() => setShowStarred(v => !v)}
-            >
-              <Star size={10} fill={showStarred ? 'currentColor' : 'none'} />
-              Starred
-              {starred.size > 0 && (
-                <span className="ml-0.5 opacity-70">{starred.size}</span>
-              )}
-            </Button>
           </div>
         </div>
 

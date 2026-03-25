@@ -22,12 +22,11 @@ import CampaignDispatchModal from './CampaignDispatchModal';
 import { CHANNEL_ICONS, CHANNEL_LABELS, ALL_CHANNELS } from './channelIcons';
 import { STATUS_CONFIG, TYPE_COLORS, TYPE_LABELS } from './CampaignCard';
 import CampaignROIDashboard from '../CampaignROIDashboard';
-import CampaignCommentsPanel from '../CampaignCommentsPanel';
 import ReactMarkdown from 'react-markdown';
 import ContextPanel from '../ContextPanel';
 import { Button, Flex, IconButton, TextField, Select, TextArea } from '@radix-ui/themes';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'performance' | 'roi' | 'comments' | 'checklist' | 'context';
+type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'results' | 'checklist' | 'context';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: FileText },
@@ -36,9 +35,7 @@ const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'timeline',    label: 'Timeline / Schedule', icon: Calendar },
   { id: 'assets',      label: 'Assets',      icon: ImageIcon },
   { id: 'channels',    label: 'Channels',    icon: Radio },
-  { id: 'performance', label: 'Performance', icon: BarChart2 },
-  { id: 'roi',         label: 'ROI',         icon: TrendingUp },
-  { id: 'comments',    label: 'Comments',    icon: MessageSquare },
+  { id: 'results',     label: 'Results',     icon: BarChart2 },
   { id: 'checklist',   label: 'Checklist',   icon: ClipboardList },
   { id: 'context',     label: 'Context',     icon: BookOpen },
 ];
@@ -1526,15 +1523,10 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
         })()}
         {activeTab === 'assets'      && <AssetsTab campaign={campaign} />}
         {activeTab === 'channels'    && <ChannelsTab campaign={campaign} onUpdate={reload} />}
-        {activeTab === 'performance' && <PerformanceTab campaign={campaign} onUpdate={reload} />}
-        {activeTab === 'roi'         && (
-          <div className="h-full overflow-y-auto">
+        {activeTab === 'results'     && (
+          <div className="h-full overflow-y-auto divide-y divide-mission-control-border">
+            <PerformanceTab campaign={campaign} onUpdate={reload} />
             <CampaignROIDashboard campaign={campaign} />
-          </div>
-        )}
-        {activeTab === 'comments'    && (
-          <div className="h-full overflow-hidden flex flex-col">
-            <CampaignCommentsPanel campaignId={campaign.id} />
           </div>
         )}
         {activeTab === 'checklist'   && (

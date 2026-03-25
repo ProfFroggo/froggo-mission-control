@@ -5,16 +5,16 @@
 See: .planning/ui-finalization/ROADMAP.md (updated 2026-03-25)
 
 **Core value:** Zero AI-slop tells, 100% Radix Themes 3 patterns, WCAG AA — production-grade UI
-**Current focus:** Phase 2 — Anti-Pattern Elimination
+**Current focus:** Phase 3 — Navigation & IA Architecture
 
 ## Current Position
 
-Phase: 2 of 8 (Anti-Pattern Elimination)
+Phase: 3 of 8 (Navigation & IA Architecture)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-03-25 — Phase 1 complete (6/6 plans, commit f3d47a3b)
+Last activity: 2026-03-25 — Phase 2 complete (3/3 plans, commit 183b0a87)
 
-Progress: █░░░░░░░░░ 6/42 plans (14%)
+Progress: ███░░░░░░░ 9/42 plans (21%)
 
 ## Performance Metrics
 
@@ -28,6 +28,7 @@ Progress: █░░░░░░░░░ 6/42 plans (14%)
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Design Token Foundation | 6/6 | ~2h | ~20min |
+| 2. Anti-Pattern Elimination | 3/3 | ~1h | ~20min |
 
 ## Accumulated Context
 
@@ -47,11 +48,16 @@ Progress: █░░░░░░░░░ 6/42 plans (14%)
 - All 3 competing button CSS systems removed (confirmed zero component usages)
 - `.card-glass` in component-patterns.css (glassmorphism) is Phase 2 work — left for now
 
+### Phase 2 Decisions Made
+- All glassmorphism (backdrop-blur) containers → solid `bg-mission-control-surface`
+- All gradient text (bg-clip-text) → solid semantic tokens
+- `animate-gradient-x` confirmed dead (not in tailwind.config.js) → overlay divs deleted
+- `themeColor + '22'` hex concat → `color-mix(in srgb, ${themeColor} 13%, transparent)`
+- CSS var fallback rgba stripped from ModuleDependencyGraph (tokens guaranteed)
+- `--color-error/warning/info -bg/-border` → `color-mix()` (was hardcoded rgba)
+
 ### Deferred Issues
-- `.card-glass` in component-patterns.css still uses `backdrop-filter: blur(20px)` — Phase 2
-- `.glass-modal` in index.css still uses glassmorphism — Phase 2
-- `glass-theme.css:43-49` `.card-glass` with `!important` backdrop-filter — Phase 2
-- TSX component green rgba (Kanban.tsx ×1, ModuleDependencyGraph.tsx ×3, CampaignTimelineView.tsx ×2) — Phase 2
+None from Phase 2.
 
 ### Blockers/Concerns
 None.
@@ -59,5 +65,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-25
-Stopped at: Phase 1 complete, all 6 plans executed, committed
-Resume file: None — Phase 2 plans in `.planning/ui-finalization/phases/02-anti-pattern-elimination/`
+Stopped at: Phase 2 complete, all 3 plans executed, committed
+Resume file: None — Phase 3 plans in `.planning/ui-finalization/phases/03-navigation-ia/`

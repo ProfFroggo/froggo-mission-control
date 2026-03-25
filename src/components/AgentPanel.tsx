@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, BarChart3, Settings, Library, AlertTriangle, Pencil, Check, Activity, Search, Trophy } from 'lucide-react';
+import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, BarChart3, Settings, Library, AlertTriangle, Activity, Search, Trophy } from 'lucide-react';
 import { useEventBus } from '../lib/useEventBus';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -11,7 +11,6 @@ import HRAgentCreationModal from './HRAgentCreationModal';
 import AgentDetailModal from './AgentDetailModal';
 // AgentManagementModal replaced by AgentDetailModal (richer UI)
 import AgentHealthDashboard from './AgentHealthDashboard';
-import AgentMetricsCard from './AgentMetricsCard';
 import HRSection from './HRSection';
 import AgentLibraryPanel from './AgentLibraryPanel';
 import AgentLeaderboard from './AgentLeaderboard';
@@ -23,7 +22,7 @@ import type { CatalogAgent } from '../types/catalog';
 
 import { getAgentTheme } from '../utils/agentThemes';
 import { createLogger } from '../utils/logger';
-import { agentApi, analyticsApi } from '../lib/api';
+import { agentApi } from '../lib/api';
 import { Button, IconButton, Badge, TextField, Select, Box, Flex } from '@radix-ui/themes';
 import TabNav from './TabNav';
 
@@ -87,9 +86,7 @@ export default function AgentPanel() {
   const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
-  const [agentMetrics, setAgentMetrics] = useState<Record<string, any>>({});
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -97,12 +94,8 @@ export default function AgentPanel() {
   const [soulEditAgent, setSoulEditAgent] = useState<{ id: string; name: string } | null>(null);
   const [view, setView] = useState<'active' | 'health' | 'library' | 'leaderboard'>('active');
   const [circuitOpenAgents, setCircuitOpenAgents] = useState<Set<string>>(new Set());
-  const [editingTrustTierAgent, setEditingTrustTierAgent] = useState<string | null>(null);
-  const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
   const { open: confirmOpen, config: confirmConfig, onConfirm: onConfirmCallback, showConfirm, closeConfirm } = useConfirmDialog();
   const [agentSearch, setAgentSearch] = useState('');
-  // Per-agent token stats (last 7 days) — { agentId -> { tokens, cost } }
-  const [agentTokenStats, setAgentTokenStats] = useState<Record<string, { tokens: number; cost: number }>>({});
 
   // Subscribe to circuit.open SSE events
   useEventBus('circuit.open', (data) => {
@@ -122,19 +115,6 @@ export default function AgentPanel() {
     fetchAgents();
   });
 
-  // Fetch per-agent token stats (last 7 days) once on mount
-  useEffect(() => {
-    fetch('/api/token-usage?days=7')
-      .then(r => r.ok ? r.json() : null)
-      .then((d: { byAgent?: Array<{ agentId: string; tokens: number; cost: number }> } | null) => {
-        if (d?.byAgent) {
-          const map: Record<string, { tokens: number; cost: number }> = {};
-          for (const row of d.byAgent) map[row.agentId] = { tokens: row.tokens, cost: row.cost };
-          setAgentTokenStats(map);
-        }
-      })
-      .catch(() => { /* non-critical */ });
-  }, []);
 
   useEffect(() => {
     Promise.all([fetchAgents(), loadGatewaySessions(), loadTasksFromDB()])
@@ -184,20 +164,9 @@ export default function AgentPanel() {
     };
   }, [fetchAgents, loadGatewaySessions, loadTasksFromDB]);
 
-  useEffect(() => { loadAgentMetrics(); }, []);
-
-  const loadAgentMetrics = async () => {
-    setLoadingMetrics(true);
-    try {
-      const data = await analyticsApi.getAgentActivity();
-      if (data) setAgentMetrics(data);
-    } catch (e) { logger.error('Failed to load agent metrics:', e); }
-    finally { setLoadingMetrics(false); }
-  };
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    try { await Promise.all([loadGatewaySessions(), loadAgentMetrics()]); }
+    try { await loadGatewaySessions(); }
     finally { setIsRefreshing(false); }
   };
 
@@ -217,21 +186,6 @@ export default function AgentPanel() {
         showToast('error', 'Failed to disable agent', (err as Error).message);
       }
     });
-  };
-
-  const handleTrustTierSave = async (agentId: string, tier: number) => {
-    try {
-      await fetch(`/api/agents/${agentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trust_tier: tier }),
-      });
-      await fetchAgents();
-      setEditingTrustTierAgent(null);
-      showToast('success', 'Trust tier updated — permissions recalculated');
-    } catch (err) {
-      showToast('error', 'Failed to update trust tier', (err as Error).message);
-    }
   };
 
   const handleAgentStart = async (agentId: string) => {
@@ -416,7 +370,6 @@ export default function AgentPanel() {
           <div id="agent-analytics-panel" className="mb-6 rounded-lg border border-mission-control-border p-5">
             <h2 className="icon-text text-heading-3 mb-4">
               <BarChart3 size={18} className="flex-shrink-0" /> Performance
-              {loadingMetrics && <InlineLoader size="sm" />}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {(() => {
@@ -487,7 +440,6 @@ export default function AgentPanel() {
               const theme = getTheme(agent.id);
               const agentTasks = getAgentTasks(agent.id);
               const currentTask = tasks.find(t => t.id === agent.currentTaskId);
-              const metrics = agentMetrics[agent.id] || {};
               const sc = statusConfig[agent.status];
               // Hide dot when: no current task, task is done/review, or status says hideDot
               const hasActiveTask = currentTask && !['done', 'review', 'completed'].includes(currentTask.status);
@@ -577,95 +529,6 @@ export default function AgentPanel() {
                       </div>
                     </Flex>
 
-                    {/* Metrics — always full opacity, separated */}
-                    <div className="border-t border-mission-control-border/40 pt-3 mb-3">
-                      <AgentMetricsCard agentId={agent.id} agentName={agent.name} metrics={{ ...metrics, _role: AGENT_ROLES[agent.id] }} compact={true} />
-                    </div>
-
-                    {/* Per-agent token stat (last 7 days) */}
-                    {agentTokenStats[agent.id] && (
-                      <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-2 tabular-nums">
-                        <Zap size={9} className="text-warning shrink-0" />
-                        <span>
-                          {agentTokenStats[agent.id].tokens >= 1_000_000
-                            ? `${(agentTokenStats[agent.id].tokens / 1_000_000).toFixed(1)}M`
-                            : agentTokenStats[agent.id].tokens >= 1_000
-                            ? `${(agentTokenStats[agent.id].tokens / 1_000).toFixed(0)}K`
-                            : agentTokenStats[agent.id].tokens} tokens
-                        </span>
-                        <span className="text-mission-control-border">/</span>
-                        <span className="text-warning">${agentTokenStats[agent.id].cost.toFixed(4)}</span>
-                        <span className="text-mission-control-text-dim/60">7d</span>
-                      </div>
-                    )}
-
-                    {/* Last active timestamp */}
-                    {agent.lastActivity && (
-                      <Flex align="center" gap="1" className="text-xs text-mission-control-text-dim mb-2">
-                        <Clock size={9} />
-                        <span>Last active: {(() => {
-                          const diffMs = Date.now() - agent.lastActivity!;
-                          const diffMin = Math.floor(diffMs / 60_000);
-                          const diffHr = Math.floor(diffMs / 3_600_000);
-                          if (diffMs < 60_000) return 'just now';
-                          if (diffMin < 60) return `${diffMin}m ago`;
-                          if (diffHr < 24) return `${diffHr}h ago`;
-                          return `${Math.floor(diffHr / 24)}d ago`;
-                        })()}</span>
-                      </Flex>
-                    )}
-
-                    {/* Footer: capability tags + tier badge — relative z-[2] lifts above cover button */}
-                    <div className="flex items-center gap-1 flex-wrap relative z-[2]">
-                      {agent.capabilities?.slice(0, 3).map((cap, i) => (
-                        <span key={i} className={`px-1.5 py-0.5 text-xs font-medium rounded max-w-[120px] truncate ${theme.bg} ${theme.text}`}>
-                          {cap}
-                        </span>
-                      ))}
-                      {(agent.capabilities?.length || 0) > 3 && (
-                        <span className="text-xs text-mission-control-text-dim">+{(agent.capabilities?.length || 0) - 3}</span>
-                      )}
-                      <div className="flex-1" />
-                      {/* Tier badge — right-aligned, editable on click */}
-                      {agent.trust_tier && (
-                        editingTrustTierAgent === agent.id ? (
-                          <Flex align="center" gap="1" onClick={e => e.stopPropagation()}>
-                            <Select.Root
-                              size="1"
-                              value={String(pendingTrustTier)}
-                              onValueChange={val => setPendingTrustTier(Number(val))}
-                            >
-                              <Select.Trigger aria-label="Agent trust tier" onClick={e => e.stopPropagation()} />
-                              <Select.Content>
-                                <Select.Item value="1">Tier 1 (Restricted)</Select.Item>
-                                <Select.Item value="2">Tier 2 (Worker)</Select.Item>
-                                <Select.Item value="3">Tier 3 (Full)</Select.Item>
-                              </Select.Content>
-                            </Select.Root>
-                            <IconButton type="button" variant="ghost" size="1" aria-label="Save trust tier" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }}><Check size={12} /></IconButton>
-                            <IconButton type="button" variant="ghost" color="red" size="1" aria-label="Cancel trust tier edit" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }}><AlertTriangle size={12} /></IconButton>
-                          </Flex>
-                        ) : (
-                          <Button
-                            type="button"
-                            size="1"
-                            variant="soft"
-                            color={
-                              agent.trust_tier === 'admin' ? 'violet' :
-                              agent.trust_tier === 'trusted' ? 'green' :
-                              agent.trust_tier === 'worker' ? 'blue' :
-                              agent.trust_tier === 'restricted' ? 'red' : 'gray'
-                            }
-                            onClick={e => { e.stopPropagation(); setPendingTrustTier(Number(agent.trust_tier) || 1); setEditingTrustTierAgent(agent.id); }}
-                            className="opacity-50 group-hover:opacity-100 transition-opacity"
-                            title="Click to edit trust tier"
-                          >
-                            {agent.trust_tier === 'admin' ? 'Admin' : agent.trust_tier === 'trusted' ? 'Trusted' : agent.trust_tier === 'worker' ? 'Worker' : agent.trust_tier === 'restricted' ? 'Restricted' : `Tier ${agent.trust_tier}`}
-                            <Pencil size={8} className="opacity-0 group-hover:opacity-100" />
-                          </Button>
-                        )
-                      )}
-                    </div>
 
                     {/* Start/Stop + Soul link — relative z-[2] lifts above cover button */}
                     <div className={`flex items-center gap-1.5 mt-auto pt-2 border-t border-mission-control-border relative z-[2]`}>

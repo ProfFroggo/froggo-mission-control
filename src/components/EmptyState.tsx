@@ -5,7 +5,7 @@
  * Migrated to Radix Themes layout primitives.
  */
 
-import { LucideIcon, Inbox, CheckCircle, Search, FolderOpen, Bell, Layout, Wallet, Package } from 'lucide-react';
+import { LucideIcon, Inbox, CheckCircle, Search, FolderOpen, Bell, Layout, Wallet, Package, AlertCircle } from 'lucide-react';
 import { ReactNode } from 'react';
 import { Button } from '@radix-ui/themes';
 
@@ -24,6 +24,13 @@ interface EmptyStateBaseProps {
   size?: 'sm' | 'md' | 'lg';
   /** Optional compact variant for smaller spaces. Prefer size='sm' for new usage. */
   compact?: boolean;
+  /**
+   * Visual tier:
+   * - 'default' (local empty — filtered/contextual, items exist elsewhere)
+   * - 'global' (first-time — section has never had content)
+   * - 'error' (load failure — something went wrong)
+   */
+  variant?: 'default' | 'global' | 'error';
   /** Optional additional CSS classes */
   className?: string;
 }
@@ -109,13 +116,18 @@ export default function EmptyState(props: EmptyStateProps) {
     action,
     size,
     compact = false,
+    variant = 'default',
     className = '',
   } = props;
 
   const effectiveSize: 'sm' | 'md' | 'lg' = size ?? (compact ? 'sm' : 'md');
 
-  const Icon = isPreset ? presets[props.type].icon : props.icon;
-  const title = isPreset ? presets[props.type].title : props.title;
+  // Error variant overrides icon/title to use AlertCircle + error colors
+  const isError = variant === 'error';
+  const Icon = isError ? AlertCircle : (isPreset ? presets[props.type].icon : props.icon);
+  const title = isError
+    ? (('icon' in props && props.title) || (isPreset ? presets[props.type].title : 'Something went wrong'))
+    : (isPreset ? presets[props.type].title : (props as any).title);
   const desc = description || (isPreset ? presets[props.type].description : undefined);
 
   const iconSize = ICON_SIZES[effectiveSize];
@@ -133,7 +145,7 @@ export default function EmptyState(props: EmptyStateProps) {
       <Button
         onClick={actionConfig.onClick}
         variant={actionConfig.variant === 'secondary' ? 'surface' : 'soft'}
-        color={actionConfig.variant === 'secondary' ? 'gray' : 'violet'}
+        color={isError ? 'red' : actionConfig.variant === 'secondary' ? 'gray' : 'violet'}
         size="2"
       >
         {actionConfig.label}
@@ -141,24 +153,40 @@ export default function EmptyState(props: EmptyStateProps) {
     );
   };
 
+  // Tier-specific styling
+  const wrapperClass = variant === 'global'
+    ? `rounded-xl border border-mission-control-accent/20 bg-mission-control-accent/5`
+    : variant === 'error'
+    ? `rounded-xl border border-[var(--color-error-border)] bg-[var(--color-error-bg)]`
+    : '';
+
+  const iconClass = isError
+    ? 'text-error opacity-70'
+    : variant === 'global'
+    ? 'text-mission-control-accent opacity-60'
+    : 'text-mission-control-text-dim opacity-40';
+
+  const titleClass = isError ? 'text-error' : 'text-mission-control-text';
+  const descClass = isError ? 'text-error/70' : 'text-mission-control-text-dim';
+
   return (
     <div
-      className={`flex flex-col items-center justify-center h-full py-16 gap-3 text-center px-6 ${className}`}
+      className={`flex flex-col items-center justify-center h-full py-16 gap-3 text-center px-6 ${wrapperClass} ${className}`}
       role="status"
       aria-live="polite"
     >
       {Icon && (
         <Icon
           size={iconSize}
-          className="text-mission-control-text-dim opacity-40"
+          className={iconClass}
           aria-hidden="true"
         />
       )}
 
-      <p className="text-sm font-semibold text-mission-control-text">{title}</p>
+      <p className={`text-sm font-semibold ${titleClass}`}>{title}</p>
 
       {desc && (
-        <p className="text-xs text-mission-control-text-dim max-w-xs">{desc}</p>
+        <p className={`text-xs max-w-xs ${descClass}`}>{desc}</p>
       )}
 
       {renderAction()}

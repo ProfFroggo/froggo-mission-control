@@ -1296,6 +1296,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             action={activeFiltersCount > 0
               ? undefined
               : { label: 'Create task', onClick: () => handleAddTask('todo') }}
+            variant={activeFiltersCount > 0 ? 'default' : 'global'}
             size="md"
           />
         </div>
