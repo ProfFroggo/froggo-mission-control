@@ -69,7 +69,7 @@ function PriorityBadge({ priority }: { priority?: string }) {
 
 function GateRow({ passed, label }: { passed: boolean; label: string }) {
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <Flex align="center" gap="2" className="text-sm">
       {passed ? (
         <CheckCircle2 size={14} className="text-success flex-shrink-0" />
       ) : (
@@ -78,7 +78,7 @@ function GateRow({ passed, label }: { passed: boolean; label: string }) {
       <span className={passed ? 'text-mission-control-text' : 'text-mission-control-text-dim line-through'}>
         {label}
       </span>
-    </div>
+    </Flex>
   );
 }
 
@@ -114,10 +114,10 @@ function StatCard({
 }) {
   return (
     <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-3">
-      <div className="flex items-center gap-2 text-mission-control-text-dim mb-1">
+      <Flex align="center" gap="2" className="text-mission-control-text-dim mb-1">
         {icon}
         <span className="text-xs">{label}</span>
-      </div>
+      </Flex>
       <div className={`text-xl font-semibold ${accent}`}>{value}</div>
     </div>
   );
@@ -180,7 +180,7 @@ function ReviewCard({
   return (
     <div className="rounded-lg border border-mission-control-border bg-mission-control-surface overflow-hidden">
       {/* Card header */}
-      <div className="flex items-start gap-3 p-4">
+      <Flex align="start" gap="3" className="p-4">
         <div className="flex-shrink-0 mt-0.5">
           {task.assignedTo ? (
             <AgentAvatar agentId={task.assignedTo} size="sm" />
@@ -191,24 +191,24 @@ function ReviewCard({
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
+          <Flex align="start" justify="between" gap="2">
             <h3 className="text-sm font-medium text-mission-control-text leading-snug">
               {task.title}
             </h3>
             <PriorityBadge priority={task.priority} />
-          </div>
+          </Flex>
           {task.description && (
             <p className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">
               {task.description}
             </p>
           )}
-          <div className="flex items-center gap-3 mt-2 text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="3" className="mt-2 text-xs text-mission-control-text-dim">
             <span>{task.assignedTo ?? 'Unassigned'}</span>
             <span>·</span>
             <span>{task.subtaskCount} subtask{task.subtaskCount !== 1 ? 's' : ''}</span>
             <span>·</span>
             <span>{timeAgo}</span>
-          </div>
+          </Flex>
         </div>
         <IconButton
           onClick={() => setExpanded(e => !e)}
@@ -219,7 +219,7 @@ function ReviewCard({
         >
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </IconButton>
-      </div>
+      </Flex>
 
       {/* Gate checklist — always visible */}
       <div className="border-t border-mission-control-border px-4 py-3 bg-mission-control-bg0/40 space-y-1.5">
@@ -425,7 +425,7 @@ export default function ClaraReviewDashboard() {
   return (
     <Flex direction="column" gap="5" height="100%" p="4" className="overflow-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <div>
           <h2 className="text-lg font-semibold text-mission-control-text">Clara Review Queue</h2>
           <p className="text-sm text-mission-control-text-dim">Pre-work gate — approve or reject tasks before agents start</p>
@@ -439,17 +439,17 @@ export default function ClaraReviewDashboard() {
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
           Refresh
         </Button>
-      </div>
+      </Flex>
 
       {/* Stats bar */}
       <StatsBar insights={insights} />
 
       {/* Review queue */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-mission-control-text-dim text-sm">
+        <Flex align="center" justify="center" className="py-16 text-mission-control-text-dim text-sm">
           <RefreshCw size={16} className="animate-spin mr-2" />
           Loading review queue...
-        </div>
+        </Flex>
       ) : tasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-mission-control-text-dim gap-3">
           <Inbox size={32} className="opacity-40" />
@@ -472,17 +472,17 @@ export default function ClaraReviewDashboard() {
       {/* Agents needing support */}
       {insights && insights.agentsNeedingSupport.length > 0 && (
         <div className="rounded-lg border border-warning/30 bg-warning-subtle p-4">
-          <div className="flex items-center gap-2 mb-3">
+          <Flex align="center" gap="2" className="mb-3">
             <AlertTriangle size={14} className="text-warning flex-shrink-0" />
             <h3 className="text-sm font-medium text-warning">Agents with repeated rejections (last 7d)</h3>
-          </div>
+          </Flex>
           <div className="flex flex-wrap gap-2">
             {insights.agentsNeedingSupport.map(agent => (
-              <div key={agent.agentId} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-mission-control-surface border border-mission-control-border text-xs">
+              <Flex key={agent.agentId} align="center" gap="2" className="px-3 py-1.5 rounded-full bg-mission-control-surface border border-mission-control-border text-xs">
                 <AgentAvatar agentId={agent.agentId} size="xs" />
                 <span className="text-mission-control-text">{agent.name}</span>
                 <span className="text-error font-medium">{agent.rejectionCount}x rejected</span>
-              </div>
+              </Flex>
             ))}
           </div>
         </div>
