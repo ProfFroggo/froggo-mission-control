@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Star, Mail, Paperclip, X, Save, Reply, MessageCircle, Gamepad2, Send as SendPlane, AlertTriangle } from 'lucide-react';
 import { showToast } from './Toast';
-import { Button, IconButton, TextField, Box } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField, Box } from '@radix-ui/themes';
 
 export interface FilterCriteria {
   search?: string;
@@ -220,7 +220,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
       {/* Main Filter Bar */}
       <div className="p-3 space-y-3">
         {/* Search Row */}
-        <div className="flex gap-2">
+        <Flex gap="2">
           {/* Semantic Search */}
           <div className="flex-1 relative">
             <TextField.Root
@@ -304,15 +304,15 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
               Clear
             </Button>
           )}
-        </div>
+        </Flex>
 
         {/* Results Count */}
-        <div className="flex items-center justify-between text-xs text-mission-control-text-dim">
+        <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim">
           <span>
             Showing {filteredCount} of {totalMessages} messages
             {hasActiveFilters && <span className="text-mission-control-accent ml-1">(filtered)</span>}
           </span>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <span>Logic:</span>
             <Button
               variant={logicMode === 'AND' ? 'solid' : 'soft'}
@@ -323,8 +323,8 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
             >
               {logicMode}
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       </div>
 
       {/* Advanced Filters */}
@@ -397,7 +397,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
           </div>
 
           {/* Save Filter */}
-          <div className="flex gap-2 items-center pt-2 border-t border-mission-control-border">
+          <Flex gap="2" align="center" className="pt-2 border-t border-mission-control-border">
             <TextField.Root
               value={filterName}
               onChange={(e) => setFilterName(e.target.value)}
@@ -413,7 +413,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
             >
               <Save size={14} /> Save Filter
             </Button>
-          </div>
+          </Flex>
         </div>
       )}
 

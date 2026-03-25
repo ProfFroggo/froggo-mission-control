@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { BarChart2, Eye, Heart, Repeat2, RefreshCw } from 'lucide-react';
-import { IconButton, Select, Spinner } from '@radix-ui/themes';
+import { Flex, IconButton, Select, Spinner } from '@radix-ui/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -257,17 +257,19 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
       }}
     >
       {/* Header */}
-      <div
-        className="flex items-center justify-between p-4 border-b"
+      <Flex
+        align="center"
+        justify="between"
+        className="p-4 border-b"
         style={{ borderColor: 'var(--mission-control-border)' }}
       >
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <BarChart2 size={16} style={{ color: 'var(--color-info)' }} />
           <span className="text-sm font-semibold" style={{ color: 'var(--mission-control-text)' }}>
             Engagement Over Time
           </span>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           {loading && <Spinner size="1" />}
           <Select.Root value={String(selectedDays)} onValueChange={(v) => setSelectedDays(Number(v))}>
             <Select.Trigger />
@@ -288,8 +290,8 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
           >
             <RefreshCw size={12} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Summary stats bar */}
       <div
@@ -329,7 +331,7 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
       </div>
 
       {/* Toggle buttons */}
-      <div className="flex items-center gap-2 px-4 pt-3">
+      <Flex align="center" gap="2" className="px-4 pt-3">
         {METRICS.map(({ key, label, color, Icon }) => (
           <button
             type="button"
@@ -351,7 +353,7 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
             {label}
           </button>
         ))}
-      </div>
+      </Flex>
 
       {/* Chart */}
       <div className="p-4">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Video, RefreshCw, ChevronRight } from 'lucide-react';
-import { Button, IconButton, Heading, Spinner } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Heading, Spinner } from '@radix-ui/themes';
 
 interface TodayCalendarWidgetProps {
   onNavigate?: (view: 'schedule') => void;
@@ -86,23 +86,23 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
   return (
     <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="2">
           <Calendar size={16} className="text-info" />
           <div>
             <Heading size="3" weight="medium">Today&apos;s Schedule</Heading>
             <p className="text-xs text-mission-control-text-dim">{dateStr}</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <IconButton variant="ghost" size="2" onClick={loadTodayEvents} disabled={loading} title="Refresh">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </IconButton>
           <Button variant="ghost" size="1" onClick={() => onNavigate?.('schedule')} className="flex items-center gap-1 text-sm text-mission-control-accent hover:underline">
             View All <ChevronRight size={14} />
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Events List */}
       <div className="max-h-64 overflow-y-auto">
@@ -139,7 +139,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                     happening ? 'bg-info-subtle border-l-2 border-l-info' : ''
                   }`}
                 >
-                  <div className="flex items-start gap-2">
+                  <Flex align="start" gap="2">
                     <div className={`flex-shrink-0 w-14 text-right ${
                       happening ? 'text-info font-semibold' :
                       upcoming ? 'text-warning font-medium' :
@@ -149,7 +149,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
+                      <Flex align="start" justify="between" gap="2">
                         <div className="flex-1 min-w-0">
                           <p className={`font-medium truncate ${
                             happening ? 'text-info' : 'text-mission-control-text'
@@ -168,10 +168,10 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                           </p>
                           
                           {event.location && (
-                            <div className="flex items-center gap-1 mt-1 text-xs text-mission-control-text-dim">
+                            <Flex align="center" gap="1" className="mt-1 text-xs text-mission-control-text-dim">
                               <MapPin size={10} />
                               <span className="truncate">{event.location}</span>
-                            </div>
+                            </Flex>
                           )}
                         </div>
                         
@@ -187,9 +187,9 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                             <Video size={14} />
                           </a>
                         )}
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               );
             })}

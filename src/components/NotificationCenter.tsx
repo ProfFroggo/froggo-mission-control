@@ -4,7 +4,7 @@ import {
   X, CheckCheck, Trash2, Bell, CheckSquare, ShieldCheck, ShieldAlert, AlertCircle, Info, AtSign,
 } from 'lucide-react';
 import { useEventBus } from '../lib/useEventBus';
-import { Badge, IconButton } from '@radix-ui/themes';
+import { Badge, Flex, IconButton } from '@radix-ui/themes';
 
 interface Notification {
   id: string;
@@ -146,7 +146,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Bell size={16} className="text-mission-control-text-dim" aria-hidden="true" />
             <span className="text-sm font-semibold text-mission-control-text">Notifications</span>
             {unreadCount > 0 && (
@@ -154,8 +154,8 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
                 {unreadCount > 999 ? `${unreadCount}+` : unreadCount}
               </Badge>
             )}
-          </div>
-          <div className="flex items-center gap-1">
+          </Flex>
+          <Flex align="center" gap="1">
             {unreadCount > 0 && (
               <IconButton
                 type="button"
@@ -181,7 +181,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
             >
               <X size={16} aria-hidden="true" />
             </IconButton>
-          </div>
+          </Flex>
         </div>
 
         {/* Tabs */}

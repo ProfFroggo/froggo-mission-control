@@ -324,7 +324,7 @@ Provide a brief, actionable summary.`;
       </Flex>
 
       {/* Tab Navigation */}
-      <div className="flex border-b border-mission-control-border bg-mission-control-bg">
+      <Flex className="border-b border-mission-control-border bg-mission-control-bg">
         <Button
           onClick={() => setActiveTab('suggestions')}
           variant="ghost"
@@ -364,7 +364,7 @@ Provide a brief, actionable summary.`;
           <MessageSquare size={16} />
           Summary
         </Button>
-      </div>
+      </Flex>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

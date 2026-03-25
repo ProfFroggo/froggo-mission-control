@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import { getAgentTheme } from '../utils/agentThemes';
 
 interface PerformanceData {
@@ -123,7 +123,7 @@ export default function PerformanceTable() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <Flex align="center" justify="between" className="mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Activity className="text-mission-control-accent" size={20} />
@@ -147,7 +147,7 @@ export default function PerformanceTable() {
             </Button>
           ))}
         </div>
-      </div>
+      </Flex>
 
       {/* Performance Table */}
       <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 overflow-auto">
@@ -201,18 +201,18 @@ export default function PerformanceTable() {
                     className="border-b border-mission-control-border/50 hover:bg-mission-control-border/30 cursor-pointer transition-colors"
                   >
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <div className={`w-3 h-3 rounded-full ${statusColor}`} />
-                      </div>
+                      </Flex>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <div
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: theme.color }}
                         />
                         <span className="font-medium capitalize">{agent.agent_id.replace(/-/g, ' ')}</span>
-                      </div>
+                      </Flex>
                     </td>
                     <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
                       <span className={agent.success_rate >= 0.8 ? 'text-success' : agent.success_rate >= 0.6 ? 'text-warning' : 'text-error'}>

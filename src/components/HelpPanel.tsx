@@ -6,7 +6,7 @@ import {
   MessageCircle, Lightbulb, ChevronRight,
   Keyboard, Star, Zap
 } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
 import { 
   helpArticles, 
   faqs, 
@@ -121,7 +121,7 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
       <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 bg-mission-control-surface border-b border-mission-control-border flex-shrink-0">
-          <div className="flex items-center gap-3">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
               <HelpCircle size={24} className="text-mission-control-accent" />
             </div>
@@ -131,7 +131,7 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
                 {currentPanel ? `Context: ${currentPanel.charAt(0).toUpperCase() + currentPanel.slice(1)}` : 'Articles, FAQs, and keyboard shortcuts'}
               </p>
             </div>
-          </div>
+          </Flex>
           <IconButton
             onClick={onClose}
             aria-label="Close help"
@@ -356,12 +356,12 @@ function BrowseView({
       {/* Context-Aware Help */}
       {contextArticles.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-3">
+          <Flex align="center" gap="2" className="mb-3">
             <Star size={16} className="text-warning" />
             <h3 className="text-sm font-medium text-mission-control-text-dim uppercase tracking-wide">
               Relevant to Current Panel
             </h3>
-          </div>
+          </Flex>
           <div className="space-y-2">
             {contextArticles.map(article => (
               <ArticleCard key={article.id} article={article} onClick={() => onSelectArticle(article)} />
@@ -429,7 +429,7 @@ function ArticleView({ article, onBack }: { article: HelpArticle; onBack: () => 
 
       <div className="space-y-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <Flex align="center" gap="2" className="mb-2">
             <span className="text-xs px-2 py-1 bg-mission-control-accent/20 text-mission-control-accent rounded-md">
               {article.category}
             </span>
@@ -438,7 +438,7 @@ function ArticleView({ article, onBack }: { article: HelpArticle; onBack: () => 
                 Updated {article.lastUpdated}
               </span>
             )}
-          </div>
+          </Flex>
           <h2 className="text-2xl font-bold mb-2">{article.title}</h2>
         </div>
 

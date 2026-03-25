@@ -77,11 +77,11 @@ export default function XPlanListView() {
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="2">
           <FileText className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Content Plans</h3>
-        </div>
+        </Flex>
         <Button
           onClick={() => setShowComposer(true)}
           variant="solid"
@@ -91,7 +91,7 @@ export default function XPlanListView() {
           <Plus className="w-4 h-4" />
           New Plan
         </Button>
-      </div>
+      </Flex>
 
       {/* List */}
       {plans.length === 0 ? (
@@ -115,9 +115,9 @@ export default function XPlanListView() {
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {plans.map((plan) => (
             <div key={plan.id} className="bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-4">
-              <div className="flex items-start justify-between mb-2">
+              <Flex align="start" justify="between" className="mb-2">
                 <h4 className="text-sm font-bold text-mission-control-text">{plan.title}</h4>
-              </div>
+              </Flex>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <Badge color="blue" variant="soft" radius="full">{plan.content_type}</Badge>
                 <Badge color="violet" variant="soft" radius="full">
