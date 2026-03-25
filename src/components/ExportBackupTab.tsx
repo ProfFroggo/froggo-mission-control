@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { Download, Upload, Database, Clock, HardDrive, CheckCircle, AlertTriangle, Trash2, RefreshCw } from 'lucide-react';
-import { Button, Switch, Checkbox, TextField } from '@radix-ui/themes';
+import { Button, Switch, Checkbox, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { taskApi, agentApi, chatApi, settingsApi } from '../lib/api';
@@ -222,37 +222,37 @@ export default function ExportBackupTab() {
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
-            <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
+            <Flex align="center" gap="2" className="text-mission-control-text-dim mb-2">
               <Database size={16} />
               <span className="text-sm">Database Size</span>
-            </div>
+            </Flex>
             <div className="text-2xl font-semibold">{formatBytes(stats.databaseSize)}</div>
           </div>
 
           <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
-            <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
+            <Flex align="center" gap="2" className="text-mission-control-text-dim mb-2">
               <HardDrive size={16} />
               <span className="text-sm">Backups</span>
-            </div>
+            </Flex>
             <div className="text-2xl font-semibold">{stats.backupCount}</div>
             <div className="text-xs text-mission-control-text-dim">{formatBytes(stats.totalBackupSize)} total</div>
           </div>
 
           <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
-            <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
+            <Flex align="center" gap="2" className="text-mission-control-text-dim mb-2">
               <Clock size={16} />
               <span className="text-sm">Last Backup</span>
-            </div>
+            </Flex>
             <div className="text-sm font-semibold">
               {stats.lastBackupDate ? formatDate(stats.lastBackupDate) : 'Never'}
             </div>
           </div>
 
           <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
-            <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
+            <Flex align="center" gap="2" className="text-mission-control-text-dim mb-2">
               <Download size={16} />
               <span className="text-sm">Exports</span>
-            </div>
+            </Flex>
             <div className="text-2xl font-semibold">{stats.exportCount}</div>
           </div>
         </div>
@@ -269,7 +269,7 @@ export default function ExportBackupTab() {
           {/* Format Selector */}
           <div>
             <span className="block text-sm text-mission-control-text-dim mb-2">Export Format</span>
-            <div className="flex gap-2" role="radiogroup" aria-label="Export format">
+            <Flex gap="2" role="radiogroup" aria-label="Export format">
               <Button
                 onClick={() => setExportFormat('json')}
                 variant={exportFormat === 'json' ? 'soft' : 'outline'}
@@ -286,7 +286,7 @@ export default function ExportBackupTab() {
               >
                 CSV
               </Button>
-            </div>
+            </Flex>
           </div>
 
           {/* Export Buttons */}
@@ -340,7 +340,7 @@ export default function ExportBackupTab() {
 
         <div className="space-y-4">
           {/* Backup Options */}
-          <div className="flex items-center gap-4">
+          <Flex align="center" gap="4">
             <label className="flex items-center gap-2 cursor-pointer">
               <Checkbox
                 checked={includeAttachments}
@@ -349,7 +349,7 @@ export default function ExportBackupTab() {
               />
               <span className="text-sm">Include attachments (larger file size)</span>
             </label>
-          </div>
+          </Flex>
 
           {/* Create Backup Button */}
           <Button
@@ -365,7 +365,7 @@ export default function ExportBackupTab() {
 
           {/* Auto-Backup Settings */}
           <div className="pt-4 border-t border-mission-control-border">
-            <div className="flex items-center justify-between mb-4">
+            <Flex align="center" justify="between" className="mb-4">
               <div>
                 <div className="font-medium">Scheduled Auto-Backups</div>
                 <div className="text-sm text-mission-control-text-dim">Automatically backup database daily</div>
@@ -375,7 +375,7 @@ export default function ExportBackupTab() {
                 checked={autoBackupEnabled}
                 onCheckedChange={setAutoBackupEnabled}
               />
-            </div>
+            </Flex>
 
             {autoBackupEnabled && (
               <div className="bg-info-subtle border border-info-border rounded-lg p-4">
@@ -389,7 +389,7 @@ export default function ExportBackupTab() {
           {/* Cleanup Settings */}
           <div className="pt-4 border-t border-mission-control-border">
             <label htmlFor="backup-count" className="block text-sm font-medium mb-2">Retention Policy</label>
-            <div className="flex items-center gap-3">
+            <Flex align="center" gap="3">
               <span className="text-sm text-mission-control-text-dim">Keep last</span>
               <TextField.Root
                 id="backup-count"
@@ -413,7 +413,7 @@ export default function ExportBackupTab() {
                 <Trash2 size={14} />
                 Cleanup Now
               </Button>
-            </div>
+            </Flex>
           </div>
 
           <div className="text-xs text-mission-control-text-dim">
@@ -424,7 +424,7 @@ export default function ExportBackupTab() {
 
       {/* Available Backups */}
       <section className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6">
-        <div className="flex items-center justify-between mb-4">
+        <Flex align="center" justify="between" className="mb-4">
           <h2 className="text-lg font-medium flex items-center gap-2">
             <Database size={20} />
             Available Backups
@@ -438,7 +438,7 @@ export default function ExportBackupTab() {
             <RefreshCw size={14} />
             Refresh
           </Button>
-        </div>
+        </Flex>
 
         {backups.length === 0 ? (
           <div className="text-center py-8 text-mission-control-text-dim">
@@ -449,13 +449,15 @@ export default function ExportBackupTab() {
         ) : (
           <div className="space-y-2">
             {backups.map((backup, idx) => (
-              <div
+              <Flex
                 key={backup.filename}
-                className="flex items-center justify-between p-4 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors"
+                align="center"
+                justify="between"
+                className="p-4 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors"
               >
                 <div className="flex-1">
                   <div className="font-medium">{backup.filename}</div>
-                  <div className="flex items-center gap-4 mt-1 text-sm text-mission-control-text-dim">
+                  <Flex align="center" gap="4" className="mt-1 text-sm text-mission-control-text-dim">
                     <span>{formatDate(backup.created)}</span>
                     <span>{formatBytes(backup.size)}</span>
                     {backup.metadata?.includesAttachments && (
@@ -463,9 +465,9 @@ export default function ExportBackupTab() {
                         + Attachments
                       </span>
                     )}
-                  </div>
+                  </Flex>
                 </div>
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   {idx === 0 && (
                     <span className="text-xs px-2 py-1 bg-success-subtle text-success rounded">
                       Latest
@@ -481,8 +483,8 @@ export default function ExportBackupTab() {
                     <Upload size={14} />
                     Restore
                   </Button>
-                </div>
-              </div>
+                </Flex>
+              </Flex>
             ))}
           </div>
         )}
@@ -496,24 +498,24 @@ export default function ExportBackupTab() {
         </h2>
 
         <div className="space-y-3 text-sm">
-          <div className="flex items-start gap-2">
+          <Flex align="start" gap="2">
             <CheckCircle size={16} className="text-success flex-shrink-0 mt-0.5" />
             <div>
               <strong>Safe backup:</strong> A backup of your current database is automatically created before any restore operation
             </div>
-          </div>
-          <div className="flex items-start gap-2">
+          </Flex>
+          <Flex align="start" gap="2">
             <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
             <div>
               <strong>Test restores:</strong> Always verify backups can be restored in a test environment first
             </div>
-          </div>
-          <div className="flex items-start gap-2">
+          </Flex>
+          <Flex align="start" gap="2">
             <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
             <div>
               <strong>Data loss risk:</strong> Restoring a backup will replace ALL current data with the backup&apos;s contents
             </div>
-          </div>
+          </Flex>
         </div>
       </section>
 
