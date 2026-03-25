@@ -173,7 +173,7 @@ export default function LibraryTemplatesTab() {
     <Flex direction="column" height="100%">
       {/* Toolbar */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
+        <Flex align="center" justify="between" className="mb-4">
           <p className="text-sm text-mission-control-text-dim">
             Reusable content templates
           </p>
@@ -185,10 +185,10 @@ export default function LibraryTemplatesTab() {
             <Plus size={16} />
             New Template
           </Button>
-        </div>
+        </Flex>
 
         {/* Search and filters */}
-        <div className="flex gap-3">
+        <Flex gap="3">
           <div className="flex-1">
             <TextField.Root
               value={search}
@@ -211,7 +211,7 @@ export default function LibraryTemplatesTab() {
               <Select.Item value="generic">Generic</Select.Item>
             </Select.Content>
           </Select.Root>
-        </div>
+        </Flex>
       </div>
 
       {/* Templates List */}
@@ -235,8 +235,8 @@ export default function LibraryTemplatesTab() {
                   }`}
                 >
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                  <Flex align="start" justify="between" className="mb-2">
+                    <Flex align="center" gap="2">
                       <Icon size={16} className={config.color} />
                       {isEditing ? (
                         <TextField.Root
@@ -248,7 +248,7 @@ export default function LibraryTemplatesTab() {
                       ) : (
                         <span className="font-medium">{template.name}</span>
                       )}
-                    </div>
+                    </Flex>
                     <IconButton
                       onClick={() => handleStar(template.id)}
                       size="1"
@@ -261,7 +261,7 @@ export default function LibraryTemplatesTab() {
                         <StarOff size={14} className="text-mission-control-text-dim" />
                       )}
                     </IconButton>
-                  </div>
+                  </Flex>
 
                   {/* Content */}
                   {isEditing ? (
@@ -281,7 +281,7 @@ export default function LibraryTemplatesTab() {
 
                   {/* Tags */}
                   {template.tags.length > 0 && !isEditing && (
-                    <div className="flex gap-1 mb-3">
+                    <Flex gap="1" className="mb-3">
                       {template.tags.map(tag => (
                         <span
                           key={tag}
@@ -290,15 +290,15 @@ export default function LibraryTemplatesTab() {
                           {tag}
                         </span>
                       ))}
-                    </div>
+                    </Flex>
                   )}
 
                   {/* Actions */}
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <span className="text-xs text-mission-control-text-dim">
                       Used {template.usageCount}x
                     </span>
-                    <div className="flex gap-1">
+                    <Flex gap="1">
                       {isEditing ? (
                         <>
                           <Button
@@ -349,8 +349,8 @@ export default function LibraryTemplatesTab() {
                           </IconButton>
                         </>
                       )}
-                    </div>
-                  </div>
+                    </Flex>
+                  </Flex>
                 </div>
               );
             })}
@@ -400,7 +400,7 @@ export default function LibraryTemplatesTab() {
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
+            <Flex justify="end" gap="2" className="mt-6">
               <Button
                 onClick={() => setShowCreate(false)}
                 size="2"
@@ -417,7 +417,7 @@ export default function LibraryTemplatesTab() {
               >
                 Create
               </Button>
-            </div>
+            </Flex>
           </div>
         </div>
       )}

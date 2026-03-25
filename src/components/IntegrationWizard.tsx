@@ -15,7 +15,7 @@
 
 import { useEffect, useState } from 'react';
 import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Plug } from 'lucide-react';
-import { TextField } from '@radix-ui/themes';
+import { Flex, TextField } from '@radix-ui/themes';
 import BaseModal, { BaseModalBody, BaseModalFooter } from './BaseModal';
 import { LoadingButton, Spinner } from './LoadingStates';
 
@@ -112,7 +112,7 @@ function IntroStep({
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3">
+      <Flex align="center" gap="3">
         <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
           <Plug size={20} className="text-mission-control-accent" />
         </div>
@@ -126,7 +126,7 @@ function IntroStep({
               : `We'll collect ${credentials.length} credential${credentials.length !== 1 ? 's' : ''} and verify the connection.`}
           </p>
         </div>
-      </div>
+      </Flex>
 
       {credentials.length > 0 && (
         <div className="space-y-2">
@@ -227,15 +227,18 @@ function ReviewStep({
       {credentials.length > 0 && (
         <div className="space-y-2">
           {credentials.map((cred) => (
-            <div
+            <Flex
               key={cred.id}
-              className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border"
+              align="center"
+              justify="between"
+              gap="3"
+              className="px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border"
             >
               <span className="text-sm text-mission-control-text">{cred.label}</span>
               <span className="text-xs font-mono text-mission-control-text-dim">
                 {values[cred.id] ? maskValue(values[cred.id]) : <em className="text-mission-control-text-dim not-italic">not set</em>}
               </span>
-            </div>
+            </Flex>
           ))}
         </div>
       )}
@@ -253,25 +256,25 @@ function ReviewStep({
 
         {/* Status area */}
         {testing && (
-          <div className="flex items-center gap-2 text-mission-control-text-dim text-sm">
+          <Flex align="center" gap="2" className="text-mission-control-text-dim text-sm">
             <Spinner size={14} />
             <span>Testing connection...</span>
-          </div>
+          </Flex>
         )}
 
         {!testing && testResult && (
           <div className="space-y-2">
             {testResult.success ? (
-              <div className="flex items-center gap-2 text-success text-sm">
+              <Flex align="center" gap="2" className="text-success text-sm">
                 <CheckCircle size={16} />
                 <span>Connection successful!</span>
-              </div>
+              </Flex>
             ) : (
               <div className="space-y-2">
-                <div className="flex items-start gap-2 text-error text-sm">
+                <Flex align="start" gap="2" className="text-error text-sm">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                   <span>{testResult.error || 'Connection failed'}</span>
-                </div>
+                </Flex>
                 {testResult.diagnosis && (
                   <div className="px-3 py-2.5 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text-dim">
                     <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
@@ -433,7 +436,7 @@ export default function IntegrationWizard({
       ariaLabel={`Integration wizard for ${moduleName}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-mission-control-border">
+      <Flex align="center" justify="between" className="px-6 pt-6 pb-4 border-b border-mission-control-border">
         <div>
           <h2 className="text-lg font-semibold text-mission-control-text">{stepTitle()}</h2>
           <div className="mt-2">
@@ -450,7 +453,7 @@ export default function IntegrationWizard({
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
-      </div>
+      </Flex>
 
       {/* Body */}
       <BaseModalBody maxHeight="60vh">
