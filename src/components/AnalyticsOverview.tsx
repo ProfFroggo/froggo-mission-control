@@ -736,8 +736,10 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
               <Flex align="center" justify="between" mb="3">
                 <Icon size={20} className={stat.color} />
                 {stat.trend && (
-                  <div
-                    className={`flex items-center gap-1 text-xs ${
+                  <Flex
+                    align="center"
+                    gap="1"
+                    className={`text-xs ${
                       stat.trend === 'up'
                         ? 'text-success'
                         : stat.trend === 'down'
@@ -749,7 +751,7 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
                     {stat.trend === 'down' && <ArrowDown size={14} />}
                     {stat.trend === 'neutral' && <Minus size={14} />}
                     {stat.change !== undefined && `${stat.change}%`}
-                  </div>
+                  </Flex>
                 )}
               </Flex>
               <div className="text-2xl font-bold mb-1 tabular-nums">{stat.value}</div>

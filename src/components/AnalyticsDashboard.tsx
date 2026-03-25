@@ -1,6 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useRef, useEffect, lazy } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
 import { AsyncBoundary } from './AsyncBoundary';
 import {
   BarChart2,
@@ -128,13 +128,13 @@ function ChartSkeleton() {
 /** Section header inside a combined tab */
 function SectionHeader({ icon: Icon, title, description }: { icon: LucideIcon; title: string; description?: string }) {
   return (
-    <div className="flex items-center gap-2 mb-4">
+    <Flex align="center" gap="2" className="mb-4">
       <Icon size={15} className="text-mission-control-accent flex-shrink-0" />
       <div>
         <h3 className="text-sm font-semibold text-mission-control-text">{title}</h3>
         {description && <p className="text-xs text-mission-control-text-dim">{description}</p>}
       </div>
-    </div>
+    </Flex>
   );
 }
 
@@ -209,9 +209,9 @@ export default function AnalyticsDashboard() {
     <div className="h-full flex flex-col">
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
-        <div className="flex items-center justify-between px-6 py-4">
+        <Flex align="center" justify="between" className="px-6 py-4">
           {/* Title */}
-          <div className="flex items-center gap-3">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg">
               <BarChart2 size={22} className="text-mission-control-accent" />
             </div>
@@ -219,10 +219,10 @@ export default function AnalyticsDashboard() {
               <h1 className="text-xl font-semibold tracking-tight">Analytics</h1>
               <p className="text-xs text-mission-control-text-dim">Productivity insights and performance metrics</p>
             </div>
-          </div>
+          </Flex>
 
           {/* Controls */}
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             {/* Date presets — segment control */}
             <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
               {DATE_PRESETS.map((preset) => (
@@ -285,7 +285,7 @@ export default function AnalyticsDashboard() {
                         {fmt === 'csv' ? 'CSV (Excel)' : 'JSON'}
                       </div>
                       {(['tasks', 'agents', 'approvals', 'token-usage'] as ExportReportType[]).map((t) => (
-                        <div key={`${fmt}-${t}`} className="flex items-center justify-between hover:bg-mission-control-border/30 transition-colors">
+                        <Flex key={`${fmt}-${t}`} align="center" justify="between" className="hover:bg-mission-control-border/30 transition-colors">
                           <button
                             type="button"
                             onClick={() => handleExport(t, fmt)}
@@ -303,15 +303,15 @@ export default function AnalyticsDashboard() {
                               ? <Check size={12} className="text-success" />
                               : <Copy size={12} />}
                           </button>
-                        </div>
+                        </Flex>
                       ))}
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Tab nav */}
         <TabNav
