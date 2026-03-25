@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, Download, Copy, Check } from 'lucide-react';
-import { Button, Spinner } from '@radix-ui/themes';
+import { Button, Flex, Spinner } from '@radix-ui/themes';
 
 interface WeekBucket {
   weekStart: string;
@@ -130,13 +130,13 @@ export default function VelocityChart({ weeks = 8 }: Props) {
   return (
     <div className="space-y-4">
       {/* Header row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between">
+        <Flex align="center" gap="2">
           <TrendingUp size={16} className="text-mission-control-accent" />
           <span className="font-medium">Task Velocity</span>
           <span className="text-xs text-mission-control-text-dim">last {weeks} weeks</span>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <Button
             variant="surface"
             color="gray"
@@ -157,11 +157,11 @@ export default function VelocityChart({ weeks = 8 }: Props) {
             {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Legend */}
-      <div className="flex items-center gap-5 text-xs">
+      <Flex align="center" gap="5" className="text-xs">
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm inline-block" style={{ background: COLORS.created }} />
           Created
@@ -174,7 +174,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
           <span className="w-3 h-3 rounded-sm inline-block" style={{ background: COLORS.inProgress }} />
           In Progress
         </span>
-      </div>
+      </Flex>
 
       {/* SVG chart */}
       <div className="w-full overflow-x-auto">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heading, Spinner } from '@radix-ui/themes';
+import { Flex, Heading, Spinner } from '@radix-ui/themes';
 import { Zap, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 
 interface TokenSummary {
@@ -111,11 +111,11 @@ export default function TokenSummaryWidget() {
   return (
     <div className="p-4 h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-3">
+      <Flex align="center" gap="2" className="mb-3">
         <Zap size={16} className="text-mission-control-accent" />
         <Heading size="2" weight="bold">Token Usage</Heading>
         <span className="text-xs text-mission-control-text-dim ml-auto">Today</span>
-      </div>
+      </Flex>
 
       {/* Main stats */}
       <div className="flex-1 flex flex-col justify-center gap-3">
@@ -141,10 +141,10 @@ export default function TokenSummaryWidget() {
         {summary.topAgent && (
           <div className="flex items-baseline justify-between pt-2 border-t border-mission-control-border">
             <span className="text-xs text-mission-control-text-dim">Top</span>
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <span className="text-xs font-medium text-mission-control-text capitalize">{summary.topAgent}</span>
               <span className="text-xs text-mission-control-text-dim">({formatTokens(summary.topAgentTokens || 0)})</span>
-            </div>
+            </Flex>
           </div>
         )}
       </div>
