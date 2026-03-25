@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, MessageSquare, TrendingUp, Zap, X, ChevronRight, Copy, Check, Loader2, Briefcase, Smile, AlignLeft, FileText, type LucideIcon } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, Flex, IconButton } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { copyToClipboard } from '../utils/clipboard';
@@ -307,21 +307,21 @@ Provide a brief, actionable summary.`;
   return (
     <div className="flex-1 flex flex-col bg-mission-control-surface border-l border-mission-control-border max-w-md">
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border flex items-center justify-between bg-mission-control-bg">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border bg-mission-control-bg">
+        <Flex align="center" gap="2">
           <Sparkles size={20} className="text-mission-control-accent" />
           <h2 className="font-semibold">AI Assistance</h2>
-        </div>
+        </Flex>
         <IconButton
           onClick={onClose}
           variant="ghost"
           size="2"
-         
+
           aria-label="Close panel"
         >
           <X size={16} />
         </IconButton>
-      </div>
+      </Flex>
 
       {/* Tab Navigation */}
       <div className="flex border-b border-mission-control-border bg-mission-control-bg">
@@ -369,9 +369,9 @@ Provide a brief, actionable summary.`;
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <Flex align="center" justify="center" className="py-12">
             <Loader2 size={32} className="animate-spin text-mission-control-accent" />
-          </div>
+          </Flex>
         ) : (
           <>
             {/* Suggestions Tab */}
@@ -389,12 +389,12 @@ Provide a brief, actionable summary.`;
                       key={suggestion.id}
                       className="p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors"
                     >
-                      <div className="flex items-center justify-between mb-2">
+                      <Flex align="center" justify="between" className="mb-2">
                         <span className="text-xs px-2 py-1 bg-mission-control-border rounded flex items-center gap-1">
                           {(() => { const ToneIcon = toneIcons[suggestion.tone]; return ToneIcon ? <ToneIcon size={12} className="text-mission-control-text-dim" /> : null; })()}
                           <span className="capitalize">{suggestion.tone}</span>
                         </span>
-                        <div className="flex gap-1">
+                        <Flex gap="1">
                           <IconButton
                             onClick={() => handleCopySuggestion(suggestion)}
                             variant="ghost"
@@ -417,8 +417,8 @@ Provide a brief, actionable summary.`;
                           >
                             <ChevronRight size={14} />
                           </IconButton>
-                        </div>
-                      </div>
+                        </Flex>
+                      </Flex>
                       <p className="text-sm text-mission-control-text leading-relaxed">
                         {suggestion.text}
                       </p>
@@ -434,14 +434,14 @@ Provide a brief, actionable summary.`;
                 {/* Overall Sentiment */}
                 <div className="p-4 bg-mission-control-bg border border-mission-control-border rounded-lg">
                   <h3 className="text-xs font-medium text-mission-control-text-dim mb-2">Overall Sentiment</h3>
-                  <div className="flex items-center gap-3">
+                  <Flex align="center" gap="3">
                     <span className={`px-3 py-1.5 rounded-lg capitalize font-medium ${sentimentColors[sentiment.overall]}`}>
                       {sentiment.overall}
                     </span>
                     <span className="text-sm text-mission-control-text-dim tabular-nums">
                       {Math.round(sentiment.confidence * 100)}% confidence
                     </span>
-                  </div>
+                  </Flex>
                 </div>
 
                 {/* Urgency */}
