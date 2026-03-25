@@ -255,12 +255,12 @@ export function XHashtagIntelligence() {
     <Flex direction="column" height="100%" className="bg-mission-control-bg overflow-y-auto">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" className="mb-1">
           <Hash size={20} style={{ color: 'var(--color-info)' }} />
           <h2 className="text-lg font-semibold text-mission-control-text">
             Hashtag Intelligence
           </h2>
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text-dim">
           Search hashtags on X to see real engagement metrics and discover opportunities.
         </p>
@@ -272,7 +272,7 @@ export function XHashtagIntelligence() {
           <label className="block text-sm font-medium text-mission-control-text mb-2">
             Search hashtags
           </label>
-          <div className="flex gap-2">
+          <Flex gap="2">
             <div className="flex-1">
               <TextField.Root
                 value={searchInput}
@@ -304,7 +304,7 @@ export function XHashtagIntelligence() {
                 'Search'
               )}
             </Button>
-          </div>
+          </Flex>
           <p className="text-xs text-mission-control-text-dim mt-1">
             Enter one or more hashtags (comma-separated) to search X for recent tweets
           </p>
@@ -312,13 +312,15 @@ export function XHashtagIntelligence() {
 
         {/* Search error */}
         {searchError && (
-          <div
-            className="flex items-center gap-2 p-3 rounded-lg text-sm"
+          <Flex
+            align="center"
+            gap="2"
+            className="p-3 rounded-lg text-sm"
             style={{ background: 'var(--color-error-subtle)', color: 'var(--color-error)' }}
           >
             <AlertCircle size={16} />
             {searchError}
-          </div>
+          </Flex>
         )}
 
         {/* Search results */}
@@ -339,16 +341,16 @@ export function XHashtagIntelligence() {
                     className="border border-mission-control-border rounded-lg bg-mission-control-surface overflow-hidden"
                   >
                     {/* Result header */}
-                    <div className="flex items-center justify-between p-3 border-b border-mission-control-border">
-                      <div className="flex items-center gap-2">
+                    <Flex align="center" justify="between" className="p-3 border-b border-mission-control-border">
+                      <Flex align="center" gap="2">
                         <span className="text-sm font-medium text-mission-control-text">
                           {result.tag}
                         </span>
                         <span className="text-xs text-mission-control-text-dim">
                           {result.tweetCount} tweets found
                         </span>
-                      </div>
-                      <div className="flex items-center gap-2">
+                      </Flex>
+                      <Flex align="center" gap="2">
                         <IconButton
                           onClick={() => handleInsert(result.tag)}
                           aria-label="Insert into composer"
@@ -375,8 +377,8 @@ export function XHashtagIntelligence() {
                             fill={savedTags.includes(result.tag) ? 'currentColor' : 'none'}
                           />
                         </IconButton>
-                      </div>
-                    </div>
+                      </Flex>
+                    </Flex>
 
                     {/* Metrics */}
                     <div className="grid grid-cols-4 divide-x divide-mission-control-border text-center py-2">
@@ -432,13 +434,13 @@ export function XHashtagIntelligence() {
         {/* Search history */}
         {searchHistory.length > 0 && (
           <div>
-            <div className="flex items-center gap-2 mb-3">
+            <Flex align="center" gap="2" className="mb-3">
               <TrendingUp size={16} className="text-mission-control-text-dim" />
               <span className="text-sm font-medium text-mission-control-text">Search History</span>
               <span className="text-xs text-mission-control-text-dim">
                 ({searchHistory.length})
               </span>
-            </div>
+            </Flex>
             <div className="border border-mission-control-border rounded-lg overflow-hidden">
               <div className="grid grid-cols-4 gap-2 text-xs text-mission-control-text-dim px-3 py-2 border-b border-mission-control-border bg-mission-control-surface">
                 <span>Hashtag</span>
@@ -473,7 +475,7 @@ export function XHashtagIntelligence() {
 
         {/* Saved hashtags */}
         <div>
-          <div className="flex items-center gap-2 mb-3">
+          <Flex align="center" gap="2" className="mb-3">
             <Bookmark size={16} className="text-mission-control-text-dim" />
             <span className="text-sm font-medium text-mission-control-text">Saved Hashtags</span>
             {savedTags.length > 0 && (
@@ -484,7 +486,7 @@ export function XHashtagIntelligence() {
                 {savedTags.length}
               </span>
             )}
-          </div>
+          </Flex>
           {savedTags.length === 0 ? (
             <div className="text-xs text-mission-control-text-dim py-4 text-center border border-dashed border-mission-control-border rounded-lg">
               Save hashtags from search results using the bookmark icon
@@ -492,9 +494,11 @@ export function XHashtagIntelligence() {
           ) : (
             <div className="flex flex-wrap gap-2">
               {savedTags.map(tag => (
-                <div
+                <Flex
                   key={tag}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border border-mission-control-border group"
+                  align="center"
+                  gap="2"
+                  className="px-2.5 py-1 rounded-full text-xs border border-mission-control-border group"
                   style={{
                     background: 'var(--color-info-subtle)',
                     color: 'var(--color-info)',
@@ -522,7 +526,7 @@ export function XHashtagIntelligence() {
                   >
                     <X size={10} />
                   </IconButton>
-                </div>
+                </Flex>
               ))}
             </div>
           )}
@@ -530,11 +534,11 @@ export function XHashtagIntelligence() {
 
         {/* Hashtag sets */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+          <Flex align="center" justify="between" className="mb-3">
+            <Flex align="center" gap="2">
               <Layers size={16} className="text-mission-control-text-dim" />
               <span className="text-sm font-medium text-mission-control-text">Hashtag Sets</span>
-            </div>
+            </Flex>
             <Button
               onClick={() => setShowNewSetForm(v => !v)}
               variant="outline"
@@ -544,7 +548,7 @@ export function XHashtagIntelligence() {
               <Plus size={12} />
               New set
             </Button>
-          </div>
+          </Flex>
 
           {showNewSetForm && (
             <div className="p-3 mb-3 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-2">
@@ -560,7 +564,7 @@ export function XHashtagIntelligence() {
                 placeholder="#tag1, #tag2, tag3..."
                 size="2"
               />
-              <div className="flex gap-2">
+              <Flex gap="2">
                 <Button
                   onClick={handleCreateSet}
                   variant="solid"
@@ -578,7 +582,7 @@ export function XHashtagIntelligence() {
                 >
                   Cancel
                 </Button>
-              </div>
+              </Flex>
             </div>
           )}
 
@@ -593,9 +597,9 @@ export function XHashtagIntelligence() {
                   key={set.id}
                   className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface"
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <Flex align="center" justify="between" className="mb-2">
                     <span className="text-sm font-medium text-mission-control-text">{set.name}</span>
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       <Button
                         onClick={() => handleInsertSet(set.tags)}
                         variant="outline"
@@ -614,8 +618,8 @@ export function XHashtagIntelligence() {
                       >
                         <X size={14} />
                       </IconButton>
-                    </div>
-                  </div>
+                    </Flex>
+                  </Flex>
                   <div className="flex flex-wrap gap-1.5">
                     {set.tags.map(tag => (
                       <span
