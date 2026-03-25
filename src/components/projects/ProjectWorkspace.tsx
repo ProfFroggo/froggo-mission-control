@@ -1160,7 +1160,7 @@ function FilesTab({ project }: { project: Project }) {
             </label>
           </div>
         )}
-      </div>
+      </Flex>
 
       {activeSection === 'files' && (
         <FileArtifactDashboard files={files} loading={loading} projectId={project.id} onRefresh={load} />
@@ -1168,7 +1168,7 @@ function FilesTab({ project }: { project: Project }) {
 
       {activeSection === 'memory' && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex gap-2 px-4 py-3 border-b border-mission-control-border">
+          <Flex gap="2" px="4" py="3" className="border-b border-mission-control-border">
             <TextField.Root
               type="text"
               placeholder="Search project memory..."
@@ -1186,7 +1186,7 @@ function FilesTab({ project }: { project: Project }) {
             >
               {memoryLoading ? 'Searching...' : 'Search'}
             </Button>
-          </div>
+          </Flex>
           <div className="flex-1 overflow-y-auto">
             {memoryUnavailable ? (
               <div className="flex flex-col items-center justify-center py-12 text-center px-6">
@@ -1301,7 +1301,7 @@ function ProjectSettings({
           style={{ resize: 'none' }}
         />
       </div>
-      <div className="flex gap-2">
+      <Flex gap="2">
         <Button
           onClick={handleSave}
           disabled={saving}
@@ -1318,7 +1318,7 @@ function ProjectSettings({
         >
           Cancel
         </Button>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -1452,8 +1452,8 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
       {/* Workspace Header */}
       <div className="bg-mission-control-surface border-b border-mission-control-border">
         {/* Breadcrumb + members + actions */}
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <div className="flex items-center gap-2 min-w-0">
+        <Flex align="center" justify="between" px="4" py="2" className="">
+          <Flex align="center" gap="2" className="min-w-0">
             <Button
               onClick={onBack}
               size="1"
@@ -1468,10 +1468,10 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
               {project.name}
             </span>
             <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>{sc.label}</span>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          </Flex>
+          <Flex align="center" gap="2" className="flex-shrink-0">
             {/* Member avatars */}
-            <div className="flex items-center -space-x-1.5">
+            <Flex align="center" className="-space-x-1.5">
               {members.slice(0, 5).map(m => (
                 <AgentAvatar
                   key={m.agentId}
@@ -1480,7 +1480,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                   className="ring-1 ring-mission-control-surface"
                 />
               ))}
-            </div>
+            </Flex>
             <Button
               onClick={() => setShowMemberPanel(v => !v)}
               size="1"
@@ -1517,8 +1517,8 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                 </>
               )}
             </div>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Member panel dropdown */}
         {showMemberPanel && (
@@ -1584,10 +1584,10 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === 'overview' && (
-          <div className="flex h-full">
+          <Flex className="h-full">
             <OverviewTab project={project} members={members} onDispatch={() => setShowDispatch(true)} />
             <OverviewSidebar project={project} />
-          </div>
+          </Flex>
         )}
         {activeTab === 'chat'        && <ChatTab project={project} />}
         {activeTab === 'tasks'       && <KanbanWithAdvance project={project} onDispatch={() => setShowDispatch(true)} />}
