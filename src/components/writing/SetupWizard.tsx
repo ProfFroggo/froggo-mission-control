@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Wand2, X, ArrowRight, BookOpen, BookText, Type, Loader2, CheckCircle, Sparkles } from 'lucide-react';
-import { Button, TextField, TextArea } from '@radix-ui/themes';
+import { Button, TextField, TextArea, Flex } from '@radix-ui/themes';
 import { useWizardStore } from '../../store/wizardStore';
 import { getWizardAgent } from '../../lib/wizardPrompts';
 import WizardChat from './WizardChat';
@@ -57,7 +57,7 @@ export default function SetupWizard() {
       <div className="h-full overflow-y-auto bg-mission-control-bg">
         <div className="max-w-2xl mx-auto px-6 py-12">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-8">
+          <Flex align="center" gap="3" className="mb-8">
             <div className="p-2 rounded-lg bg-mission-control-accent/15">
               <Wand2 size={24} className="text-mission-control-accent" />
             </div>
@@ -67,7 +67,7 @@ export default function SetupWizard() {
                 Describe your idea and an AI agent will help you build a full plan.
               </p>
             </div>
-          </div>
+          </Flex>
 
           {/* Card */}
           <div className="p-6 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-6">
@@ -76,7 +76,7 @@ export default function SetupWizard() {
               <span className="block text-xs font-medium text-mission-control-text-dim mb-2">
                 Book Type
               </span>
-              <div className="flex gap-2">
+              <Flex gap="2">
                 {typeOptions.map((opt) => {
                   const Icon = opt.icon;
                   const isSelected = selectedType === opt.key;
@@ -92,7 +92,7 @@ export default function SetupWizard() {
                     </Button>
                   );
                 })}
-              </div>
+              </Flex>
               {/* Custom type name input */}
               {selectedType === 'other' && (
                 <TextField.Root
@@ -121,7 +121,7 @@ export default function SetupWizard() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between pt-2">
+            <Flex align="center" justify="between" className="pt-2">
               <Button
                 size="2"
                 variant="ghost"
@@ -139,7 +139,7 @@ export default function SetupWizard() {
                 Start Planning
                 <ArrowRight size={16} />
               </Button>
-            </div>
+            </Flex>
           </div>
         </div>
       </div>
@@ -153,7 +153,7 @@ export default function SetupWizard() {
       <div className="h-full flex flex-col bg-mission-control-bg">
         {/* Header bar */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Sparkles size={14} className="text-mission-control-accent" />
             <span className="text-sm font-medium text-mission-control-text">
               Planning with {agent.name}
@@ -163,8 +163,8 @@ export default function SetupWizard() {
                 ({messages.length} message{messages.length !== 1 ? 's' : ''})
               </span>
             )}
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <Button
               size="1"
               variant="solid"
@@ -182,7 +182,7 @@ export default function SetupWizard() {
               <X size={12} />
               Cancel
             </Button>
-          </div>
+          </Flex>
         </div>
 
         {/* Chat + optional plan preview sidebar */}

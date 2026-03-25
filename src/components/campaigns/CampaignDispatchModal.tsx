@@ -57,11 +57,11 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
       <div className="w-full max-w-md bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="px-5 py-4 border-b border-mission-control-border">
+          <Flex align="center" gap="2">
             <Bot size={16} className="text-mission-control-accent" />
             <span className="font-semibold text-mission-control-text text-sm">Dispatch Agent</span>
-          </div>
+          </Flex>
           <IconButton
             size="1"
             variant="ghost"
@@ -70,12 +70,12 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
           >
             <X size={15} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Body */}
         <div className="p-5 space-y-4">
           {/* Campaign context badge */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <Flex align="center" gap="2" className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
             <Megaphone size={15} style={{ color: campaign.color }} />
             <div className="min-w-0">
               <p className="text-xs font-medium text-mission-control-text truncate">{campaign.name}</p>
@@ -84,13 +84,13 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
               )}
             </div>
             <span className="ml-auto text-xs text-mission-control-text-dim flex-shrink-0">{campaign.type}</span>
-          </div>
+          </Flex>
 
           {error && (
-            <div className="flex items-start gap-2 px-3 py-2 bg-error-subtle border border-error/30 rounded-lg text-error text-xs">
+            <Flex align="start" gap="2" className="px-3 py-2 bg-error-subtle border border-error/30 rounded-lg text-error text-xs">
               <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
               {error}
-            </div>
+            </Flex>
           )}
 
           {/* Agent selector */}
@@ -151,7 +151,7 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
           {/* Priority */}
           <div>
             <label className="text-xs text-mission-control-text-dim mb-1.5 block">Priority</label>
-            <div className="flex gap-2">
+            <Flex gap="2">
               {PRIORITY_OPTIONS.map(p => (
                 <Button
                   key={p.value}
@@ -163,12 +163,12 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
                   {p.value.toUpperCase()}
                 </Button>
               ))}
-            </div>
+            </Flex>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 px-5 py-4 border-t border-mission-control-border">
+        <Flex align="center" gap="2" className="px-5 py-4 border-t border-mission-control-border">
           <Button
             size="2"
             variant="ghost"
@@ -186,7 +186,7 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
             <Send size={14} />
             {dispatching ? 'Dispatching...' : 'Dispatch Task'}
           </Button>
-        </div>
+        </Flex>
       </div>
     </Flex>
   );

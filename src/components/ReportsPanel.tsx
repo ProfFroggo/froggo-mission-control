@@ -421,7 +421,7 @@ export default function ReportsPanel() {
     <Flex direction="column" height="100%">
       {/* ── Header ── */}
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
             <FileText size={24} className="text-mission-control-accent" />
           </div>
@@ -429,7 +429,7 @@ export default function ReportsPanel() {
             <h2 className="text-xl font-semibold text-mission-control-text">Productivity Reports</h2>
             <p className="text-sm text-mission-control-text-dim mt-0.5">Weekly, monthly summaries and data exports</p>
           </div>
-        </div>
+        </Flex>
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Date range quick selectors */}

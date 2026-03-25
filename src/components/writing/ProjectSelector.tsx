@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import { useWritingStore, WritingProject } from '../../store/writingStore';
 import { useWizardStore } from '../../store/wizardStore';
 import { Plus, BookOpen, BookText, Trash2, X, Wand2 } from 'lucide-react';
@@ -69,14 +69,14 @@ export default function ProjectSelector() {
     <div className="h-full overflow-y-auto bg-mission-control-bg">
       <div className="max-w-3xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <Flex align="center" justify="between" className="mb-8">
           <div>
             <h1 className="text-2xl font-bold text-mission-control-text">Writing Projects</h1>
             <p className="text-sm text-mission-control-text-dim mt-1">
               {projects.length} {projects.length === 1 ? 'project' : 'projects'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Button
               onClick={startWizard}
               size="2"
@@ -94,8 +94,8 @@ export default function ProjectSelector() {
               {showForm ? <X size={16} /> : <Plus size={16} />}
               {showForm ? 'Cancel' : 'New Project'}
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Create form */}
         {showForm && (
@@ -118,7 +118,7 @@ export default function ProjectSelector() {
                 <span className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
                   Type
                 </span>
-                <div className="flex gap-2">
+                <Flex gap="2">
                   <Button
                     onClick={() => setType('memoir')}
                     size="2"
@@ -139,7 +139,7 @@ export default function ProjectSelector() {
                     <BookText size={16} />
                     Novel
                   </Button>
-                </div>
+                </Flex>
               </div>
               <Button
                 onClick={handleCreate}
@@ -192,7 +192,7 @@ export default function ProjectSelector() {
               >
                 <div className="flex items-start justify-between w-full">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <Flex align="center" gap="2" className="mb-1">
                       <h3 className="text-sm font-semibold text-mission-control-text truncate">
                         {project.title}
                       </h3>
@@ -204,12 +204,12 @@ export default function ProjectSelector() {
                         {project.type === 'memoir' ? <BookOpen size={10} /> : <BookText size={10} />}
                         {project.type}
                       </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
+                    </Flex>
+                    <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
                       <span>{project.chapterCount} {project.chapterCount === 1 ? 'chapter' : 'chapters'}</span>
                       <span>{project.wordCount.toLocaleString()} words</span>
                       <span>Created {relativeTime(project.createdAt)}</span>
-                    </div>
+                    </Flex>
                   </div>
                   <IconButton
                     onClick={(e) => handleDelete(e, project)}

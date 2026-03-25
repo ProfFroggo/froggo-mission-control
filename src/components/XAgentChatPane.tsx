@@ -455,7 +455,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
               </span>
             )}
             {/* Context usage bar */}
-            <div className="flex items-center gap-1 text-[10px] text-mission-control-text-dim">
+            <Flex align="center" gap="1" className="text-[10px] text-mission-control-text-dim">
               <span>Context:</span>
               <div className="w-16 h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                 <div
@@ -470,7 +470,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                 />
               </div>
               <span>{Math.round((sessionStats.tokenEstimate / 32000) * 100)}%</span>
-            </div>
+            </Flex>
           </div>
         )}
         {error && (

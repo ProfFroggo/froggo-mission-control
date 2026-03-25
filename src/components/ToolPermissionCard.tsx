@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState } from 'react';
 import { ShieldQuestion, Check, Lock, X, MessageSquare } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 
 export interface ToolPermissionRequest {
   approvalId: string;
@@ -59,7 +59,7 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
 
   if (resolved) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-surface/60 text-xs text-mission-control-text-dim">
+      <Flex align="center" gap="2" className="px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-surface/60 text-xs text-mission-control-text-dim">
         {resolved === 'rejected' ? (
           <>
             <Lock size={13} className="text-error shrink-0" />
@@ -74,7 +74,7 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
             <span className="ml-auto opacity-60">Resend your message to continue</span>
           </>
         )}
-      </div>
+      </Flex>
     );
   }
 
@@ -99,7 +99,7 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
 
       {/* Reject with reason input */}
       {showRejectInput && (
-        <div className="flex gap-2 items-center">
+        <Flex gap="2" align="center">
           <TextField.Root
             className="flex-1"
             size="1"
@@ -126,7 +126,7 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
           >
             <X size={12} />
           </IconButton>
-        </div>
+        </Flex>
       )}
 
       {/* Action buttons */}

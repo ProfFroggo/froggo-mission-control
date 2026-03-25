@@ -132,8 +132,8 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
     <Flex align="center" justify="center" p="4" className="fixed inset-0 bg-black/50 z-50">
       <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border w-full max-w-6xl h-[80vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" className="p-6 border-b border-mission-control-border">
+          <Flex align="center" gap="3">
             <div className="w-10 h-10 rounded-full bg-mission-control-accent/20 flex items-center justify-center ring-2 ring-mission-control-accent/30">
               <FileText size={20} className="text-mission-control-accent" />
             </div>
@@ -143,8 +143,8 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
                 {files.length} report{files.length !== 1 ? 's' : ''} available
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <IconButton
               size="2"
               variant="ghost"
@@ -164,8 +164,8 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
             <IconButton size="2" variant="ghost" onClick={onClose} aria-label="Close">
               <X size={20} />
             </IconButton>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">

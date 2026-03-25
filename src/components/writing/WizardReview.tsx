@@ -145,23 +145,23 @@ export default function WizardReview() {
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <BookOpen size={14} className="text-mission-control-accent" />
           <span className="text-sm font-medium text-mission-control-text">Review Your Plan</span>
-        </div>
+        </Flex>
       </div>
 
       {/* Scrollable form */}
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
         {/* Error banner */}
         {error && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-error-subtle border border-error-border text-error text-sm">
+          <Flex align="start" gap="2" className="p-3 rounded-lg bg-error-subtle border border-error-border text-error text-sm">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
             <div>
               <p className="font-medium">Creation failed</p>
               <p className="text-xs mt-0.5">{error}</p>
             </div>
-          </div>
+          </Flex>
         )}
 
         {/* Title & Type */}
@@ -234,7 +234,7 @@ export default function WizardReview() {
               </span>
             ))}
           </div>
-          <div className="flex gap-2">
+          <Flex gap="2">
             <TextField.Root
               value={newTheme}
               onChange={(e) => setNewTheme(e.target.value)}
@@ -252,7 +252,7 @@ export default function WizardReview() {
             >
               <Plus size={14} />
             </IconButton>
-          </div>
+          </Flex>
         </div>
 
         {/* Story Arc */}
@@ -270,13 +270,13 @@ export default function WizardReview() {
 
         {/* Chapters */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between">
+          <Flex align="center" justify="between">
             <label className={labelClass}>Chapters ({plan.chapters.length})</label>
-          </div>
+          </Flex>
           <div className="space-y-3">
             {plan.chapters.map((ch, i) => (
               <div key={i} className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-2">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <span className="text-xs text-mission-control-text-dim font-mono w-6 text-right flex-shrink-0">
                     {i + 1}.
                   </span>
@@ -295,7 +295,7 @@ export default function WizardReview() {
                   >
                     <Trash2 size={14} />
                   </IconButton>
-                </div>
+                </Flex>
                 <div className="ml-8">
                   <TextArea
                     value={ch.synopsis}
@@ -316,13 +316,13 @@ export default function WizardReview() {
 
         {/* Characters */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between">
+          <Flex align="center" justify="between">
             <label className={labelClass}>Characters ({plan.characters.length})</label>
-          </div>
+          </Flex>
           <div className="space-y-3">
             {plan.characters.map((c, i) => (
               <div key={i} className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-2">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <TextField.Root
                     value={c.name}
                     onChange={(e) => updateCharacter(i, 'name', e.target.value)}
@@ -358,7 +358,7 @@ export default function WizardReview() {
                   >
                     <Trash2 size={14} />
                   </IconButton>
-                </div>
+                </Flex>
                 {/* Custom role input */}
                 {!['protagonist', 'antagonist', 'supporting', 'narrator'].includes(c.role) && (
                   <TextField.Root
@@ -402,13 +402,13 @@ export default function WizardReview() {
 
         {/* Timeline */}
         <div className="space-y-3 pb-5">
-          <div className="flex items-center justify-between">
+          <Flex align="center" justify="between">
             <label className={labelClass}>Timeline ({plan.timeline.length})</label>
-          </div>
+          </Flex>
           <div className="space-y-3">
             {plan.timeline.map((evt, i) => (
               <div key={i} className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-2">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <TextField.Root
                     value={evt.date}
                     onChange={(e) => updateTimelineEvent(i, 'date', e.target.value)}
@@ -433,7 +433,7 @@ export default function WizardReview() {
                   >
                     <Trash2 size={14} />
                   </IconButton>
-                </div>
+                </Flex>
               </div>
             ))}
           </div>
@@ -446,7 +446,7 @@ export default function WizardReview() {
 
       {/* Bottom action bar */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-mission-control-border bg-mission-control-surface flex-shrink-0">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Button onClick={() => setStep('conversation')} size="2" variant="ghost">
             <ArrowLeft size={14} />
             Back to Chat
@@ -455,7 +455,7 @@ export default function WizardReview() {
             <X size={14} />
             Cancel
           </Button>
-        </div>
+        </Flex>
         <Button
           onClick={handleCreate}
           disabled={creating || !plan.title.trim() || plan.chapters.length === 0}

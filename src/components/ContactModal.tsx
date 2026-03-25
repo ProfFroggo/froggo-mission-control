@@ -593,7 +593,7 @@ Be thorough but only include real people, not generic references.`;
                       {extractedData.company && <div><strong>Company:</strong> {extractedData.company}</div>}
                       {extractedData.email && <div><strong>Email:</strong> {extractedData.email}</div>}
                       {extractedData.context && <div><strong>Context:</strong> {extractedData.context.slice(0, 100)}...</div>}
-                      <div className="flex items-center gap-1"><strong>Type:</strong> {extractedData.type === 'professional' ? <span className="inline-flex items-center gap-1"><Briefcase size={14} /> Professional</span> : <span className="inline-flex items-center gap-1"><User size={14} /> Personal</span>}</div>
+                      <Flex align="center" gap="1"><strong>Type:</strong> {extractedData.type === 'professional' ? <span className="inline-flex items-center gap-1"><Briefcase size={14} /> Professional</span> : <span className="inline-flex items-center gap-1"><User size={14} /> Personal</span>}</Flex>
                     </div>
                     <Button
                       onClick={handleCreateFromDialogue}

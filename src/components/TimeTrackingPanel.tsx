@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Clock, Filter } from 'lucide-react';
-import { Heading, Badge, Select } from '@radix-ui/themes';
+import { Heading, Badge, Select, Flex } from '@radix-ui/themes';
 import { getTimeTrackingData, getProjectStats, TimeTrackingData, ProjectStats } from '../services/analyticsService';
 
 export default function TimeTrackingPanel() {
@@ -78,7 +78,7 @@ export default function TimeTrackingPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <Flex align="center" justify="between" className="mb-6">
         <div>
           <Heading size="4" weight="medium" className="flex items-center gap-2">
             <Clock className="text-mission-control-accent" size={20} />
@@ -89,9 +89,9 @@ export default function TimeTrackingPanel() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           {/* Project filter */}
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Filter size={16} className="text-mission-control-text-dim" />
             <Select.Root value={selectedProject} onValueChange={setSelectedProject}>
               <Select.Trigger />
@@ -102,7 +102,7 @@ export default function TimeTrackingPanel() {
                 ))}
               </Select.Content>
             </Select.Root>
-          </div>
+          </Flex>
 
           {/* Sort */}
           <Select.Root value={sortBy} onValueChange={val => setSortBy(val as 'duration' | 'recent')}>
@@ -112,8 +112,8 @@ export default function TimeTrackingPanel() {
               <Select.Item value="duration">Longest Duration</Select.Item>
             </Select.Content>
           </Select.Root>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -149,12 +149,12 @@ export default function TimeTrackingPanel() {
               : 0;
             return (
               <div key={project.project}>
-                <div className="flex items-center justify-between mb-2">
+                <Flex align="center" justify="between" className="mb-2">
                   <span className="text-sm font-medium">{project.project}</span>
                   <span className="text-sm text-mission-control-text-dim tabular-nums">
                     {project.totalTimeSpent.toFixed(1)}h
                   </span>
-                </div>
+                </Flex>
                 <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
                   <div
                     className="h-full bg-mission-control-accent transition-all"

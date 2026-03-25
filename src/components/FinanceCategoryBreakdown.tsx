@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingDown, Loader2 } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import { financeApi } from '../lib/api';
 
 interface Props {
@@ -95,12 +95,12 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 mb-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <Flex align="center" justify="between" className="mb-4">
         <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase tracking-wide">
           Spend by Category
         </h3>
         {/* Period selector */}
-        <div className="flex items-center gap-1">
+        <Flex align="center" gap="1">
           {PERIOD_OPTIONS.map(({ label, days }) => (
             <Button
               key={days}
@@ -112,22 +112,22 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
               {label}
             </Button>
           ))}
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Loading */}
       {loading ? (
-        <div className="flex items-center justify-center py-8 gap-2 text-mission-control-text-dim">
+        <Flex align="center" justify="center" gap="2" className="py-8 text-mission-control-text-dim">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm">Loading breakdown...</span>
-        </div>
+        </Flex>
       ) : breakdown.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-mission-control-text-dim">
           <TrendingDown className="w-10 h-10 mb-2" />
           <p className="text-sm">No spending data for this period</p>
         </div>
       ) : (
-        <div className="flex items-start gap-4">
+        <Flex align="start" gap="4">
           {/* PieChart ~45% */}
           <div className="w-[45%] flex-shrink-0" style={{ height: 180 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -167,7 +167,7 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
             {breakdown.map((row) => {
               const pct = total > 0 ? (row.total / total) * 100 : 0;
               return (
-                <div key={row.category} className="flex items-center gap-2 text-sm">
+                <Flex key={row.category} align="center" gap="2" className="text-sm">
                   {/* Color dot */}
                   <span
                     className="w-2.5 h-2.5 rounded-full flex-shrink-0"
@@ -185,11 +185,11 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
                   <span className="text-mission-control-text font-medium text-right flex-shrink-0 w-20">
                     {formatCurrency(row.total)}
                   </span>
-                </div>
+                </Flex>
               );
             })}
           </div>
-        </div>
+        </Flex>
       )}
     </div>
   );

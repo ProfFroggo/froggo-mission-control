@@ -943,7 +943,7 @@ export function QuickTips({ onDone }: QuickTipsProps) {
         style={{ top: pos.top, left: pos.left }}
       >
         <div className="p-4 space-y-3">
-          <div className="flex items-start justify-between gap-2">
+          <Flex align="start" justify="between" gap="2">
             <div>
               <p className="text-xs text-mission-control-accent font-medium uppercase tracking-wide">
                 Tip {tipIndex + 1} of {TIPS.length}
@@ -954,7 +954,7 @@ export function QuickTips({ onDone }: QuickTipsProps) {
             <IconButton onClick={handleSkip} variant="ghost" color="gray" size="1" aria-label="Close tips" className="flex-shrink-0">
               <X size={14} />
             </IconButton>
-          </div>
+          </Flex>
 
           <div className="h-0.5 bg-mission-control-border rounded-full overflow-hidden">
             <div

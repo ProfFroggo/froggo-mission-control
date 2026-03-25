@@ -134,13 +134,13 @@ export default function MeetingTranscriptionPanel() {
 
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg text-mission-control-text">
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <div className="flex items-center space-x-3">
           <FileAudio className="w-5 h-5 text-[--accent-11]" />
           <h2 className="text-lg font-semibold">Meeting Transcription</h2>
         </div>
         <span className="text-xs text-mission-control-text-dim">Powered by Gemini AI</span>
-      </div>
+      </Flex>
 
       {/* Upload */}
       <div className="p-4 border-b border-mission-control-border">
@@ -185,7 +185,7 @@ export default function MeetingTranscriptionPanel() {
         ) : (
           results.map(result => (
             <div key={result.id} className="bg-mission-control-surface rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 <div>
                   <div className="font-medium">{result.filename}</div>
                   <div className="text-xs text-mission-control-text-dim">{new Date(result.timestamp).toLocaleString()}</div>
@@ -210,7 +210,7 @@ export default function MeetingTranscriptionPanel() {
                     <Trash2 className="w-4 h-4" />
                   </IconButton>
                 </div>
-              </div>
+              </Flex>
 
               <div className="text-sm text-mission-control-text max-h-40 overflow-y-auto whitespace-pre-wrap bg-mission-control-bg rounded p-3">
                 {result.transcript}
