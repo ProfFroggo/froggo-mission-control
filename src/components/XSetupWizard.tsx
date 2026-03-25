@@ -172,9 +172,9 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
         </div>
 
         {/* Progress */}
-        <div className="flex items-center justify-center gap-1">
+        <Flex align="center" justify="center" gap="1">
           {STEPS.map((s, i) => (
-            <div key={s.id} className="flex items-center gap-1">
+            <Flex key={s.id} align="center" gap="1">
               {i > 0 && <div className={`w-6 h-px ${i <= stepIdx ? 'bg-mission-control-accent' : 'bg-mission-control-border'}`} />}
               <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
                 i === stepIdx ? 'bg-mission-control-accent/20 text-mission-control-accent' :
@@ -184,20 +184,20 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 {i < stepIdx && <CheckCircle size={10} />}
                 {s.label}
               </div>
-            </div>
+            </Flex>
           ))}
-        </div>
+        </Flex>
 
         {/* Step 1: Keys */}
         {step === 'keys' && (
           <div className="space-y-4">
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-5 space-y-3">
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 <h3 className="text-sm font-medium text-mission-control-text flex items-center gap-2"><Key size={14} /> API Credentials</h3>
                 <Button onClick={() => setShowKeys(!showKeys)} size="1" variant="ghost">
                   {showKeys ? <EyeOff size={12} /> : <Eye size={12} />} {showKeys ? 'Hide' : 'Show'}
                 </Button>
-              </div>
+              </Flex>
               {TWITTER_KEYS.map(k => (
                 <div key={k.id}>
                   <label className="block text-xs text-mission-control-text-dim mb-1">
@@ -273,7 +273,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 </div>
               ) : verifyResult?.success ? (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4">
+                  <Flex align="center" gap="4">
                     {verifyResult.user?.profile_image_url ? (
                       <img src={verifyResult.user.profile_image_url} alt="" className="w-14 h-14 rounded-full" />
                     ) : (
@@ -284,7 +284,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                       <p className="text-sm text-mission-control-accent">@{verifyResult.user?.username}</p>
                     </div>
                     <CheckCircle size={24} className="text-success ml-auto" />
-                  </div>
+                  </Flex>
                   {verifyResult.user?.public_metrics && (
                     <div className="grid grid-cols-3 gap-3 pt-3 border-t border-mission-control-border">
                       <div className="text-center">
@@ -320,7 +320,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 </div>
               ) : null}
             </div>
-            <div className="flex gap-3">
+            <Flex gap="3">
               <Button onClick={() => setStep('keys')} variant="outline" color="gray" size="2" className="flex-1">
                 Back
               </Button>
@@ -333,7 +333,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                   {verifying ? <><Spinner size="1" /> Verifying...</> : <><RefreshCw size={14} /> Retry Verification</>}
                 </Button>
               )}
-            </div>
+            </Flex>
           </div>
         )}
 
@@ -341,7 +341,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
         {step === 'agent' && (
           <div className="space-y-4">
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 space-y-4">
-              <div className="flex items-center gap-3">
+              <Flex align="center" gap="3">
                 <div className="w-10 h-10 rounded-lg bg-mission-control-accent/20 flex items-center justify-center">
                   <Bot size={20} className="text-mission-control-accent" />
                 </div>
@@ -354,21 +354,21 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 ) : agentWired ? (
                   <CheckCircle size={16} className="text-success ml-auto" />
                 ) : null}
-              </div>
+              </Flex>
 
               <div className="space-y-2 text-xs">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <CheckCircle size={12} className="text-success" />
                   <span className="text-mission-control-text">API credentials saved</span>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   <CheckCircle size={12} className="text-success" />
                   <span className="text-mission-control-text">X API connection verified</span>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   {agentWired ? <CheckCircle size={12} className="text-success" /> : <Spinner size="1" />}
                   <span className="text-mission-control-text">{agentWired ? 'Agent tools configured' : 'Configuring agent tools...'}</span>
-                </div>
+                </Flex>
               </div>
             </div>
             <Button
