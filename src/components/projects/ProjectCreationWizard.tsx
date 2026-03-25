@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
 import { X, Send, Check, CheckCircle, XCircle, Circle, Loader2, Bot, LayoutTemplate, Upload, Trash2, Sparkles, GitBranch, Zap, Paperclip, ExternalLink, Image as ImageIcon, FileText as FileTextIcon } from 'lucide-react';
 import { projectsApi, agentApi } from '../../lib/api';
 import type { Project } from '../../types/projects';
@@ -50,7 +50,7 @@ function ChoicesWidget({ data, onChoose, disabled }: { data: ChoiceWidgetData; o
 
   if (customMode) {
     return (
-      <div className="flex gap-2 mt-2 pl-9">
+      <Flex gap="2" mt="2" className="pl-9">
         <TextField.Root
           autoFocus
           value={customText}
@@ -67,7 +67,7 @@ function ChoicesWidget({ data, onChoose, disabled }: { data: ChoiceWidgetData; o
         <IconButton variant="ghost" size="1" onClick={() => { setCustomMode(false); setCustomText(''); }}>
           <X size={13} />
         </IconButton>
-      </div>
+      </Flex>
     );
   }
 
@@ -466,12 +466,12 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
     return (
       <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-3">
         {/* Preview */}
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
             <SelectedIconComp size={20} style={{ color }} />
           </div>
           <span className="font-medium text-sm text-mission-control-text">{projName}</span>
-        </div>
+        </Flex>
         {/* Icon grid */}
         <div>
           <p className="text-xs text-mission-control-text-dim mb-2">Icon</p>
@@ -506,7 +506,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
     return (
       <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-2">
         {loadingAgents ? (
-          <div className="flex justify-center py-4"><Loader2 size={18} className="animate-spin text-mission-control-text-dim" /></div>
+          <Flex justify="center" py="4"><Loader2 size={18} className="animate-spin text-mission-control-text-dim" /></Flex>
         ) : (
           <div className="space-y-1.5 max-h-48 overflow-y-auto">
             {agents.map(agent => {
@@ -537,7 +537,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   function ConfirmWidget() {
     return (
       <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-3">
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
             <SelectedIconComp size={20} style={{ color }} />
           </div>
@@ -545,20 +545,20 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             <div className="font-semibold text-mission-control-text">{projName}</div>
             {projGoal && <div className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-2">{projGoal}</div>}
           </div>
-        </div>
+        </Flex>
         {selectedAgents.length > 0 && (
           <div className="text-xs text-mission-control-text-dim">
             Team: {agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name).join(', ')}
           </div>
         )}
-        <div className="flex gap-2">
+        <Flex gap="2">
           <Button variant="solid" size="1" onClick={handleConfirm} style={{ flex: 1, justifyContent: 'center' }}>
             <Check size={14} /> Create project
           </Button>
           <Button variant="ghost" size="1" onClick={() => { setPhase('name'); setMsgs([]); mcSay("Let's start over. What should we call the project?"); }}>
             Start over
           </Button>
-        </div>
+        </Flex>
       </div>
     );
   }
@@ -604,7 +604,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-mission-control-border flex-shrink-0">
-            <div className="flex items-center gap-3">
+            <Flex align="center" gap="3">
               {gsdMode
                 ? <GitBranch size={15} className="text-mission-control-accent" />
                 : <Sparkles size={15} className="text-mission-control-accent" />}
@@ -614,8 +614,8 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                   GSD Planning
                 </span>
               )}
-            </div>
-            <div className="flex items-center gap-2">
+            </Flex>
+            <Flex align="center" gap="2">
               {/* Mode toggle */}
               <div className="flex items-center rounded-lg border border-mission-control-border overflow-hidden text-xs">
                 <Button variant={!gsdMode ? 'solid' : 'ghost'} size="1" onClick={() => !gsdMode || switchMode(false)}>
@@ -631,7 +631,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               <IconButton variant="ghost" size="1" onClick={onClose}>
                 <X size={16} />
               </IconButton>
-            </div>
+            </Flex>
           </div>
 
           {/* GSD mode description bar */}
@@ -680,9 +680,9 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                   {isLastModel && activeWidget === 'agents' && (
                     <div className="pl-9 w-full mt-2 space-y-2">
                       {loadingAgents ? (
-                        <div className="flex items-center gap-2 text-xs text-mission-control-text-dim py-2">
+                        <Flex align="center" gap="2" py="2" className="text-xs text-mission-control-text-dim">
                           <Loader2 size={13} className="animate-spin" /> Loading agents...
-                        </div>
+                        </Flex>
                       ) : (
                         <div className="space-y-1.5 max-w-sm">
                           {agents.map(agent => {
@@ -720,31 +720,31 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
 
             {/* Typing indicator */}
             {discoveryLoading && (
-              <div className="flex gap-2.5 items-start">
+              <Flex gap="3" align="start">
                 <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center flex-shrink-0">
                   {gsdMode ? <GitBranch size={13} className="text-mission-control-accent" /> : <Bot size={14} className="text-mission-control-accent" />}
                 </div>
                 <div className="bg-mission-control-surface px-4 py-3 rounded-xl rounded-bl-sm">
-                  <div className="flex gap-1">
+                  <Flex gap="1">
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
+                  </Flex>
                 </div>
-              </div>
+              </Flex>
             )}
 
             {/* GSD/Ready confirmation card */}
             {discoveryReady && discoveryStructuredData && (
               <div className="mt-3 p-4 bg-mission-control-surface border border-mission-control-accent/30 rounded-xl space-y-3">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   {gsdDocs
                     ? <GitBranch size={14} className="text-mission-control-accent" />
                     : <CheckCircle size={14} className="text-success" />}
                   <p className="text-xs font-semibold text-mission-control-text uppercase tracking-wide">
                     {gsdDocs ? 'GSD Plan Generated' : 'Ready to Create'}
                   </p>
-                </div>
+                </Flex>
                 <div>
                   <p className="text-base font-bold text-mission-control-text">{discoveryStructuredData.name}</p>
                   {discoveryStructuredData.goal && (
@@ -802,7 +802,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
 
             {/* URL input (expandable) */}
             {showRefUrlInput && (
-              <div className="flex gap-2 mb-2">
+              <Flex gap="2" mb="2">
                 <TextField.Root
                   autoFocus
                   value={refUrlInput}
@@ -818,11 +818,11 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                 <IconButton variant="ghost" size="1" onClick={() => { setShowRefUrlInput(false); setRefUrlInput(''); }}>
                   <X size={13} />
                 </IconButton>
-              </div>
+              </Flex>
             )}
 
             {/* Add buttons row */}
-            <div className="flex items-center gap-3">
+            <Flex align="center" gap="3">
               <Button variant="ghost" size="1" onClick={() => discoveryFileInputRef.current?.click()}>
                 <Paperclip size={12} /> Add files
               </Button>
@@ -834,12 +834,12 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                   {refsDragging ? 'Drop files here' : 'Drop files or add URLs as reference context'}
                 </span>
               )}
-            </div>
+            </Flex>
           </div>
 
           {/* Input area */}
           <div className="px-5 py-3.5 border-t border-mission-control-border flex-shrink-0">
-            <div className="flex gap-2">
+            <Flex gap="2">
               <TextField.Root
                 size="1"
                 value={discoveryInput}
@@ -852,7 +852,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               <IconButton variant="solid" size="1" onClick={handleDiscoverySend} disabled={!discoveryInput.trim() || discoveryLoading || discoveryReady}>
                 <Send size={14} />
               </IconButton>
-            </div>
+            </Flex>
           </div>
         </div>
       </div>
@@ -864,7 +864,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
-          <div className="flex items-center justify-between px-4 py-3.5 border-b border-mission-control-border">
+          <Flex align="center" justify="between" px="4" py="3" className="border-b border-mission-control-border">
             <div>
               <div className="text-sm font-semibold text-mission-control-text">Add Context Files</div>
               <div className="text-xs text-mission-control-text-dim">Optional — upload files Gemini should use as context</div>
@@ -872,7 +872,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             <IconButton variant="ghost" size="1" onClick={onClose}>
               <X size={16} />
             </IconButton>
-          </div>
+          </Flex>
 
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {/* Drop zone */}
@@ -923,7 +923,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             )}
           </div>
 
-          <div className="px-4 py-3 border-t border-mission-control-border flex gap-2">
+          <Flex gap="2" px="4" py="3" className="border-t border-mission-control-border">
             <Button variant="solid" size="1" onClick={async () => {
                 setPhase('confirm');
                 const names = agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name);
@@ -932,7 +932,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               }} style={{ flex: 1, justifyContent: 'center' }}>
               {stagedFiles.length > 0 ? `Continue with ${stagedFiles.length} file${stagedFiles.length !== 1 ? 's' : ''}` : 'Continue'}
             </Button>
-          </div>
+          </Flex>
         </div>
       </div>
     );
@@ -943,15 +943,15 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
-          <div className="flex items-center justify-between px-4 py-3.5 border-b border-mission-control-border">
-            <div className="flex items-center gap-2">
+          <Flex align="center" justify="between" px="4" py="3" className="border-b border-mission-control-border">
+            <Flex align="center" gap="2">
               <LayoutTemplate size={16} className="text-mission-control-accent" />
               <span className="text-sm font-semibold text-mission-control-text">New Project</span>
-            </div>
+            </Flex>
             <IconButton variant="ghost" size="1" onClick={onClose}>
               <X size={16} />
             </IconButton>
-          </div>
+          </Flex>
           <div className="flex-1 overflow-y-auto p-5 space-y-3">
             <p className="text-sm text-mission-control-text-dim mb-4">Start from a template or build from scratch.</p>
             {/* Blank */}
@@ -1008,7 +1008,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
       <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
 
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-mission-control-border">
+        <Flex align="center" gap="3" px="4" py="3" className="border-b border-mission-control-border">
           <div className="w-8 h-8 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center">
             <Bot size={16} className="text-mission-control-accent" />
           </div>
@@ -1020,7 +1020,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               <X size={16} />
             </IconButton>
           )}
-        </div>
+        </Flex>
 
         {/* Chat area */}
         {phase !== 'creating' && phase !== 'done' && (
@@ -1045,16 +1045,16 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             ))}
 
             {mcTyping && (
-              <div className="flex gap-2 items-start">
+              <Flex gap="2" align="start">
                 <MCAvatar />
                 <div className="bg-mission-control-surface px-4 py-3 rounded-lg rounded-bl-sm">
-                  <div className="flex gap-1">
+                  <Flex gap="1">
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
+                  </Flex>
                 </div>
-              </div>
+              </Flex>
             )}
           </div>
         )}
@@ -1062,7 +1062,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
         {/* Creating stage */}
         {phase === 'creating' && (
           <div className="flex-1 overflow-y-auto p-4 min-h-[280px]">
-            <div className="flex items-center gap-3 mb-4">
+            <Flex align="center" gap="3" mb="4">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
                 <SelectedIconComp size={20} style={{ color }} />
               </div>
@@ -1071,7 +1071,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                 <div className="text-xs text-mission-control-text-dim">Setting up your project...</div>
               </div>
               {!createError && <Loader2 size={16} className="ml-auto text-mission-control-accent animate-spin" />}
-            </div>
+            </Flex>
 
             <div className="space-y-2">
               {steps.map(s => (
@@ -1126,25 +1126,25 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
         {/* Input bar */}
         <div className="p-3 border-t border-mission-control-border">
           {phase === 'done' && created ? (
-            <div className="flex gap-2">
+            <Flex gap="2">
               <Button variant="solid" size="1" onClick={() => onCreated(created)} style={{ flex: 1, justifyContent: 'center' }}>
                 <Check size={15} /> Open Project
               </Button>
               <Button variant="ghost" size="1" onClick={onClose}>
                 Close
               </Button>
-            </div>
+            </Flex>
           ) : phase === 'creating' && createError ? (
-            <div className="flex gap-2">
+            <Flex gap="2">
               <Button variant="ghost" size="1" onClick={() => { setPhase('confirm'); setSteps([]); setCreateError(null); setMsgs(prev => [...prev.slice(0, -1)]); mcSay("Let me show the summary again.", 'confirm'); }} style={{ flex: 1, justifyContent: 'center' }}>Retry</Button>
-            </div>
+            </Flex>
           ) : phase === 'creating' ? (
-            <div className="flex items-center justify-center gap-2 py-2 text-sm text-mission-control-text-dim">
+            <Flex align="center" justify="center" gap="2" py="2" className="text-sm text-mission-control-text-dim">
               <Loader2 size={14} className="animate-spin text-mission-control-accent" />
               Mission Control is setting up your workspace...
-            </div>
+            </Flex>
           ) : showInput ? (
-            <div className="flex gap-2">
+            <Flex gap="2">
               <TextField.Root
                 size="1"
                 value={input}
@@ -1158,7 +1158,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               <IconButton variant="solid" size="1" onClick={handleSend} disabled={!input.trim() || mcTyping}>
                 <Send size={18} />
               </IconButton>
-            </div>
+            </Flex>
           ) : null}
         </div>
       </div>
