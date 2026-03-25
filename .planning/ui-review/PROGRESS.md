@@ -20,8 +20,8 @@
 - [x] **008** `Screenshot 2026-03-24 at 23.06.01.png` — TaskDetail Files tab: no green CTAs visible
 - [x] **009** `Screenshot 2026-03-24 at 23.06.06.png` — TaskDetail Review tab: Approve button retains green (semantic success), no other issues
 - [x] **010** `Screenshot 2026-03-24 at 23.06.11.png` — TaskDetail Chat tab: no green CTAs visible
-- [ ] **011** `Screenshot 2026-03-24 at 23.06.19.png`
-- [ ] **012** `Screenshot 2026-03-24 at 23.08.15.png`
+- [x] **011** `Screenshot 2026-03-24 at 23.06.19.png` — Create Task Chat mode: Send button no explicit color (violet default), no green CTAs
+- [x] **012** `Screenshot 2026-03-24 at 23.08.15.png` — Create Task Manual form: Create Task button no color prop (violet default), all clean
 - [ ] **013** `Screenshot 2026-03-24 at 23.08.25.png`
 - [ ] **014** `Screenshot 2026-03-24 at 23.08.38.png`
 - [ ] **015** `Screenshot 2026-03-24 at 23.08.43.png`
