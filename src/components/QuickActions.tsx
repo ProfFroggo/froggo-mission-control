@@ -258,10 +258,10 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
       )}
 
       {activeCall && (
-        <div className="mb-2 p-2 bg-error-subtle border border-error-border rounded-lg flex items-center gap-2">
+        <Flex align="center" gap="2" className="mb-2 p-2 bg-error-subtle border border-error-border rounded-lg">
           <span className="w-2 h-2 bg-error rounded-full animate-pulse" />
           <span className="text-xs text-error">In call with {activeCall.agentName}</span>
-        </div>
+        </Flex>
       )}
       <div className="space-y-1">
         {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
@@ -389,7 +389,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
           }
         }}
       />
-      <div className="flex justify-between items-center mt-2">
+      <Flex justify="between" align="center" className="mt-2">
         <span className="text-xs text-mission-control-text-dim">⌘+Enter to send</span>
         <Button
           size="2"
@@ -407,7 +407,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
           <Send size={12} />
           Chat with {selectedAgent.name}
         </Button>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -1102,7 +1102,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
             {/* Agent profile pic — shown when no video */}
             {callVideoMode === 'none' && (
-              <div className="absolute inset-0 flex items-center justify-center">
+              <Flex align="center" justify="center" className="absolute inset-0">
                 <img
                   src={`/api/agents/${activeCall.agentId}/avatar`}
                   alt={activeCall.agentName}
@@ -1114,12 +1114,12 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                   }`}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
-              </div>
+              </Flex>
             )}
 
             {/* Status overlay */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 <div>
                   <div className="text-sm font-semibold text-white">{activeCall.agentName}</div>
                   <div className="text-[11px] text-white/70">
@@ -1131,7 +1131,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                     {callVideoMode === 'screen' ? 'Screen' : 'Camera'}
                   </span>
                 )}
-              </div>
+              </Flex>
             </div>
 
             {/* Close button */}
@@ -1168,7 +1168,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           </div>
 
           {/* Controls bar */}
-          <div className="flex items-center justify-center gap-3 px-3 py-3 border-t border-mission-control-border bg-mission-control-bg/50">
+          <Flex align="center" justify="center" gap="3" className="px-3 py-3 border-t border-mission-control-border bg-mission-control-bg/50">
             <IconButton
               variant={callMuted ? 'soft' : 'ghost'}
               color={callMuted ? 'red' : 'gray'}
@@ -1208,7 +1208,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             >
               <PhoneOff size={16} />
             </IconButton>
-          </div>
+          </Flex>
         </div>
       )}
 
@@ -1257,18 +1257,18 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       {agentChatOpen && chatAgent && (
         <div className={`${panelPos} w-[320px] bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden`}>
           {/* Header */}
-          <div className="flex items-center justify-between px-3 py-2.5 bg-mission-control-bg/50 border-b border-mission-control-border">
-            <div className="flex items-center gap-2">
+          <Flex align="center" justify="between" className="px-3 py-2.5 bg-mission-control-bg/50 border-b border-mission-control-border">
+            <Flex align="center" gap="2">
               <AgentAvatar agentId={chatAgent.id} size="sm" />
               <div>
                 <div className="text-xs font-semibold">{chatAgent.name}</div>
                 <div className="text-xs text-mission-control-text-dim">{chatLoading ? 'Typing...' : 'Online'}</div>
               </div>
-            </div>
+            </Flex>
             <IconButton variant="ghost" color="gray" size="1" onClick={() => setAgentChatOpen(false)} aria-label="Close chat">
               <X size={12} />
             </IconButton>
-          </div>
+          </Flex>
 
           {/* Messages */}
           <div ref={chatScrollRef} className="h-[320px] overflow-y-auto px-3 py-2 space-y-2 text-xs">
@@ -1289,16 +1289,16 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               </div>
             ))}
             {chatLoading && chatMessages.length > 0 && (
-              <div className="flex justify-start">
+              <Flex justify="start">
                 <div className="bg-mission-control-border/50 px-3 py-2 rounded-lg text-mission-control-text-dim">
                   <span className="animate-pulse">●●●</span>
                 </div>
-              </div>
+              </Flex>
             )}
           </div>
 
           {/* Input */}
-          <div className="px-3 py-2.5 border-t border-mission-control-border bg-mission-control-surface flex gap-2">
+          <Flex gap="2" className="px-3 py-2.5 border-t border-mission-control-border bg-mission-control-surface">
             <TextField.Root
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
@@ -1317,7 +1317,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             >
               <Send size={12} />
             </IconButton>
-          </div>
+          </Flex>
         </div>
       )}
 
