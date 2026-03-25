@@ -27,7 +27,7 @@ import {
   SkipForward,
   X,
 } from 'lucide-react';
-import { Button, Checkbox, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Checkbox, Flex, IconButton, TextField } from '@radix-ui/themes';
 
 interface OnboardingWizardProps {
   onComplete: (startTour: boolean) => void;
@@ -620,10 +620,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
     return (
       <div className="py-4">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" mb="1">
           <Sparkles size={18} className="text-mission-control-accent" />
           <h2 className="text-xl font-bold text-mission-control-text">System Check</h2>
-        </div>
+        </Flex>
         <p className="text-mission-control-text-dim text-sm mb-5">
           Verifying your environment before setup continues.
         </p>
@@ -672,20 +672,20 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // STEP 2 — Agent Permissions
   const renderAgentPermissions = () => (
     <div className="py-4">
-      <div className="flex items-center gap-2 mb-1">
+      <Flex align="center" gap="2" mb="1">
         <Shield size={18} className="text-mission-control-accent" />
         <h2 className="text-xl font-bold text-mission-control-text">Agent Permissions</h2>
-      </div>
+      </Flex>
       <p className="text-mission-control-text-dim text-sm mb-5">
         Agents need the following tool permissions to do their work. Review and confirm before continuing.
       </p>
       <div className="space-y-2 mb-5">
         {AGENT_PERMISSIONS.map(({ tool, icon: Icon, why }) => (
           <div key={tool} className="p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
-            <div className="flex items-center gap-2 mb-1">
+            <Flex align="center" gap="2" mb="1">
               <Icon size={14} className="text-mission-control-accent flex-shrink-0" />
               <span className="text-sm font-medium text-mission-control-text font-mono">{tool}</span>
-            </div>
+            </Flex>
             <p className="text-xs text-mission-control-text-dim leading-relaxed pl-5">{why}</p>
           </div>
         ))}
@@ -695,10 +695,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         <p>Per-agent permissions — which tools each agent can use — are configured individually on the <span className="text-mission-control-text font-medium">Agents</span> page after setup.</p>
       </div>
       {permissionsConfirmed ? (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-success border border-success-border">
+        <Flex align="center" gap="2" p="3" className="rounded-lg bg-success border border-success-border">
           <CheckCircle size={16} className="text-success" />
           <span className="text-sm text-mission-control-text">Permissions confirmed</span>
-        </div>
+        </Flex>
       ) : (
         <Button
           onClick={confirmPermissions}
@@ -721,10 +721,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // STEP 3 — Gemini API Key
   const renderGeminiKey = () => (
     <div className="py-4">
-      <div className="flex items-center gap-2 mb-1">
+      <Flex align="center" gap="2" mb="1">
         <Key size={18} className="text-mission-control-accent" />
         <h2 className="text-xl font-bold text-mission-control-text">Gemini API Key</h2>
-      </div>
+      </Flex>
       <p className="text-mission-control-text-dim text-sm mb-1">
         Required for voice chat and real-time meeting features.
       </p>
@@ -733,13 +733,13 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       </p>
 
       {geminiStatus === 'ok' ? (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-success border border-success-border mb-4">
+        <Flex align="center" gap="2" p="3" mb="4" className="rounded-lg bg-success border border-success-border">
           <CheckCircle size={16} className="text-success" />
           <span className="text-sm text-mission-control-text">API key validated and saved</span>
-        </div>
+        </Flex>
       ) : (
         <>
-          <div className="flex gap-2 mb-3">
+          <Flex gap="2" mb="3">
             <TextField.Root
               size="2"
               className="flex-1 font-mono"
@@ -758,7 +758,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
             >
               {geminiStatus === 'validating' ? <Loader size={14} className="animate-spin" /> : 'Validate'}
             </Button>
-          </div>
+          </Flex>
           {geminiStatus === 'error' && (
             <p className="text-xs text-error mb-3">{geminiError}</p>
           )}
@@ -772,10 +772,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         </Button>
       )}
       {geminiSkipped && (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-warning border border-warning-border text-xs text-warning">
+        <Flex align="center" gap="2" p="2" className="rounded-lg bg-warning border border-warning-border text-xs text-warning">
           <AlertTriangle size={12} />
           Skipped — add your key later in Settings
-        </div>
+        </Flex>
       )}
     </div>
   );
@@ -783,28 +783,28 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // STEP 4 — Google Workspace
   const renderGoogleWorkspace = () => (
     <div className="py-4">
-      <div className="flex items-center gap-2 mb-1">
+      <Flex align="center" gap="2" mb="1">
         <Mail size={18} className="text-mission-control-accent" />
         <h2 className="text-xl font-bold text-mission-control-text">Google Workspace</h2>
-      </div>
+      </Flex>
       <p className="text-mission-control-text-dim text-sm mb-5">
         Connect your Google account to enable Gmail and Calendar integration in the Inbox module.
       </p>
 
       {googleStatus === 'checking' && (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
+        <Flex align="center" gap="3" p="3" className="rounded-lg bg-mission-control-bg border border-mission-control-border">
           <Loader size={16} className="animate-spin text-mission-control-accent" />
           <span className="text-sm text-mission-control-text">Checking connection…</span>
-        </div>
+        </Flex>
       )}
 
       {googleStatus === 'connected' && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-success border border-success-border mb-4">
+        <Flex align="center" gap="2" p="3" mb="4" className="rounded-lg bg-success border border-success-border">
           <CheckCircle size={16} className="text-success" />
           <span className="text-sm text-mission-control-text">
             Connected{googleEmail ? ` as ${googleEmail}` : ''}
           </span>
-        </div>
+        </Flex>
       )}
 
       {(googleStatus === 'disconnected' || googleStatus === 'error') && (
@@ -830,10 +830,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
             </Button>
           )}
           {googleSkipped && (
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-warning border border-warning-border text-xs text-warning">
+            <Flex align="center" gap="2" p="2" className="rounded-lg bg-warning border border-warning-border text-xs text-warning">
               <AlertTriangle size={12} />
               Skipped — connect later via Settings
-            </div>
+            </Flex>
           )}
         </>
       )}
@@ -852,10 +852,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const renderObsidianAndPermissions = () => (
     <div className="py-4">
-      <div className="flex items-center gap-2 mb-1">
+      <Flex align="center" gap="2" mb="1">
         <BookOpen size={18} className="text-mission-control-accent" />
         <h2 className="text-xl font-bold text-mission-control-text">Memory Vault & Permissions</h2>
-      </div>
+      </Flex>
       <p className="text-mission-control-text-dim text-sm mb-5">
         Obsidian provides a visual interface for the agent memory vault. Agents work without it, but you won't be able to browse memory files visually.
       </p>
@@ -863,7 +863,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       {/* Obsidian vault status */}
       <div className="mb-4">
         <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Memory Vault (Recommended)</p>
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
+        <Flex align="center" gap="3" p="3" className="rounded-lg bg-mission-control-bg border border-mission-control-border">
           {obsidianStatus === 'checking' && <Loader size={16} className="animate-spin text-mission-control-accent" />}
           {obsidianStatus === 'found' && <CheckCircle size={16} className="text-success" />}
           {obsidianStatus === 'not-found' && (
@@ -887,10 +887,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
               </p>
             )}
           </div>
-        </div>
+        </Flex>
 
         {/* Open in Obsidian button */}
-        <div className="flex items-center gap-2 mt-3">
+        <Flex align="center" gap="2" mt="3">
           <Button
             onClick={handleOpenObsidian}
             disabled={obsidianOpening}
@@ -908,7 +908,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
             <RefreshCw size={12} />
             Re-check
           </Button>
-        </div>
+        </Flex>
 
         {/* Confirmation checkbox */}
         {!obsidianSkipped && (
@@ -921,10 +921,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           </label>
         )}
         {obsidianSkipped ? (
-          <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-warning border border-warning-border text-xs text-warning">
+          <Flex align="center" gap="2" mt="3" p="2" className="rounded-lg bg-warning border border-warning-border text-xs text-warning">
             <AlertTriangle size={12} />
             Skipped — open Obsidian and load ~/mission-control/memory as a vault anytime
-          </div>
+          </Flex>
         ) : (
           !obsidianConfirmed && obsidianStatus !== 'found' && (
             <Button onClick={() => setObsidianSkipped(true)} variant="ghost" color="gray" size="1" className="mt-3">
@@ -989,10 +989,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     if (loadingCatalog) {
       return (
         <div className="py-2">
-          <div className="flex items-center gap-2 mb-1">
+          <Flex align="center" gap="2" mb="1">
             <Package size={18} className="text-mission-control-accent" />
             <h2 className="text-xl font-bold text-mission-control-text">Agents & Modules</h2>
-          </div>
+          </Flex>
           <p className="text-mission-control-text-dim text-sm mb-4">
             Loading catalog…
           </p>
@@ -1007,10 +1007,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
     return (
       <div className="py-2">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" mb="1">
           <Package size={18} className="text-mission-control-accent" />
           <h2 className="text-xl font-bold text-mission-control-text">Agents & Modules</h2>
-        </div>
+        </Flex>
         <p className="text-mission-control-text-dim text-sm mb-4">
           Core agents and modules are pre-selected. Add any optional ones you need.
         </p>
@@ -1115,10 +1115,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
     return (
       <div className="py-4">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" mb="1">
           <Sparkles size={18} className="text-mission-control-accent" />
           <h2 className="text-xl font-bold text-mission-control-text">Setting Up</h2>
-        </div>
+        </Flex>
         <p className="text-mission-control-text-dim text-sm mb-5">
           Installing selected agents and modules…
         </p>
@@ -1157,17 +1157,17 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         )}
 
         {allDone && !hasErrors && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-success border border-success-border">
+          <Flex align="center" gap="2" p="3" className="rounded-lg bg-success border border-success-border">
             <CheckCircle size={16} className="text-success" />
             <span className="text-sm text-mission-control-text">All items installed successfully</span>
-          </div>
+          </Flex>
         )}
 
         {!installStarted && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
+          <Flex align="center" gap="2" p="3" className="rounded-lg bg-mission-control-bg border border-mission-control-border">
             <Loader size={16} className="animate-spin text-mission-control-accent" />
             <span className="text-sm text-mission-control-text">Preparing install…</span>
-          </div>
+          </Flex>
         )}
       </div>
     );
@@ -1187,10 +1187,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const renderTourLaunch = () => (
     <div className="py-6">
-      <div className="flex items-center gap-2 mb-1">
+      <Flex align="center" gap="2" mb="1">
         <Map size={18} className="text-mission-control-accent" />
         <h2 className="text-xl font-bold text-mission-control-text">Interactive Tour</h2>
-      </div>
+      </Flex>
       <p className="text-mission-control-text-dim text-sm mb-5">
         Take an 8-stop tour of Mission Control and discover what each panel does.
       </p>
@@ -1223,13 +1223,13 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
       {/* Back nav row */}
       <div className="mt-4 pt-4 border-t border-mission-control-border">
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           <Button onClick={goBack} variant="ghost" color="gray" size="2">
             <ArrowLeft size={14} />
             Back
           </Button>
           <span className="text-xs text-mission-control-text-dim">9 / {STEP_COUNT}</span>
-        </div>
+        </Flex>
       </div>
     </div>
   );
@@ -1357,7 +1357,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
             {obsidianRequired && (
               <p className="text-xs text-warning text-center mb-3">Open the vault in Obsidian and check the box above to continue.</p>
             )}
-            <div className="flex items-center justify-between">
+            <Flex align="center" justify="between">
               <Button onClick={goBack} variant="ghost" color="gray" size="2">
                 <ArrowLeft size={14} />
                 Back
@@ -1365,7 +1365,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
               <span className="text-xs text-mission-control-text-dim">
                 {currentStep + 1} / {STEP_COUNT}
               </span>
-              <div className="flex items-center gap-2">
+              <Flex align="center" gap="2">
                 {isSkippable && (
                   <Button onClick={handleSkipStep} variant="soft" color="gray" size="2">
                     {skipLabels[currentStep] ?? 'Skip'}
@@ -1381,8 +1381,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
                   Continue
                   <ArrowRight size={14} />
                 </Button>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
           </div>
         )}
       </div>
