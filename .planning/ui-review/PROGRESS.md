@@ -7,7 +7,7 @@
 - Screenshot dir: `/Users/kevin.macarthur/Froggo UI/`
 - Repo: `~/git/froggo-mission-control`
 
-## Progress: 1 / 113 complete
+## Progress: 40 / 113 complete
 
 ## Sessions
 - [x] **001** `Screenshot 2026-03-24 at 23.05.11.png` — real badge counts (999 cap), dedup messages by id, staleness indicator (>3d = warning clock on timestamp)
@@ -23,33 +23,33 @@
 - [x] **011** `Screenshot 2026-03-24 at 23.06.19.png` — Create Task Chat mode: Send button no explicit color (violet default), no green CTAs
 - [x] **012** `Screenshot 2026-03-24 at 23.08.15.png` — Create Task Manual form: Create Task button no color prop (violet default), all clean
 - [x] **013** `Screenshot 2026-03-24 at 23.08.25.png` — Approval Queue: Approve/Approve-all use grass (semantic success=approve), Resume Work uses grass (confirm-proceed action), all consistent
-- [ ] **014** `Screenshot 2026-03-24 at 23.08.38.png`
-- [ ] **015** `Screenshot 2026-03-24 at 23.08.43.png`
-- [ ] **016** `Screenshot 2026-03-24 at 23.08.46.png`
-- [ ] **017** `Screenshot 2026-03-24 at 23.08.50.png`
-- [ ] **018** `Screenshot 2026-03-24 at 23.08.53.png`
-- [ ] **019** `Screenshot 2026-03-24 at 23.08.57.png`
-- [ ] **020** `Screenshot 2026-03-24 at 23.09.03.png`
-- [ ] **021** `Screenshot 2026-03-24 at 23.09.11.png`
-- [ ] **022** `Screenshot 2026-03-24 at 23.09.17.png`
-- [ ] **023** `Screenshot 2026-03-24 at 23.09.21.png`
-- [ ] **024** `Screenshot 2026-03-24 at 23.09.27.png`
-- [ ] **025** `Screenshot 2026-03-24 at 23.09.34.png`
-- [ ] **026** `Screenshot 2026-03-24 at 23.09.37.png`
-- [ ] **027** `Screenshot 2026-03-24 at 23.09.42.png`
-- [ ] **028** `Screenshot 2026-03-24 at 23.09.49.png`
-- [ ] **029** `Screenshot 2026-03-24 at 23.09.54.png`
-- [ ] **030** `Screenshot 2026-03-24 at 23.10.05.png`
-- [ ] **031** `Screenshot 2026-03-24 at 23.10.14.png`
-- [ ] **032** `Screenshot 2026-03-24 at 23.10.26.png`
-- [ ] **033** `Screenshot 2026-03-24 at 23.10.36.png`
-- [ ] **034** `Screenshot 2026-03-24 at 23.10.42.png`
-- [ ] **035** `Screenshot 2026-03-24 at 23.10.47.png`
-- [ ] **036** `Screenshot 2026-03-24 at 23.10.50.png`
-- [ ] **037** `Screenshot 2026-03-24 at 23.10.55.png`
-- [ ] **038** `Screenshot 2026-03-24 at 23.11.01.png`
-- [ ] **039** `Screenshot 2026-03-24 at 23.11.06.png`
-- [ ] **040** `Screenshot 2026-03-24 at 23.11.10.png`
+- [x] **014** `Screenshot 2026-03-24 at 23.08.38.png` — AgentPanel: removed grass from New Agent, Start play, Enable buttons; removed green from Save trust tier IconButton
+- [x] **015** `Screenshot 2026-03-24 at 23.08.43.png` — AgentDetail Performance tab: green KPI values are semantic success tokens (correct), removed green from Enable Agent button → violet
+- [x] **016** `Screenshot 2026-03-24 at 23.08.46.png` — AgentDetail Review tab: green checkmarks semantic, no CTA issues
+- [x] **017** `Screenshot 2026-03-24 at 23.08.50.png` — AgentDetail Skills tab: green skill badges are enabled-state tokens (correct)
+- [x] **018** `Screenshot 2026-03-24 at 23.08.53.png` — AgentDetail Tasks tab: no green CTAs
+- [x] **019** `Screenshot 2026-03-24 at 23.08.57.png` — AgentDetail Tools tab: enabled tool chips use semantic green (correct)
+- [x] **020** `Screenshot 2026-03-24 at 23.09.03.png` — AgentDetail Tools tab (more tools): same as 019
+- [x] **021** `Screenshot 2026-03-24 at 23.09.11.png` — AgentDetail Permissions tab: Allow button retains green (semantic Allow vs Deny pair), removed green from save description IconButton → violet
+- [x] **022** `Screenshot 2026-03-24 at 23.09.17.png` — AgentDetail Rules tab: agent config YAML, no green CTAs
+- [x] **023** `Screenshot 2026-03-24 at 23.09.21.png` — AgentDetail Soul tab: soul file editor, no green CTAs
+- [x] **024** `Screenshot 2026-03-24 at 23.09.27.png` — AgentDetail Chat tab: empty state, no green CTAs
+- [x] **025** `Screenshot 2026-03-24 at 23.09.34.png` — Agents Active table: no green CTAs
+- [x] **026** `Screenshot 2026-03-24 at 23.09.37.png` — Agents Library grid: New Agent button was fixed in 014
+- [x] **027** `Screenshot 2026-03-24 at 23.09.42.png` — Agents Leaderboard: progress bars CSS-token based, no CTA issues
+- [x] **028** `Screenshot 2026-03-24 at 23.09.49.png` — Notifications panel: Approve button retains green (semantic approve/deny pair), no other issues
+- [x] **029** `Screenshot 2026-03-24 at 23.09.54.png` — Chat direct message: no green CTAs visible
+- [x] **030** `Screenshot 2026-03-24 at 23.10.05.png` — Chat team meeting room (overview): no green CTAs
+- [x] **031** `Screenshot 2026-03-24 at 23.10.14.png` — Chat team meeting room (full view): no green CTAs
+- [x] **032** `Screenshot 2026-03-24 at 23.10.26.png` — Chat room thread with Growth Director: no green CTAs
+- [x] **033** `Screenshot 2026-03-24 at 23.10.36.png` — Modules catalog overview: no green CTA buttons
+- [x] **034** `Screenshot 2026-03-24 at 23.10.42.png` — Modules Productivity tab: no green CTAs
+- [x] **035** `Screenshot 2026-03-24 at 23.10.47.png` — Modules Communications tab: no green CTAs
+- [x] **036** `Screenshot 2026-03-24 at 23.10.50.png` — ModuleLibraryPanel: removed grass from Install (×2), Save Configuration, Submit Review buttons → violet
+- [x] **037** `Screenshot 2026-03-24 at 23.11.01.png` — Library Files tab: no green CTAs
+- [x] **038** `Screenshot 2026-03-24 at 23.11.06.png` — Library Files tab (file preview): no green CTAs
+- [x] **039** `Screenshot 2026-03-24 at 23.11.10.png` — Library Templates tab: emojis in template content (user data, not UI chrome — acceptable), no CTA issues
+- [x] **040** `Screenshot 2026-03-24 at 23.11.16.png` — Social Media Pipeline board: Compose button violet, no green CTAs
 - [ ] **041** `Screenshot 2026-03-24 at 23.11.16.png`
 - [ ] **042** `Screenshot 2026-03-24 at 23.11.26.png`
 - [ ] **043** `Screenshot 2026-03-24 at 23.11.31.png`

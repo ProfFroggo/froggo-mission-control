@@ -342,7 +342,6 @@ function ReviewModal({
               type="submit"
               disabled={rating === 0 || submitting}
               variant="solid"
-              color="grass"
               size="2"
             >
               {submitting ? <RadixSpinner size="1" /> : <CheckCircle2 size={13} />}
@@ -501,7 +500,7 @@ function ConfigurePanel({
             <Button type="button" onClick={onClose} variant="soft" color="gray" size="1">
               Cancel
             </Button>
-            <Button type="submit" disabled={saving} variant="solid" color="grass" size="1">
+            <Button type="submit" disabled={saving} variant="solid" size="1">
               {saving ? <RadixSpinner size="1" /> : <CheckCircle2 size={11} />}
               Save Configuration
             </Button>
@@ -623,7 +622,6 @@ function FeaturedCarousel({
                     type="button"
                     onClick={() => onInstall(mod)}
                     variant="solid"
-                    color="grass"
                     size="1"
                     className="mt-auto w-full"
                   >
@@ -1183,7 +1181,6 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                       type="button"
                       onClick={() => handleInstallClick(module)}
                       variant="solid"
-                      color="grass"
                       size="1"
                       className="w-full"
                     >
