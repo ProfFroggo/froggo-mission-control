@@ -1371,7 +1371,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             >
               {/* Column Header */}
               <div className={`p-3 border-b border-mission-control-border border-t-2 ${column.color} rounded-t-2xl`}>
-                <div className={`flex items-center justify-between ${isCollapsed ? '' : 'mb-2'}`}>
+                <Flex align="center" justify="between" className={isCollapsed ? '' : 'mb-2'}>
                   <div className={`icon-text ${isCollapsed ? 'flex-col gap-2' : ''}`}>
                     <IconButton variant="ghost" size="1" onClick={() => toggleColumnCollapse(column.id)} title={isCollapsed ? 'Expand column' : 'Collapse column'}>
                       {isCollapsed ? <ChevronRight size={14} className="flex-shrink-0" /> : <ChevronDown size={14} className="flex-shrink-0" />}
@@ -1393,7 +1393,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       <Plus size={16} className="flex-shrink-0" />
                     </IconButton>
                   ))}
-                </div>
+                </Flex>
 
                 {/* Filter and Sort Controls */}
                 {!isCollapsed && <Flex align="center" gap="1">
