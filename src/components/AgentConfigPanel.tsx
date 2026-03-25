@@ -644,7 +644,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
 
       {/* Tab content */}
       {loading ? (
-        <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">Loading...</div>
+        <Flex align="center" justify="center" py="5" className="text-mission-control-text-dim text-sm">Loading...</Flex>
       ) : (
         <>
           {/* ── SOUL ── */}
@@ -652,13 +652,13 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
             <div className="space-y-3">
               <p className="text-xs text-mission-control-text-dim">Defines {agentName}'s personality, responsibilities, and behavior rules.</p>
               {showRestartBanner && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded text-warning text-xs">
+                <Flex align="center" gap="2" className="px-3 py-2 bg-warning/10 border border-warning/30 rounded text-warning text-xs">
                   <AlertCircle size={12} />
                   Restart {agentName} for changes to take effect.
                   <IconButton variant="ghost" size="1" onClick={() => setShowRestartBanner(false)} style={{ marginLeft: 'auto' }}>
                     <X size={10} />
                   </IconButton>
-                </div>
+                </Flex>
               )}
               <TextArea
                 className="h-72 font-mono resize-none"
@@ -704,7 +704,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
           {/* ── SKILLS ── */}
           {tab === 'skills' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 <p className="text-xs text-mission-control-text-dim">
                   Skills auto-load into context before relevant tasks.
                   <span className="ml-1 text-mission-control-accent">{activeSkills.length}/{allSkills.length} active</span>
@@ -716,15 +716,15 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     </Button>
                   </div>
                 )}
-              </div>
+              </Flex>
 
               {/* Add skill form */}
               {addSkillMode !== null && (
                 <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <span className="text-xs font-medium text-mission-control-text">New Skill</span>
                     <Button variant="ghost" size="1" onClick={() => setAddSkillMode(null)}>Cancel</Button>
-                  </div>
+                  </Flex>
 
                   <TextField.Root
                     placeholder="Skill name"
@@ -735,7 +735,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                   />
 
                   {/* Source type toggle */}
-                  <div className="flex gap-2">
+                  <Flex gap="2">
                     <Button variant={addSkillMode === 'url' ? 'soft' : 'ghost'} size="1" onClick={() => setAddSkillMode('url')}>
                       <Link size={10} /> From URL
                     </Button>
@@ -746,7 +746,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                       <Upload size={10} /> Upload .md
                     </Button>
                     <input ref={fileInputRef} type="file" accept=".md,text/markdown,text/plain" className="hidden" onChange={handleFileUpload} />
-                  </div>
+                  </Flex>
 
                   {addSkillMode === 'url' && (
                     <TextField.Root
@@ -814,7 +814,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                 const someOn = server.tools.some(t => activeTools.includes(t));
                 return (
                   <div key={server.id} className="border border-mission-control-border rounded-lg overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2.5 bg-mission-control-surface border-b border-mission-control-border">
+                    <Flex align="center" justify="between" className="px-3 py-2.5 bg-mission-control-surface border-b border-mission-control-border">
                       <span className="text-sm font-medium text-mission-control-text">{server.label}</span>
                       <Button
                         variant="ghost"
@@ -823,7 +823,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                       >
                         {allOn ? 'All on' : someOn ? 'Partial' : 'All off'} — toggle all
                       </Button>
-                    </div>
+                    </Flex>
                     <div className="divide-y divide-mission-control-border">
                       {server.tools.map(tool => {
                         const on = activeTools.includes(tool);
@@ -852,22 +852,22 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
 
               {/* ── Custom MCP Servers ── */}
               <div className="border-t border-mission-control-border pt-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
+                <Flex align="center" justify="between">
+                  <Flex align="center" gap="2">
                     <Server size={13} className="text-mission-control-text-dim" />
                     <span className="text-xs font-medium text-mission-control-text">Custom MCP Servers</span>
-                  </div>
+                  </Flex>
                   {!showAddMcp && (
                     <Button variant="soft" size="1" onClick={() => setShowAddMcp(true)}>
                       <Plus size={11} /> Add Server
                     </Button>
                   )}
-                </div>
+                </Flex>
 
                 {mcpServers.length > 0 && (
                   <div className="space-y-2">
                     {mcpServers.map(server => (
-                      <div key={server.id} className="flex items-center justify-between border border-mission-control-border rounded-lg px-3 py-2">
+                      <Flex key={server.id} align="center" justify="between" className="border border-mission-control-border rounded-lg px-3 py-2">
                         <div className="min-w-0">
                           <span className="text-xs font-medium text-mission-control-text">{server.name}</span>
                           <p className="text-xs text-mission-control-text-dim font-mono mt-0.5 truncate">
@@ -879,7 +879,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                         <IconButton variant="ghost" size="1" onClick={() => removeMcpServer(server.id)} style={{ flexShrink: 0, marginLeft: '12px' }}>
                           <Trash2 size={13} />
                         </IconButton>
-                      </div>
+                      </Flex>
                     ))}
                   </div>
                 )}
@@ -890,10 +890,10 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
 
                 {showAddMcp && (
                   <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
-                    <div className="flex items-center justify-between">
+                    <Flex align="center" justify="between">
                       <span className="text-xs font-medium text-mission-control-text">New MCP Server</span>
                       <Button variant="ghost" size="1" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }}>Cancel</Button>
-                    </div>
+                    </Flex>
                     <TextField.Root
                       placeholder="Server name (e.g. Filesystem MCP)"
                       value={newMcp.name}
@@ -959,22 +959,22 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
           {/* ── API KEYS ── */}
           {tab === 'api' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 <p className="text-xs text-mission-control-text-dim">Grant {agentName} access to API keys and credentials.</p>
                 {!showAddKey && (
                   <Button variant="soft" size="1" onClick={() => setShowAddKey(true)}>
                     <Plus size={11} /> Add Credential
                   </Button>
                 )}
-              </div>
+              </Flex>
 
               {/* Inline add form */}
               {showAddKey && (
                 <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <span className="text-xs font-medium text-mission-control-text">New Credential</span>
                     <Button variant="ghost" size="1" onClick={() => { setShowAddKey(false); setNewKey({ name: '', service: '', key: '' }); }}>Cancel</Button>
-                  </div>
+                  </Flex>
                   <Select.Root size="1" onValueChange={(val) => {
                       const preset = API_PRESETS.find(p => p.service === val);
                       if (preset) setNewKey(k => ({ ...k, service: preset.service, name: preset.service ? preset.label : k.name }));
@@ -1087,7 +1087,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                   ))}
                 </div>
                 {/* Description + preset flash */}
-                <div className="flex items-center justify-between mt-2 px-1">
+                <Flex align="center" justify="between" mt="2" className="px-1">
                   <p className="text-xs text-mission-control-text-dim">
                     {TRUST_TIERS.find(t => t.id === trustTier)?.desc}
                   </p>
@@ -1096,7 +1096,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                       Presets applied
                     </span>
                   )}
-                </div>
+                </Flex>
                 {/* Tier diff preview */}
                 {prevTrustTier && prevTrustTier !== trustTier && (() => {
                   const prevPreset = TIER_PRESETS[prevTrustTier] || {};
@@ -1151,7 +1151,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                               const overrideVal = permOverrides[perm.id];
                               const hasOverride = overrideVal !== undefined;
                               return (
-                                <div key={perm.id} className="flex items-center justify-between px-3 py-2">
+                                <Flex key={perm.id} align="center" justify="between" className="px-3 py-2">
                                   <div className="min-w-0 mr-2">
                                     <span className="text-xs text-mission-control-text">{perm.label}</span>
                                     <span className={`ml-1.5 text-xs ${TIER_COLORS[perm.tier]}`}>T{perm.tier}</span>
@@ -1163,7 +1163,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                                     <Button variant={overrideVal === true ? 'soft' : 'ghost'} size="1" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}>Allow</Button>
                                     <Button variant={overrideVal === false ? 'soft' : 'ghost'} color={overrideVal === false ? 'red' : undefined} size="1" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}>Deny</Button>
                                   </div>
-                                </div>
+                                </Flex>
                               );
                             })}
                           </div>
@@ -1195,12 +1195,12 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                   {agentDisallowed.length > 0 && (
                     <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
                       {agentDisallowed.map(tool => (
-                        <div key={tool} className="flex items-center justify-between px-3 py-1.5">
+                        <Flex key={tool} align="center" justify="between" className="px-3 py-1.5">
                           <code className="text-xs font-mono text-mission-control-text">{tool}</code>
                           <IconButton variant="ghost" size="1" onClick={() => handleRemoveAgentDisallowed(tool)}>
                             <X size={12} />
                           </IconButton>
-                        </div>
+                        </Flex>
                       ))}
                     </div>
                   )}
@@ -1216,15 +1216,15 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
           {/* ── PERFORMANCE ── */}
           {tab === 'performance' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-1">
+              <Flex align="center" gap="2" mb="1">
                 <BarChart2 size={14} className="text-mission-control-text-dim" />
                 <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Agent Performance</span>
-              </div>
+              </Flex>
 
               {metricsLoading ? (
-                <div className="flex items-center justify-center py-10 text-mission-control-text-dim text-sm">Loading metrics...</div>
+                <Flex align="center" justify="center" py="5" className="text-mission-control-text-dim text-sm">Loading metrics...</Flex>
               ) : !metrics ? (
-                <div className="flex items-center justify-center py-10 text-mission-control-text-dim text-sm">No metrics available</div>
+                <Flex align="center" justify="center" py="5" className="text-mission-control-text-dim text-sm">No metrics available</Flex>
               ) : (
                 <>
                   {/* Task stats */}
@@ -1246,7 +1246,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                   {/* Review stats */}
                   <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border space-y-2">
                     <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Clara Review Score</div>
-                    <div className="flex items-center gap-3">
+                    <Flex align="center" gap="3">
                       <div className="flex-1 h-2 rounded-full bg-mission-control-bg0 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-success transition-all"
@@ -1256,28 +1256,28 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                       <span className="text-sm font-bold text-mission-control-text w-10 text-right">
                         {metrics.approvalRate !== null ? `${metrics.approvalRate}%` : 'N/A'}
                       </span>
-                    </div>
-                    <div className="flex gap-4 text-xs text-mission-control-text-dim">
+                    </Flex>
+                    <Flex gap="4" className="text-xs text-mission-control-text-dim">
                       <span className="text-success">{metrics.reviewsApproved} approved</span>
                       <span className="text-error">{metrics.reviewsRejected} rejected</span>
-                    </div>
+                    </Flex>
                   </div>
 
                   {/* Memory and activity */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border">
-                      <div className="flex items-center gap-1.5 mb-1">
+                      <Flex align="center" gap="2" mb="1">
                         <BookOpen size={12} className="text-mission-control-text-dim" />
                         <span className="text-xs text-mission-control-text-dim">Memory Notes</span>
-                      </div>
+                      </Flex>
                       <div className="text-lg font-bold text-mission-control-text">{metrics.memoryNotes}</div>
                       <div className="text-xs text-mission-control-text-dim">notes in vault</div>
                     </div>
                     <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border">
-                      <div className="flex items-center gap-1.5 mb-1">
+                      <Flex align="center" gap="2" mb="1">
                         <BarChart2 size={12} className="text-mission-control-text-dim" />
                         <span className="text-xs text-mission-control-text-dim">Recent Activity</span>
-                      </div>
+                      </Flex>
                       <div className="text-lg font-bold text-mission-control-text">{metrics.recentActivity}</div>
                       <div className="text-xs text-mission-control-text-dim">actions last 7d</div>
                     </div>
@@ -1286,22 +1286,22 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                   {/* Avg completion + last active */}
                   <div className="space-y-2 text-sm">
                     {metrics.avgCompletionMs !== null && (
-                      <div className="flex justify-between px-1">
+                      <Flex justify="between" className="px-1">
                         <span className="text-mission-control-text-dim text-xs">Avg. completion time</span>
                         <span className="text-mission-control-text text-xs font-medium">
                           {metrics.avgCompletionMs < 3600000
                             ? `${Math.round(metrics.avgCompletionMs / 60000)}m`
                             : `${(metrics.avgCompletionMs / 3600000).toFixed(1)}h`}
                         </span>
-                      </div>
+                      </Flex>
                     )}
                     {metrics.lastActive !== null && (
-                      <div className="flex justify-between px-1">
+                      <Flex justify="between" className="px-1">
                         <span className="text-mission-control-text-dim text-xs">Last active</span>
                         <span className="text-mission-control-text text-xs font-medium">
                           {new Date(metrics.lastActive).toLocaleString()}
                         </span>
-                      </div>
+                      </Flex>
                     )}
                   </div>
 
@@ -1317,7 +1317,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
 
       {/* HR Actions footer — only for non-protected agents */}
       {!loading && !isProtectedAgent(agentId) && (
-        <div className="flex items-center gap-2 pt-4 mt-4 border-t border-mission-control-border">
+        <Flex align="center" gap="2" className="pt-4 mt-4 border-t border-mission-control-border">
           {agentStatus === 'disabled' ? (
             <Button
               variant="soft"
@@ -1344,7 +1344,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
           <Button variant="soft" color="red" size="1" disabled={hrActionLoading} onClick={() => setShowFireConfirm(true)}>
             <UserMinus size={14} /> Fire Agent
           </Button>
-        </div>
+        </Flex>
       )}
 
       {/* Fire confirm */}
