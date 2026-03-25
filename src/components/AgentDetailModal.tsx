@@ -1111,7 +1111,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveDesc(); } if (e.key === 'Escape') cancelEditDesc(); }}
                   />
                   <div className="flex flex-col gap-1 flex-shrink-0">
-                    <IconButton variant="ghost" color="green" size="1" onClick={saveDesc} disabled={descSaving} title="Save">
+                    <IconButton variant="ghost" size="1" onClick={saveDesc} disabled={descSaving} title="Save">
                       {descSaving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
                     </IconButton>
                     <IconButton variant="ghost" color="red" size="1" onClick={cancelEditDesc} title="Cancel">
@@ -2192,7 +2192,6 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             {agentStatus === 'disabled' ? (
               <Button
                 variant="soft"
-                color="green"
                 size="1"
                 disabled={hrActionLoading}
                 onClick={async () => {

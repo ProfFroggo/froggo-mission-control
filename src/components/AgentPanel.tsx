@@ -357,7 +357,6 @@ export default function AgentPanel() {
               <Button
                 type="button"
                 variant="solid"
-                color="grass"
                 size="2"
                 onClick={() => setShowCreateModal(true)}
               >
@@ -643,7 +642,7 @@ export default function AgentPanel() {
                                 <Select.Item value="3">Tier 3 (Full)</Select.Item>
                               </Select.Content>
                             </Select.Root>
-                            <IconButton type="button" variant="ghost" color="green" size="1" aria-label="Save trust tier" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }}><Check size={12} /></IconButton>
+                            <IconButton type="button" variant="ghost" size="1" aria-label="Save trust tier" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }}><Check size={12} /></IconButton>
                             <IconButton type="button" variant="ghost" color="red" size="1" aria-label="Cancel trust tier edit" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }}><AlertTriangle size={12} /></IconButton>
                           </div>
                         ) : (
@@ -671,7 +670,7 @@ export default function AgentPanel() {
                     {/* Start/Stop + Soul link — relative z-[2] lifts above cover button */}
                     <div className={`flex items-center gap-1.5 mt-auto pt-2 border-t border-mission-control-border relative z-[2]`}>
                       {agent.status === 'idle' && agentTasks.length > 0 && (
-                        <Button type="button" variant="solid" color="grass" size="1" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}>
+                        <Button type="button" variant="solid" size="1" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}>
                           <Play size={11} /> Start
                         </Button>
                       )}
@@ -760,7 +759,7 @@ export default function AgentPanel() {
                     <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
                   </div>
                   {agent.status === 'disabled' ? (
-                    <Button type="button" variant="surface" color="grass" size="1" onClick={() => handleAgentStart(agent.id)} title="Re-enable agent for dispatcher">
+                    <Button type="button" variant="surface" size="1" onClick={() => handleAgentStart(agent.id)} title="Re-enable agent for dispatcher">
                       <Play size={12} /> Enable
                     </Button>
                   ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (

@@ -7,7 +7,7 @@ import { useEventBus } from '../lib/useEventBus';
 import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles, ChevronUp, ChevronDown, User } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 // eslint-disable-next-line import/order
-import { Button, Checkbox, IconButton, Spinner, TextArea, TextField, Select } from '@radix-ui/themes';
+import { Box, Flex, Button, Checkbox, IconButton, Spinner, TextArea, TextField, Select } from '@radix-ui/themes';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
 import { showToast } from './Toast';
@@ -813,7 +813,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       {/* Header */}
       <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-bg rounded-t-2xl flex-shrink-0">
         {/* Row 1: badges + close */}
-        <div className="flex items-center gap-2 mb-1.5">
+        <Flex align="center" gap="2" className="mb-1.5">
           <ActiveAgentIndicator taskId={task.id} showLabel size="sm" />
           <span className={`px-1.5 py-0.5 text-xs rounded ${
             task.status === 'done' ? 'bg-success-subtle text-success' :
@@ -875,7 +875,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           >
             <X size={16} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Row 2: title */}
         <h2 id={panelTitleId} className="text-base font-semibold line-clamp-1 mb-1" title={task.title}>{task.title}</h2>
@@ -886,7 +886,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         )}
 
         {/* Row 4: progress · dates — all one line */}
-        <div className="flex items-center gap-2 my-[14px]">
+        <Flex align="center" gap="2" className="my-[14px]">
           {subtasks.length > 0 ? (
             <>
               <div className="h-2 flex-1 bg-gradient-to-r from-mission-control-border/60 to-mission-control-border rounded-full overflow-hidden">
@@ -919,15 +919,15 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <span className="flex items-center gap-1"><Calendar size={11} />{formatTime(task.createdAt)}</span>
             <span className="flex items-center gap-1"><Clock size={11} />{formatTime(task.updatedAt)}</span>
           </div>
-        </div>
+        </Flex>
 
         {/* Row 6: agents — compact single row */}
-        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-mission-control-border">
+        <Flex align="center" gap="3" className="mt-2 pt-2 border-t border-mission-control-border">
           {/* Worker */}
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <Flex align="center" gap="2" className="flex-1 min-w-0">
             <span className="text-xs text-mission-control-text-dim whitespace-nowrap">Worker:</span>
             {assignedAgent ? (
-              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <Flex align="center" gap="2" className="flex-1 min-w-0">
                 <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="sm" />
                 <span className="text-xs font-medium truncate">{assignedAgent.name}</span>
                 {!isWorking && !['done', 'in-progress', 'internal-review', 'agent-review', 'review'].includes(task.status) && (
@@ -936,24 +936,24 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   </IconButton>
                 )}
                 {(isWorking || task.status === 'in-progress') && <Loader2 size={12} className="animate-spin text-info flex-shrink-0" />}
-              </div>
+              </Flex>
             ) : isRemoteAgent ? (
-              <div className="flex items-center gap-1 min-w-0">
+              <Flex align="center" gap="1" className="min-w-0">
                 <Globe size={12} className="text-review flex-shrink-0" />
                 <span className="text-xs truncate capitalize">{task.assignedTo}</span>
-              </div>
+              </Flex>
             ) : (
               <span className="text-xs text-mission-control-text-dim italic">unassigned</span>
             )}
-          </div>
+          </Flex>
 
           <div className="w-px h-4 bg-mission-control-border flex-shrink-0" />
 
           {/* Reviewer */}
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <Flex align="center" gap="2" className="flex-1 min-w-0">
             <span className="text-xs text-mission-control-text-dim whitespace-nowrap">Reviewer:</span>
             {reviewer ? (
-              <div className="flex items-center gap-1.5 min-w-0">
+              <Flex align="center" gap="2" className="min-w-0">
                 <AgentAvatar agentId={reviewer.id} fallbackEmoji={reviewer.avatar} size="sm" />
                 <span className="text-xs font-medium truncate">{reviewer.name}</span>
                 {task.reviewStatus && (
@@ -964,7 +964,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     'bg-muted-subtle text-muted'
                   }`}>{task.reviewStatus}</span>
                 )}
-              </div>
+              </Flex>
             ) : (
               <Select.Root defaultValue="clara" onValueChange={(val) => val && assignReviewer(val)}>
                 <Select.Trigger className="flex-1 min-w-0" placeholder="Assign..." />
@@ -979,8 +979,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 </Select.Content>
               </Select.Root>
             )}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       </div>
 
       {/* Clara review notes callout */}
@@ -1009,14 +1009,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* Time tracking strip */}
       <div className="mx-4 mt-2 mb-0 flex items-center gap-4 text-xs text-mission-control-text-dim flex-shrink-0 flex-wrap">
-        <div className="flex items-center gap-1.5">
+        <Flex align="center" gap="2">
           <Timer size={12} className="flex-shrink-0" />
           <span>Active {formatDuration(task.updatedAt - task.createdAt)}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
+        </Flex>
+        <Flex align="center" gap="2">
           <Calendar size={12} className="flex-shrink-0" />
           <span>Created {new Date(task.createdAt).toLocaleDateString()}</span>
-        </div>
+        </Flex>
       </div>
 
       {/* Tabs */}
@@ -1046,10 +1046,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             {/* Progress bar */}
             {subtasks.length > 0 && (
               <div className="mb-4">
-                <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
+                <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim mb-1">
                   <span>Progress</span>
                   <span>{completedSubtasks}/{subtasks.length} complete</span>
-                </div>
+                </Flex>
                 <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
                   <div
                     className="h-full bg-success rounded-full transition-all duration-300"
@@ -1057,7 +1057,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   />
                 </div>
                 {completedSubtasks === subtasks.length && task?.status === 'in-progress' && (
-                  <div className="mt-3 flex items-center gap-3 p-3 rounded-lg bg-success-subtle border border-success-border">
+                  <Flex align="center" gap="3" className="mt-3 p-3 rounded-lg bg-success-subtle border border-success-border">
                     <CheckCircle size={16} className="text-success flex-shrink-0" />
                     <span className="text-sm text-success flex-1">All subtasks complete — ready for review?</span>
                     <Button
@@ -1068,7 +1068,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     >
                       Move to Review
                     </Button>
-                  </div>
+                  </Flex>
                 )}
               </div>
             )}
@@ -1078,10 +1078,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               if (criteria.length === 0) return null;
               return (
                 <div className="mb-4 p-3 bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
+                  <Flex align="center" gap="2" className="mb-2">
                     <Sparkles size={14} className="text-mission-control-accent flex-shrink-0" />
                     <span className="text-sm font-medium">Auto-generate from Acceptance Criteria</span>
-                  </div>
+                  </Flex>
                   <p className="text-xs text-mission-control-text-dim mb-2">
                     Found {criteria.length} item{criteria.length !== 1 ? 's' : ''} in planning notes. Create them as subtasks?
                   </p>
@@ -1106,7 +1106,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             })()}
 
             {/* Add Subtask — Enter key creates next subtask automatically */}
-            <div className="flex gap-2 mb-4">
+            <Flex gap="2" className="mb-4">
               <TextField.Root
                 ref={newSubtaskInputRef as React.Ref<HTMLInputElement>}
                 type="text"
@@ -1130,11 +1130,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               >
                 <Plus size={16} />
               </IconButton>
-            </div>
+            </Flex>
 
             {/* Bulk action bar — visible when one or more subtasks are selected */}
             {selectedSubtaskIds.size > 0 && (
-              <div className="flex items-center gap-2 mb-3 p-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
+              <Flex align="center" gap="2" className="mb-3 p-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
                 <span className="text-xs text-mission-control-text-dim flex-1">
                   {selectedSubtaskIds.size} selected
                 </span>
@@ -1186,17 +1186,17 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 >
                   <X size={14} />
                 </IconButton>
-              </div>
+              </Flex>
             )}
 
             {/* Subtask List */}
             {loadingSubtasks ? (
               <div className="space-y-2">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-mission-control-border">
+                  <Flex key={i} align="center" gap="3" className="p-3 rounded-lg border border-mission-control-border">
                     <div className="w-5 h-5 rounded bg-mission-control-surface animate-pulse flex-shrink-0" />
                     <div className="h-4 rounded bg-mission-control-surface animate-pulse flex-1" />
-                  </div>
+                  </Flex>
                 ))}
               </div>
             ) : subtasks.length === 0 ? (
@@ -1266,7 +1266,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                         )}
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                           {/* Assignee selector */}
-                          <div className="flex items-center gap-1">
+                          <Flex align="center" gap="1">
                             <User size={11} className="text-mission-control-text-dim flex-shrink-0" />
                             <Select.Root
                               value={st.assignedTo || '__unassigned'}
@@ -1280,7 +1280,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                                 ))}
                               </Select.Content>
                             </Select.Root>
-                          </div>
+                          </Flex>
 
                           {/* Due date badge / editor */}
                           {editingDueDateId === st.id ? (
@@ -1369,12 +1369,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         {/* Planning Tab - ALWAYS VISIBLE regardless of task status (historical record) */}
         {activeTab === 'planning' && (
           <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
+            <Flex align="center" justify="between" className="mb-3">
               <h3 className="text-sm font-medium flex items-center gap-2">
                 <FileText size={16} className="text-mission-control-accent" />
                 Planning & Brainstorming
               </h3>
-            </div>
+            </Flex>
             
             <TextArea
               value={task.planningNotes || ''}
@@ -1411,7 +1411,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   {(task.blockedBy as string[]).map(depId => {
                     const depTask = useStore.getState().tasks.find(t => t.id === depId);
                     return (
-                      <div key={depId} className="flex items-center gap-2 p-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm">
+                      <Flex key={depId} align="center" gap="2" className="p-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm">
                         <span className="flex-1 truncate">{depTask?.title || depId}</span>
                         {depTask && (
                           <span className={`text-xs px-1.5 py-0.5 rounded ${depTask.status === 'done' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
@@ -1434,7 +1434,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                         >
                           <X size={12} />
                         </IconButton>
-                      </div>
+                      </Flex>
                     );
                   })}
                 </div>
@@ -1490,7 +1490,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   </h3>
                   <div className="space-y-1.5">
                     {related.map(rt => (
-                      <div key={rt.id} className="flex items-center gap-2 p-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-sm hover:border-mission-control-accent/50 transition-colors">
+                      <Flex key={rt.id} align="center" gap="2" className="p-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-sm hover:border-mission-control-accent/50 transition-colors">
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                           rt.status === 'in-progress' ? 'bg-info' :
                           rt.status === 'review' ? 'bg-review' :
@@ -1498,7 +1498,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                         }`} />
                         <span className="flex-1 truncate text-xs">{rt.title}</span>
                         <span className="text-xs text-mission-control-text-dim flex-shrink-0">{rt.project}</span>
-                      </div>
+                      </Flex>
                     ))}
                   </div>
                 </div>
@@ -1517,7 +1517,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               className="mb-4"
             />
             
-            <div className="flex items-center justify-between mb-4">
+            <Flex align="center" justify="between" className="mb-4">
               <h3 className="text-sm font-medium">Activity Log</h3>
               <IconButton
                 onClick={loadActivity}
@@ -1529,18 +1529,18 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               >
                 <RefreshCw size={14} className={loadingActivity ? 'animate-spin' : ''} />
               </IconButton>
-            </div>
+            </Flex>
 
             {loadingActivity ? (
               <div className="space-y-3">
                 {[1,2,3].map(i => (
-                  <div key={i} className="flex gap-3 p-2">
+                  <Flex key={i} gap="3" className="p-2">
                     <div className="w-6 h-6 rounded-full bg-mission-control-surface animate-pulse shrink-0 mt-0.5" />
                     <div className="flex-1 space-y-1.5">
                       <div className="h-3 w-24 rounded bg-mission-control-surface animate-pulse" />
                       <div className="h-4 w-3/4 rounded bg-mission-control-surface animate-pulse" />
                     </div>
-                  </div>
+                  </Flex>
                 ))}
               </div>
             ) : (
@@ -1561,7 +1561,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm">{act.message}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <Flex align="center" gap="2" className="mt-0.5">
                         <span className="text-xs text-mission-control-text-dim">
                           {formatTime(act.timestamp)}
                         </span>
@@ -1570,7 +1570,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                             {agents.find(a => a.id === act.agentId)?.name || act.agentId}
                           </span>
                         )}
-                      </div>
+                      </Flex>
                       {act.details && (
                         <pre className="mt-1 text-xs bg-mission-control-bg p-2 rounded overflow-x-auto max-h-32">
                           {act.details}
@@ -1595,12 +1595,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         {/* Files Tab */}
         {activeTab === 'files' && (
           <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
+            <Flex align="center" justify="between" className="mb-4">
               <h3 className="text-sm font-medium flex items-center gap-2">
                 <Paperclip size={16} className="text-mission-control-accent" />
                 Task Attachments
               </h3>
-              <div className="flex gap-2">
+              <Flex gap="2">
                 <Button
                   onClick={handleAutoDetect}
                   disabled={loadingAttachments}
@@ -1630,8 +1630,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     disabled={uploadingFile}
                   />
                 </label>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
 
             {/* Upload Instructions */}
             {attachments.length === 0 && !loadingAttachments && (
@@ -1648,10 +1648,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Loading State */}
             {loadingAttachments && attachments.length === 0 && (
-              <div className="flex items-center justify-center py-8 text-mission-control-text-dim">
+              <Flex align="center" justify="center" className="py-8 text-mission-control-text-dim">
                 <Loader2 size={24} className="animate-spin mr-2" />
                 Loading attachments...
-              </div>
+              </Flex>
             )}
 
             {/* Attachments List */}
