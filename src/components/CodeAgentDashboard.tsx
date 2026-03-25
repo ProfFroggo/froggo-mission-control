@@ -151,14 +151,14 @@ export default function CodeAgentDashboard() {
   return (
     <Flex direction="column" height="100%">
       {/* Read-only notice */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-info-subtle border-b border-mission-control-border text-info text-xs">
+      <Flex align="center" gap="2" className="px-4 py-2 bg-info-subtle border-b border-mission-control-border text-info text-xs">
         <Info size={13} />
         <span>Dev module — read-only diagnostics. The Cron Jobs tab manages scheduled jobs; all other panels are display-only.</span>
-      </div>
+      </Flex>
       {/* Header */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" className="mb-4">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-info-subtle rounded-lg">
               <Code size={24} className="text-info" />
             </div>
@@ -168,7 +168,7 @@ export default function CodeAgentDashboard() {
                 Development activity and execution tracking
               </p>
             </div>
-          </div>
+          </Flex>
           <Button
             onClick={loadData}
             disabled={loading}
@@ -178,7 +178,7 @@ export default function CodeAgentDashboard() {
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
           </Button>
-        </div>
+        </Flex>
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-mission-control-border mt-2">
@@ -229,33 +229,33 @@ export default function CodeAgentDashboard() {
       <div className="px-6 pt-4 pb-2 bg-mission-control-surface border-b border-mission-control-border">
         <div className="grid grid-cols-4 gap-4">
           <div className="bg-mission-control-bg rounded-lg p-4">
-            <div className="flex items-center gap-2 text-mission-control-text-dim mb-1">
+            <Flex align="center" gap="2" className="text-mission-control-text-dim mb-1">
               <Terminal size={14} />
               <span className="text-xs">Active Sessions</span>
-            </div>
+            </Flex>
             <div className="text-2xl font-bold">{sessions.filter(s => s.status === 'running').length}</div>
           </div>
           <div className="bg-mission-control-bg rounded-lg p-4">
-            <div className="flex items-center gap-2 text-mission-control-text-dim mb-1">
+            <Flex align="center" gap="2" className="text-mission-control-text-dim mb-1">
               <GitCommit size={14} />
               <span className="text-xs">Commits Today</span>
-            </div>
+            </Flex>
             <div className="text-2xl font-bold">
               {commits.filter(c => Date.now() - c.timestamp < 86400000).length}
             </div>
           </div>
           <div className="bg-mission-control-bg rounded-lg p-4">
-            <div className="flex items-center gap-2 text-mission-control-text-dim mb-1">
+            <Flex align="center" gap="2" className="text-mission-control-text-dim mb-1">
               <Zap size={14} />
               <span className="text-xs">Total Tokens</span>
-            </div>
+            </Flex>
             <div className="text-2xl font-bold">{(totalTokens / 1000).toFixed(1)}k</div>
           </div>
           <div className="bg-mission-control-bg rounded-lg p-4">
-            <div className="flex items-center gap-2 text-mission-control-text-dim mb-1">
+            <Flex align="center" gap="2" className="text-mission-control-text-dim mb-1">
               <CheckCircle size={14} />
               <span className="text-xs">Tasks Done</span>
-            </div>
+            </Flex>
             <div className="text-2xl font-bold">{tasks.filter(t => t.status === 'done').length}</div>
           </div>
         </div>
@@ -266,17 +266,17 @@ export default function CodeAgentDashboard() {
         <div className="grid grid-cols-2 gap-6">
           {/* Recent Commits */}
           <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
-            <div className="p-4 border-b border-mission-control-border flex items-center gap-2">
+            <Flex align="center" gap="2" className="p-4 border-b border-mission-control-border">
               <GitCommit size={16} className="text-mission-control-accent" />
               <h2 className="font-semibold">Recent Commits</h2>
-            </div>
+            </Flex>
             <div className="divide-y divide-mission-control-border max-h-80 overflow-y-auto">
               {commits.length === 0 ? (
                 <div className="p-4 text-center text-mission-control-text-dim">No commits found</div>
               ) : (
                 commits.map((commit) => (
                   <div key={commit.hash} className="p-3 hover:bg-mission-control-bg/50 transition-colors">
-                    <div className="flex items-start gap-3">
+                    <Flex align="start" gap="3">
                       <code className="text-xs bg-mission-control-border px-1.5 py-0.5 rounded text-mission-control-accent font-mono">
                         {commit.hash}
                       </code>
@@ -286,7 +286,7 @@ export default function CodeAgentDashboard() {
                           {commit.author} • {formatTimeAgo(commit.timestamp)}
                         </div>
                       </div>
-                    </div>
+                    </Flex>
                   </div>
                 ))
               )}
@@ -295,17 +295,17 @@ export default function CodeAgentDashboard() {
 
           {/* Dev Tasks */}
           <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
-            <div className="p-4 border-b border-mission-control-border flex items-center gap-2">
+            <Flex align="center" gap="2" className="p-4 border-b border-mission-control-border">
               <FileCode size={16} className="text-mission-control-accent" />
               <h2 className="font-semibold">Dev Tasks</h2>
-            </div>
+            </Flex>
             <div className="divide-y divide-mission-control-border max-h-80 overflow-y-auto">
               {tasks.length === 0 ? (
                 <div className="p-4 text-center text-mission-control-text-dim">No dev tasks</div>
               ) : (
                 tasks.map((task) => (
                   <div key={task.id} className="p-3 hover:bg-mission-control-bg/50 transition-colors">
-                    <div className="flex items-center gap-3">
+                    <Flex align="center" gap="3">
                       <div className={`w-2 h-2 rounded-full ${taskStatusColors[task.status]}`} />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm truncate">{task.title}</div>
@@ -314,7 +314,7 @@ export default function CodeAgentDashboard() {
                         </div>
                       </div>
                       <ChevronRight size={14} className="text-mission-control-text-dim" />
-                    </div>
+                    </Flex>
                   </div>
                 ))
               )}
@@ -324,17 +324,17 @@ export default function CodeAgentDashboard() {
 
         {/* Active Sessions */}
         <div className="mt-6 bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
-          <div className="p-4 border-b border-mission-control-border flex items-center gap-2">
+          <Flex align="center" gap="2" className="p-4 border-b border-mission-control-border">
             <Terminal size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Agent Sessions</h2>
-          </div>
+          </Flex>
           <div className="divide-y divide-mission-control-border">
             {sessions.length === 0 ? (
               <div className="p-4 text-center text-mission-control-text-dim">No active sessions</div>
             ) : (
               sessions.map((session) => (
                 <div key={session.id} className="p-4 hover:bg-mission-control-bg/50 transition-colors">
-                  <div className="flex items-center gap-4">
+                  <Flex align="center" gap="4">
                     <div className={`w-3 h-3 rounded-full ${statusColors[session.status]}`} />
                     <div className="flex-1">
                       <div className="font-medium">{session.agent}</div>
@@ -344,7 +344,7 @@ export default function CodeAgentDashboard() {
                       <div className="text-mission-control-text-dim">{(session.tokens / 1000).toFixed(1)}k tokens</div>
                       <div className="text-xs text-mission-control-text-dim">{session.model}</div>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               ))
             )}
