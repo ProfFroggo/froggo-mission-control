@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sun, Moon, Inbox, Calendar, AlertCircle, CheckCircle, ChevronRight, Sparkles, Cloud, Activity, Bot, Users, AtSign } from 'lucide-react';
-import { Button, Heading, Spinner } from '@radix-ui/themes';
+import { Button, Flex, Heading, Spinner } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 
 interface TwitterMention {
@@ -460,10 +460,10 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Urgent Items */}
           {brief.urgentItems.length > 0 && (
             <div className="p-4 bg-error-subtle border border-error-border rounded-lg">
-              <div className="flex items-center gap-2 text-error mb-2">
+              <Flex align="center" gap="2" className="text-error mb-2">
                 <AlertCircle size={16} />
                 <span className="font-medium">Needs attention</span>
-              </div>
+              </Flex>
               <ul className="space-y-1 text-sm">
                 {brief.urgentItems.map((item, i) => (
                   <li key={i} className="text-error">• {item}</li>
@@ -481,8 +481,8 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
               style={{ width: '100%', padding: '1rem', justifyContent: 'flex-start' }}
               onClick={() => { onDismiss(); onNavigate('inbox'); }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <Flex align="center" justify="between">
+                <Flex align="center" gap="3">
                   <div className="p-2 bg-mission-control-accent/20 rounded-lg">
                     <Inbox size={20} className="text-mission-control-accent" />
                   </div>
@@ -490,24 +490,24 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                     <div className="font-medium">{brief.pendingApprovals} pending approval{brief.pendingApprovals > 1 ? 's' : ''}</div>
                     <div className="text-sm text-mission-control-text-dim">Tweets, emails, actions waiting</div>
                   </div>
-                </div>
+                </Flex>
                 <ChevronRight size={20} className="text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
-              </div>
+              </Flex>
             </Button>
           )}
 
           {/* Gibraltar Weather */}
           {brief.weather && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
+              <Flex align="center" gap="2" className="mb-3">
                 <Cloud size={16} className="text-info" />
                 <span className="font-medium">Gibraltar Weather</span>
-              </div>
+              </Flex>
               <div className="space-y-1">
-                <div className="flex items-center justify-between">
+                <Flex align="center" justify="between">
                   <span className="text-lg font-semibold">{brief.weather.temp}</span>
                   <span className="text-mission-control-text-dim">{brief.weather.condition}</span>
-                </div>
+                </Flex>
                 <div className="text-sm text-mission-control-text-dim">{brief.weather.forecast}</div>
               </div>
             </div>
@@ -516,10 +516,10 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Overnight Activity */}
           {brief.overnightActivity && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
+              <Flex align="center" gap="2" className="mb-3">
                 <Activity size={16} className="text-review" />
                 <span className="font-medium">While You Slept</span>
-              </div>
+              </Flex>
               <div className="space-y-2">
                 <p className="text-sm">{brief.overnightActivity.summary}</p>
                 {brief.overnightActivity.agentSessions.length > 0 && (
@@ -538,38 +538,38 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Session Activity Stats */}
           {brief.sessionStats && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
+              <Flex align="center" gap="2" className="mb-3">
                 <Users size={16} className="text-info" />
                 <span className="font-medium">Session Activity</span>
-              </div>
+              </Flex>
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
+                <Flex align="center" justify="between" className="text-sm">
                   <span className="text-mission-control-text-dim">Total Sessions</span>
                   <span className="font-semibold">{brief.sessionStats.total}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
+                </Flex>
+                <Flex align="center" justify="between" className="text-sm">
                   <span className="text-mission-control-text-dim">Active (30 min)</span>
                   <span className="font-semibold text-success">{brief.sessionStats.active}</span>
-                </div>
+                </Flex>
                 
                 {/* Session Types */}
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-mission-control-border">
-                  <div className="flex items-center justify-between text-xs">
+                  <Flex align="center" justify="between" className="text-xs">
                     <span className="text-mission-control-text-dim">Direct</span>
                     <span className="font-medium">{brief.sessionStats.byType.direct}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
+                  </Flex>
+                  <Flex align="center" justify="between" className="text-xs">
                     <span className="text-mission-control-text-dim">Group</span>
                     <span className="font-medium">{brief.sessionStats.byType.group}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
+                  </Flex>
+                  <Flex align="center" justify="between" className="text-xs">
                     <span className="text-mission-control-text-dim">Cron</span>
                     <span className="font-medium">{brief.sessionStats.byType.cron}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
+                  </Flex>
+                  <Flex align="center" justify="between" className="text-xs">
                     <span className="text-mission-control-text-dim">Agents</span>
                     <span className="font-medium">{brief.sessionStats.byType.subagent}</span>
-                  </div>
+                  </Flex>
                 </div>
 
                 {/* Top Channels */}
@@ -592,15 +592,15 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Agent Activity Stats */}
           {brief.agentStats && (brief.agentStats.activeAgents > 0 || brief.agentStats.busyAgents.length > 0) && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
+              <Flex align="center" gap="2" className="mb-3">
                 <Bot size={16} className="text-success" />
                 <span className="font-medium">Agent Activity</span>
-              </div>
+              </Flex>
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
+                <Flex align="center" justify="between" className="text-sm">
                   <span className="text-mission-control-text-dim">Active Agents</span>
                   <span className="font-semibold text-success">{brief.agentStats.activeAgents} / {brief.agentStats.totalAgents}</span>
-                </div>
+                </Flex>
 
                 {/* Busy Agents */}
                 {brief.agentStats.busyAgents.length > 0 && (
@@ -634,16 +634,16 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Upcoming Events */}
           {brief.upcomingEvents.length > 0 && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
+              <Flex align="center" gap="2" className="mb-3">
                 <Calendar size={16} className="text-mission-control-accent" />
                 <span className="font-medium">Today&apos;s Schedule</span>
-              </div>
+              </Flex>
               <div className="space-y-2">
                 {brief.upcomingEvents.map((event, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm">
+                  <Flex key={i} align="center" justify="between" className="text-sm">
                     <span className="truncate">{event.title}</span>
                     <span className="text-mission-control-text-dim ml-2">{event.time}</span>
-                  </div>
+                  </Flex>
                 ))}
               </div>
             </div>
@@ -652,31 +652,31 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Twitter Mentions */}
           {brief.mentions && brief.mentions.length > 0 && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
+              <Flex align="center" gap="2" className="mb-3">
                 <AtSign size={16} className="text-info" />
                 <span className="font-medium">Recent Mentions</span>
                 <span className="text-xs text-mission-control-text-dim ml-auto">(last 24h)</span>
-              </div>
+              </Flex>
               <div className="space-y-3">
                 {brief.mentions.map((mention) => (
                   <div key={mention.id} className="p-3 bg-mission-control-bg/30 rounded-lg border border-mission-control-border hover:border-info-border transition-colors">
-                    <div className="flex items-start gap-2 mb-2">
+                    <Flex align="start" gap="2" className="mb-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <Flex align="center" gap="2">
                           <span className="font-medium text-sm truncate">{mention.author.name}</span>
                           <span className="text-xs text-mission-control-text-dim truncate">@{mention.author.username}</span>
-                        </div>
+                        </Flex>
                       </div>
                       <span className="text-xs text-mission-control-text-dim whitespace-nowrap">
                         {new Date(mention.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                       </span>
-                    </div>
+                    </Flex>
                     <p className="text-sm text-mission-control-text line-clamp-2">{mention.text}</p>
                     {((mention.likeCount ?? 0) > 0 || (mention.replyCount ?? 0) > 0) && (
-                      <div className="flex gap-3 mt-2 text-xs text-mission-control-text-dim">
+                      <Flex gap="3" className="mt-2 text-xs text-mission-control-text-dim">
                         {(mention.replyCount ?? 0) > 0 && <span>💬 {mention.replyCount}</span>}
                         {(mention.likeCount ?? 0) > 0 && <span>❤️ {mention.likeCount}</span>}
-                      </div>
+                      </Flex>
                     )}
                   </div>
                 ))}
