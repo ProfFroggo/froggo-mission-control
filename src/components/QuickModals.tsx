@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Mail, MessageSquare, RefreshCw, Clock, MapPin, AlertCircle } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
+import { Flex, IconButton } from '@radix-ui/themes';
 import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
 import { useUserSettings } from '../store/userSettings';
 
@@ -89,7 +89,7 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
         onClose={onClose}
       />
       
-      <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
+      <Flex align="center" justify="end" className="px-6 py-2 border-b border-mission-control-border/50">
         <IconButton
           variant="ghost"
           size="2"
@@ -99,7 +99,7 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </IconButton>
-      </div>
+      </Flex>
 
       <BaseModalBody noPadding maxHeight="60vh">
         {loading ? (
@@ -117,7 +117,7 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
               {(dateEvents as any[]).map((event: any) => (
                 <div key={event.id} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-border/40 transition-colors">
                   <div className="font-medium">{event.title}</div>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-mission-control-text-dim">
+                  <Flex align="center" gap="3" className="mt-1 text-xs text-mission-control-text-dim">
                     <span className="flex items-center gap-1">
                       <Clock size={14} />
                       {formatTime(event.start, event.isAllDay)}
@@ -129,7 +129,7 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
                         {event.location}
                       </span>
                     )}
-                  </div>
+                  </Flex>
                 </div>
               ))}
             </div>
@@ -193,7 +193,7 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
         onClose={onClose}
       />
       
-      <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
+      <Flex align="center" justify="end" className="px-6 py-2 border-b border-mission-control-border/50">
         <IconButton
           variant="ghost"
           size="2"
@@ -203,7 +203,7 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </IconButton>
-      </div>
+      </Flex>
 
       <BaseModalBody noPadding maxHeight="60vh">
         {loading ? (
@@ -215,10 +215,10 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
         ) : (
           emails.map((email) => (
             <div key={email.id} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-border/40 transition-colors">
-              <div className="flex items-center gap-2 mb-1">
+              <Flex align="center" gap="2" className="mb-1">
                 <span className="text-xs px-1.5 py-0.5 bg-mission-control-border rounded flex-shrink-0 whitespace-nowrap">{email.account}</span>
                 <span className="text-xs text-mission-control-text-dim truncate">{email.from}</span>
-              </div>
+              </Flex>
               <div className="font-medium truncate">{email.subject}</div>
               <div className="text-xs text-mission-control-text-dim truncate mt-1">{email.snippet}</div>
             </div>
@@ -272,7 +272,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
         onClose={onClose}
       />
       
-      <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
+      <Flex align="center" justify="end" className="px-6 py-2 border-b border-mission-control-border/50">
         <IconButton
           variant="ghost"
           size="2"
@@ -282,7 +282,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </IconButton>
-      </div>
+      </Flex>
 
       <BaseModalBody noPadding maxHeight="60vh">
         {loading ? (
@@ -298,10 +298,10 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
         ) : (
           mentions.map((tweet: any, i) => (
             <div key={tweet.id || i} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-border/40 transition-colors">
-              <div className="flex items-center gap-2 mb-1">
+              <Flex align="center" gap="2" className="mb-1">
                 <span className="font-medium">@{tweet.author?.username || tweet.author || tweet.user?.screen_name || 'unknown'}</span>
                 {tweet.author?.name && <span className="text-xs text-mission-control-text-dim">({tweet.author.name})</span>}
-              </div>
+              </Flex>
               <div className="text-sm">{tweet.text || tweet.full_text}</div>
               {tweet.createdAt && <div className="text-xs text-mission-control-text-dim mt-1">{tweet.createdAt}</div>}
             </div>
@@ -375,7 +375,7 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
         onClose={onClose}
       />
       
-      <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
+      <Flex align="center" justify="end" className="px-6 py-2 border-b border-mission-control-border/50">
         <IconButton
           variant="ghost"
           size="2"
@@ -385,7 +385,7 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </IconButton>
-      </div>
+      </Flex>
 
       <BaseModalBody noPadding maxHeight="60vh">
         {loading ? (
@@ -401,19 +401,19 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
         ) : (
           messages.map((msg: any, i) => (
             <div key={msg.id || i} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-border/40 transition-colors">
-              <div className="flex items-start gap-3">
+              <Flex align="start" gap="3">
                 <PlatformIcon platform={msg.platform} />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
+                  <Flex align="center" justify="between" gap="2">
                     <span className="font-medium truncate">{msg.name}</span>
                     <span className="text-xs text-mission-control-text-dim whitespace-nowrap">{msg.relativeTime}</span>
-                  </div>
+                  </Flex>
                   <div className="text-sm text-mission-control-text-dim truncate mt-0.5">
                     {msg.fromMe && <span className="text-mission-control-text-dim mr-1">You:</span>}
                     {msg.preview || <span className="italic opacity-50">(no preview)</span>}
                   </div>
                 </div>
-              </div>
+              </Flex>
             </div>
           ))
         )}
