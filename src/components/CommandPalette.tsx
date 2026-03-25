@@ -6,7 +6,7 @@ import {
   Bell, LayoutGrid, Clock, FolderOpen, Megaphone, CheckSquare, Star, ChevronRight, ArrowUp,
   ArrowDown, CornerDownLeft, X, Filter,
 } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
 import Fuse from 'fuse.js';
 import { useFocusTrap, useAnnounce } from '../hooks/useAccessibility';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
@@ -730,7 +730,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
 
         {/* Header: search input + filter pills */}
         <div className="border-b border-mission-control-border">
-          <div className="flex items-center gap-3 p-4">
+          <Flex align="center" gap="3" className="p-4">
             <TextField.Root
               ref={inputRef}
               size="3"
@@ -774,7 +774,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
               </IconButton>
             )}
             <kbd className="px-2 py-1 text-xs bg-mission-control-border rounded flex-shrink-0" aria-label="Press Escape to close">ESC</kbd>
-          </div>
+          </Flex>
 
           {/* Filter pills */}
           {!isActionMode && (
@@ -864,10 +864,10 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
 
                   {searchHistory.length > 0 && (
                     <div>
-                      <div className="flex items-center justify-between mb-1">
+                      <Flex align="center" justify="between" className="mb-1">
                         <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Recent Searches</div>
                         <Button variant="ghost" color="gray" size="1" onClick={clearHistory}>Clear</Button>
-                      </div>
+                      </Flex>
                       <div className="flex flex-wrap gap-1">
                         {searchHistory.slice(0, 8).map(h => (
                           <Button
@@ -925,10 +925,10 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
             <>
               {searchGroups.map(group => (
                 <div key={group.type} className="mb-3" role="group" aria-labelledby={`group-${group.type}`}>
-                  <div id={`group-${group.type}`} className="px-3 py-1 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider flex items-center gap-2">
+                  <Flex id={`group-${group.type}`} align="center" gap="2" className="px-3 py-1 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
                     <span aria-hidden="true">{TYPE_ICONS[group.type]}</span>
                     {group.label} ({group.total})
-                  </div>
+                  </Flex>
                   {group.items.map(item => {
                     const currentIndex = flatIndex++;
                     const isSelected = currentIndex === selectedIndex;
@@ -977,7 +977,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                           </Button>
                         </div>
                         {isExpanded && (
-                          <div className="flex gap-1 px-8 pb-2" role="group" aria-label={`Actions for ${item.title}`}>
+                          <Flex gap="1" className="px-8 pb-2" role="group" aria-label={`Actions for ${item.title}`}>
                             {inlineActions.map(action => (
                               <Button
                                 key={action.id}
@@ -990,7 +990,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                                 {action.label}
                               </Button>
                             ))}
-                          </div>
+                          </Flex>
                         )}
                       </div>
                     );
@@ -1060,14 +1060,14 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
         </div>
 
         {/* Footer */}
-        <div className="p-2 border-t border-mission-control-border flex items-center justify-between text-xs text-mission-control-text-dim">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" className="p-2 border-t border-mission-control-border text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="3">
             <span className="flex items-center gap-1"><ArrowUp size={10} /><ArrowDown size={10} /> Navigate</span>
             <span className="flex items-center gap-1"><CornerDownLeft size={10} /> Select</span>
             {hasSearchResults && <span>Tab expand actions</span>}
-          </div>
+          </Flex>
           {!isActionMode && <span className="text-mission-control-text-dim/60">Type &gt; for commands</span>}
-        </div>
+        </Flex>
       </div>
 
       <PromptDialog
