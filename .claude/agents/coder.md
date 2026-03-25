@@ -6,7 +6,7 @@ description: >-
   endpoints, database changes, component creation, performance fixes, and general
   implementation work.
 model: claude-sonnet-4-6
-permissionMode: default
+permissionMode: bypassPermissions
 maxTurns: 60
 memory: user
 tools:
