@@ -1383,7 +1383,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3">Recent Tasks</h3>
                       <div className="space-y-2">
                         {details.recentTasks.slice(0, 5).map(task => (
-                          <div key={task.id} className="flex items-center justify-between bg-mission-control-bg rounded-lg px-4 py-2.5 gap-3">
+                          <Flex key={task.id} align="center" justify="between" gap="3" className="bg-mission-control-bg rounded-lg px-4 py-2.5">
                             <span className="text-sm text-mission-control-text flex-1 min-w-0 truncate">{task.title}</span>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
@@ -1407,7 +1407,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                 <Clock size={13} className="text-mission-control-text-dim" />
                               )}
                             </div>
-                          </div>
+                          </Flex>
                         ))}
                       </div>
                     </div>
@@ -2062,7 +2062,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                   const overrideVal = permOverrides[perm.id];
                                   const hasOverride = overrideVal !== undefined;
                                   return (
-                                    <div key={perm.id} className="flex items-center justify-between px-3 py-2">
+                                    <Flex key={perm.id} align="center" justify="between" className="px-3 py-2">
                                       <div className="min-w-0 mr-2">
                                         <span className="text-xs text-mission-control-text">{perm.label}</span>
                                         <span className={`ml-1.5 text-xs ${TIER_COLORS[perm.tier]}`}>T{perm.tier}</span>
@@ -2084,7 +2084,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                           onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
                                         >Deny</Button>
                                       </div>
-                                    </div>
+                                    </Flex>
                                   );
                                 })}
                               </div>
@@ -2116,10 +2116,10 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       {agentDisallowed.length > 0 && (
                         <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
                           {agentDisallowed.map(tool => (
-                            <div key={tool} className="flex items-center justify-between px-3 py-1.5">
+                            <Flex key={tool} align="center" justify="between" className="px-3 py-1.5">
                               <code className="text-xs font-mono text-mission-control-text">{tool}</code>
                               <IconButton variant="ghost" color="red" size="1" onClick={() => handleRemoveAgentDisallowed(tool)}><X size={12} /></IconButton>
-                            </div>
+                            </Flex>
                           ))}
                         </div>
                       )}

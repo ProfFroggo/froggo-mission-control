@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity, Map, Package, AlertCircle, ArrowUpCircle, Terminal, Loader2, ChevronDown, ChevronRight, Clock, DollarSign } from 'lucide-react';
-import { Button, Select, TextField } from '@radix-ui/themes';
+import { Button, Flex, Select, TextField } from '@radix-ui/themes';
 import PanelHeader from './PanelHeader';
 import TabNav from './TabNav';
 import { useUserSettings } from '../store/userSettings';
@@ -125,12 +125,12 @@ interface SystemHealth { cli: boolean; claudeFound: boolean; claudeAuthenticated
 
 function StatusRow({ label, value, ok }: { label: string; value: string; ok?: boolean }) {
   return (
-    <div className="flex items-center justify-between py-1">
+    <Flex align="center" justify="between" className="py-1">
       <span className="text-mission-control-text-dim">{label}</span>
       <span className={`font-mono text-xs ${ok === false ? 'text-error' : ok === true ? 'text-success' : 'text-mission-control-text-dim'}`}>
         {value}
       </span>
-    </div>
+    </Flex>
   );
 }
 
@@ -211,7 +211,7 @@ function PlatformUpdateTab() {
     <div className="space-y-6">
       {/* Version Card */}
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <Flex align="center" justify="between" className="mb-4">
           <h2 className="text-base font-semibold text-mission-control-text flex items-center gap-2">
             <Package size={16} />
             Platform Updates
@@ -226,19 +226,19 @@ function PlatformUpdateTab() {
             <RefreshCw size={12} className={checking ? 'animate-spin' : ''} />
             {checking ? 'Checking...' : 'Check now'}
           </Button>
-        </div>
+        </Flex>
 
         <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-3">
           {/* Current version */}
-          <div className="flex items-center justify-between text-sm">
+          <Flex align="center" justify="between" className="text-sm">
             <span className="text-mission-control-text-dim">Installed version</span>
             <span className="font-mono text-mission-control-text">
               {versionInfo ? `v${versionInfo.current}` : '—'}
             </span>
-          </div>
+          </Flex>
 
           {/* Latest version */}
-          <div className="flex items-center justify-between text-sm">
+          <Flex align="center" justify="between" className="text-sm">
             <span className="text-mission-control-text-dim">Latest version</span>
             <span className="font-mono text-mission-control-text">
               {checking ? (
@@ -249,7 +249,7 @@ function PlatformUpdateTab() {
                 <span className="text-mission-control-text-dim">unavailable</span>
               )}
             </span>
-          </div>
+          </Flex>
 
           {/* Status banner */}
           {versionInfo && !checking && (
@@ -308,10 +308,10 @@ function PlatformUpdateTab() {
       {/* Live log */}
       {(updating || log.length > 0) && (
         <section>
-          <div className="flex items-center gap-2 mb-2">
+          <Flex align="center" gap="2" className="mb-2">
             <Terminal size={14} className="text-mission-control-text-dim" />
             <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">Install log</span>
-          </div>
+          </Flex>
           <div
             ref={logRef}
             className="bg-mission-control-bg rounded-lg border border-mission-control-border p-3 h-48 overflow-y-auto font-mono text-xs text-success space-y-0.5"
@@ -320,10 +320,10 @@ function PlatformUpdateTab() {
               <div key={i} className="leading-5">{line || '\u00a0'}</div>
             ))}
             {updating && (
-              <div className="flex items-center gap-1 text-mission-control-text-dim">
+              <Flex align="center" gap="1" className="text-mission-control-text-dim">
                 <Loader2 size={10} className="animate-spin" />
                 <span>running...</span>
-              </div>
+              </Flex>
             )}
           </div>
         </section>
@@ -391,15 +391,15 @@ function SettingsAuditLog() {
       {open && (
         <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-3 space-y-1">
           {loading && (
-            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim py-2">
+            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim py-2">
               <Loader2 size={12} className="animate-spin" /> Loading audit log...
-            </div>
+            </Flex>
           )}
           {!loading && entries.length === 0 && (
             <p className="text-xs text-mission-control-text-dim py-2">No changes recorded yet.</p>
           )}
           {!loading && entries.map((e) => (
-            <div key={e.id} className="flex items-start justify-between gap-3 py-1.5 border-b border-mission-control-border last:border-0">
+            <Flex key={e.id} align="start" justify="between" gap="3" className="py-1.5 border-b border-mission-control-border last:border-0">
               <div className="min-w-0 flex-1">
                 <span className="font-mono text-xs text-mission-control-text truncate block">{e.key}</span>
                 <span className="text-xs text-mission-control-text-dim">
@@ -412,7 +412,7 @@ function SettingsAuditLog() {
               <span className="text-xs text-mission-control-text-dim whitespace-nowrap shrink-0">
                 {new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
-            </div>
+            </Flex>
           ))}
         </div>
       )}
@@ -580,7 +580,7 @@ export default function SettingsPanel() {
           <div className="space-y-6">
             {/* Live System Status */}
             <section>
-              <div className="flex items-center justify-between mb-4">
+              <Flex align="center" justify="between" className="mb-4">
                 <h2 className="text-heading-3 flex items-center gap-2">
                   <Activity size={16} /> System Status
                 </h2>
@@ -597,7 +597,7 @@ export default function SettingsPanel() {
                 >
                   <RefreshCw size={12} /> Refresh
                 </Button>
-              </div>
+              </Flex>
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-2 text-sm">
                 <StatusRow
                   label="Claude CLI"
@@ -653,7 +653,7 @@ export default function SettingsPanel() {
                 <Monitor size={16} /> Navigation
               </h2>
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
-                <div className="flex items-center justify-between">
+                <Flex align="center" justify="between">
                   <div>
                     <div className="font-medium">Collapsed Sidebar</div>
                     <div className="text-sm text-mission-control-text-dim">Show sidebar as icon only</div>
@@ -668,7 +668,7 @@ export default function SettingsPanel() {
                     }}
                     colorScheme="green"
                   />
-                </div>
+                </Flex>
               </div>
             </section>
 
@@ -701,7 +701,7 @@ export default function SettingsPanel() {
                 <Download size={16} /> Backup & Restore
               </h2>
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
-                <div className="flex gap-3">
+                <Flex gap="3">
                   <Button
                     onClick={handleExport}
                     variant="soft"
@@ -729,7 +729,7 @@ export default function SettingsPanel() {
                     onChange={handleImport}
                     className="hidden"
                   />
-                </div>
+                </Flex>
                 <p className="text-xs text-mission-control-text-dim">
                   Export your settings to backup or transfer to another device
                 </p>
@@ -784,7 +784,7 @@ export default function SettingsPanel() {
                 <Shield size={16} /> Approvals
               </h2>
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
-                <div className="flex items-center justify-between">
+                <Flex align="center" justify="between">
                   <div>
                     <div className="font-medium">Auto-Assign Approvals</div>
                     <div className="text-sm text-mission-control-text-dim">
@@ -796,7 +796,7 @@ export default function SettingsPanel() {
                     onChange={setApprovalsAutoAssign}
                     colorScheme="green"
                   />
-                </div>
+                </Flex>
               </div>
             </section>
 
@@ -806,7 +806,7 @@ export default function SettingsPanel() {
                 <Bell size={16} /> Notification Sound
               </h2>
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
-                <div className="flex items-center justify-between">
+                <Flex align="center" justify="between">
                   <div>
                     <div className="font-medium">Sound Alerts</div>
                     <div className="text-sm text-mission-control-text-dim">
@@ -818,7 +818,7 @@ export default function SettingsPanel() {
                     onChange={setNotificationsSound}
                     colorScheme="green"
                   />
-                </div>
+                </Flex>
               </div>
             </section>
 
@@ -838,7 +838,7 @@ export default function SettingsPanel() {
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
                 <div>
                   <label htmlFor="color-mode" className="block text-sm text-mission-control-text-dim mb-2">Color Mode</label>
-                  <div className="flex gap-2">
+                  <Flex gap="2">
                     {(['dark', 'light', 'system'] as const).map((t) => (
                       <Button
                         key={t}
@@ -854,7 +854,7 @@ export default function SettingsPanel() {
                         {t.charAt(0).toUpperCase() + t.slice(1)}
                       </Button>
                     ))}
-                  </div>
+                  </Flex>
                 </div>
                 <div>
                   <label htmlFor="accent-color" className="block text-sm text-mission-control-text-dim mb-2">Accent Color</label>
@@ -918,11 +918,11 @@ export default function SettingsPanel() {
                     onChange={(e) => setSettings(s => ({ ...s, fontSize: parseInt(e.target.value) }))}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
+                  <Flex justify="between" className="text-xs text-mission-control-text-dim mt-1">
                     <span>Small (12px)</span>
                     <span>Medium (14px)</span>
                     <span>Large (18px)</span>
-                  </div>
+                  </Flex>
                 </div>
                 <div className="mt-4 p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
                   <p className="mb-2" style={{ fontSize: `${settings.fontSize}px` }}>
@@ -951,7 +951,7 @@ export default function SettingsPanel() {
               </h2>
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-1">
                 {defaultKeyboardShortcuts.map((shortcut) => (
-                  <div key={shortcut.id} className="flex items-center justify-between py-2.5 border-b border-mission-control-border last:border-0">
+                  <Flex key={shortcut.id} align="center" justify="between" className="py-2.5 border-b border-mission-control-border last:border-0">
                     <div>
                       <div className="font-medium text-sm">{shortcut.name}</div>
                       <div className="text-xs text-mission-control-text-dim">{shortcut.description}</div>
@@ -960,7 +960,7 @@ export default function SettingsPanel() {
                       {shortcut.modifiers.map(m => m === 'cmd' ? '⌘' : m === 'shift' ? '⇧' : m === 'alt' ? '⌥' : '⌃').join('')}
                       {shortcut.currentKey.toUpperCase()}
                     </kbd>
-                  </div>
+                  </Flex>
                 ))}
                 <p className="pt-3 text-xs text-mission-control-text-dim">⌘ = Command &nbsp;·&nbsp; ⇧ = Shift &nbsp;·&nbsp; ⌥ = Option &nbsp;·&nbsp; ⌃ = Control</p>
               </div>
@@ -977,7 +977,7 @@ export default function SettingsPanel() {
               </h2>
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
                 {/* External Actions kill switch */}
-                <div className="flex items-center justify-between">
+                <Flex align="center" justify="between">
                   <div>
                     <div className="font-medium flex items-center gap-2">
                       External Actions
@@ -998,7 +998,7 @@ export default function SettingsPanel() {
                     onChange={(checked) => setSettings(s => ({ ...s, externalActionsEnabled: checked }))}
                     colorScheme="green"
                   />
-                </div>
+                </Flex>
 
                 {/* Info */}
                 <div className="p-4 bg-info-subtle border border-info-border rounded-lg text-sm text-info space-y-2">
@@ -1014,7 +1014,7 @@ export default function SettingsPanel() {
 
         {/* Actions (shown for most tabs except special ones) */}
         {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform', 'budgets'].includes(activeTab) && (
-          <div className="flex gap-3 mt-8">
+          <Flex gap="3" className="mt-8">
             <Button
               onClick={handleSave}
               variant="solid"
@@ -1033,7 +1033,7 @@ export default function SettingsPanel() {
             >
               Reset
             </Button>
-          </div>
+          </Flex>
         )}
         </div>
       </div>
