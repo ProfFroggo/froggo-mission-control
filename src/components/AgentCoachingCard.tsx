@@ -5,7 +5,7 @@ import {
   CheckCircle2, AlertTriangle, RefreshCw, Zap,
   CalendarDays, Share2, Target,
 } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 type Period = '7d' | '30d' | '90d';
@@ -127,14 +127,14 @@ function SuccessSparkline({ points }: { points: number[] }) {
 function CoachingCardSkeleton() {
   return (
     <div className="animate-pulse space-y-4">
-      <div className="flex items-center gap-6">
+      <Flex align="center" gap="6">
         <div className="w-28 h-28 rounded-full bg-mission-control-border" />
         <div className="flex-1 space-y-2">
           <div className="h-4 bg-mission-control-border rounded w-1/3" />
           <div className="h-3 bg-mission-control-border rounded w-1/2" />
           <div className="h-3 bg-mission-control-border rounded w-2/5" />
         </div>
-      </div>
+      </Flex>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[0, 1, 2].map(i => (
           <div key={i} className="h-16 bg-mission-control-border rounded-lg" />
@@ -151,12 +151,12 @@ function WeekCard({ weekNum, actions }: { weekNum: number; actions: string[] }) 
   const labels = ['Foundation', 'Practice', 'Measure', 'Sustain'];
   return (
     <div className="rounded-lg border border-mission-control-border bg-mission-control-bg p-3 space-y-2">
-      <div className="flex items-center gap-1.5">
+      <Flex align="center" gap="2">
         <CalendarDays size={11} className="text-mission-control-text-dim flex-shrink-0" />
         <span className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider">
           Week {weekNum} — {labels[weekNum - 1]}
         </span>
-      </div>
+      </Flex>
       {actions.length === 0 ? (
         <p className="text-xs text-mission-control-text-dim italic">No actions yet</p>
       ) : (
@@ -323,7 +323,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
   return (
     <div className="space-y-5">
       {/* Period selector + refresh + share */}
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
           {(['7d', '30d', '90d'] as Period[]).map(p => (
             <button
@@ -340,7 +340,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1">
+        <Flex align="center" gap="1">
           {data && (
             <IconButton
               type="button"
@@ -366,29 +366,29 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {loading && !data && <CoachingCardSkeleton />}
 
       {error && !loading && (
-        <div className="rounded-lg border border-error-border bg-error-subtle p-4 text-sm text-error flex items-center gap-2">
+        <Flex align="center" gap="2" className="rounded-lg border border-error-border bg-error-subtle p-4 text-sm text-error">
           <AlertTriangle size={14} className="flex-shrink-0" />
           {error}
-        </div>
+        </Flex>
       )}
 
       {data && (
         <>
           {/* Score + trend + top metrics */}
-          <div className="flex items-center gap-6 rounded-2xl border border-mission-control-border bg-mission-control-bg p-5">
+          <Flex align="center" gap="6" className="rounded-2xl border border-mission-control-border bg-mission-control-bg p-5">
             <ScoreRing score={data.score} />
             <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-2">
+              <Flex align="center" gap="2">
                 <TrendIcon size={16} className={`flex-shrink-0 ${trendColor}`} />
                 <span className={`text-sm font-semibold capitalize ${trendColor}`}>{data.trend}</span>
                 <span className="text-xs text-mission-control-text-dim">vs prior {period}</span>
-              </div>
+              </Flex>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
                   <div className="text-lg font-bold tabular-nums text-success">{data.metrics.tasksCompleted}</div>
@@ -403,19 +403,19 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                   <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wide">Avg time</div>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-mission-control-text-dim pt-1">
+              <Flex align="center" gap="2" className="text-[11px] text-mission-control-text-dim pt-1">
                 <Zap size={11} className="text-warning flex-shrink-0" />
                 <span>{formatTokens(data.metrics.totalTokens)} tokens</span>
                 <span className="text-mission-control-border mx-0.5">/</span>
                 <span className="text-warning">${data.metrics.totalCostUsd.toFixed(4)}</span>
-              </div>
+              </Flex>
             </div>
-          </div>
+          </Flex>
 
           {/* Success rate sparkline */}
           {sparkPoints.length >= 2 && (
             <div className="rounded-2xl border border-mission-control-border bg-mission-control-bg px-4 py-3">
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
                   Success rate — 5-week trend
                 </span>
@@ -428,7 +428,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                 }}>
                   {sparkPoints[sparkPoints.length - 1]}%
                 </span>
-              </div>
+              </Flex>
               <div className="mt-2">
                 <SuccessSparkline points={sparkPoints} />
               </div>
@@ -518,13 +518,13 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
 
           {/* 4-Week Coaching Plan */}
           <div className="rounded-2xl border border-mission-control-border p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <Flex align="center" justify="between">
+              <Flex align="center" gap="2">
                 <Target size={14} className="text-mission-control-text-dim" />
                 <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
                   4-Week Coaching Plan
                 </h4>
-              </div>
+              </Flex>
               <IconButton
                 type="button"
                 size="2"
@@ -537,14 +537,14 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
               >
                 <RefreshCw size={12} className={planLoading ? 'animate-spin' : ''} />
               </IconButton>
-            </div>
+            </Flex>
 
             {/* Focus goal input */}
             <div className="space-y-1.5">
               <label className="block text-[10px] font-medium text-mission-control-text-dim uppercase tracking-wider">
                 Coaching focus goal
               </label>
-              <div className="flex items-center gap-2">
+              <Flex align="center" gap="2">
                 <TextField.Root
                   size="2"
                   className="flex-1"
@@ -564,7 +564,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                 >
                   {focusSaving ? 'Saving...' : 'Save'}
                 </Button>
-              </div>
+              </Flex>
             </div>
 
             {/* 4-week plan cards */}
