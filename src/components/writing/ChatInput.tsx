@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { Send } from 'lucide-react';
-import { IconButton, TextArea } from '@radix-ui/themes';
+import { Flex, IconButton, TextArea } from '@radix-ui/themes';
 import { useChatPaneStore } from '../../store/chatPaneStore';
 import AgentPicker from './AgentPicker';
 
@@ -40,7 +40,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   return (
     <div className="bg-mission-control-surface border-t border-mission-control-border p-3 space-y-2 dark">
       <AgentPicker selected={selectedAgent} onSelect={setSelectedAgent} disabled={disabled} />
-      <div className="flex items-end gap-2">
+      <Flex align="end" gap="2">
         <TextArea
           ref={textareaRef}
           value={input}
@@ -65,7 +65,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         >
           <Send size={20} />
         </IconButton>
-      </div>
+      </Flex>
     </div>
   );
 }

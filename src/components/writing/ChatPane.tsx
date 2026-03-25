@@ -167,12 +167,12 @@ export default function ChatPane() {
     <Flex direction="column" height="100%" className="bg-mission-control-surface border-r border-mission-control-border dark">
       {/* Header */}
       <div className="px-3 py-2 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <MessageSquare size={14} className="text-mission-control-text-dim" />
           <span className="text-xs font-medium text-mission-control-text-dim">
             Chat{agentNames[selectedAgent] ? ` - ${agentNames[selectedAgent]}` : ''}
           </span>
-        </div>
+        </Flex>
         {messages.length > 0 && (
           <IconButton
             onClick={handleClearChat}

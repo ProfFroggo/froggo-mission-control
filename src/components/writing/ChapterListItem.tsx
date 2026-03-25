@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Pencil, Trash2, GripVertical } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { WritingChapter } from '../../store/writingStore';
@@ -122,14 +122,14 @@ export default function ChapterListItem({
         >
           <div className="flex items-start justify-between min-w-0">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
+              <Flex align="center" gap="2">
                 <span className="text-[10px] text-mission-control-text-dim font-mono">
                   {chapter.position + 1}.
                 </span>
                 <span className="text-xs font-medium text-mission-control-text truncate">
                   {chapter.title}
                 </span>
-              </div>
+              </Flex>
               <span className="text-[10px] text-mission-control-text-dim ml-4">
                 {chapter.wordCount.toLocaleString()} words
               </span>

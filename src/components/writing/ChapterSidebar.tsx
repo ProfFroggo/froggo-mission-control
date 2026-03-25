@@ -88,11 +88,11 @@ export default function ChapterSidebar() {
     <Flex direction="column" width="100%" height="100%" className="bg-mission-control-surface border-r border-mission-control-border flex-shrink-0 min-w-0">
       {/* Header */}
       <div className="px-3 py-3 border-b border-mission-control-border flex-shrink-0">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <IconButton
             size="1"
             variant="ghost"
-           
+
             onClick={closeProject}
             title="Back to projects"
           >
@@ -106,7 +106,7 @@ export default function ChapterSidebar() {
               {totalWords.toLocaleString()} words total
             </p>
           </div>
-        </div>
+        </Flex>
       </div>
 
       {/* Add chapter button */}
@@ -125,7 +125,7 @@ export default function ChapterSidebar() {
               size="1"
               disabled={creating}
             />
-            <div className="flex gap-1">
+            <Flex gap="1">
               <Button
                 size="1"
                 variant="solid"
@@ -141,7 +141,7 @@ export default function ChapterSidebar() {
               >
                 Cancel
               </Button>
-            </div>
+            </Flex>
           </div>
         ) : (
           <Button

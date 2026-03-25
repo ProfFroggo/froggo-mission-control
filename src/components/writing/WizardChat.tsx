@@ -314,7 +314,7 @@ export default function WizardChat() {
 
       {/* Simple input (no agent picker -- agent is already chosen) */}
       <div className="bg-mission-control-surface border-t border-mission-control-border p-3">
-        <div className="flex items-end gap-2">
+        <Flex align="end" gap="2">
           <TextArea
             ref={inputRef}
             onKeyDown={handleKeyDown}
@@ -337,7 +337,7 @@ export default function WizardChat() {
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
           </IconButton>
-        </div>
+        </Flex>
       </div>
     </Flex>
   );

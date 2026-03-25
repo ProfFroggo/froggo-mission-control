@@ -1,5 +1,5 @@
 import { Pen, Search, Heart } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 
 const AGENTS = [
   { id: 'writer', name: 'Writer', Icon: Pen, description: 'Style, pacing, narrative' },
@@ -15,7 +15,7 @@ interface AgentPickerProps {
 
 export default function AgentPicker({ selected, onSelect, disabled }: AgentPickerProps) {
   return (
-    <div className="flex gap-1">
+    <Flex gap="1">
       {AGENTS.map(({ id, name, Icon }) => {
         const isActive = selected === id;
         return (
@@ -31,6 +31,6 @@ export default function AgentPicker({ selected, onSelect, disabled }: AgentPicke
           </Button>
         );
       })}
-    </div>
+    </Flex>
   );
 }

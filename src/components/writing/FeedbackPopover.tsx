@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import { Send, Loader2, ShieldCheck } from 'lucide-react';
-import { Button, IconButton, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
 import { gateway } from '../../lib/gateway';
 import { buildMemoryContext } from '../../lib/writingContext';
 import { useWritingStore } from '../../store/writingStore';
@@ -339,7 +339,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
       onMouseDown={(e) => e.preventDefault()}
     >
       {/* Agent picker row + fact check */}
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <AgentPicker selected={selectedAgent} onSelect={setSelectedAgent} disabled={streaming} />
         <Button
           size="1"
@@ -351,10 +351,10 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
           <ShieldCheck className="w-3 h-3" />
           Fact Check
         </Button>
-      </div>
+      </Flex>
 
       {/* Instruction input + send button */}
-      <div className="flex gap-2 mt-2">
+      <Flex gap="2" className="mt-2">
         <TextField.Root
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
@@ -381,7 +381,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
         >
           {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </IconButton>
-      </div>
+      </Flex>
 
       {/* Streaming content (raw text while streaming) */}
       {streaming && streamContent && (

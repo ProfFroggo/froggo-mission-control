@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, TextField, TextArea } from '@radix-ui/themes';
+import { Button, Flex, TextField, TextArea } from '@radix-ui/themes';
 import type { CharacterProfile } from '../../store/memoryStore';
 
 interface CharacterFormProps {
@@ -58,7 +58,7 @@ export default function CharacterForm({ character, onCancel, onSave }: Character
         placeholder="Traits (comma-separated)"
         size="1"
       />
-      <div className="flex gap-1">
+      <Flex gap="1">
         <Button
           type="submit"
           size="1"
@@ -75,7 +75,7 @@ export default function CharacterForm({ character, onCancel, onSave }: Character
         >
           Cancel
         </Button>
-      </div>
+      </Flex>
     </form>
   );
 }
