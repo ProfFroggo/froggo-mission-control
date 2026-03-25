@@ -22,7 +22,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
-import { Button, IconButton, Badge, Heading, Text, Spinner, TextField, TextArea, Select, Box } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Heading, Text, Spinner, TextField, TextArea, Select, Box, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface Automation {
@@ -333,7 +333,7 @@ export default function XAutomationsTab() {
       <div className="h-full overflow-y-auto">
         <div className="max-w-3xl mx-auto p-6 space-y-6">
           {/* Builder Header */}
-          <div className="flex items-center justify-between">
+          <Flex align="center" justify="between">
             <Heading size="5" weight="medium" className="flex items-center gap-2">
               <Zap size={20} className="text-mission-control-accent" />
               {editingAutomation ? 'Edit Automation' : 'New Automation'}
@@ -341,7 +341,7 @@ export default function XAutomationsTab() {
             <Button onClick={closeBuilder} variant="ghost" color="gray" size="2">
               Cancel
             </Button>
-          </div>
+          </Flex>
 
           {/* Basic Info */}
           <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 space-y-4">
@@ -584,21 +584,21 @@ export default function XAutomationsTab() {
                       key={`action-${index}`}
                       className="bg-mission-control-bg rounded-lg border border-mission-control-border p-4 space-y-3"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 font-medium">
+                      <Flex align="center" justify="between">
+                        <Flex align="center" gap="2" className="font-medium">
                           <Icon size={16} />
                           {ACTION_OPTIONS.find(o => o.type === action.type)?.label}
-                        </div>
+                        </Flex>
                         <IconButton
                           onClick={() => removeAction(index)}
                           size="2"
                           variant="ghost"
                           color="red"
-                         
+
                         >
                           <Trash2 size={16} />
                         </IconButton>
-                      </div>
+                      </Flex>
 
                       {(action.type === 'reply' || action.type === 'dm') && (
                         <TextArea
@@ -749,12 +749,12 @@ export default function XAutomationsTab() {
           </div>
 
           {/* Save Button */}
-          <div className="flex gap-3">
+          <Flex gap="3">
             <Button
               onClick={closeBuilder}
               size="2"
               variant="ghost"
-             
+
               className="flex-1"
             >
               Cancel
@@ -763,12 +763,12 @@ export default function XAutomationsTab() {
               onClick={saveAutomation}
               size="2"
               variant="soft"
-             
+
               className="flex-1"
             >
               {editingAutomation ? 'Update Automation' : 'Create Automation'}
             </Button>
-          </div>
+          </Flex>
         </div>
       </div>
     );
@@ -778,7 +778,7 @@ export default function XAutomationsTab() {
     <Box className="h-full overflow-y-auto">
       <div className="w-full p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           <div>
             <h2 className="text-xl font-semibold text-mission-control-text flex items-center gap-2">
               <Zap size={20} className="text-mission-control-accent" />
@@ -788,7 +788,7 @@ export default function XAutomationsTab() {
               IFTTT-style automation for your X account
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Button
               onClick={() => {
                 window.dispatchEvent(new CustomEvent('x-agent-chat-inject', {
@@ -811,8 +811,8 @@ export default function XAutomationsTab() {
               <Plus size={16} />
               Manual
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Automations List */}
         {automations.length === 0 ? (
@@ -839,9 +839,9 @@ export default function XAutomationsTab() {
                   key={automation.id}
                   className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 hover:border-mission-control-accent/50 transition-all"
                 >
-                  <div className="flex items-start justify-between mb-4">
+                  <Flex align="start" justify="between" className="mb-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                      <Flex align="center" gap="3" className="mb-2">
                         <h3 className="text-lg font-semibold">{automation.name}</h3>
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -852,7 +852,7 @@ export default function XAutomationsTab() {
                         >
                           {automation.enabled ? 'Active' : 'Disabled'}
                         </span>
-                      </div>
+                      </Flex>
                       {automation.description && (
                         <p className="text-mission-control-text-dim text-sm">
                           {automation.description}
@@ -860,7 +860,7 @@ export default function XAutomationsTab() {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       <IconButton
                         onClick={() => toggleAutomation(automation.id, automation.enabled)}
                         size="2"
@@ -899,44 +899,46 @@ export default function XAutomationsTab() {
                       >
                         <Trash2 size={16} />
                       </IconButton>
-                    </div>
-                  </div>
+                    </Flex>
+                  </Flex>
 
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-bg rounded-lg">
+                  <Flex align="center" gap="3" className="text-sm">
+                    <Flex align="center" gap="2" className="px-3 py-1.5 bg-mission-control-bg rounded-lg">
                       <TriggerIcon size={14} />
                       <span>
                         {TRIGGER_OPTIONS.find(o => o.type === automation.trigger_type)?.label}
                       </span>
-                    </div>
+                    </Flex>
                     <span className="text-mission-control-text-dim">&rarr;</span>
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       {automation.actions.map((action: { type: string; config: Record<string, any> }, index: number) => {
                         const ActionIcon = getActionIcon(action.type);
                         return (
-                          <div
+                          <Flex
                             key={`${automation.id}-${action.type}-${index}`}
-                            className="flex items-center gap-1 px-3 py-1.5 bg-mission-control-bg rounded-lg"
+                            align="center"
+                            gap="1"
+                            className="px-3 py-1.5 bg-mission-control-bg rounded-lg"
                           >
                             <ActionIcon size={14} />
                             <span>
                               {ACTION_OPTIONS.find(o => o.type === action.type)?.label}
                             </span>
-                          </div>
+                          </Flex>
                         );
                       })}
-                    </div>
-                  </div>
+                    </Flex>
+                  </Flex>
 
                   {automation.total_executions > 0 && (
-                    <div className="mt-4 pt-4 border-t border-mission-control-border flex items-center justify-between text-sm text-mission-control-text-dim tabular-nums">
+                    <Flex align="center" justify="between" className="mt-4 pt-4 border-t border-mission-control-border text-sm text-mission-control-text-dim tabular-nums">
                       <span>Executed {automation.total_executions} times</span>
                       {automation.last_executed_at && (
                         <span>
                           Last run: {new Date(automation.last_executed_at).toLocaleString()}
                         </span>
                       )}
-                    </div>
+                    </Flex>
                   )}
                 </div>
               );
