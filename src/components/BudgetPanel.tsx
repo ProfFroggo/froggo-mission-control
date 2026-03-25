@@ -2,7 +2,7 @@
 // BudgetPanel — full-featured budget module: quarters, categories, invoices, AI chat
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Button, IconButton, Select, TextField, TextArea, Checkbox } from '@radix-ui/themes';
+import { Box, Flex, Button, IconButton, Select, TextField, TextArea, Checkbox } from '@radix-ui/themes';
 import {
   Wallet, Plus, Pencil, Trash2, X, RefreshCw, Upload, FileText, DollarSign,
   TrendingDown, Bot, AlertTriangle, CheckCircle, Clock, Ban,
@@ -190,11 +190,11 @@ function FileDropZone({ invoiceId, onUpload, onExtracted, existingFile, onRemove
 
   if (existingFile) {
     return (
-      <div className="flex items-center gap-2 p-2.5 rounded-lg border border-mission-control-border bg-mission-control-bg">
+      <Flex align="center" gap="2" className="p-2.5 rounded-lg border border-mission-control-border bg-mission-control-bg">
         <FileText size={14} className="text-info shrink-0" />
         <span className="flex-1 text-xs truncate text-mission-control-text">{existingFile}</span>
         {onRemove && <IconButton type="button" variant="ghost" size="1" color="red" onClick={onRemove}><X size={13} /></IconButton>}
-      </div>
+      </Flex>
     );
   }
 
@@ -238,12 +238,12 @@ function PdfPreviewModal({ invoice, onClose }: { invoice: Invoice; onClose: () =
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col w-full max-w-4xl max-h-[90vh]">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border shrink-0">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="px-5 py-3 border-b border-mission-control-border shrink-0">
+          <Flex align="center" gap="2">
             <FileText size={14} className="text-info" />
             <span className="text-sm font-medium text-mission-control-text">{invoice.file_name || invoice.title}</span>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <a href={fileUrl} download={invoice.file_name} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors">
               <Download size={11} /> Download
             </a>
@@ -253,8 +253,8 @@ function PdfPreviewModal({ invoice, onClose }: { invoice: Invoice; onClose: () =
             <IconButton variant="ghost" size="1" onClick={onClose}>
               <X size={15} />
             </IconButton>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
         <div className="flex-1 overflow-hidden rounded-b-2xl min-h-[500px]">
           {isPdf
             ? <iframe src={fileUrl} className="w-full h-full" title="Invoice PDF" />
@@ -275,12 +275,12 @@ function ModalWrap({ title, onClose, children, wide }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className={`relative bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[90vh] w-full ${wide ? 'max-w-2xl' : 'max-w-md'}`}>
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-mission-control-border shrink-0">
+        <Flex align="center" justify="between" className="px-5 py-3.5 border-b border-mission-control-border shrink-0">
           <span className="font-semibold text-sm text-mission-control-text">{title}</span>
           <IconButton variant="ghost" size="1" onClick={onClose}>
             <X size={15} />
           </IconButton>
-        </div>
+        </Flex>
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
       </div>
     </div>
@@ -300,7 +300,7 @@ function ModalActions({ onClose, onSave, saving, label, danger }: {
   onClose: () => void; onSave: () => void; saving: boolean; label: string; danger?: boolean;
 }) {
   return (
-    <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-mission-control-border/50">
+    <Flex justify="end" gap="2" className="mt-5 pt-4 border-t border-mission-control-border/50">
       <Button variant="ghost" size="1" onClick={onClose}>
         Cancel
       </Button>
@@ -308,7 +308,7 @@ function ModalActions({ onClose, onSave, saving, label, danger }: {
         {saving && <Loader2 size={11} className="animate-spin" />}
         {label}
       </Button>
-    </div>
+    </Flex>
   );
 }
 
@@ -511,10 +511,10 @@ function CategoryModal({ data, quarterId, currency, onSave, onClose }: {
         </div>
 
         {projectedUsers !== null && (
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim bg-mission-control-bg rounded-lg px-3 py-2">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim bg-mission-control-bg rounded-lg px-3 py-2">
             <Users size={11} />
             <span>Projected <strong className="text-mission-control-text">{projectedUsers.toLocaleString()} users</strong> at {fmt(form.cac, currency)} CAC</span>
-          </div>
+          </Flex>
         )}
 
         <Field label="Color">
@@ -544,7 +544,7 @@ function CategoryModal({ data, quarterId, currency, onSave, onClose }: {
               ))}
             </div>
           )}
-          <div className="flex gap-2">
+          <Flex gap="2">
             <TextField.Root
               value={tagInput}
               onChange={e => setTagInput(e.target.value)}
@@ -553,7 +553,7 @@ function CategoryModal({ data, quarterId, currency, onSave, onClose }: {
               className="flex-1"
               size="1"
             />
-          </div>
+          </Flex>
           {/* Suggested tags */}
           <div className="flex flex-wrap gap-1 mt-1.5">
             {ALL_PRESET_TAGS.filter(t => !form.tags.includes(t) && (!tagInput || t.includes(tagInput.toLowerCase()))).slice(0, 12).map(t => (
@@ -659,9 +659,9 @@ function InvoiceModal({ data, quarterId, currency, categories, allInvoices, onSa
         </Field>
 
         {dupWarning && (
-          <div className="flex items-center gap-2 text-xs text-warning bg-warning/10 border border-warning/20 rounded-lg px-3 py-2">
+          <Flex align="center" gap="2" className="text-xs text-warning bg-warning/10 border border-warning/20 rounded-lg px-3 py-2">
             <AlertTriangle size={11} /> {dupWarning}
-          </div>
+          </Flex>
         )}
 
         <Field label="Title">
@@ -1212,10 +1212,10 @@ export default function BudgetPanel() {
 
   if (loading && !quarters.length) {
     return (
-      <div className="flex h-full items-center justify-center text-mission-control-text-dim gap-2">
+      <Flex align="center" justify="center" gap="2" className="h-full text-mission-control-text-dim">
         <RefreshCw size={16} className="animate-spin" />
         <span className="text-sm">Loading…</span>
-      </div>
+      </Flex>
     );
   }
 
@@ -1230,14 +1230,14 @@ export default function BudgetPanel() {
     <div className="flex h-full flex-col bg-mission-control-bg overflow-hidden">
       {/* ── Header ── */}
       <div className="border-b border-mission-control-border bg-mission-control-surface shrink-0">
-        <div className="px-6 py-4 flex items-center gap-3">
+        <Flex align="center" gap="3" className="px-6 py-4">
           <div className="p-2 bg-mission-control-accent/20 rounded-lg shrink-0">
             <Wallet size={20} className="text-mission-control-accent" />
           </div>
-          <div className="flex-1 min-w-0">
+          <Box className="flex-1 min-w-0">
             <h1 className="text-xl font-semibold text-mission-control-text">Budget</h1>
             <p className="text-xs text-mission-control-text-dim">Quarter tracking, invoices &amp; finance analysis</p>
-          </div>
+          </Box>
 
           {quarters.length > 0 && (
             <Select.Root value={activeQuarterId || ''} onValueChange={val => setActiveQuarterId(val)}>
@@ -1250,7 +1250,7 @@ export default function BudgetPanel() {
             </Select.Root>
           )}
 
-          <div className="flex items-center gap-1.5">
+          <Flex align="center" gap="2">
             {activeQuarterId && (
               <IconButton variant="ghost" size="1" onClick={() => setQuarterModal({ mode: 'edit', data: activeQuarter || undefined })} title="Edit quarter">
                 <Pencil size={13} />
@@ -1265,11 +1265,11 @@ export default function BudgetPanel() {
             <Button variant="solid" size="1" onClick={() => setQuarterModal({ mode: 'create' })}>
               <Plus size={12} /> New Quarter
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Tabs */}
-        <div className="flex px-6">
+        <Flex className="px-6">
           {tabItems.map(t => (
             <Button key={t.id} variant="ghost" size="1" onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-3 py-2.5 font-medium border-b-2 -mb-px transition-colors rounded-none ${
@@ -1279,7 +1279,7 @@ export default function BudgetPanel() {
               <t.icon size={12} /> {t.label}
             </Button>
           ))}
-        </div>
+        </Flex>
       </div>
 
       {/* ── Content ── */}
@@ -1301,11 +1301,11 @@ export default function BudgetPanel() {
               return (
                 <>
                   {/* Breadcrumb */}
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <Button variant="ghost" size="1" onClick={() => setDrillQuarterId(null)}>
                       <ChevronLeft size={14} /> All Quarters
                     </Button>
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                         drillQuarter.status === 'active' ? 'bg-success/10 text-success' : drillQuarter.status === 'closed' ? 'bg-muted-subtle text-muted' : 'bg-info/10 text-info'
                       }`}>{drillQuarter.status}</span>
@@ -1315,8 +1315,8 @@ export default function BudgetPanel() {
                       <IconButton variant="ghost" size="1" color="red" onClick={() => setConfirmDelete({ type: 'quarter', id: drillQuarter.id, label: drillQuarter.name })} title="Delete quarter">
                         <Trash2 size={12} />
                       </IconButton>
-                    </div>
-                  </div>
+                    </Flex>
+                  </Flex>
 
                   {/* Quarter header */}
                   <div>
@@ -1330,9 +1330,9 @@ export default function BudgetPanel() {
                   </div>
 
                   {drillLoading ? (
-                    <div className="flex items-center gap-2 justify-center py-8 text-mission-control-text-dim text-sm">
+                    <Flex align="center" justify="center" gap="2" className="py-8 text-mission-control-text-dim text-sm">
                       <RefreshCw size={14} className="animate-spin" /> Loading…
-                    </div>
+                    </Flex>
                   ) : (
                     <>
                       {/* Stat cards */}
@@ -1346,16 +1346,16 @@ export default function BudgetPanel() {
                       {/* Burn rate */}
                       {dPlanned > 0 && (
                         <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
-                          <div className="flex items-center justify-between text-xs mb-2">
+                          <Flex align="center" justify="between" className="text-xs mb-2">
                             <span className="text-mission-control-text-dim font-medium">Budget Utilization</span>
                             <span className="font-semibold" style={{ color: progressColor(dUsedPct) }}>{dUsedPct}%</span>
-                          </div>
+                          </Flex>
                           <ProgressBar value={dUsedPct} color={progressColor(dUsedPct)} />
-                          <div className="flex justify-between text-[10px] text-mission-control-text-dim mt-1">
+                          <Flex justify="between" className="text-[10px] text-mission-control-text-dim mt-1">
                             <span>{fmt(dPaid, dCur)} paid</span>
                             <span>{fmt(dPending, dCur)} pending</span>
                             <span>{fmt(Math.max(dRemaining, 0), dCur)} remaining</span>
-                          </div>
+                          </Flex>
                         </div>
                       )}
 
@@ -1409,13 +1409,13 @@ export default function BudgetPanel() {
                               const rem = cat.planned - (cat.actual || 0);
                               return (
                                 <div key={cat.id} className="px-4 py-3">
-                                  <div className="flex items-center gap-3 mb-1.5">
+                                  <Flex align="center" gap="3" className="mb-1.5">
                                     <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                                     <span className="text-xs font-medium text-mission-control-text flex-1">{cat.name}</span>
                                     <span className="text-[10px] text-mission-control-text-dim shrink-0">{cat.invoice_count || 0} inv</span>
                                     <span className="text-xs text-mission-control-text-dim shrink-0">{fmt(cat.actual || 0, dCur)} / {fmt(cat.planned, dCur)}</span>
                                     <span className="text-[10px] font-semibold w-10 text-right shrink-0" style={{ color: progressColor(usedP) }}>{usedP}%</span>
-                                  </div>
+                                  </Flex>
                                   <ProgressBar value={usedP} color={progressColor(usedP)} />
                                   {cat.cac > 0 && (
                                     <div className="mt-1 text-[10px] text-mission-control-text-dim">
@@ -1437,15 +1437,15 @@ export default function BudgetPanel() {
                       {/* Recent invoices */}
                       {drillInvoices.length > 0 && (
                         <div className="rounded-xl border border-mission-control-border bg-mission-control-surface">
-                          <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
+                          <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border">
                             <span className="text-xs font-semibold text-mission-control-text">Invoices ({drillInvoices.length})</span>
                             <Button variant="ghost" size="1" onClick={() => { setActiveQuarterId(drillQuarter.id); setTab('invoices'); setDrillQuarterId(null); }}>
                               View All <ChevronLeft size={10} className="rotate-180" />
                             </Button>
-                          </div>
+                          </Flex>
                           <div className="divide-y divide-mission-control-border/50 max-h-64 overflow-y-auto">
                             {drillInvoices.slice(0, 20).map(inv => (
-                              <div key={inv.id} className="px-4 py-2.5 flex items-center gap-3 text-xs">
+                              <Flex key={inv.id} align="center" gap="3" className="px-4 py-2.5 text-xs">
                                 <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: inv.category_color || '#6366f160' }} />
                                 <div className="flex-1 min-w-0">
                                   <div className="font-medium text-mission-control-text truncate">{inv.title}</div>
@@ -1455,7 +1455,7 @@ export default function BudgetPanel() {
                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium border shrink-0 ${STATUS_CFG[inv.status].cls}`}>
                                   {STATUS_CFG[inv.status].label}
                                 </span>
-                              </div>
+                              </Flex>
                             ))}
                             {drillInvoices.length > 20 && (
                               <div className="px-4 py-2 text-center text-[10px] text-mission-control-text-dim">
@@ -1519,13 +1519,13 @@ export default function BudgetPanel() {
                       {yearGroups.map(yg => {
                         const yPct = pct(yg.actual, yg.planned);
                         return (
-                          <div key={yg.year} className="flex items-center gap-3 text-xs">
+                          <Flex key={yg.year} align="center" gap="3" className="text-xs">
                             <span className="w-10 font-semibold text-mission-control-text shrink-0">{yg.year}</span>
                             <span className="w-10 text-mission-control-text-dim shrink-0">{yg.count} Q</span>
                             <div className="flex-1"><ProgressBar value={yPct} color={progressColor(yPct)} /></div>
                             <span className="text-mission-control-text-dim w-28 text-right shrink-0">{fmt(yg.actual)} / {fmt(yg.planned)}</span>
                             <span className="w-8 text-right shrink-0 font-medium" style={{ color: progressColor(yPct) }}>{yPct}%</span>
-                          </div>
+                          </Flex>
                         );
                       })}
                     </div>
@@ -1546,7 +1546,7 @@ export default function BudgetPanel() {
                         }`}
                       >
                         {/* Card header */}
-                        <div className="flex items-start justify-between mb-3">
+                        <Flex align="start" justify="between" className="mb-3">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="text-sm font-semibold text-mission-control-text">{q.name}</h3>
@@ -1565,15 +1565,15 @@ export default function BudgetPanel() {
                               {new Date(q.end_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </p>
                           </div>
-                          <div className="flex gap-0.5 shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Flex gap="1" className="shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <IconButton variant="ghost" size="1" onClick={e => { e.stopPropagation(); setActiveQuarterId(q.id); setQuarterModal({ mode: 'edit', data: q }); }} title="Edit">
                               <Pencil size={11} />
                             </IconButton>
                             <IconButton variant="ghost" size="1" color="red" onClick={e => { e.stopPropagation(); setConfirmDelete({ type: 'quarter', id: q.id, label: q.name }); }} title="Delete">
                               <Trash2 size={11} />
                             </IconButton>
-                          </div>
-                        </div>
+                          </Flex>
+                        </Flex>
 
                         {/* Stats */}
                         <div className="grid grid-cols-3 gap-2 text-center mb-3">
@@ -1595,10 +1595,10 @@ export default function BudgetPanel() {
 
                         {/* Progress */}
                         <ProgressBar value={qPct} color={progressColor(qPct)} />
-                        <div className="flex justify-between text-[10px] text-mission-control-text-dim mt-1">
+                        <Flex justify="between" className="text-[10px] text-mission-control-text-dim mt-1">
                           <span>{qPct}% used</span>
                           <span>{q.invoice_count || 0} invoices</span>
-                        </div>
+                        </Flex>
 
                         {q.notes && (
                           <p className="text-[10px] text-mission-control-text-dim italic mt-2 border-t border-mission-control-border/50 pt-2 truncate">{q.notes}</p>
@@ -1645,10 +1645,10 @@ export default function BudgetPanel() {
             {/* Processing progress */}
             {processingFiles.length > 0 && (
               <div className="px-4 py-2 bg-mission-control-accent/10 border-b border-mission-control-accent/20 shrink-0">
-                <div className="flex items-center gap-2 text-xs text-mission-control-accent">
+                <Flex align="center" gap="2" className="text-xs text-mission-control-accent">
                   <Loader2 size={12} className="animate-spin" />
                   Processing {processingFiles.length} file{processingFiles.length > 1 ? 's' : ''}…
-                </div>
+                </Flex>
               </div>
             )}
 
@@ -1665,7 +1665,7 @@ export default function BudgetPanel() {
               </div>
 
               {/* Status filter */}
-              <div className="flex rounded-lg border border-mission-control-border overflow-hidden">
+              <Flex className="rounded-lg border border-mission-control-border overflow-hidden">
                 {(['all', 'pending', 'paid', 'cancelled'] as const).map(f => (
                   <Button key={f} variant="ghost" size="1" onClick={() => setStatusFilter(f)}
                     className={`px-2 py-1 capitalize rounded-none transition-colors ${
@@ -1673,7 +1673,7 @@ export default function BudgetPanel() {
                     }`}
                   >{f}</Button>
                 ))}
-              </div>
+              </Flex>
 
               {/* Category filter */}
               <Select.Root value={categoryFilter || '__all__'} onValueChange={val => setCategoryFilter(val === '__all__' ? '' : val)}>
@@ -1703,9 +1703,9 @@ export default function BudgetPanel() {
 
             {/* Bulk action bar */}
             {selectedIds.size > 0 && (
-              <div className="shrink-0 px-4 py-2.5 bg-mission-control-surface border-b border-mission-control-border flex items-center gap-2 text-xs">
+              <Flex align="center" gap="2" className="shrink-0 px-4 py-2.5 bg-mission-control-surface border-b border-mission-control-border text-xs">
                 <span className="text-mission-control-text-dim">{selectedIds.size} selected</span>
-                <div className="flex gap-1.5 ml-auto">
+                <Flex gap="2" className="ml-auto">
                   <Button variant="soft" color="green" size="1" onClick={() => handleBulkStatus('paid')} disabled={bulkLoading}>Mark Paid</Button>
                   <Button variant="soft" color="yellow" size="1" onClick={() => handleBulkStatus('pending')} disabled={bulkLoading}>Mark Pending</Button>
                   <Button variant="ghost" size="1" onClick={() => handleBulkStatus('cancelled')} disabled={bulkLoading}>Cancel</Button>
@@ -1715,18 +1715,18 @@ export default function BudgetPanel() {
                   <IconButton variant="ghost" size="1" onClick={() => setSelectedIds(new Set())}>
                     <X size={10} />
                   </IconButton>
-                </div>
-              </div>
+                </Flex>
+              </Flex>
             )}
 
             {/* Invoice table */}
             <div className="flex-1 overflow-y-auto">
               {displayInvoices.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-40 gap-3 text-mission-control-text-dim">
+                <Flex direction="column" align="center" justify="center" gap="3" className="h-40 text-mission-control-text-dim">
                   <FileText size={28} />
                   <p className="text-sm">No invoices found</p>
                   <p className="text-xs">Drop PDF/images here or click + Invoice to add</p>
-                </div>
+                </Flex>
               ) : (
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-mission-control-surface border-b border-mission-control-border">
@@ -1784,7 +1784,7 @@ export default function BudgetPanel() {
                             </Select.Root>
                           </td>
                           <td className="px-2 py-2">
-                            <div className="flex items-center gap-1">
+                            <Flex align="center" gap="1">
                               {inv.file_name && (
                                 <IconButton variant="ghost" size="1" onClick={() => setPdfPreview(inv)} title="View document">
                                   <Eye size={11} />
@@ -1802,7 +1802,7 @@ export default function BudgetPanel() {
                               <IconButton variant="ghost" size="1" color="red" onClick={() => setConfirmDelete({ type: 'invoice', id: inv.id, label: inv.title })}>
                                 <Trash2 size={11} />
                               </IconButton>
-                            </div>
+                            </Flex>
                           </td>
                         </tr>
                       );
@@ -1813,19 +1813,19 @@ export default function BudgetPanel() {
             </div>
 
             {/* Footer stats */}
-            <div className="shrink-0 px-4 py-2 border-t border-mission-control-border/50 bg-mission-control-surface/40 flex items-center gap-4 text-[10px] text-mission-control-text-dim">
+            <Flex align="center" gap="4" className="shrink-0 px-4 py-2 border-t border-mission-control-border/50 bg-mission-control-surface/40 text-[10px] text-mission-control-text-dim">
               <span>{displayInvoices.length} invoices</span>
               <span>Total: <strong className="text-mission-control-text">{fmt(displayInvoices.filter(i => i.status !== 'cancelled').reduce((s, i) => s + i.amount, 0), currency)}</strong></span>
               <span>Paid: <strong className="text-success">{fmt(displayInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0), currency)}</strong></span>
               <span className="ml-auto">Drop PDF/images to bulk-import with AI extraction</span>
-            </div>
+            </Flex>
           </div>
         )}
 
         {/* ─────────────── CATEGORIES ─────────────── */}
         {tab === 'categories' && (
           <div className="h-full overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-3">
+            <Flex align="center" justify="between" className="mb-3">
               <div>
                 <h2 className="text-sm font-semibold text-mission-control-text">Categories</h2>
                 <p className="text-xs text-mission-control-text-dim">{activeQuarter?.name || 'No quarter selected'}</p>
@@ -1833,7 +1833,7 @@ export default function BudgetPanel() {
               <Button variant="solid" size="1" onClick={() => setCategoryModal({ mode: 'create' })} disabled={!activeQuarterId}>
                 <Plus size={12} /> New Category
               </Button>
-            </div>
+            </Flex>
 
             {/* Tag filter pills */}
             {categories.some(c => c.tags && c.tags.length > 0) && (() => {
@@ -1860,7 +1860,7 @@ export default function BudgetPanel() {
             })()}
 
             {categories.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 gap-3 text-mission-control-text-dim">
+              <Flex direction="column" align="center" justify="center" gap="3" className="h-40 text-mission-control-text-dim">
                 <Layers size={28} />
                 <p className="text-sm">{activeQuarterId ? 'No categories yet' : 'Select a quarter first'}</p>
                 {activeQuarterId && (
@@ -1868,7 +1868,7 @@ export default function BudgetPanel() {
                     <Plus size={12} /> Add Category
                   </Button>
                 )}
-              </div>
+              </Flex>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {categories.filter(cat => !tagFilter || (cat.tags || []).includes(tagFilter)).map(cat => {
@@ -1882,17 +1882,17 @@ export default function BudgetPanel() {
                   return (
                     <div key={cat.id} className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4 flex flex-col gap-3">
                       {/* Header */}
-                      <div className="flex items-start gap-2">
+                      <Flex align="start" gap="2">
                         <div className="w-3 h-3 rounded-full shrink-0 mt-0.5" style={{ backgroundColor: cat.color }} />
-                        <div className="flex-1 min-w-0">
+                        <Box className="flex-1 min-w-0">
                           <div className="font-semibold text-sm text-mission-control-text truncate">{cat.name}</div>
                           <div className="text-[10px] text-mission-control-text-dim">{cat.invoice_count || 0} invoices</div>
-                        </div>
-                        <div className="flex gap-1 shrink-0">
+                        </Box>
+                        <Flex gap="1" className="shrink-0">
                           <IconButton variant="ghost" size="1" onClick={() => setCategoryModal({ mode: 'edit', data: cat })} title="Edit"><Pencil size={11} /></IconButton>
                           <IconButton variant="ghost" size="1" color="red" onClick={() => setConfirmDelete({ type: 'category', id: cat.id, label: cat.name })} title="Delete"><Trash2 size={11} /></IconButton>
-                        </div>
-                      </div>
+                        </Flex>
+                      </Flex>
 
                       {/* Stats */}
                       <div className="grid grid-cols-3 gap-2 text-center">
@@ -1912,25 +1912,25 @@ export default function BudgetPanel() {
 
                       {/* Progress bar */}
                       <div>
-                        <div className="flex justify-between text-[10px] mb-1">
+                        <Flex justify="between" className="text-[10px] mb-1">
                           <span className="text-mission-control-text-dim">{usedP}% used</span>
                           {usedP >= 100 && <span className="text-error font-medium">Over budget!</span>}
                           {usedP >= 80 && usedP < 100 && <span className="text-warning font-medium">Caution</span>}
-                        </div>
+                        </Flex>
                         <ProgressBar value={usedP} color={progressColor(usedP)} />
                       </div>
 
                       {/* Paid / Pending split */}
                       {(paidAmt > 0 || pendingAmt > 0) && (
-                        <div className="flex gap-3 text-[10px]">
+                        <Flex gap="3" className="text-[10px]">
                           <span className="flex items-center gap-1 text-success"><CheckCircle size={9} /> {fmt(paidAmt, currency)} paid</span>
                           <span className="flex items-center gap-1 text-warning"><Clock size={9} /> {fmt(pendingAmt, currency)} pending</span>
-                        </div>
+                        </Flex>
                       )}
 
                       {/* CAC / projections */}
                       {cat.cac > 0 && projectedUsers !== null && (
-                        <div className="flex items-center gap-1.5 text-[10px] text-mission-control-text-dim bg-mission-control-bg rounded-lg px-2.5 py-1.5">
+                        <Flex align="center" gap="2" className="text-[10px] text-mission-control-text-dim bg-mission-control-bg rounded-lg px-2.5 py-1.5">
                           <Users size={10} />
                           <span>~{fmtCompact(projectedUsers)} users at {fmt(cat.cac, currency)} CAC</span>
                           {cat.actual && cat.cac > 0 && (
@@ -1938,7 +1938,7 @@ export default function BudgetPanel() {
                               {Math.round((cat.actual || 0) / cat.cac).toLocaleString()} acquired
                             </span>
                           )}
-                        </div>
+                        </Flex>
                       )}
 
                       {/* Top vendors */}
@@ -1949,14 +1949,14 @@ export default function BudgetPanel() {
                             {topVendors.map((v, vi) => {
                               const vPct = pct(v.amount, cat.actual || 1);
                               return (
-                                <div key={v.vendor} className="flex items-center gap-2 text-[10px]">
+                                <Flex key={v.vendor} align="center" gap="2" className="text-[10px]">
                                   <span className="w-3 h-3 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0" style={{ backgroundColor: cat.color + '30', color: cat.color }}>
                                     {vi + 1}
                                   </span>
                                   <span className="flex-1 text-mission-control-text truncate">{v.vendor}</span>
                                   <span className="text-mission-control-text-dim shrink-0">{fmt(v.amount, currency)}</span>
                                   <span className="text-mission-control-text-dim shrink-0 w-8 text-right">{vPct}%</span>
-                                </div>
+                                </Flex>
                               );
                             })}
                           </div>
@@ -2056,7 +2056,7 @@ export default function BudgetPanel() {
                     <><Loader2 size={24} className="animate-spin text-mission-control-accent" /><span className="text-sm text-mission-control-accent">{importStatus}</span></>
                   ) : (
                     <>
-                      <div className="flex items-center gap-2"><Upload size={20} className="text-mission-control-text-dim" /><Sparkles size={16} className="text-warning" /></div>
+                      <Flex align="center" gap="2"><Upload size={20} className="text-mission-control-text-dim" /><Sparkles size={16} className="text-warning" /></Flex>
                       <div className="text-sm text-mission-control-text">Drop Excel file or click to browse</div>
                       <div className="text-xs text-mission-control-text-dim">Supports .xlsx, .xls, .csv — AI auto-extracts budget structure</div>
                     </>
@@ -2070,12 +2070,12 @@ export default function BudgetPanel() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <Flex align="center" justify="between">
                   <div>
                     <div className="text-sm font-semibold text-mission-control-text">AI extracted budget for {importPreview.year}</div>
                     <div className="text-xs text-mission-control-text-dim">Total: {fmt(importPreview.totalBudget, currency)}</div>
                   </div>
-                  <div className="flex rounded-lg border border-mission-control-border overflow-hidden">
+                  <Flex className="rounded-lg border border-mission-control-border overflow-hidden">
                     {(['quarterly', 'annual'] as const).map(m => (
                       <Button key={m} variant="ghost" size="1" onClick={() => setImportMode(m)}
                         className={`px-3 py-1.5 capitalize rounded-none transition-colors ${importMode === m ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
@@ -2083,16 +2083,16 @@ export default function BudgetPanel() {
                         {m === 'quarterly' ? `Quarterly (${importPreview.quarterlyView.length} quarters)` : `Annual (1 period)`}
                       </Button>
                     ))}
-                  </div>
-                </div>
+                  </Flex>
+                </Flex>
 
                 <div className="space-y-3 max-h-64 overflow-y-auto">
                   {(importMode === 'quarterly' ? importPreview.quarterlyView : importPreview.annualView).map(q => (
                     <div key={q.name} className="rounded-lg border border-mission-control-border bg-mission-control-surface p-3">
-                      <div className="flex items-center justify-between mb-2">
+                      <Flex align="center" justify="between" className="mb-2">
                         <span className="text-xs font-semibold text-mission-control-text">{q.name}</span>
                         <span className="text-xs text-mission-control-text-dim">{fmt(q.categories.reduce((s, c) => s + c.planned, 0), currency)}</span>
-                      </div>
+                      </Flex>
                       <div className="flex flex-wrap gap-1.5">
                         {q.categories.map(cat => (
                           <span key={cat.name} className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border border-mission-control-border">
@@ -2112,14 +2112,14 @@ export default function BudgetPanel() {
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 justify-end pt-1">
+                <Flex align="center" justify="end" gap="2" className="pt-1">
                   <Button variant="ghost" size="1" onClick={() => setImportPreview(null)}>
                     Back
                   </Button>
                   <Button variant="solid" size="1" onClick={handleConfirmImport} disabled={isImporting}>
                     {isImporting ? <><Loader2 size={11} className="animate-spin" /> Importing…</> : <><CheckCircle size={11} /> Import Budget</>}
                   </Button>
-                </div>
+                </Flex>
               </div>
             )}
           </div>
@@ -2130,14 +2130,14 @@ export default function BudgetPanel() {
       {confirmDelete && (
         <ModalWrap title={`Delete ${confirmDelete.type}?`} onClose={() => setConfirmDelete(null)}>
           <div className="space-y-4">
-            <div className="flex items-start gap-3 p-3 bg-error/5 border border-error/20 rounded-lg">
+            <Flex align="start" gap="3" className="p-3 bg-error/5 border border-error/20 rounded-lg">
               <AlertTriangle size={16} className="text-error shrink-0 mt-0.5" />
               <div className="text-sm text-mission-control-text">
                 <strong>{confirmDelete.label}</strong> will be permanently deleted.
                 {confirmDelete.type === 'quarter' && ' This will also delete all categories and invoices in this quarter.'}
                 {confirmDelete.type === 'category' && ' Invoices in this category will become uncategorized.'}
               </div>
-            </div>
+            </Flex>
             <ModalActions
               onClose={() => setConfirmDelete(null)}
               onSave={() => {
