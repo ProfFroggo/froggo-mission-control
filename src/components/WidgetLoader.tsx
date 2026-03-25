@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { AlertCircle, Package } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import { loadAgentWidgets, canLoadWidgets, type WidgetDefinition } from '../lib/widgetRegistry';
 import { AsyncBoundary } from './AsyncBoundary';
 import { createLogger } from '../utils/logger';
@@ -24,10 +25,10 @@ interface WidgetLoaderProps {
 function WidgetError({ widgetName }: { widgetName: string }) {
   return (
     <div className="rounded-lg border border-error-border bg-error-subtle p-4 text-sm">
-      <div className="flex items-center gap-2 text-error">
+      <Flex align="center" gap="2" className="text-error">
         <AlertCircle size={16} />
         <span className="font-medium">Widget failed to load: {widgetName}</span>
-      </div>
+      </Flex>
       <p className="mt-1 text-xs text-error/70">
         The widget encountered an error during initialization.
       </p>
@@ -41,10 +42,10 @@ function WidgetError({ widgetName }: { widgetName: string }) {
 function WidgetLoading() {
   return (
     <div className="rounded-lg border border-mission-control-border bg-mission-control-bg0 p-4">
-      <div className="flex items-center gap-3">
+      <Flex align="center" gap="3">
         <div className="h-4 w-4 animate-spin rounded-full border-2 border-mission-control-accent border-t-transparent" />
         <span className="text-sm text-mission-control-text-dim">Loading widget...</span>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -122,7 +123,7 @@ function WidgetPlaceholder({
 }) {
   return (
     <div className="rounded-lg border border-mission-control-border bg-mission-control-bg0 p-4">
-      <div className="flex items-start gap-3">
+      <Flex align="start" gap="3">
         <div className="flex-shrink-0">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-mission-control-accent/10 text-mission-control-accent">
             {widget.icon || <Package size={20} />}
@@ -140,7 +141,7 @@ function WidgetPlaceholder({
             </span>
           </div>
         </div>
-      </div>
+      </Flex>
     </div>
   );
 }

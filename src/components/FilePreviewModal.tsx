@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { X, Download, ExternalLink } from 'lucide-react';
-import { IconButton, Button } from '@radix-ui/themes';
+import { Flex, IconButton, Button } from '@radix-ui/themes';
 
 interface FilePreviewModalProps {
   isOpen: boolean;
@@ -105,7 +105,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <IconButton
               onClick={handleDownload}
               size="2"
@@ -126,7 +126,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
             >
               <X size={16} />
             </IconButton>
-          </div>
+          </Flex>
         </div>
 
         {/* Content */}

@@ -73,7 +73,7 @@ export default function FactList() {
               key={fact.id}
               className="group p-2 rounded bg-mission-control-bg/30 hover:bg-mission-control-border/40 transition-colors"
             >
-              <div className="flex items-start justify-between gap-1">
+              <Flex align="start" justify="between" gap="1">
                 <div className="flex items-start gap-1.5 flex-1 min-w-0">
                   <span
                     className={`text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 ${statusBadge[fact.status] ?? statusBadge.unverified}`}
@@ -108,7 +108,7 @@ export default function FactList() {
                     <Trash2 size={11} />
                   </IconButton>
                 </div>
-              </div>
+              </Flex>
               {fact.source && (
                 <p className="text-[9px] text-mission-control-text-dim mt-0.5 ml-5">source: {fact.source}</p>
               )}

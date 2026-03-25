@@ -5,7 +5,7 @@
 
 import { useState, useEffect, InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
 import { AlertCircle, Check } from 'lucide-react';
-import { TextField, TextArea, Select } from '@radix-ui/themes';
+import { Flex, TextField, TextArea, Select } from '@radix-ui/themes';
 import { validate, ValidationRule, ValidationResult } from '../utils/validation';
 
 interface BaseValidatedInputProps {
@@ -90,10 +90,10 @@ export function ValidatedInput({
       )}
 
       {hasError && validationResult.error && (
-        <div className="flex items-center gap-1 text-xs text-error">
+        <Flex align="center" gap="1" className="text-xs text-error">
           <AlertCircle size={14} />
           <span>{validationResult.error}</span>
-        </div>
+        </Flex>
       )}
     </div>
   );
@@ -146,7 +146,7 @@ export function ValidatedTextarea({
   return (
     <div className="space-y-1">
       {label && (
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           <label className="block text-sm font-medium text-mission-control-text">
             {label}
             {rules.some(r => r.type === 'required') && (
@@ -158,7 +158,7 @@ export function ValidatedTextarea({
               {charCount} / {maxLength}
             </span>
           )}
-        </div>
+        </Flex>
       )}
 
       <TextArea
@@ -176,10 +176,10 @@ export function ValidatedTextarea({
       )}
 
       {hasError && validationResult.error && (
-        <div className="flex items-center gap-1 text-xs text-error">
+        <Flex align="center" gap="1" className="text-xs text-error">
           <AlertCircle size={14} />
           <span>{validationResult.error}</span>
-        </div>
+        </Flex>
       )}
     </div>
   );
@@ -248,10 +248,10 @@ export function ValidatedSelect({
       )}
 
       {hasError && validationResult.error && (
-        <div className="flex items-center gap-1 text-xs text-error">
+        <Flex align="center" gap="1" className="text-xs text-error">
           <AlertCircle size={14} />
           <span>{validationResult.error}</span>
-        </div>
+        </Flex>
       )}
     </div>
   );
