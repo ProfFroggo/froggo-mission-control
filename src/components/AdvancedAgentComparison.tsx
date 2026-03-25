@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import {
   Users,
   TrendingUp,
@@ -258,28 +258,28 @@ export default function AdvancedAgentComparison({
                     <tr>
                       <th className="text-left p-4 text-sm font-medium">Agent</th>
                       <th className="text-right p-4 text-sm font-medium">
-                        <div className="flex items-center justify-end gap-1">
+                        <Flex align="center" justify="end" gap="1">
                           <Target size={14} />
                           Completed
-                        </div>
+                        </Flex>
                       </th>
                       <th className="text-right p-4 text-sm font-medium">
-                        <div className="flex items-center justify-end gap-1">
+                        <Flex align="center" justify="end" gap="1">
                           <TrendingUp size={14} />
                           Rate
-                        </div>
+                        </Flex>
                       </th>
                       <th className="text-right p-4 text-sm font-medium">
-                        <div className="flex items-center justify-end gap-1">
+                        <Flex align="center" justify="end" gap="1">
                           <Clock size={14} />
                           Avg Time
-                        </div>
+                        </Flex>
                       </th>
                       <th className="text-right p-4 text-sm font-medium">
-                        <div className="flex items-center justify-end gap-1">
+                        <Flex align="center" justify="end" gap="1">
                           <Award size={14} />
                           Efficiency
-                        </div>
+                        </Flex>
                       </th>
                       <th className="text-right p-4 text-sm font-medium">Consistency</th>
                     </tr>
@@ -295,16 +295,16 @@ export default function AdvancedAgentComparison({
                           className="border-b border-mission-control-border last:border-b-0"
                         >
                           <td className="p-4">
-                            <div className="flex items-center gap-2">
+                            <Flex align="center" gap="2">
                               <div
                                 className="w-3 h-3 rounded-full"
                                 style={{ backgroundColor: COLORS[index] }}
                               />
                               <span className="font-medium">{agentName}</span>
-                            </div>
+                            </Flex>
                           </td>
                           <td className="p-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <Flex align="center" justify="end" gap="2">
                               <span className="text-success font-medium tabular-nums">
                                 {agent.tasksCompleted}
                               </span>
@@ -313,7 +313,7 @@ export default function AdvancedAgentComparison({
                                 metrics.reduce((sum, m) => sum + m.tasksCompleted, 0) /
                                   metrics.length
                               )}
-                            </div>
+                            </Flex>
                           </td>
                           <td className="p-4 text-right">
                             <span
@@ -334,17 +334,17 @@ export default function AdvancedAgentComparison({
                             </span>
                           </td>
                           <td className="p-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <Flex align="center" justify="end" gap="2">
                               <span className="text-info font-medium tabular-nums">
                                 {agent.efficiency.toFixed(2)}
                               </span>
                               <span className="text-xs text-mission-control-text-dim">
                                 tasks/h
                               </span>
-                            </div>
+                            </Flex>
                           </td>
                           <td className="p-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <Flex align="center" justify="end" gap="2">
                               <div className="w-24 bg-mission-control-bg rounded-full h-2">
                                 <div
                                   className="bg-review rounded-full h-2 transition-all"
@@ -354,7 +354,7 @@ export default function AdvancedAgentComparison({
                               <span className="text-review font-medium tabular-nums w-12">
                                 {Math.round(agent.consistency)}%
                               </span>
-                            </div>
+                            </Flex>
                           </td>
                         </tr>
                       );

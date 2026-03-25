@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { Flex } from '@radix-ui/themes';
 import { gateway } from '@/lib/gateway';
 
 interface ActiveAgentIndicatorProps {
@@ -103,12 +104,12 @@ export default function ActiveAgentIndicator({
 
   return (
     <div className={`flex items-center gap-1.5 ${className}`}>
-      <div className="relative flex items-center justify-center">
+      <Flex align="center" justify="center" className="relative">
         {/* Pulsing outer ring */}
         <div className={`absolute ${dotSize} bg-success-subtle rounded-full animate-ping`} />
         {/* Solid inner dot */}
         <div className={`relative ${dotSize} bg-success rounded-full`} />
-      </div>
+      </Flex>
       
       {showLabel && agentName && (
         <span className="text-xs text-success font-medium">
