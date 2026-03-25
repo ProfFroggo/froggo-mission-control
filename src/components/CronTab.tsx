@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton, Select, TextArea, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextArea, TextField, Flex } from '@radix-ui/themes';
 import { Clock, RefreshCw, Play, Trash2, Plus, ChevronDown, ChevronRight, AlertCircle, Edit2 } from 'lucide-react';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -225,22 +225,22 @@ export default function CronTab() {
 
   return (
     <div className="flex-1 overflow-auto p-6">
-      <div className="flex items-center justify-between mb-4">
+      <Flex align="center" justify="between" className="mb-4">
         <div className="text-sm text-mission-control-text-dim">{jobs.length} cron job{jobs.length !== 1 ? 's' : ''}</div>
-        <div className="flex gap-2">
+        <Flex gap="2">
           <Button variant="solid" size="2" onClick={() => setShowAddModal(true)}>
             <Plus size={14} /> Add Job
           </Button>
           <Button variant="surface" color="gray" size="2" onClick={loadJobs} disabled={loading}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {loading && jobs.length === 0 ? (
-        <div className="flex items-center justify-center py-12 text-mission-control-text-dim">
+        <Flex align="center" justify="center" className="py-12 text-mission-control-text-dim">
           <RefreshCw size={24} className="animate-spin mr-3" /> Loading...
-        </div>
+        </Flex>
       ) : jobs.length === 0 ? (
         <div className="text-center py-12 text-mission-control-text-dim">
           <Clock size={48} className="mx-auto opacity-20 mb-4" />
@@ -292,7 +292,7 @@ export default function CronTab() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <Flex align="center" gap="1">
                     <IconButton variant="ghost" size="1" onClick={e => { e.stopPropagation(); runJob(job.id); }} aria-label="Run job now">
                       <Play size={14} />
                     </IconButton>
@@ -303,7 +303,7 @@ export default function CronTab() {
                       <Trash2 size={14} />
                     </IconButton>
                     {isExpanded ? <ChevronDown size={16} className="text-mission-control-text-dim" /> : <ChevronRight size={16} className="text-mission-control-text-dim" />}
-                  </div>
+                  </Flex>
                 </div>
 
                 {isExpanded && (
@@ -321,10 +321,10 @@ export default function CronTab() {
                       </div>
                     )}
                     {job.state.lastError && (
-                      <div className="mb-4 p-3 bg-error-subtle border border-error-border rounded-lg text-sm text-error flex items-start gap-2">
+                      <Flex align="start" gap="2" className="mb-4 p-3 bg-error-subtle border border-error-border rounded-lg text-sm text-error">
                         <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                         {job.state.lastError}
-                      </div>
+                      </Flex>
                     )}
                     <div className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2">Recent Runs</div>
                     {jobRuns.length === 0 ? (
@@ -332,7 +332,7 @@ export default function CronTab() {
                     ) : (
                       <div className="space-y-1 max-h-48 overflow-y-auto">
                         {jobRuns.map((run, i) => (
-                          <div key={i} className="flex items-center gap-3 text-sm py-1">
+                          <Flex key={i} align="center" gap="3" className="text-sm py-1">
                             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                               run.status === 'ok' ? 'bg-success' : run.status === 'error' ? 'bg-error' : 'bg-mission-control-text-dim'
                             }`} />
@@ -340,7 +340,7 @@ export default function CronTab() {
                             <span className={run.status === 'error' ? 'text-error' : ''}>{run.status}</span>
                             {run.durationMs && <span className="text-mission-control-text-dim">{(run.durationMs / 1000).toFixed(1)}s</span>}
                             {run.error && <span className="text-error truncate">{run.error}</span>}
-                          </div>
+                          </Flex>
                         ))}
                       </div>
                     )}
@@ -382,7 +382,7 @@ export default function CronTab() {
               </div>
               <div>
                 <label htmlFor="cron-schedule-kind" className="block text-sm text-mission-control-text-dim mb-1">Schedule</label>
-                <div className="flex gap-2">
+                <Flex gap="2">
                   <Select.Root value={newJob.scheduleKind || 'cron'} onValueChange={(val) => setNewJob(p => ({ ...p, scheduleKind: val }))}>
                     <Select.Trigger id="cron-schedule-kind" aria-label="Schedule type" />
                     <Select.Content>
@@ -394,12 +394,12 @@ export default function CronTab() {
                   <TextField.Root id="cron-schedule-expr" type="text" value={newJob.expr} onChange={e => setNewJob(p => ({ ...p, expr: e.target.value }))}
                     placeholder={newJob.scheduleKind === 'cron' ? '*/5 * * * *' : newJob.scheduleKind === 'every' ? '5' : '2026-01-30T09:00'}
                     aria-label="Schedule expression" style={{ flex: 1 }} />
-                </div>
+                </Flex>
               </div>
               {/* Mode toggle */}
               <div>
                 <label className="block text-sm text-mission-control-text-dim mb-1">Execution Mode</label>
-                <div className="flex gap-2">
+                <Flex gap="2">
                   <Button
                     type="button"
                     variant={newJob.mode === 'task' ? 'soft' : 'surface'}
@@ -420,7 +420,7 @@ export default function CronTab() {
                   >
                     Message Agent
                   </Button>
-                </div>
+                </Flex>
                 <p className="text-xs text-mission-control-text-dim mt-1">
                   {newJob.mode === 'task' ? 'Creates a task in the pipeline with planning notes, subtasks, and agent assignment.' : 'Sends a message directly to an agent session (bypasses task pipeline).'}
                 </p>
@@ -497,10 +497,10 @@ export default function CronTab() {
                 </>
               )}
             </div>
-            <div className="flex gap-3 mt-6">
+            <Flex gap="3" className="mt-6">
               <Button variant="surface" color="gray" size="2" onClick={closeModal} style={{ flex: 1, justifyContent: 'center' }}>Cancel</Button>
               <Button variant="solid" size="2" onClick={addJob} style={{ flex: 1, justifyContent: 'center' }}>{editingJobId ? 'Save' : 'Create'}</Button>
-            </div>
+            </Flex>
           </div>
         </div>
       )}
