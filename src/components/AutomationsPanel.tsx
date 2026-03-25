@@ -227,7 +227,7 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-xl px-5 py-4 flex flex-col gap-3">
       {/* Top row: name + status + toggle */}
-      <div className="flex items-start gap-3">
+      <Flex align="start" gap="3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <TriggerIcon type={automation.trigger_type} />
@@ -248,7 +248,7 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
           title={isActive ? 'Pause automation' : 'Activate automation'}
           aria-label={isActive ? 'Pause automation' : 'Activate automation'}
         />
-      </div>
+      </Flex>
 
       {/* Meta row: last run, next run */}
       <div className="flex gap-4 flex-wrap">
@@ -362,14 +362,14 @@ function EmptyState({ onNew, onBrowseTemplates }: { onNew: () => void; onBrowseT
           Build your first automation below or pick a template to get started in seconds.
         </p>
       </div>
-      <div className="flex gap-2.5">
+      <Flex gap="3">
         <Button onClick={onNew} size="2" variant="solid">
           <Plus size={16} /> New Automation
         </Button>
         <Button onClick={onBrowseTemplates} size="2" variant="soft">
           Browse templates
         </Button>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -530,8 +530,8 @@ export default function AutomationsPanel() {
       {/* Header + Tabs */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" className="px-6 py-4">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
               <Zap size={24} className="text-mission-control-accent" />
             </div>
@@ -541,16 +541,16 @@ export default function AutomationsPanel() {
                 Describe what you want in plain English — the agent builds it for you.
               </p>
             </div>
-          </div>
-          <div className="flex gap-2">
+          </Flex>
+          <Flex gap="2">
             <Button onClick={() => setTemplatesGalleryOpen(true)} size="2" variant="soft">
               <Layers size={16} /> From Template
             </Button>
             <Button onClick={handleNewAutomation} size="2" variant="solid">
               <Plus size={16} /> New Automation
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Tabs */}
         <div className="border-t border-mission-control-border">
@@ -569,7 +569,7 @@ export default function AutomationsPanel() {
       {activeTab === 'my-automations' && (
         <>
           {/* Search + filter bar */}
-          <div className="flex gap-2.5 items-center">
+          <Flex gap="3" align="center">
             <div className="relative flex-1 max-w-sm">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none z-[1]" />
               <TextField.Root
@@ -583,14 +583,14 @@ export default function AutomationsPanel() {
             <IconButton onClick={fetchAutomations} title="Refresh" aria-label="Refresh automations" size="2" variant="ghost">
               <RefreshCw size={14} />
             </IconButton>
-          </div>
+          </Flex>
 
           {/* Automation list or empty state */}
           {loading ? (
-            <div className="flex items-center justify-center py-16 text-mission-control-text-dim gap-2.5">
+            <Flex align="center" justify="center" gap="3" className="py-16 text-mission-control-text-dim">
               <RefreshCw size={18} className="animate-spin" />
               <span className="text-sm">Loading automations...</span>
-            </div>
+            </Flex>
           ) : filtered.length === 0 ? (
             <EmptyState
               onNew={handleNewAutomation}
