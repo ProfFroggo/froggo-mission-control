@@ -1076,7 +1076,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   </div>
                   <span className="text-xs tabular-nums text-mission-control-text-dim mt-1 px-1">{time}</span>
                   {/* Hover action buttons */}
-                  <div className={`flex items-center gap-1 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <Flex align="center" gap="1" className={`mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <IconButton
                       onClick={() => setReplyToMsg(msg)}
                       title="Reply in thread"
@@ -1097,7 +1097,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     >
                       <Pin size={13} />
                     </IconButton>
-                  </div>
+                  </Flex>
                   {/* Reactions */}
                   <MessageReactions messageId={msg.id} isUser={isUser} />
                 </div>

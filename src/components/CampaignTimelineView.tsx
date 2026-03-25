@@ -239,10 +239,12 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
           const isSoon = !isPast && m.date <= now + 7 * 24 * 60 * 60 * 1000;
           const isTask = m.type === 'task';
           return (
-            <div
+            <Flex
               key={m.id}
+              align="center"
+              gap="3"
               onClick={() => isTask && onMilestoneClick && onMilestoneClick(m.id)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
+              className={`px-3 py-2.5 rounded-lg border transition-colors ${
                 isTask && onMilestoneClick ? 'cursor-pointer hover:border-mission-control-accent/40' : ''
               } ${
                 isPast
@@ -262,7 +264,7 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
               {m.type === 'task' && m.taskStatus === 'done' && (
                 <CheckCircle2 size={13} className="text-mission-control-text-dim flex-shrink-0" />
               )}
-            </div>
+            </Flex>
           );
         })}
       </div>
