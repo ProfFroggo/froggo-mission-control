@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { X, Bot, MessageSquare, Edit3, Send, Sparkles, Zap, CheckCircle } from 'lucide-react';
-import { Button, IconButton, Spinner, TextArea, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Spinner, TextArea, TextField } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { showToast } from './Toast';
@@ -341,18 +341,18 @@ Be conversational, friendly, and help design an effective agent.`;
       >
         {/* Header */}
         <div className="p-6 border-b border-mission-control-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+          <Flex align="center" justify="between" className="mb-4">
+            <Flex align="center" gap="3">
               <Bot className="text-[--accent-11]" size={24} />
               <h2 className="text-xl font-semibold">Create Worker Agent</h2>
-            </div>
+            </Flex>
             <IconButton onClick={handleClose} variant="ghost" color="gray" size="2" aria-label="Close modal">
               <X size={16} />
             </IconButton>
-          </div>
+          </Flex>
 
           {/* Mode Selector */}
-          <div className="flex gap-2">
+          <Flex gap="2">
             <Button
               onClick={() => setMode('chat')}
               type="button"
@@ -380,7 +380,7 @@ Be conversational, friendly, and help design an effective agent.`;
               <Edit3 size={16} />
               <span className="font-medium">Manual Entry</span>
             </Button>
-          </div>
+          </Flex>
         </div>
 
         {/* Content */}
@@ -409,27 +409,27 @@ Be conversational, friendly, and help design an effective agent.`;
 
                 {/* Streaming message */}
                 {isStreaming && streamingContent && (
-                  <div className="flex justify-start">
+                  <Flex justify="start">
                     <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
-                      <div className="flex items-center gap-2 mt-2">
+                      <Flex align="center" gap="2" className="mt-2">
                         <Spinner size="1" />
                         <span className="text-xs text-mission-control-text-dim">Mission Control is typing...</span>
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 )}
 
                 {/* Loading indicator */}
                 {isStreaming && !streamingContent && (
-                  <div className="flex justify-start">
+                  <Flex justify="start">
                     <div className="rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <Spinner size="2" />
                         <span className="text-sm text-mission-control-text-dim">Mission Control is thinking...</span>
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 )}
 
                 <div ref={chatEndRef} />
@@ -439,18 +439,18 @@ Be conversational, friendly, and help design an effective agent.`;
               {conversationComplete && extractedData.name && (
                 <div className="px-6 pb-4">
                   <div className="bg-[--accent-3] border border-[--accent-6] rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-3">
+                    <Flex align="center" gap="2" className="mb-3">
                       <Sparkles size={16} className="text-[--accent-11]" />
                       <span className="font-semibold text-sm">Worker Agent Ready!</span>
-                    </div>
+                    </Flex>
                     <div className="space-y-2 text-sm mb-4">
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <strong>Name:</strong> {extractedData.name}
-                      </div>
+                      </Flex>
                       {extractedData.role && (
-                        <div className="flex items-center gap-2">
+                        <Flex align="center" gap="2">
                           <strong>Role:</strong> {extractedData.role}
-                        </div>
+                        </Flex>
                       )}
                       {extractedData.taskDescription && (
                         <div>
@@ -470,12 +470,12 @@ Be conversational, friendly, and help design an effective agent.`;
                           ))}
                         </div>
                       )}
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <strong>Model:</strong>
                         <span className="px-2 py-0.5 bg-info-subtle text-info rounded text-xs font-medium">
                           {extractedData.model === 'opus' ? 'Claude Opus 4' : 'Claude Sonnet 4.5'}
                         </span>
-                      </div>
+                      </Flex>
                     </div>
                     <Button
                       onClick={handleCreateFromChat}
@@ -494,7 +494,7 @@ Be conversational, friendly, and help design an effective agent.`;
 
               {/* Chat Input */}
               <div className="p-6 border-t border-mission-control-border">
-                <div className="flex gap-3">
+                <Flex gap="3">
                   <TextArea
                     ref={inputRef}
                     variant="soft"
@@ -521,7 +521,7 @@ Be conversational, friendly, and help design an effective agent.`;
                   >
                     {isStreaming ? <Spinner size="2" /> : <Send size={16} />}
                   </IconButton>
-                </div>
+                </Flex>
                 <div className="text-xs text-mission-control-text-dim mt-2">
                   Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Enter</kbd> to send,{' '}
                   <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Shift+Enter</kbd> for new line
@@ -603,10 +603,10 @@ Be conversational, friendly, and help design an effective agent.`;
                       size="3"
                       className="p-3 rounded-lg text-left h-auto flex-col items-start"
                     >
-                      <div className="flex items-center gap-2 mb-1">
+                      <Flex align="center" gap="2" className="mb-1">
                         {model === opt.id && <CheckCircle size={16} className="text-[--accent-11]" />}
                         <span className="font-medium text-sm">{opt.label}</span>
-                      </div>
+                      </Flex>
                       <p className="text-xs text-mission-control-text-dim">{opt.description}</p>
                     </Button>
                   ))}
@@ -614,7 +614,7 @@ Be conversational, friendly, and help design an effective agent.`;
               </div>
 
               {/* Submit */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-mission-control-border">
+              <Flex justify="end" gap="3" className="pt-4 border-t border-mission-control-border">
                 <Button type="button" onClick={handleClose} variant="soft" color="gray" size="2">
                   Cancel
                 </Button>
@@ -628,7 +628,7 @@ Be conversational, friendly, and help design an effective agent.`;
                   <Zap size={16} />
                   Create &amp; Start
                 </Button>
-              </div>
+              </Flex>
             </form>
           )}
         </div>
