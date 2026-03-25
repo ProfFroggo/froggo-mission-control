@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
-import { Button, IconButton, Select, TextField } from '@radix-ui/themes';
+import { Box, Flex, Button, IconButton, Select, TextField } from '@radix-ui/themes';
 import {
   Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield,
   Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Search,
@@ -365,10 +365,10 @@ function PlatformUpdateTab() {
     <div className="space-y-6">
       {/* Version card */}
       <div className="p-5 bg-mission-control-surface rounded-lg border border-mission-control-border">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center">
+        <Flex align="center" gap="3" mb="4">
+          <Flex align="center" justify="center" className="w-10 h-10 rounded-lg bg-mission-control-accent/10">
             <Package size={20} className="text-mission-control-accent" />
-          </div>
+          </Flex>
           <div>
             <div className="font-semibold text-mission-control-text">Mission Control</div>
             <div className="text-xs text-mission-control-text-dim">froggo-mission-control</div>
@@ -384,28 +384,28 @@ function PlatformUpdateTab() {
           >
             <RefreshCw size={15} className={checking ? 'animate-spin' : ''} />
           </IconButton>
-        </div>
+        </Flex>
 
         {versionInfo ? (
           <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
+            <Flex align="center" justify="between" className="text-sm">
               <span className="text-mission-control-text-dim">Installed</span>
               <span className="font-mono text-mission-control-text">v{versionInfo.current}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
+            </Flex>
+            <Flex align="center" justify="between" className="text-sm">
               <span className="text-mission-control-text-dim">Latest</span>
               <span className={`font-mono ${versionInfo.latest ? 'text-mission-control-text' : 'text-mission-control-text-dim'}`}>
                 {versionInfo.latest ? `v${versionInfo.latest}` : '—'}
               </span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
+            </Flex>
+            <Flex align="center" justify="between" className="text-sm">
               <span className="text-mission-control-text-dim">Status</span>
               {versionInfo.updateAvailable ? (
                 <span className="px-2 py-0.5 bg-warning-subtle text-warning rounded-full text-xs font-medium">Update available</span>
               ) : (
                 <span className="px-2 py-0.5 bg-success-subtle text-success rounded-full text-xs font-medium">Up to date</span>
               )}
-            </div>
+            </Flex>
           </div>
         ) : (
           <div className="text-sm text-mission-control-text-dim">{checking ? 'Checking...' : 'Click refresh to check version'}</div>
@@ -441,10 +441,10 @@ function PlatformUpdateTab() {
       {/* Live install log */}
       {updateLog.length > 0 && (
         <div className="bg-black/60 rounded-lg border border-mission-control-border p-4 font-mono text-xs space-y-1 max-h-56 overflow-y-auto">
-          <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
+          <Flex align="center" gap="2" className="text-mission-control-text-dim mb-2">
             <Terminal size={12} />
             <span>Install log</span>
-          </div>
+          </Flex>
           {updateLog.filter(Boolean).map((line, i) => (
             <div key={i} className="text-success/90">{line}</div>
           ))}
@@ -460,7 +460,7 @@ function PlatformUpdateTab() {
           </div>
           <div className="text-xs text-mission-control-text-dim mt-1">{updateResult.message}</div>
           {updateResult.success && reloadCountdown !== null && (
-            <div className="mt-3 flex items-center gap-3">
+            <Flex align="center" gap="3" className="mt-3">
               <span className="text-xs text-mission-control-text-dim">
                 Reloading in {reloadCountdown}s...
               </span>
@@ -472,7 +472,7 @@ function PlatformUpdateTab() {
               >
                 Reload now
               </Button>
-            </div>
+            </Flex>
           )}
         </div>
       )}
@@ -480,10 +480,10 @@ function PlatformUpdateTab() {
       {/* Manual install hint */}
       <div className="p-4 bg-mission-control-surface/50 rounded-lg border border-mission-control-border">
         <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2">Manual update</div>
-        <div className="flex items-center gap-2 font-mono text-xs bg-black/40 rounded-lg px-3 py-2 text-mission-control-text-dim">
+        <Flex align="center" gap="2" className="font-mono text-xs bg-black/40 rounded-lg px-3 py-2 text-mission-control-text-dim">
           <Terminal size={11} />
           npm install -g froggo-mission-control@latest
-        </div>
+        </Flex>
         <a
           href="https://github.com/ProfFroggo/froggo-mission-control/releases"
           target="_blank"
@@ -613,10 +613,10 @@ function SessionsManagementSection() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 text-mission-control-text-dim">
+      <Flex align="center" justify="center" py="9" className="text-mission-control-text-dim">
         <Loader2 className="w-5 h-5 animate-spin mr-2" />
         Loading sessions...
-      </div>
+      </Flex>
     );
   }
 
@@ -662,27 +662,29 @@ function SessionsManagementSection() {
             </h3>
             <div className="space-y-1">
               {items.map(s => (
-                <div
+                <Flex
                   key={s.key}
-                  className="flex items-center justify-between p-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/30 transition-colors"
+                  align="center"
+                  justify="between"
+                  className="p-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/30 transition-colors"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                  <Box className="flex-1 min-w-0">
+                    <Flex align="center" gap="2">
                       <span className="text-sm font-medium text-mission-control-text truncate">{s.agentName}</span>
                       {s.compacted && (
                         <span className="px-1.5 py-0.5 text-xs bg-info-subtle text-info rounded">compacted</span>
                       )}
-                    </div>
+                    </Flex>
                     <div className="text-xs text-mission-control-text-dim truncate">
                       {s.key}
                     </div>
-                    <div className="flex gap-3 text-xs text-mission-control-text-dim mt-0.5">
+                    <Flex gap="3" className="text-xs text-mission-control-text-dim mt-0.5">
                       <span>{s.messageCount} msgs</span>
                       <span>Last: {formatAge(s.lastActivity)}</span>
                       <span>Created: {formatAge(s.createdAt)}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                    </Flex>
+                  </Box>
+                  <Flex align="center" gap="2" className="ml-2 flex-shrink-0">
                     <IconButton
                       onClick={() => handleExport(s.key)}
                       disabled={exportingKey === s.key}
@@ -703,8 +705,8 @@ function SessionsManagementSection() {
                     >
                       <Trash2 size={14} />
                     </IconButton>
-                  </div>
-                </div>
+                  </Flex>
+                </Flex>
               ))}
             </div>
           </div>
@@ -768,19 +770,19 @@ function PlatformInfoSection() {
 
   return (
     <div className="p-5 bg-mission-control-surface rounded-lg border border-mission-control-border">
-      <div className="flex items-center gap-2 mb-4">
+      <Flex align="center" gap="2" mb="4">
         <Info size={16} className="text-mission-control-text-dim" />
         <span className="text-sm font-semibold text-mission-control-text">System Information</span>
-      </div>
+      </Flex>
       {loading ? (
         <div className="text-sm text-mission-control-text-dim">Loading...</div>
       ) : (
         <div className="space-y-2">
           {rows.map(row => (
-            <div key={row.label} className="flex items-center justify-between text-sm">
+            <Flex key={row.label} align="center" justify="between" className="text-sm">
               <span className="text-mission-control-text-dim">{row.label}</span>
               {row.value}
-            </div>
+            </Flex>
           ))}
         </div>
       )}
@@ -864,7 +866,7 @@ function AgentPlatformSection() {
         <div className="space-y-3">
           <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Default models per agent tier</div>
           {(['lead', 'worker', 'trivial'] as const).map(tier => (
-            <div key={tier} className="flex items-center gap-3">
+            <Flex key={tier} align="center" gap="3">
               <label className="text-sm font-medium text-mission-control-text capitalize w-16 shrink-0">{tier}</label>
               <Select.Root
                 value={modelDefaults[tier]}
@@ -875,27 +877,27 @@ function AgentPlatformSection() {
                   {MODEL_OPTIONS.map(o => <Select.Item key={o.value} value={o.value}>{o.label}</Select.Item>)}
                 </Select.Content>
               </Select.Root>
-            </div>
+            </Flex>
           ))}
         </div>
         <div className="border-t border-mission-control-border pt-3 space-y-3">
-          <div className="flex items-center justify-between">
+          <Flex align="center" justify="between">
             <div>
               <div className="font-medium text-sm">Auto-dispatch tasks</div>
               <div className="text-xs text-mission-control-text-dim">Automatically send tasks to agents when assigned</div>
             </div>
             <Toggle checked={autoDispatch} onChange={setAutoDispatch} />
-          </div>
-          <div className="flex items-center justify-between">
+          </Flex>
+          <Flex align="center" justify="between">
             <div>
               <div className="font-medium text-sm">Pre-review gate (Clara)</div>
               <div className="text-xs text-mission-control-text-dim">Clara reviews tasks before dispatch to agents</div>
             </div>
             <Toggle checked={preReview} onChange={setPreReview} />
-          </div>
+          </Flex>
           {preReview && (
             <>
-              <div className="flex items-center gap-3 pl-4 border-l-2 border-mission-control-border">
+              <Flex align="center" gap="3" className="pl-4 border-l-2 border-mission-control-border">
                 <label className="text-sm font-medium text-mission-control-text w-28 shrink-0">Review strictness</label>
                 <Select.Root
                   value={claraStrictness}
@@ -908,14 +910,14 @@ function AgentPlatformSection() {
                     <Select.Item value="strict">Strict — require detailed planning notes</Select.Item>
                   </Select.Content>
                 </Select.Root>
-              </div>
-              <div className="flex items-center justify-between pl-4 border-l-2 border-mission-control-border">
+              </Flex>
+              <Flex align="center" justify="between" className="pl-4 border-l-2 border-mission-control-border">
                 <div>
                   <div className="font-medium text-sm">Auto-dispatch after pre-review approval</div>
                   <div className="text-xs text-mission-control-text-dim">Immediately dispatch agent when Clara approves</div>
                 </div>
                 <Toggle checked={claraAutoDispatch} onChange={setClaraAutoDispatch} />
-              </div>
+              </Flex>
             </>
           )}
           <div>
@@ -928,9 +930,9 @@ function AgentPlatformSection() {
               onChange={e => setMaxConcurrent(parseInt(e.target.value))}
               className="unstyled w-full h-2 rounded-full appearance-none cursor-pointer bg-mission-control-border [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-mission-control-accent"
             />
-            <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
+            <Flex justify="between" className="text-xs text-mission-control-text-dim mt-1">
               <span>1 (sequential)</span><span>5</span><span>10 (max parallel)</span>
-            </div>
+            </Flex>
           </div>
         </div>
         <Button
@@ -1009,12 +1011,12 @@ function TokenBudgetSection() {
       <div className="space-y-4">
         {currentCost !== null && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
+            <Flex align="center" justify="between" className="text-sm">
               <span className="text-mission-control-text-dim">This month (30d)</span>
               <span className={`tabular-nums ${isOver ? 'text-error font-semibold' : isWarn ? 'text-warning font-semibold' : 'text-mission-control-text'}`}>
                 ${currentCost.toFixed(4)}{budget > 0 ? ` / $${budget.toFixed(2)}` : ''}
               </span>
-            </div>
+            </Flex>
             {budget > 0 && (
               <div className="h-2 bg-mission-control-bg rounded-full overflow-hidden">
                 <div
@@ -1027,21 +1029,21 @@ function TokenBudgetSection() {
               </div>
             )}
             {(isWarn || isOver) && (
-              <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${isOver ? 'bg-error-subtle text-error border border-error-border' : 'bg-warning-subtle text-warning border border-warning-border'}`}>
+              <Flex align="center" gap="2" className={`text-xs px-3 py-2 rounded-lg ${isOver ? 'bg-error-subtle text-error border border-error-border' : 'bg-warning-subtle text-warning border border-warning-border'}`}>
                 <AlertTriangle size={13} />
                 {isOver
                   ? `Budget exceeded (${pct.toFixed(0)}% used)`
                   : `Approaching budget limit (${pct.toFixed(0)}% used)`}
-              </div>
+              </Flex>
             )}
           </div>
         )}
 
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <label htmlFor="token-budget-input" className="text-sm font-medium text-mission-control-text shrink-0 w-40">
             Monthly budget (USD)
           </label>
-          <div className="flex items-center gap-2 flex-1">
+          <Flex align="center" gap="2" className="flex-1">
             <span className="text-mission-control-text-dim text-sm">$</span>
             <TextField.Root
               id="token-budget-input"
@@ -1064,8 +1066,8 @@ function TokenBudgetSection() {
             >
               {saving ? 'Saving...' : 'Save'}
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
         <p className="text-xs text-mission-control-text-dim">
           Set to 0 to disable. A warning appears at 80% and an alert at 100% of budget.
         </p>
@@ -1146,12 +1148,12 @@ function ApiKeysSection() {
   return (
     <CollapsibleSection title="API Keys" icon={<Key size={16} />} description="All keys stored in OS keychain" defaultOpen={false}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           <span className="text-xs text-mission-control-text-dim">{Object.keys(values).filter(k => values[k]).length} configured</span>
           <Button onClick={() => setShowKeys(!showKeys)} variant="ghost" color="gray" size="1">
             {showKeys ? <EyeOff size={12} /> : <Eye size={12} />} {showKeys ? 'Hide all' : 'Show all'}
           </Button>
-        </div>
+        </Flex>
         {groups.map(group => {
           const providers = API_KEY_PROVIDERS.filter(p => p.group === group);
           return (
@@ -1161,11 +1163,11 @@ function ApiKeysSection() {
                 {providers.map(p => {
                   const hasValue = !!values[p.id]?.trim();
                   return (
-                    <div key={p.id} className="flex items-center gap-2">
-                      <div className="w-28 flex-shrink-0">
+                    <Flex key={p.id} align="center" gap="2">
+                      <Box className="w-28 flex-shrink-0">
                         <span className="text-sm text-mission-control-text">{p.label}</span>
-                      </div>
-                      <div className="flex-1 relative">
+                      </Box>
+                      <Box className="flex-1 relative">
                         <TextField.Root
                           type={showKeys ? 'text' : 'password'}
                           value={values[p.id] || ''}
@@ -1175,7 +1177,7 @@ function ApiKeysSection() {
                           className="w-full font-mono"
                         />
                         {hasValue && <CheckCircle size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-success" />}
-                      </div>
+                      </Box>
                       <Button
                         onClick={() => doSave(p.id)}
                         disabled={saving[p.id] || !values[p.id]?.trim()}
@@ -1196,7 +1198,7 @@ function ApiKeysSection() {
                           <Trash2 size={12} />
                         </IconButton>
                       )}
-                    </div>
+                    </Flex>
                   );
                 })}
               </div>
@@ -1274,7 +1276,7 @@ function DangerZoneSection() {
       defaultOpen={false}
     >
       <div className="space-y-3">
-        <div className="flex items-center justify-between p-3 rounded-lg border border-mission-control-border bg-mission-control-bg">
+        <Flex align="center" justify="between" p="3" className="rounded-lg border border-mission-control-border bg-mission-control-bg">
           <div>
             <div className="text-sm font-medium">Clear completed tasks</div>
             <div className="text-xs text-mission-control-text-dim">Permanently delete all tasks with status &quot;done&quot;</div>
@@ -1289,8 +1291,8 @@ function DangerZoneSection() {
             {clearing ? <RefreshCw size={12} className="animate-spin" /> : <Trash2 size={12} />}
             {clearConfirm ? 'Confirm — clear all done tasks' : 'Clear completed'}
           </Button>
-        </div>
-        <div className="flex items-center justify-between p-3 rounded-lg border border-mission-control-border bg-mission-control-bg">
+        </Flex>
+        <Flex align="center" justify="between" p="3" className="rounded-lg border border-mission-control-border bg-mission-control-bg">
           <div>
             <div className="text-sm font-medium">Reset agent circuits</div>
             <div className="text-xs text-mission-control-text-dim">Clears circuit breaker locks — allows locked agents to accept tasks again</div>
@@ -1305,8 +1307,8 @@ function DangerZoneSection() {
             {resetting ? <RefreshCw size={12} className="animate-spin" /> : <CircleOff size={12} />}
             Reset circuits
           </Button>
-        </div>
-        <div className="flex items-center justify-between p-3 rounded-lg border border-mission-control-border bg-mission-control-bg">
+        </Flex>
+        <Flex align="center" justify="between" p="3" className="rounded-lg border border-mission-control-border bg-mission-control-bg">
           <div>
             <div className="text-sm font-medium">Export all data</div>
             <div className="text-xs text-mission-control-text-dim">Download tasks and approvals as a JSON archive</div>
@@ -1321,7 +1323,7 @@ function DangerZoneSection() {
             {exporting ? <RefreshCw size={12} className="animate-spin" /> : <FileJson size={12} />}
             Export JSON
           </Button>
-        </div>
+        </Flex>
       </div>
     </CollapsibleSection>
   );
@@ -1372,13 +1374,13 @@ function AutomationExecutionSection() {
   return (
     <CollapsibleSection title="Automation Execution" icon={<Zap size={16} />} description="Global automation execution controls">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           <div>
             <div className="font-medium text-sm">Enable automation execution</div>
             <div className="text-xs text-mission-control-text-dim">Allow n8n automations and scheduled tasks to run</div>
           </div>
           <Toggle checked={automationEnabled} onChange={setAutomationEnabled} />
-        </div>
+        </Flex>
         <div>
           <label className="block text-sm font-medium text-mission-control-text mb-2">
             Max concurrent automations: <span className="font-semibold text-mission-control-text">{maxConcurrentAutomations}</span>
@@ -1632,7 +1634,7 @@ export default function EnhancedSettingsPanel() {
               },
             ]}
           >
-            <div className="flex flex-col gap-2">
+            <Flex direction="column" gap="2">
               {/* Search Bar */}
               <TextField.Root
                 type="text"
@@ -1647,12 +1649,12 @@ export default function EnhancedSettingsPanel() {
                   <Search size={16} className="text-mission-control-text-dim" />
                 </TextField.Slot>
               </TextField.Root>
-            </div>
+            </Flex>
           </PanelHeader>
 
           {/* Setting Presets */}
           {!searchQuery && (
-            <div className="px-6 pb-2 flex gap-2 items-center">
+            <Flex align="center" gap="2" className="px-6 pb-2">
               <span className="text-sm text-mission-control-text-dim">Quick presets:</span>
               <Button onClick={() => applyPreset('minimal')} variant="soft" color="gray" size="1">
                 Minimal
@@ -1663,7 +1665,7 @@ export default function EnhancedSettingsPanel() {
               <Button onClick={() => applyPreset('poweruser')} variant="soft" color="gray" size="1">
                 Power User
               </Button>
-            </div>
+            </Flex>
           )}
 
           {/* Tabs */}
@@ -1697,16 +1699,16 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-mission-control-text">Claude Code System</h3>
                   <div className="text-sm text-mission-control-text-dim space-y-1">
-                    <div className="flex justify-between"><span>MCP Servers</span><span className="text-mission-control-text">mission-control-db &middot; memory &middot; cron</span></div>
-                    <div className="flex justify-between"><span>Agents</span><span className="text-mission-control-text">13 defined</span></div>
-                    <div className="flex justify-between"><span>Hooks</span><span className="text-mission-control-text">approval &middot; review-gate &middot; session-sync</span></div>
-                    <div className="flex justify-between"><span>Vault</span><span className="text-mission-control-text-dim">~/mission-control/memory/</span></div>
+                    <Flex justify="between"><span>MCP Servers</span><span className="text-mission-control-text">mission-control-db &middot; memory &middot; cron</span></Flex>
+                    <Flex justify="between"><span>Agents</span><span className="text-mission-control-text">13 defined</span></Flex>
+                    <Flex justify="between"><span>Hooks</span><span className="text-mission-control-text">approval &middot; review-gate &middot; session-sync</span></Flex>
+                    <Flex justify="between"><span>Vault</span><span className="text-mission-control-text-dim">~/mission-control/memory/</span></Flex>
                   </div>
-                  <div className="flex items-center gap-2 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border">
+                  <Flex align="center" gap="2" p="3" className="bg-mission-control-bg rounded-lg border border-mission-control-border">
                     <span className={`w-3 h-3 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
                     <span className="text-sm font-medium">{connected ? 'Connected' : 'Disconnected'}</span>
                     {connected && <span className="text-xs text-mission-control-text-dim ml-auto">Active</span>}
-                  </div>
+                  </Flex>
                 </div>
               </CollapsibleSection>
             )}
@@ -1719,10 +1721,10 @@ export default function EnhancedSettingsPanel() {
               >
                 <div className="space-y-4">
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
+                    <Flex align="center" gap="2" mb="2">
                       <label htmlFor="default-panel" className="block text-sm font-medium text-mission-control-text">Default Panel on Startup</label>
                       <Tooltip text="This panel will open when you launch the app" />
-                    </div>
+                    </Flex>
                     <Select.Root
                       value={settings.defaultPanel}
                       onValueChange={(val) => setSettings(s => ({ ...s, defaultPanel: val }))}
@@ -1752,7 +1754,7 @@ export default function EnhancedSettingsPanel() {
                 description="Text-to-speech and audio settings"
               >
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Voice Responses</div>
                       <div className="text-sm text-mission-control-text-dim">Read responses aloud</div>
@@ -1761,14 +1763,14 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.voiceEnabled}
                       onChange={(checked) => setSettings(s => ({ ...s, voiceEnabled: checked }))}
                     />
-                  </div>
+                  </Flex>
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
+                    <Flex align="center" gap="2" mb="2">
                       <label htmlFor="speech-speed" className="block text-sm font-medium text-mission-control-text">
                         Speech Speed: {settings.voiceSpeed.toFixed(1)}x
                       </label>
                       <Tooltip text="Adjust voice playback speed" />
-                    </div>
+                    </Flex>
                     <input
                       id="speech-speed"
                       type="range"
@@ -1781,11 +1783,11 @@ export default function EnhancedSettingsPanel() {
                       className="unstyled w-full h-2 rounded-full appearance-none cursor-pointer bg-mission-control-border [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-mission-control-accent"
                       disabled={!settings.voiceEnabled}
                     />
-                    <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
+                    <Flex justify="between" className="text-xs text-mission-control-text-dim mt-1">
                       <span>0.5x (Slow)</span>
                       <span>1.0x (Normal)</span>
                       <span>2.0x (Fast)</span>
-                    </div>
+                    </Flex>
                   </div>
                 </div>
               </CollapsibleSection>
@@ -1798,7 +1800,7 @@ export default function EnhancedSettingsPanel() {
                 description="Automatic data refresh settings"
               >
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Auto Refresh</div>
                       <div className="text-sm text-mission-control-text-dim">Automatically refresh sessions list</div>
@@ -1807,7 +1809,7 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.autoRefresh}
                       onChange={(checked) => setSettings(s => ({ ...s, autoRefresh: checked }))}
                     />
-                  </div>
+                  </Flex>
                   {settings.autoRefresh && (
                     <div>
                       <label className="block text-sm font-medium text-mission-control-text mb-2">
@@ -1823,11 +1825,11 @@ export default function EnhancedSettingsPanel() {
                         onChange={(e) => setSettings(s => ({ ...s, refreshInterval: parseInt(e.target.value) }))}
                         className="unstyled w-full h-2 rounded-full appearance-none cursor-pointer bg-mission-control-border [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-mission-control-accent"
                       />
-                      <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
+                      <Flex justify="between" className="text-xs text-mission-control-text-dim mt-1">
                         <span>10s (Fast)</span>
                         <span>30s (Balanced)</span>
                         <span>120s (Slow)</span>
-                      </div>
+                      </Flex>
                     </div>
                   )}
                 </div>
@@ -1841,7 +1843,7 @@ export default function EnhancedSettingsPanel() {
                 description="Export or import your settings"
               >
                 <div className="space-y-4">
-                  <div className="flex gap-3">
+                  <Flex gap="3">
                     <Button
                       onClick={handleExport}
                       variant="soft"
@@ -1869,7 +1871,7 @@ export default function EnhancedSettingsPanel() {
                       onChange={handleImport}
                       className="hidden"
                     />
-                  </div>
+                  </Flex>
                   <p className="text-xs text-mission-control-text-dim">
                     Export your settings to backup or transfer to another device
                   </p>
@@ -1991,11 +1993,11 @@ export default function EnhancedSettingsPanel() {
                       onChange={(e) => setSettings(s => ({ ...s, fontSize: parseInt(e.target.value) }))}
                       className="unstyled w-full h-2 rounded-full appearance-none cursor-pointer bg-mission-control-border [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-mission-control-accent"
                     />
-                    <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
+                    <Flex justify="between" className="text-xs text-mission-control-text-dim mt-1">
                       <span>Small (12px)</span>
                       <span>Medium (14px)</span>
                       <span>Large (18px)</span>
-                    </div>
+                    </Flex>
                   </div>
                   <div className="mt-4 p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
                     <p className="mb-2" style={{ fontSize: `${settings.fontSize}px` }}>
@@ -2026,7 +2028,7 @@ export default function EnhancedSettingsPanel() {
                 description="Customize keyboard shortcuts for quick navigation"
               >
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between mb-4">
+                  <Flex align="center" justify="between" mb="4">
                     <span className="text-sm text-mission-control-text-dim">Click any shortcut to edit</span>
                     <Button
                       onClick={resetShortcuts}
@@ -2037,14 +2039,14 @@ export default function EnhancedSettingsPanel() {
                       <RotateCcw size={14} />
                       Reset to Defaults
                     </Button>
-                  </div>
+                  </Flex>
                   {settings.keyboardShortcuts.map((shortcut) => (
-                    <div key={shortcut.id} className="flex items-center justify-between py-3 border-b border-mission-control-border last:border-0">
-                      <div className="flex-1">
+                    <Flex key={shortcut.id} align="center" justify="between" className="py-3 border-b border-mission-control-border last:border-0">
+                      <Box className="flex-1">
                         <div className="font-medium text-sm">{shortcut.name}</div>
                         <div className="text-xs text-mission-control-text-dim">{shortcut.description}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
+                      </Box>
+                      <Flex align="center" gap="2">
                         {editingShortcut === shortcut.id ? (
                           <TextField.Root
                             type="text"
@@ -2073,8 +2075,8 @@ export default function EnhancedSettingsPanel() {
                             {shortcut.currentKey.toUpperCase()}
                           </Button>
                         )}
-                      </div>
-                    </div>
+                      </Flex>
+                    </Flex>
                   ))}
                   <div className="pt-4 text-xs text-mission-control-text-dim space-y-1">
                     <p>• Press Enter to save or Escape to cancel</p>
@@ -2096,7 +2098,7 @@ export default function EnhancedSettingsPanel() {
                 description="Adjust performance settings for better speed"
               >
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Enable Caching</div>
                       <div className="text-sm text-mission-control-text-dim">Cache responses for faster loading</div>
@@ -2105,7 +2107,7 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.performance.enableCache}
                       onChange={(checked) => setSettings(s => ({ ...s, performance: { ...s.performance, enableCache: checked } }))}
                     />
-                  </div>
+                  </Flex>
 
                   {settings.performance.enableCache && (
                     <div>
@@ -2122,10 +2124,10 @@ export default function EnhancedSettingsPanel() {
                         onChange={(e) => setSettings(s => ({ ...s, performance: { ...s.performance, cacheSize: parseInt(e.target.value) } }))}
                         className="unstyled w-full h-2 rounded-full appearance-none cursor-pointer bg-mission-control-border [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-mission-control-accent"
                       />
-                      <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
+                      <Flex justify="between" className="text-xs text-mission-control-text-dim mt-1">
                         <span>50 MB</span>
                         <span>500 MB</span>
-                      </div>
+                      </Flex>
                     </div>
                   )}
 
@@ -2145,7 +2147,7 @@ export default function EnhancedSettingsPanel() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Lazy Loading</div>
                       <div className="text-sm text-mission-control-text-dim">Load content as needed</div>
@@ -2154,9 +2156,9 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.performance.enableLazyLoading}
                       onChange={(checked) => setSettings(s => ({ ...s, performance: { ...s.performance, enableLazyLoading: checked } }))}
                     />
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Animations</div>
                       <div className="text-sm text-mission-control-text-dim">Enable UI animations</div>
@@ -2165,9 +2167,9 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.performance.animationsEnabled}
                       onChange={(checked) => setSettings(s => ({ ...s, performance: { ...s.performance, animationsEnabled: checked } }))}
                     />
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">List Virtualization</div>
                       <div className="text-sm text-mission-control-text-dim">Render only visible items in long lists</div>
@@ -2176,7 +2178,7 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.performance.enableVirtualization}
                       onChange={(checked) => setSettings(s => ({ ...s, performance: { ...s.performance, enableVirtualization: checked } }))}
                     />
-                  </div>
+                  </Flex>
 
                   <Button
                     onClick={clearCache}
@@ -2205,12 +2207,12 @@ export default function EnhancedSettingsPanel() {
               >
                 <div className="space-y-4">
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
+                    <Flex align="center" gap="2" mb="2">
                       <label className="block text-sm font-medium text-mission-control-text">
                         Data Retention: {settings.data.retentionDays} days
                       </label>
                       <Tooltip text="Data older than this will be automatically deleted" />
-                    </div>
+                    </Flex>
                     <input
                       type="range"
                       aria-label="Data retention days slider"
@@ -2221,14 +2223,14 @@ export default function EnhancedSettingsPanel() {
                       onChange={(e) => setSettings(s => ({ ...s, data: { ...s.data, retentionDays: parseInt(e.target.value) } }))}
                       className="unstyled w-full h-2 rounded-full appearance-none cursor-pointer bg-mission-control-border [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-mission-control-accent"
                     />
-                    <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
+                    <Flex justify="between" className="text-xs text-mission-control-text-dim mt-1">
                       <span>30 days</span>
                       <span>180 days</span>
                       <span>1 year</span>
-                    </div>
+                    </Flex>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Auto Cleanup</div>
                       <div className="text-sm text-mission-control-text-dim">Automatically delete old data</div>
@@ -2237,7 +2239,7 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.data.autoCleanup}
                       onChange={(checked) => setSettings(s => ({ ...s, data: { ...s.data, autoCleanup: checked } }))}
                     />
-                  </div>
+                  </Flex>
 
                   <div>
                     <label className="block text-sm font-medium text-mission-control-text mb-2">
@@ -2255,7 +2257,7 @@ export default function EnhancedSettingsPanel() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Usage Analytics</div>
                       <div className="text-sm text-mission-control-text-dim">Collect anonymous usage data</div>
@@ -2264,7 +2266,7 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.data.enableAnalytics}
                       onChange={(checked) => setSettings(s => ({ ...s, data: { ...s.data, enableAnalytics: checked } }))}
                     />
-                  </div>
+                  </Flex>
 
                   <Button
                     onClick={cleanupOldData}
@@ -2292,7 +2294,7 @@ export default function EnhancedSettingsPanel() {
                 description="Make the app more accessible"
               >
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Reduce Motion</div>
                       <div className="text-sm text-mission-control-text-dim">Minimize animations and transitions</div>
@@ -2301,9 +2303,9 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.accessibility.reduceMotion}
                       onChange={(checked) => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, reduceMotion: checked } }))}
                     />
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">High Contrast</div>
                       <div className="text-sm text-mission-control-text-dim">Increase color contrast</div>
@@ -2312,9 +2314,9 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.accessibility.highContrast}
                       onChange={(checked) => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, highContrast: checked } }))}
                     />
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Large Text</div>
                       <div className="text-sm text-mission-control-text-dim">Use larger text sizes throughout</div>
@@ -2323,9 +2325,9 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.accessibility.largeText}
                       onChange={(checked) => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, largeText: checked } }))}
                     />
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Screen Reader Optimized</div>
                       <div className="text-sm text-mission-control-text-dim">Optimize for screen readers</div>
@@ -2334,9 +2336,9 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.accessibility.screenReaderOptimized}
                       onChange={(checked) => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, screenReaderOptimized: checked } }))}
                     />
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Keyboard Navigation Hints</div>
                       <div className="text-sm text-mission-control-text-dim">Show keyboard shortcuts in UI</div>
@@ -2345,7 +2347,7 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.accessibility.keyboardNavigationHints}
                       onChange={(checked) => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, keyboardNavigationHints: checked } }))}
                     />
-                  </div>
+                  </Flex>
                 </div>
               </CollapsibleSection>
             )}
@@ -2362,14 +2364,14 @@ export default function EnhancedSettingsPanel() {
                 description="Advanced settings for developers"
               >
                 <div className="space-y-4">
-                  <div className="p-3 bg-warning-subtle border border-warning-border rounded-lg flex items-start gap-2">
+                  <Flex align="start" gap="2" className="p-3 bg-warning-subtle border border-warning-border rounded-lg">
                     <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-warning">
                       These settings are for advanced users. Changing them may affect app stability.
                     </p>
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Developer Mode</div>
                       <div className="text-sm text-mission-control-text-dim">Enable developer features</div>
@@ -2378,9 +2380,9 @@ export default function EnhancedSettingsPanel() {
                       checked={settings.developer.devMode}
                       onChange={(checked) => setSettings(s => ({ ...s, developer: { ...s.developer, devMode: checked } }))}
                     />
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Show Debug Info</div>
                       <div className="text-sm text-mission-control-text-dim">Display debug information in UI</div>
@@ -2390,9 +2392,9 @@ export default function EnhancedSettingsPanel() {
                       onChange={(checked) => setSettings(s => ({ ...s, developer: { ...s.developer, showDebugInfo: checked } }))}
                       disabled={!settings.developer.devMode}
                     />
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Experimental Features</div>
                       <div className="text-sm text-mission-control-text-dim">Enable features in development</div>
@@ -2402,9 +2404,9 @@ export default function EnhancedSettingsPanel() {
                       onChange={(checked) => setSettings(s => ({ ...s, developer: { ...s.developer, enableExperimentalFeatures: checked } }))}
                       disabled={!settings.developer.devMode}
                     />
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Verbose Logging</div>
                       <div className="text-sm text-mission-control-text-dim">Enable detailed console logs</div>
@@ -2414,9 +2416,9 @@ export default function EnhancedSettingsPanel() {
                       onChange={(checked) => setSettings(s => ({ ...s, developer: { ...s.developer, verboseLogging: checked } }))}
                       disabled={!settings.developer.devMode}
                     />
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <div>
                       <div className="font-medium">Performance Metrics</div>
                       <div className="text-sm text-mission-control-text-dim">Show render times and stats</div>
@@ -2426,7 +2428,7 @@ export default function EnhancedSettingsPanel() {
                       onChange={(checked) => setSettings(s => ({ ...s, developer: { ...s.developer, showPerformanceMetrics: checked } }))}
                       disabled={!settings.developer.devMode}
                     />
-                  </div>
+                  </Flex>
                 </div>
               </CollapsibleSection>
             )}
@@ -2446,23 +2448,23 @@ export default function EnhancedSettingsPanel() {
                 description="Control automated external actions"
               >
                 <div className="space-y-4">
-                  <div className="p-3 bg-error-subtle border border-error-border rounded-lg flex items-start gap-2">
+                  <Flex align="start" gap="2" className="p-3 bg-error-subtle border border-error-border rounded-lg">
                     <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-error">
                       These settings control real external actions (tweets, emails, etc.). Use with caution.
                     </p>
-                  </div>
+                  </Flex>
 
-                  <div className="flex items-center justify-between p-4 bg-mission-control-bg rounded-lg border-2 border-mission-control-border">
+                  <Flex align="center" justify="between" p="4" className="bg-mission-control-bg rounded-lg border-2 border-mission-control-border">
                     <div>
-                      <div className="font-medium flex items-center gap-2">
+                      <Flex align="center" gap="2" className="font-medium">
                         Kill Switch
                         {settings.externalActionsEnabled ? (
                           <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded font-bold">LIVE</span>
                         ) : (
                           <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded font-bold">BLOCKED</span>
                         )}
-                      </div>
+                      </Flex>
                       <div className="text-sm text-mission-control-text-dim">
                         {settings.externalActionsEnabled
                           ? 'External actions will be executed when approved'
@@ -2475,17 +2477,17 @@ export default function EnhancedSettingsPanel() {
                       size="lg"
                       colorScheme="red"
                     />
-                  </div>
+                  </Flex>
 
                   {settings.externalActionsEnabled && (
                     <>
                       <div>
-                        <div className="flex items-center gap-2 mb-2">
+                        <Flex align="center" gap="2" mb="2">
                           <label className="block text-sm font-medium text-mission-control-text">
                             Tweet Rate Limit: {settings.rateLimitTweets}/hour
                           </label>
                           <Tooltip text="Maximum tweets per hour to prevent spam" />
-                        </div>
+                        </Flex>
                         <input
                           type="range"
                           aria-label="Tweet rate limit slider"
@@ -2498,12 +2500,12 @@ export default function EnhancedSettingsPanel() {
                         />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2 mb-2">
+                        <Flex align="center" gap="2" mb="2">
                           <label className="block text-sm font-medium text-mission-control-text">
                             Email Rate Limit: {settings.rateLimitEmails}/hour
                           </label>
                           <Tooltip text="Maximum emails per hour to prevent spam" />
-                        </div>
+                        </Flex>
                         <input
                           type="range"
                           aria-label="Email rate limit slider"
@@ -2516,10 +2518,10 @@ export default function EnhancedSettingsPanel() {
                         />
                       </div>
 
-                      <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
-                        <div className="flex items-start gap-2">
+                      <Box p="4" className="bg-info-subtle border border-info-border rounded-lg">
+                        <Flex align="start" gap="2">
                           <Bot size={20} className="text-info flex-shrink-0" />
-                          <div className="flex-1">
+                          <Box className="flex-1">
                             <div className="font-medium text-info mb-2">Smart Account Selection</div>
                             <div className="text-sm text-info space-y-2">
                               <p>Mission Control intelligently chooses accounts based on context:</p>
@@ -2529,9 +2531,9 @@ export default function EnhancedSettingsPanel() {
                                 <li>No manual account configuration needed</li>
                               </ul>
                             </div>
-                          </div>
-                        </div>
-                      </div>
+                          </Box>
+                        </Flex>
+                      </Box>
                     </>
                   )}
                 </div>
@@ -2553,7 +2555,7 @@ export default function EnhancedSettingsPanel() {
 
         {/* Actions */}
         {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform', 'sessions'].includes(activeTab) && (
-          <div className="flex gap-3 mt-8 sticky bottom-0 bg-mission-control-bg/95 backdrop-blur-sm pt-4 pb-2 border-t border-mission-control-border">
+          <Flex gap="3" className="mt-8 sticky bottom-0 bg-mission-control-bg/95 backdrop-blur-sm pt-4 pb-2 border-t border-mission-control-border">
             <Button
               onClick={handleSave}
               variant="solid"
@@ -2573,7 +2575,7 @@ export default function EnhancedSettingsPanel() {
               <RotateCcw size={16} />
               Reset All
             </Button>
-          </div>
+          </Flex>
         )}
         </div>
       </div>
