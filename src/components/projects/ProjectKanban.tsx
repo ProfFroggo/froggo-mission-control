@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, Flex, IconButton } from '@radix-ui/themes';
 import {
   Plus, MoreHorizontal, Trash2, Clock, Play, Zap,
   CheckSquare, AlertTriangle, ArrowUp, ArrowDown, Circle,
@@ -130,9 +130,9 @@ function TaskCard({
       {/* Subtask progress */}
       {subtaskCount > 0 && (
         <div className="mb-2">
-          <div className="flex items-center gap-1 text-xs text-mission-control-text-dim mb-1">
+          <Flex align="center" gap="1" className="text-xs text-mission-control-text-dim mb-1">
             <CheckSquare size={11} /> {completedSubtasks}/{subtaskCount}
-          </div>
+          </Flex>
           <div className="h-1 bg-mission-control-surface rounded-full overflow-hidden">
             <div className={`h-full transition-all ${subtaskProgress === 100 ? 'bg-success' : 'bg-mission-control-accent'}`}
               style={{ width: `${subtaskProgress}%` }} />
@@ -141,7 +141,7 @@ function TaskCard({
       )}
 
       {/* Bottom row */}
-      <div className="flex items-center justify-between gap-2 text-xs">
+      <Flex align="center" justify="between" gap="2" className="text-xs">
         <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
           {dueInfo && (
             <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded flex-shrink-0 ${
@@ -173,7 +173,7 @@ function TaskCard({
             <AgentAvatar agentId={assignedAgent.id} size="xs" />
           )}
         </div>
-      </div>
+      </Flex>
 
       {/* Priority picker portal */}
       {showPriority && priorPos && createPortal(
@@ -307,19 +307,19 @@ export default function ProjectKanban({ project, onNewTask }: ProjectKanbanProps
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border bg-mission-control-surface/50 flex-shrink-0">
-        <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
+        <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
           <span>{projectTasks.length} tasks</span>
           <span className="text-success">{doneCount} done</span>
           <span className="text-warning">{openCount} open</span>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <IconButton variant="ghost" size="1" onClick={handleRefresh} disabled={isRefreshing}>
             <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
           </IconButton>
           <Button variant="solid" size="1" onClick={onNewTask}>
             <Plus size={13} /> New Task
           </Button>
-        </div>
+        </Flex>
       </div>
 
       {/* Board */}
@@ -340,13 +340,13 @@ export default function ProjectKanban({ project, onNewTask }: ProjectKanbanProps
               >
                 {/* Column header */}
                 <div className={`flex items-center justify-between px-3 py-2.5 border-b border-mission-control-border border-t-2 ${col.borderColor} rounded-t-xl flex-shrink-0`}>
-                  <div className="flex items-center gap-2">
+                  <Flex align="center" gap="2">
                     <span className={col.iconColor}>{col.icon}</span>
                     <span className="text-xs font-semibold text-mission-control-text">{col.label}</span>
                     <span className="text-xs text-mission-control-text-dim bg-mission-control-surface px-1.5 py-0.5 rounded-full">
                       {colTasks.length}
                     </span>
-                  </div>
+                  </Flex>
                   <IconButton variant="ghost" size="1" onClick={onNewTask} title="Add task">
                     <Plus size={14} />
                   </IconButton>

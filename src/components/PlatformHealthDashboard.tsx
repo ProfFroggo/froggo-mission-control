@@ -113,14 +113,14 @@ function Sparkline({ data, width = 120, height = 36, color = 'var(--color-info, 
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <div className="flex items-baseline justify-between">
+        <Flex align="baseline" justify="between">
           <span className="text-[10px] text-mission-control-text-dim uppercase tracking-wide">{label}</span>
           {currentValue && (
             <span className="text-[11px] font-mono font-medium text-mission-control-text tabular-nums">
               {currentValue}{unit}
             </span>
           )}
-        </div>
+        </Flex>
       )}
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
         <polyline

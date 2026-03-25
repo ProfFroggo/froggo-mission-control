@@ -114,7 +114,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
     <Flex align="center" justify="center" p="4" className="fixed inset-0 bg-black/60 backdrop-blur-md z-50">
       <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-md">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
           <div>
             <h2 className="text-sm font-semibold text-mission-control-text">Focus Mode</h2>
             <p className="text-xs text-mission-control-text-dim">Control notifications and approvals</p>
@@ -122,7 +122,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
           <IconButton variant="ghost" color="gray" size="1" onClick={onClose} aria-label="Close">
             <X size={16} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Mode Options */}
         <div className="p-4 space-y-2">
@@ -141,7 +141,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
                     : 'border-mission-control-border hover:border-mission-control-accent/50'
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <Flex align="center" gap="3">
                   <div className={`p-2 rounded-lg ${mode.color} text-white`}>
                     <Icon size={20} />
                   </div>
@@ -161,7 +161,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
                       </span>
                     )}
                   </div>
-                </div>
+                </Flex>
               </button>
             );
           })}
@@ -185,7 +185,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
         {/* Duration (optional) */}
         <div className="p-4 border-t border-mission-control-border bg-mission-control-bg rounded-b-2xl">
           <div className="text-xs text-mission-control-text-dim mb-2">Auto-disable after:</div>
-          <div className="flex gap-2">
+          <Flex gap="2">
             {[30, 60, 120, null].map((mins) => (
               <Button
                 key={mins ?? 'never'}
@@ -197,7 +197,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
                 {mins ? `${mins}m` : 'Never'}
               </Button>
             ))}
-          </div>
+          </Flex>
         </div>
       </div>
     </Flex>

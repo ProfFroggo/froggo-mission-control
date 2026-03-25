@@ -120,32 +120,32 @@ export default function TokenSummaryWidget() {
       {/* Main stats */}
       <div className="flex-1 flex flex-col justify-center gap-3">
         {/* Total tokens */}
-        <div className="flex items-baseline justify-between">
+        <Flex align="baseline" justify="between">
           <span className="text-xs text-mission-control-text-dim">Total</span>
-          <div className="flex items-baseline gap-2">
+          <Flex align="baseline" gap="2">
             <span className="text-2xl font-bold tabular-nums text-mission-control-text">{formatTokens(summary.totalTokens)}</span>
             <span className="text-xs text-mission-control-text-dim">tokens</span>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Cost */}
-        <div className="flex items-baseline justify-between">
+        <Flex align="baseline" justify="between">
           <span className="text-xs text-mission-control-text-dim">Cost</span>
           <div className="flex items-center gap-1.5">
             <DollarSign size={14} className="text-mission-control-text-dim" />
             <span className="text-lg font-semibold font-mono tabular-nums text-mission-control-text">{formatCost(summary.totalCost)}</span>
           </div>
-        </div>
+        </Flex>
 
         {/* Top agent */}
         {summary.topAgent && (
-          <div className="flex items-baseline justify-between pt-2 border-t border-mission-control-border">
+          <Flex align="baseline" justify="between" className="pt-2 border-t border-mission-control-border">
             <span className="text-xs text-mission-control-text-dim">Top</span>
             <Flex align="center" gap="2">
               <span className="text-xs font-medium text-mission-control-text capitalize">{summary.topAgent}</span>
               <span className="text-xs text-mission-control-text-dim">({formatTokens(summary.topAgentTokens || 0)})</span>
             </Flex>
-          </div>
+          </Flex>
         )}
       </div>
 
