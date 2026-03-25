@@ -372,47 +372,46 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
       {hasMetadata && (
         <div className="px-4 py-3 border-b border-mission-control-border space-y-1">
           {metadata.from && (
-            <div className="flex gap-2 text-sm">
+            <Flex gap="2" className="text-sm">
               <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">From</span>
               <span className="font-medium">{metadata.from}</span>
-            </div>
+            </Flex>
           )}
           {metadata.to && (
-            <div className="flex gap-2 text-sm">
+            <Flex gap="2" className="text-sm">
               <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">To</span>
               <span>{metadata.to}</span>
-            </div>
+            </Flex>
           )}
           {metadata.cc && (
-            <div className="flex gap-2 text-sm">
+            <Flex gap="2" className="text-sm">
               <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">Cc</span>
               <span className="text-mission-control-text-dim">{metadata.cc}</span>
-            </div>
+            </Flex>
           )}
           {metadata.date && (
-            <div className="flex gap-2 text-sm">
+            <Flex gap="2" className="text-sm">
               <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">Date</span>
               <span className="text-mission-control-text-dim">{metadata.date}</span>
-            </div>
+            </Flex>
           )}
           {metadata.subject && (
-            <div className="flex gap-2 text-sm">
+            <Flex gap="2" className="text-sm">
               <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">Subject</span>
               <span className="font-semibold">{metadata.subject}</span>
-            </div>
+            </Flex>
           )}
         </div>
       )}
 
       {/* HTML/Plain toggle for HTML emails */}
       {htmlMode && (
-        <div className="flex items-center gap-2 px-4 py-1.5 border-b border-mission-control-border bg-mission-control-bg/50">
+        <Flex align="center" gap="2" px="4" py="1" className="border-b border-mission-control-border bg-mission-control-bg/50">
           <Button
             onClick={() => setShowHtml(true)}
             size="1"
             variant={showHtml ? 'soft' : 'ghost'}
             color={showHtml ? undefined : 'gray'}
-           
           >
             <Code size={10} />HTML
           </Button>
@@ -421,11 +420,10 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
             size="1"
             variant={!showHtml ? 'soft' : 'ghost'}
             color={!showHtml ? undefined : 'gray'}
-           
           >
             <FileText size={10} />Plain
           </Button>
-        </div>
+        </Flex>
       )}
 
       {/* Body content */}
@@ -476,8 +474,8 @@ function LeftPane({
   return (
     <div className="w-80 flex flex-col">
       {/* Panel Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-mission-control-surface border-b border-mission-control-border">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" px="6" py="4" className="bg-mission-control-surface border-b border-mission-control-border">
+        <Flex align="center" gap="3">
           <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
             <Mail size={16} className="text-mission-control-accent" />
           </div>
@@ -485,8 +483,8 @@ function LeftPane({
             <h2 className="text-xl font-semibold text-mission-control-text">Communications</h2>
             <p className="text-sm text-mission-control-text-dim">Messages &amp; inbox</p>
           </div>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
       {/* All Messages */}
       <button
         type="button"
@@ -667,9 +665,9 @@ function CenterPane({
     <div className="w-96 flex-shrink-0 bg-mission-control-bg border-r border-mission-control-border flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-mission-control-border">
-        <div className="flex items-center justify-between mb-2">
+        <Flex align="center" justify="between" className="mb-2">
           <h2 className="font-semibold text-sm">{accountLabel}</h2>
-          <div className="flex items-center gap-1">
+          <Flex align="center" gap="1">
             {unreadCount > 0 && onMarkAllRead && (
               <IconButton
                 onClick={onMarkAllRead}
@@ -677,7 +675,6 @@ function CenterPane({
                 size="1"
                 variant="ghost"
                 color="gray"
-               
               >
                 <CheckCheck size={14} />
               </IconButton>
@@ -688,12 +685,11 @@ function CenterPane({
               size="1"
               variant="ghost"
               color="gray"
-             
             >
               <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
             </IconButton>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
         {/* Search */}
         <TextField.Root
           aria-label="Search messages input"
@@ -715,17 +711,17 @@ function CenterPane({
           <div className="divide-y divide-mission-control-border/30">
             {[0, 1, 2].map(i => (
               <div key={i} className="px-3 py-3 animate-pulse">
-                <div className="flex items-start gap-2">
+                <Flex align="start" gap="2">
                   <div className="mt-2 w-2 h-2 rounded-full bg-mission-control-border flex-shrink-0" />
                   <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       <div className="h-3 bg-mission-control-border rounded w-28" />
                       <div className="h-2 bg-mission-control-border rounded w-10 ml-auto" />
-                    </div>
+                    </Flex>
                     <div className="h-3 bg-mission-control-border rounded w-40" />
                     <div className="h-2 bg-mission-control-border rounded w-full" />
                   </div>
-                </div>
+                </Flex>
               </div>
             ))}
           </div>
@@ -758,7 +754,7 @@ function CenterPane({
                   </div>
 
                   <div className="flex-1 min-w-0 overflow-hidden">
-                    <div className="flex items-center gap-2 mb-0.5">
+                    <Flex align="center" gap="2" className="mb-0.5">
                       <span className={`text-sm truncate flex-1 min-w-0 ${!conv.is_read ? 'font-bold' : 'font-medium'}`}>
                         {conv.name || conv.from || 'Unknown'}
                       </span>
@@ -770,7 +766,7 @@ function CenterPane({
                         {Date.now() - new Date(conv.timestamp).getTime() > 3 * 24 * 60 * 60 * 1000 && <Clock size={9} />}
                         {conv.relativeTime}
                       </span>
-                    </div>
+                    </Flex>
                     {conv.subject && (
                       <div className={`text-sm truncate ${!conv.is_read ? 'font-semibold' : 'text-mission-control-text/80'}`}>
                         {conv.subject}
@@ -855,7 +851,7 @@ function CenterPane({
               </div>
             ))}
             {hasMore && onLoadMore && (
-              <div className="flex gap-2 px-2 py-2">
+              <Flex gap="2" px="2" py="2">
                 <Button
                   onClick={onLoadMore}
                   size="2"
@@ -877,7 +873,7 @@ function CenterPane({
                     Load All
                   </Button>
                 )}
-              </div>
+              </Flex>
             )}
           </>
         )}
@@ -935,11 +931,11 @@ function InboxDashboard({
     <div className="flex-1 flex flex-col bg-mission-control-bg overflow-y-auto">
       {/* Header */}
       <div className="px-5 py-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" className="mb-1">
           <Sparkles size={18} className="text-mission-control-accent" />
           <h2 className="text-heading-2">Smart Inbox</h2>
           {analysisLoading && <RefreshCw size={12} className="animate-spin text-mission-control-text-dim ml-auto" />}
-        </div>
+        </Flex>
         <p className="text-xs text-mission-control-text-dim">AI-powered overview of your communications</p>
       </div>
 
@@ -994,16 +990,16 @@ function InboxDashboard({
                     onClick={() => onSelect(msg)}
                     className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-3 hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-colors group cursor-pointer"
                   >
-                    <div className="flex items-start gap-2">
+                    <Flex align="start" gap="2">
                       <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
                         analysis?.triage === 'urgent' ? 'bg-error' : 'bg-warning'
                       }`} />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
+                        <Flex align="center" gap="2" className="mb-0.5">
                           <span className={`${platformColor(msg.platform)}`}>{platformIcon(msg.platform, 11)}</span>
                           <span className="text-sm font-medium truncate">{msg.name || msg.from}</span>
                           <span className="text-xs tabular-nums text-mission-control-text-dim ml-auto flex-shrink-0">{msg.relativeTime}</span>
-                        </div>
+                        </Flex>
                         {analysis?.summary && (
                           <p className="text-xs text-mission-control-text/70 truncate">{analysis.summary}</p>
                         )}
@@ -1014,7 +1010,7 @@ function InboxDashboard({
                           </span>
                         )}
                       </div>
-                    </div>
+                    </Flex>
                   </button>
                 );
               })}
@@ -1313,7 +1309,7 @@ function RightPane({
     <div className="flex-1 flex flex-col bg-mission-control-bg min-w-0 text-left">
       {/* Header */}
       <div className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between gap-3 mb-0.5">
+        <Flex align="center" justify="between" gap="3" className="mb-0.5">
           <h2 className="font-bold text-base truncate min-w-0 flex-1">
             {conversation.subject || conversation.name || conversation.from || 'Message'}
           </h2>
@@ -1341,8 +1337,8 @@ function RightPane({
           >
             <X size={16} />
           </IconButton>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-mission-control-text-dim">
+        </Flex>
+        <Flex align="center" gap="2" className="text-sm text-mission-control-text-dim">
           <span className={platformColor(conversation.platform)}>
             {platformIcon(conversation.platform, 14)}
           </span>
@@ -1355,14 +1351,14 @@ function RightPane({
               <span>{conversation.message_count} messages in thread</span>
             </>
           )}
-        </div>
+        </Flex>
       </div>
 
       {/* AI Analysis Banner */}
       {!isSystem && aiAnalysis && (
         <div className="px-4 py-3 border-b border-mission-control-border bg-gradient-to-r from-mission-control-surface to-mission-control-bg/50">
           {/* Summary + Triage */}
-          <div className="flex items-center gap-2 mb-1.5">
+          <Flex align="center" gap="2" className="mb-1.5">
             <Sparkles size={13} className="text-mission-control-accent flex-shrink-0" />
             <span className={`text-xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
               aiAnalysis.triage === 'urgent' ? 'bg-error-subtle text-error' :
@@ -1377,7 +1373,7 @@ function RightPane({
                 No reply needed
               </span>
             )}
-          </div>
+          </Flex>
           <p className="text-xs text-mission-control-text/80 mb-2 leading-relaxed">{aiAnalysis.summary}</p>
 
           {/* Detected Tasks */}
@@ -1428,11 +1424,11 @@ function RightPane({
         ) : isSystem ? (
           /* System activity detail */
           <div className="bg-mission-control-surface rounded-lg p-4 border border-mission-control-border">
-            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-mission-control-border">
+            <Flex align="center" gap="2" className="mb-3 pb-3 border-b border-mission-control-border">
               <ActivityIcon size={14} className="text-review" />
               <span className="font-semibold text-sm">{conversation.name || 'System'}</span>
               <span className="text-xs text-mission-control-text-dim ml-auto">{conversation.relativeTime}</span>
-            </div>
+            </Flex>
             <MarkdownMessage content={conversation.preview} />
           </div>
         ) : conversation.platform === 'email' && emailBody ? (
@@ -1448,10 +1444,10 @@ function RightPane({
                     ? 'bg-mission-control-accent/20 border border-mission-control-accent/30'
                     : 'bg-mission-control-surface border border-mission-control-border'
                 }`}>
-                  <div className="flex items-center gap-2 mb-1">
+                  <Flex align="center" gap="2" className="mb-1">
                     <span className="text-xs font-semibold">{msg.fromMe ? 'You' : msg.senderName || msg.sender}</span>
                     <span className="text-xs tabular-nums text-mission-control-text-dim">{msg.timestamp}</span>
-                  </div>
+                  </Flex>
                   {isHtmlContent(msg.text)
                     ? /* SECURITY: sanitizeInlineHtml → sanitizeHtml (DOMPurify) strips all unsafe HTML/attrs */
                       <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(msg.text) }} />
@@ -1465,10 +1461,10 @@ function RightPane({
         ) : conversation.platform === 'telegram' ? (
           /* Telegram empty state — show preview while thread loads */
           <div className="bg-mission-control-surface rounded-lg p-4 border border-mission-control-border">
-            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-mission-control-border text-info">
+            <Flex align="center" gap="2" className="mb-3 pb-3 border-b border-mission-control-border text-info">
               <Send size={14} />
               <span className="font-semibold text-sm text-mission-control-text">{conversation.name || conversation.from}</span>
-            </div>
+            </Flex>
             <div className="mb-3"><MarkdownMessage content={conversation.preview} /></div>
             <p className="text-xs text-mission-control-text-dim italic">Thread history could not be loaded. Check tgcli connection.</p>
           </div>
@@ -1483,21 +1479,20 @@ function RightPane({
       {/* AI Assistant Panel — not for system messages */}
       {!isSystem && showAIPanel && (
         <div className="px-5 py-3 border-t border-mission-control-border bg-mission-control-surface/50">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+          <Flex align="center" justify="between" className="mb-3">
+            <Flex align="center" gap="2">
               <Sparkles size={16} className="text-mission-control-accent" />
               <span className="text-sm font-semibold">AI Assistant</span>
-            </div>
+            </Flex>
             <IconButton
               onClick={() => setShowAIPanel(false)}
               size="1"
               variant="ghost"
               color="gray"
-             
             >
               <X size={14} />
             </IconButton>
-          </div>
+          </Flex>
 
           {/* Suggested Replies */}
           <div className="mb-4">
@@ -1527,7 +1522,7 @@ function RightPane({
           <div>
             <span className="text-xs font-medium text-mission-control-text-dim mb-2 block">Response Planner</span>
             <p className="text-xs text-mission-control-text-dim mb-2">Tell AI what you want to say, and it&apos;ll draft the message for you</p>
-            <div className="flex gap-2">
+            <Flex gap="2">
               <TextField.Root
                 aria-label="AI response intent input"
                 value={aiIntent}
@@ -1545,7 +1540,6 @@ function RightPane({
                 disabled={!aiIntent.trim() || generatingFromIntent}
                 size="2"
                 variant="solid"
-               
               >
                 {generatingFromIntent ? (
                   <>
@@ -1557,7 +1551,7 @@ function RightPane({
                   </>
                 )}
               </Button>
-            </div>
+            </Flex>
           </div>
         </div>
       )}
@@ -1615,14 +1609,13 @@ function RightPane({
       {/* Reply Box — not for system messages */}
       {!isSystem && (
         <div className="px-5 py-3 border-t border-mission-control-border bg-mission-control-surface">
-          <div className="flex items-center justify-between mb-2">
+          <Flex align="center" justify="between" className="mb-2">
             <span className="text-xs font-medium text-mission-control-text-dim">Reply</span>
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <Button
                 onClick={() => setShowAIPanel(!showAIPanel)}
                 size="1"
                 variant={showAIPanel ? 'soft' : 'ghost'}
-               
               >
                 <Sparkles size={14} />
                 AI Assist
@@ -1637,9 +1630,9 @@ function RightPane({
                 <Sparkles size={14} className={generating ? 'animate-spin' : ''} />
                 {generating ? 'Generating...' : 'Quick Draft'}
               </Button>
-            </div>
-          </div>
-          <div className="flex gap-2">
+            </Flex>
+          </Flex>
+          <Flex gap="2">
             <TextArea
               ref={replyRef}
               aria-label="Reply message textarea"
@@ -1654,10 +1647,10 @@ function RightPane({
                 }
               }}
             />
-          </div>
-          <div className="flex items-center justify-between mt-2">
+          </Flex>
+          <Flex align="center" justify="between" className="mt-2">
             <span className="text-xs text-mission-control-text-dim">⌘+Enter to send</span>
-            <div className="flex gap-2">
+            <Flex gap="2">
               {replyText && (
                 <Button
                   onClick={() => setReplyText('')}
@@ -1673,12 +1666,11 @@ function RightPane({
                 disabled={!replyText.trim()}
                 size="2"
                 variant="solid"
-               
               >
                 <Send size={14} /> Send
               </Button>
-            </div>
-          </div>
+            </Flex>
+          </Flex>
         </div>
       )}
     </div>
