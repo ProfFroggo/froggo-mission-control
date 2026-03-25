@@ -1174,8 +1174,8 @@ export default function ChatPanel() {
         </div>
       )}
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border flex items-start justify-between bg-mission-control-surface">
-        <div className="flex items-start gap-3 min-w-0">
+      <Flex align="start" justify="between" className="p-4 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="start" gap="3" className="min-w-0">
           <AgentSelector selectedAgent={selectedAgent} onSelect={handleAgentSwitch} />
           {selectedAgent?.dbSessionKey ? (
             <SessionStatsBar
@@ -1197,9 +1197,9 @@ export default function ChatPanel() {
               )}
             </div>
           )}
-        </div>
-        
-        <div className="flex items-center gap-2">
+        </Flex>
+
+        <Flex align="center" gap="2">
           <IconButton
             onClick={() => setIsVoiceMode(!isVoiceMode)}
             size="2"
@@ -1283,8 +1283,8 @@ export default function ChatPanel() {
           >
             <MessageSquarePlus size={16} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Body — below header: chat left, artifact panel right */}
       <div className="flex-1 flex min-h-0">
@@ -1294,7 +1294,7 @@ export default function ChatPanel() {
       {showRoomList && (
         <div className="border-b border-mission-control-border bg-mission-control-surface/95 backdrop-blur-sm">
           <div className="p-3">
-            <div className="flex items-center justify-between mb-2">
+            <Flex align="center" justify="between" className="mb-2">
               <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Chat Rooms</span>
               <Button
                 onClick={() => { setShowCreateRoom(true); setShowRoomList(false); }}
@@ -1304,7 +1304,7 @@ export default function ChatPanel() {
               >
                 <MessageSquarePlus size={12} /> New Room
               </Button>
-            </div>
+            </Flex>
             {rooms.length === 0 ? (
               <p className="text-sm text-mission-control-text-dim py-3 text-center">
                 No rooms yet. Create one to start a multi-agent discussion!
@@ -1420,12 +1420,14 @@ export default function ChatPanel() {
 
       {/* Typing indicator — shown while agent is generating a response (before first token) */}
       {loading && (
-        <div
-          className={`px-4 py-2 flex items-center gap-2 text-xs text-mission-control-text-dim select-none ${isVoiceMode ? 'hidden' : ''}`}
+        <Flex
+          align="center"
+          gap="2"
+          className={`px-4 py-2 text-xs text-mission-control-text-dim select-none ${isVoiceMode ? 'hidden' : ''}`}
           aria-live="polite"
           aria-label="Agent is typing"
         >
-          <div className="flex gap-1">
+          <Flex gap="1">
             <span
               className="w-1.5 h-1.5 rounded-full bg-mission-control-accent inline-block"
               style={{ animation: 'typing-bounce 1.2s ease-in-out infinite', animationDelay: '0ms' }}
@@ -1438,9 +1440,9 @@ export default function ChatPanel() {
               className="w-1.5 h-1.5 rounded-full bg-mission-control-accent inline-block"
               style={{ animation: 'typing-bounce 1.2s ease-in-out infinite', animationDelay: '400ms' }}
             />
-          </div>
+          </Flex>
           <span>{selectedAgent?.name ?? 'Agent'} is typing...</span>
-        </div>
+        </Flex>
       )}
 
       {/* Connection banner removed — chat uses REST API, gateway is optional */}
@@ -1492,7 +1494,7 @@ export default function ChatPanel() {
 
         {/* Stream error banner */}
         {streamError && (
-          <div className="flex items-center gap-2 p-3 mb-3 rounded-md bg-error/10 border border-error/20 text-error text-sm">
+          <Flex align="center" gap="2" className="p-3 mb-3 rounded-md bg-error/10 border border-error/20 text-error text-sm">
             <AlertTriangle size={14} className="shrink-0" />
             <span className="flex-1">{streamError}</span>
             <Button
@@ -1503,21 +1505,21 @@ export default function ChatPanel() {
             >
               Retry
             </Button>
-          </div>
+          </Flex>
         )}
 
         {/* Loading suggestions indicator */}
         {loadingSuggestions && (
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim px-1 py-1 mb-2">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim px-1 py-1 mb-2">
             <Loader2 size={12} className="animate-spin" />
             <span>Loading suggestions...</span>
-          </div>
+          </Flex>
         )}
 
         {/* Suggested Replies */}
         {suggestedReplies.length > 0 && (
           <div className="mb-3">
-            <div className="flex items-center gap-2 mb-2">
+            <Flex align="center" gap="2" className="mb-2">
               <Sparkles size={14} className="text-mission-control-accent" />
               <span className="text-xs text-mission-control-text-dim">Suggested replies</span>
               <Button
@@ -1528,7 +1530,7 @@ export default function ChatPanel() {
               >
                 Clear
               </Button>
-            </div>
+            </Flex>
             <div className="flex flex-wrap gap-2">
               {suggestedReplies.map((suggestion, idx) => (
                 <Button
@@ -1546,7 +1548,7 @@ export default function ChatPanel() {
           </div>
         )}
 
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           {/* Hidden file input */}
           <input
             ref={fileInputRef}
@@ -1601,7 +1603,7 @@ export default function ChatPanel() {
             disabled={loading || messages.some(m => !!m.streaming)}
             loading={loading}
           />
-        </div>
+        </Flex>
       </div>
 
       {/* File Preview Modal */}
@@ -1691,7 +1693,7 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
     >
       <div className="relative max-w-4xl max-h-[90vh] flex flex-col gap-3" onClick={e => e.stopPropagation()}>
         <img src={src} alt={alt} className="max-w-full max-h-[80vh] rounded-lg object-contain shadow-2xl" />
-        <div className="flex justify-end gap-2">
+        <Flex justify="end" gap="2">
           <a
             href={src}
             download
@@ -1708,7 +1710,7 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
           >
             Close
           </Button>
-        </div>
+        </Flex>
       </div>
     </div>
   );
@@ -1911,16 +1913,16 @@ const MessageItem = memo(function MessageItem({
             }}
           >
             {!!msg.streaming && !msg.content && !msg.status ? (
-              <div className="flex items-center gap-2 py-1">
-                <div className="flex gap-1">
+              <Flex align="center" gap="2" className="py-1">
+                <Flex gap="1">
                   <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-mission-control-text/70' : 'bg-mission-control-accent'}`} style={{ animationDelay: '0ms' }} />
                   <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-mission-control-text/70' : 'bg-mission-control-accent'}`} style={{ animationDelay: '150ms' }} />
                   <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-mission-control-text/70' : 'bg-mission-control-accent'}`} style={{ animationDelay: '300ms' }} />
-                </div>
+                </Flex>
                 <span className={`text-sm ${isUser ? 'text-white/80' : 'text-mission-control-text-dim'}`}>
                   Waiting...
                 </span>
-              </div>
+              </Flex>
             ) : msg.role === 'assistant' ? (
               Array.isArray(msg.content) ? (
                 <div className="space-y-1">
@@ -1941,14 +1943,14 @@ const MessageItem = memo(function MessageItem({
               </div>
             )}
             {!!msg.streaming && msg.status && !msg.subtle && (
-              <div className="flex items-center gap-2 mt-2 text-xs text-mission-control-text-dim">
-                <div className="flex gap-0.5">
+              <Flex align="center" gap="2" className="mt-2 text-xs text-mission-control-text-dim">
+                <Flex gap="1">
                   <div className="w-1 h-1 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
                   <div className="w-1 h-1 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
                   <div className="w-1 h-1 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
+                </Flex>
                 <span>{msg.status}</span>
-              </div>
+              </Flex>
             )}
           </div>
         </div>
