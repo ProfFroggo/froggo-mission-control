@@ -91,6 +91,7 @@ Plans:
 - [ ] 03-03: Empty state differentiation — 15 identical empty states all use `icon + "No X yet" + subtitle`; create at least 3 distinct tiers: global empty (no campaigns ever), local empty (no tasks in this project), error empty (failed to load)
 - [ ] 03-04: Remove "2 Issues" debug badge — either fix the 2 underlying issues and remove the badge, or move it to Settings > System Health; it appears on ~30% of screens as if it's a feature
 - [ ] 03-05: KnowledgeBase triple-filter consolidation — three simultaneous filter mechanisms (sidebar categories + header pills + search box) create cognitive overload; remove header pills (keep sidebar + search); dashboard metric cards double-report: `DashboardRedesigned.tsx` Pending Approvals shows same count as `text-5xl` AND `animate-pulse` badge simultaneously — remove the badge, trust the big number
+- [ ] 03-06: Agent card density — each card currently shows 12-15 data points with equal visual weight (fails 5/8 cognitive load checklist items); collapse card to surface layer: avatar + name + status dot + current task only; all other data (metrics, tokens, capabilities, trust tier) already exists in `AgentDetailModal` — just stop duplicating it on the card
 
 ### Phase 4: Radix Component Normalization
 **Goal**: Enforce 100% Radix Themes 3 patterns. Every segment control and filter pill that
@@ -119,6 +120,7 @@ Plans:
 - [ ] 05-01: Replace `<Twitter />` → `<X />` Lucide icon in `XSetupWizard.tsx`; fix `bg-info-subtle` (line 162) → `bg-mission-control-accent/20`; credential field green checkmarks → neutral (only green after "Save & Verify" succeeds)
 - [ ] 05-02: Developer language → user language: "Safety Lock" → "Safety Controls", "Task Watcher" → "Task Processing", "Soul" tab title → "Personality", raw YAML in Soul tab behind "Advanced → Edit Config" escape hatch
 - [ ] 05-03: Audit all `src/components/` for emoji in UI chrome — `grep -rn '🧩\|✅\|⚡\|📋\|🎯\|✓'` — replace with Lucide icons (user-generated content emoji are acceptable)
+- [ ] 05-05: XSetupWizard progressive disclosure — 7 credential fields shown simultaneously violates 4-item working memory limit; group into 2 steps: Step 1 = API Key + API Secret + Bearer Token (the essentials), Step 2 (expandable) = Access Token + Access Token Secret + OAuth Client ID + OAuth Client Secret; keep "Get credentials from X Developer Portal" link above the form not below the CTA
 - [ ] 05-04: Fix remaining `style={}` inline color props — `grep -rn 'style={{.*color'` — convert to token classes; `XSetupWizard.tsx:261` inline width/justify → Tailwind; `Dashboard.tsx:323` inline style → Tailwind
 
 ### Phase 6: Content & Data Accuracy
@@ -184,15 +186,15 @@ Plans:
 |-------|-------|--------|-----------|
 | 1. Design Token Foundation | 0/6 | Not started | - |
 | 2. Anti-Pattern Elimination | 0/3 | Not started | - |
-| 3. Navigation & IA Architecture | 0/5 | Not started | - |
+| 3. Navigation & IA Architecture | 0/6 | Not started | - |
 | 4. Radix Component Normalization | 0/5 | Not started | - |
-| 5. Icon, Media & Copy Accuracy | 0/4 | Not started | - |
+| 5. Icon, Media & Copy Accuracy | 0/5 | Not started | - |
 | 6. Content & Data Accuracy | 0/5 | Not started | - |
 | 7. Stripe-Level Polish | 0/5 | Not started | - |
 | 8. Accessibility Hardening | 0/4 | Not started | - |
 | 9. Final Verification | 0/3 | Not started | - |
 
-**Total: 0/40 plans complete**
+**Total: 0/42 plans complete**
 
 ---
 
