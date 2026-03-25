@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Play } from 'lucide-react';
+import { Send, Bot, User, Play, CheckCircle } from 'lucide-react';
 import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import type { ConversationMessage, SectionProgress, SectionId } from './types';
 import { SECTION_ORDER, SECTION_LABELS } from './types';
@@ -76,7 +76,7 @@ export default function ConversationPanel({
               color={s.complete ? 'green' : s.id === currentSection ? 'indigo' : 'gray'}
               onClick={() => onJumpToSection(s.id)}
             >
-              {s.complete ? '✓ ' : ''}{s.label}
+              {s.complete && <CheckCircle size={10} />}{s.label}
             </Button>
           ))}
         </div>

@@ -430,7 +430,7 @@ function PlatformUpdateTab() {
           onClick={runUpdate}
           disabled={updating}
           variant="solid"
-          color="grass"
+
           size="3"
           className="w-full"
         >
@@ -467,7 +467,7 @@ function PlatformUpdateTab() {
               <Button
                 onClick={() => window.location.reload()}
                 variant="solid"
-                color="grass"
+      
                 size="1"
               >
                 Reload now
@@ -939,7 +939,7 @@ function AgentPlatformSection() {
           onClick={savePlatform}
           disabled={platformSaving}
           variant="solid"
-          color="grass"
+
           size="2"
         >
           {platformSaving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
@@ -1061,7 +1061,7 @@ function TokenBudgetSection() {
               onClick={saveBudget}
               disabled={saving}
               variant="solid"
-              color="grass"
+    
               size="2"
             >
               {saving ? 'Saving...' : 'Save'}
@@ -1182,7 +1182,7 @@ function ApiKeysSection() {
                         onClick={() => doSave(p.id)}
                         disabled={saving[p.id] || !values[p.id]?.trim()}
                         variant="solid"
-                        color="grass"
+              
                         size="1"
                       >
                         {saving[p.id] ? <RefreshCw size={12} className="animate-spin" /> : 'Save'}
@@ -1400,7 +1400,7 @@ function AutomationExecutionSection() {
           onClick={save}
           disabled={saving}
           variant="solid"
-          color="grass"
+
           size="2"
         >
           {saving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
@@ -2559,7 +2559,7 @@ export default function EnhancedSettingsPanel() {
             <Button
               onClick={handleSave}
               variant="solid"
-              color="grass"
+    
               size="3"
               className="flex-1"
             >

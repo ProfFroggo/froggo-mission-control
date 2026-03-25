@@ -253,7 +253,6 @@ function ModuleCard({
               type="button"
               onClick={() => onInstall(mod)}
               variant="solid"
-              color="green"
               size="1"
             >
               <Download size={13} />

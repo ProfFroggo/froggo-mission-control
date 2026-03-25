@@ -480,7 +480,6 @@ Be conversational, friendly, and help design an effective agent.`;
                     <Button
                       onClick={handleCreateFromChat}
                       variant="solid"
-                      color="grass"
                       size="2"
                       className="w-full"
                       aria-label="Create and start worker agent"
@@ -515,7 +514,6 @@ Be conversational, friendly, and help design an effective agent.`;
                     onClick={handleChatSubmit}
                     disabled={!chatInput.trim() || isStreaming || conversationComplete}
                     variant="solid"
-                    color="grass"
                     size="3"
                     aria-label="Send message"
                   >
@@ -622,7 +620,6 @@ Be conversational, friendly, and help design an effective agent.`;
                   type="submit"
                   disabled={!name.trim() || !taskDescription.trim()}
                   variant="solid"
-                  color="grass"
                   size="2"
                 >
                   <Zap size={16} />

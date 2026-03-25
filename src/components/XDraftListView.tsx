@@ -207,7 +207,6 @@ export default function XDraftListView() {
           <Button
             onClick={() => setShowComposer(true)}
             variant="solid"
-            color="grass"
             size="2"
           >
             <Plus className="w-4 h-4" />
@@ -252,7 +251,6 @@ export default function XDraftListView() {
             <Button
               onClick={() => setShowComposer(true)}
               variant="solid"
-              color="grass"
               size="2"
             >
               Create your first draft

@@ -265,7 +265,6 @@ export default function AccessibilitySettings() {
               />
               <Button
                 variant="solid"
-                color="grass"
                 size="2"
                 onClick={handleTestAnnouncement}
                 disabled={!testAnnouncement.trim()}
