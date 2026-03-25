@@ -398,7 +398,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
 
           {/* Compare bar */}
           {compareIds.length > 0 && (
-            <div className="flex items-center gap-3 mb-4 px-3 py-2.5 bg-info-subtle border border-info-border rounded-lg text-sm">
+            <Flex align="center" gap="3" className="mb-4 px-3 py-2.5 bg-info-subtle border border-info-border rounded-lg text-sm">
               <GitCompare size={14} className="text-info flex-shrink-0" />
               <span className="text-info flex-1">
                 {compareIds.length === 1
@@ -428,7 +428,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
               >
                 <X size={12} />
               </IconButton>
-            </div>
+            </Flex>
           )}
 
           {filtered.length === 0 ? (

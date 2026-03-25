@@ -779,7 +779,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                   <p className="text-xs text-mission-control-text-dim text-center py-8">Start a conversation with {agentName}</p>
                 )}
                 {chatMessages.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <Flex key={i} className={m.role === 'user' ? 'justify-end' : 'justify-start'}>
                     <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                       m.role === 'user'
                         ? 'bg-mission-control-accent text-white rounded-br-sm'
@@ -790,7 +790,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                         : <span>{m.content}</span>
                       }
                     </div>
-                  </div>
+                  </Flex>
                 ))}
                 <div ref={chatEndRef} />
               </div>
