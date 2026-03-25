@@ -81,10 +81,10 @@ function DailyCostChart({ byDay }: { byDay: DayUsage[] }) {
           );
         })}
       </svg>
-      <div className="flex justify-between text-[10px] text-mission-control-text-dim mt-1">
+      <Flex justify="between" className="text-[10px] text-mission-control-text-dim mt-1">
         {byDay.length > 0 && <span>{byDay[0].date}</span>}
         {byDay.length > 1 && <span>{byDay[byDay.length - 1].date}</span>}
-      </div>
+      </Flex>
     </div>
   );
 }

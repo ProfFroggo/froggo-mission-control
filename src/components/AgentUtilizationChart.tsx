@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Flex } from '@radix-ui/themes';
 import {
   BarChart,
   Bar,
@@ -91,7 +92,7 @@ export default function AgentUtilizationChart() {
   return (
     <div className="h-full flex flex-col gap-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2">
             <Users size={16} className="text-mission-control-accent" />
@@ -119,7 +120,7 @@ export default function AgentUtilizationChart() {
             </button>
           ))}
         </div>
-      </div>
+      </Flex>
 
       {/* KPI cards */}
       <div className="grid grid-cols-3 gap-3">
@@ -229,16 +230,16 @@ export default function AgentUtilizationChart() {
                 return (
                   <tr key={agent.agentId} className="border-b border-mission-control-border/50 last:border-b-0 hover:bg-mission-control-border/20 transition-colors">
                     <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                         <span className="font-medium text-mission-control-text">{agent.agentName}</span>
-                      </div>
+                      </Flex>
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums text-mission-control-text-dim">{agent.tasksAssigned}</td>
                     <td className="px-4 py-2.5 text-right tabular-nums" style={{ color: CHART_COLORS.accent }}>{agent.tasksCompleted}</td>
                     <td className="px-4 py-2.5 text-right">
                       {/* Mini progress bar */}
-                      <div className="flex items-center justify-end gap-2">
+                      <Flex align="center" justify="end" gap="2">
                         <div className="w-16 h-1.5 rounded-full bg-mission-control-border overflow-hidden">
                           <div
                             className="h-full rounded-full transition-all"
@@ -248,7 +249,7 @@ export default function AgentUtilizationChart() {
                         <span className="tabular-nums w-8 text-right" style={{ color: rateColor }}>
                           {agent.completionRate}%
                         </span>
-                      </div>
+                      </Flex>
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums text-mission-control-text-dim">{agent.avgCompletionTime.toFixed(1)}h</td>
                     <td className="px-4 py-2.5 text-right tabular-nums" style={{ color: CHART_COLORS.amber }}>{agent.totalTimeSpent.toFixed(1)}h</td>
@@ -261,10 +262,10 @@ export default function AgentUtilizationChart() {
       </div>
 
       {/* Avg completion rate footer */}
-      <div className="flex items-center justify-between px-1 text-xs text-mission-control-text-dim">
+      <Flex align="center" justify="between" className="px-1 text-xs text-mission-control-text-dim">
         <span>Average completion rate across all agents</span>
         <span className="font-semibold tabular-nums" style={{ color: CHART_COLORS.accent }}>{avgRate}%</span>
-      </div>
+      </Flex>
     </div>
   );
 }
