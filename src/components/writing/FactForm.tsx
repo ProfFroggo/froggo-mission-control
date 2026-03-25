@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, TextField, Select, TextArea } from '@radix-ui/themes';
+import { Button, Flex, TextField, Select, TextArea } from '@radix-ui/themes';
 import type { VerifiedFact } from '../../store/memoryStore';
 
 interface FactFormProps {
@@ -49,7 +49,7 @@ export default function FactForm({ fact, onCancel, onSave }: FactFormProps) {
           <Select.Item value="needs-source">Needs Source</Select.Item>
         </Select.Content>
       </Select.Root>
-      <div className="flex gap-1">
+      <Flex gap="1">
         <Button
           type="submit"
           size="1"
@@ -66,7 +66,7 @@ export default function FactForm({ fact, onCancel, onSave }: FactFormProps) {
         >
           Cancel
         </Button>
-      </div>
+      </Flex>
     </form>
   );
 }

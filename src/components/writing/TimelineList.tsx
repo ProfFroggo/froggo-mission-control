@@ -54,7 +54,7 @@ export default function TimelineList() {
               key={evt.id}
               className="group p-2 rounded bg-mission-control-bg/30 hover:bg-mission-control-border/40 transition-colors"
             >
-              <div className="flex items-start justify-between gap-1">
+              <Flex align="start" justify="between" gap="1">
                 <div className="flex-1 min-w-0">
                   <span className="text-xs font-medium text-mission-control-accent">{evt.date}</span>
                 </div>
@@ -78,7 +78,7 @@ export default function TimelineList() {
                     <Trash2 size={11} />
                   </IconButton>
                 </div>
-              </div>
+              </Flex>
               <p className="text-[10px] text-mission-control-text-dim mt-0.5 line-clamp-2">{evt.description}</p>
             </div>
           ),

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Flex } from '@radix-ui/themes';
 import { useEventBus } from '../lib/useEventBus';
 
 interface CircuitBreakerState {
@@ -57,13 +58,13 @@ export const CircuitBreakerStatus: React.FC = () => {
       {tripped.map(([agent, state]) => {
         const timeLeft = state.suspended_until ? Math.ceil((state.suspended_until - Date.now()) / 60000) : 0;
         return (
-          <div key={agent} className="flex items-center justify-between text-xs py-1">
+          <Flex key={agent} align="center" justify="between" className="text-xs py-1">
             <span className="text-mission-control-text-dim">{agent}</span>
             <span className={state.state === 'open' ? 'text-error' : 'text-warning'}>
               {state.state === 'open' ? 'SUSPENDED' : 'TRIAL'}
               {state.suspended_until && timeLeft > 0 && ` (${timeLeft}m left)`}
             </span>
-          </div>
+          </Flex>
         );
       })}
     </div>

@@ -40,7 +40,7 @@ function ExtractionProgress() {
           const done = i < activeStep;
           const active = i === activeStep;
           return (
-            <div key={label} className="flex items-center gap-3">
+            <Flex key={label} align="center" gap="3">
               {done ? (
                 <CheckCircle size={16} className="text-success flex-shrink-0" />
               ) : active ? (
@@ -51,7 +51,7 @@ function ExtractionProgress() {
               <span className={`text-sm ${done ? 'text-success' : active ? 'text-mission-control-text' : 'text-mission-control-text-dim'}`}>
                 {label}{active ? '...' : ''}
               </span>
-            </div>
+            </Flex>
           );
         })}
       </div>

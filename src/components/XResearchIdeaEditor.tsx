@@ -133,7 +133,7 @@ export default function XResearchIdeaEditor() {
           </label>
           <div className="space-y-2">
             {citations.map((citation, index) => (
-              <div key={`${citation}-${index}`} className="flex gap-2">
+              <Flex key={`${citation}-${index}`} gap="2">
                 <div className="flex-1">
                   <TextField.Root
                     id={`citation-${index}`}
@@ -157,7 +157,7 @@ export default function XResearchIdeaEditor() {
                     <X className="w-5 h-5" />
                   </Button>
                 )}
-              </div>
+              </Flex>
             ))}
           </div>
           <Button

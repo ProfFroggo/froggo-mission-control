@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, TextField, TextArea } from '@radix-ui/themes';
+import { Button, Flex, TextField, TextArea } from '@radix-ui/themes';
 import type { TimelineEvent } from '../../store/memoryStore';
 
 interface TimelineFormProps {
@@ -45,7 +45,7 @@ export default function TimelineForm({ event, onCancel, onSave, nextPosition }: 
         size="1"
         style={{ resize: 'none' }}
       />
-      <div className="flex gap-1">
+      <Flex gap="1">
         <Button
           type="submit"
           size="1"
@@ -62,7 +62,7 @@ export default function TimelineForm({ event, onCancel, onSave, nextPosition }: 
         >
           Cancel
         </Button>
-      </div>
+      </Flex>
     </form>
   );
 }

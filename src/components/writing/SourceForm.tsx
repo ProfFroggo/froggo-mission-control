@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, TextField, Select, TextArea } from '@radix-ui/themes';
+import { Button, Flex, TextField, Select, TextArea } from '@radix-ui/themes';
 import type { ResearchSource } from '../../store/researchStore';
 
 interface SourceFormProps {
@@ -77,7 +77,7 @@ export default function SourceForm({ source, onCancel, onSave }: SourceFormProps
         size="1"
         style={{ resize: 'none' }}
       />
-      <div className="flex gap-1">
+      <Flex gap="1">
         <Button
           type="submit"
           size="1"
@@ -94,7 +94,7 @@ export default function SourceForm({ source, onCancel, onSave }: SourceFormProps
         >
           Cancel
         </Button>
-      </div>
+      </Flex>
     </form>
   );
 }

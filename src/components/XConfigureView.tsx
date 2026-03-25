@@ -62,7 +62,7 @@ function CredentialsPanel() {
       <h3 className="text-sm font-semibold text-mission-control-text mb-4">X/Twitter Credentials</h3>
       <div className="space-y-2">
         {Object.entries(keyLabels).map(([key, label]) => (
-          <div key={key} className="flex items-center justify-between px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface">
+          <Flex key={key} align="center" justify="between" className="px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface">
             <span className="text-sm text-mission-control-text">{label}</span>
             <Badge
               color={keys[key] ? 'grass' : 'red'}
@@ -71,7 +71,7 @@ function CredentialsPanel() {
             >
               {keys[key] ? 'Configured' : 'Missing'}
             </Badge>
-          </div>
+          </Flex>
         ))}
       </div>
       <p className="text-xs text-mission-control-text-dim mt-4">
