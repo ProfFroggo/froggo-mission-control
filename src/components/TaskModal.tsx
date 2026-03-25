@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Bot, Flag, Calendar, Clock, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles, Upload, X, FileText, ChevronDown, Lightbulb } from 'lucide-react';
 import { useStore, TaskStatus, TaskPriority } from '../store/store';
 // eslint-disable-next-line import/order
-import { Button, Spinner, TextArea, TextField, IconButton, Select } from '@radix-ui/themes';
+import { Button, Flex, Spinner, TextArea, TextField, IconButton, Select } from '@radix-ui/themes';
 import { taskApi } from '../lib/api';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
@@ -486,7 +486,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
           <h2 className="text-xl font-semibold mb-4">Create New Task</h2>
 
           {/* Mode Selector */}
-          <div className="flex gap-2">
+          <Flex gap="2">
             <Button
               onClick={() => setMode('chat')}
               type="button"
@@ -510,7 +510,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               <Edit3 size={16} />
               Manual Entry
             </Button>
-          </div>
+          </Flex>
         </div>
 
         {/* Content */}
@@ -542,27 +542,27 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
                 {/* Streaming message */}
                 {isStreaming && streamingContent && (
-                  <div className="flex justify-start">
+                  <Flex justify="start">
                     <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
-                      <div className="flex items-center gap-2 mt-2">
+                      <Flex align="center" gap="2" className="mt-2">
                         <Loader2 size={14} className="animate-spin text-mission-control-accent" />
                         <span className="text-xs text-mission-control-text-dim">Mission Control is typing...</span>
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 )}
 
                 {/* Loading indicator */}
                 {isStreaming && !streamingContent && (
-                  <div className="flex justify-start">
+                  <Flex justify="start">
                     <div className="rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <Loader2 size={16} className="animate-spin text-mission-control-accent" />
                         <span className="text-sm text-mission-control-text-dim">Mission Control is thinking...</span>
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 )}
 
                 <div ref={chatEndRef} />
@@ -572,10 +572,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               {conversationComplete && extractedData.title && (
                 <div className="px-6 pb-4">
                   <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
+                    <Flex align="center" gap="2" className="mb-2">
                       <Sparkles size={16} className="text-mission-control-accent" />
                       <span className="font-semibold text-sm">Task Ready!</span>
-                    </div>
+                    </Flex>
                     <div className="space-y-1 text-sm">
                       <div><strong>Title:</strong> {extractedData.title}</div>
                       {extractedData.description && <div><strong>Description:</strong> {extractedData.description.slice(0, 100)}...</div>}
@@ -597,7 +597,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Chat Input */}
               <div className="p-6 border-t border-mission-control-border">
-                <div className="flex gap-3">
+                <Flex gap="3">
                   <TextArea
                     ref={inputRef as any}
                     value={chatInput}
@@ -624,7 +624,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   >
                     {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   </IconButton>
-                </div>
+                </Flex>
                 <div className="text-xs text-mission-control-text-dim mt-2">
                   Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Enter</kbd> or <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">⌘↩</kbd> to send, <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Shift+Enter</kbd> for new line
                 </div>
@@ -635,12 +635,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4">
               {/* Title */}
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <Flex align="center" justify="between" className="mb-1">
                   <label htmlFor="task-title" className="text-sm text-mission-control-text-dim">
                     Title <span className="text-error text-xs ml-0.5" aria-hidden="true">*</span>
                   </label>
                   <span className={`text-xs ${title.length > 120 ? 'text-warning' : 'text-mission-control-text-dim'}`}>{title.length}/140</span>
-                </div>
+                </Flex>
                 <TextField.Root
                   id="task-title"
                   value={title}
@@ -657,10 +657,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Description */}
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <Flex align="center" justify="between" className="mb-1">
                   <label htmlFor="task-description" className="text-sm text-mission-control-text-dim">Description</label>
                   <span className="text-xs text-mission-control-text-dim">{description.length} chars</span>
-                </div>
+                </Flex>
                 <TextArea
                   id="task-description"
                   value={description}
@@ -673,13 +673,13 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Planning Notes */}
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <Flex align="center" justify="between" className="mb-1">
                   <label htmlFor="task-planning-notes" className="flex items-center gap-1.5 text-sm text-mission-control-text-dim">
                     <FileText size={14} />
                     Planning Notes
                     <span className="text-error text-xs ml-0.5" aria-hidden="true">*</span>
                   </label>
-                  <div className="flex items-center gap-2">
+                  <Flex align="center" gap="2">
                     <span className="text-xs text-mission-control-text-dim">{planningNotes.length} chars</span>
                     <div className="relative">
                       <Button
@@ -711,8 +711,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
+                  </Flex>
+                </Flex>
                 <TextArea
                   id="task-planning-notes"
                   value={planningNotes}
@@ -732,7 +732,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 <span className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                   <Flag size={14} /> Priority
                 </span>
-                <div className="flex gap-2">
+                <Flex gap="2">
                   <Button
                     type="button"
                     onClick={() => setPriority('')}
@@ -758,7 +758,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                       {p.icon}
                     </Button>
                   ))}
-                </div>
+                </Flex>
               </div>
 
               {/* Due Date */}
@@ -766,7 +766,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 <span className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                   <Calendar size={14} /> Due Date
                 </span>
-                <div className="flex gap-2">
+                <Flex gap="2">
                   <TextField.Root
                     id="task-due-date"
                     type="datetime-local"
@@ -788,7 +788,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                       {l}
                     </Button>
                   ))}
-                </div>
+                </Flex>
               </div>
 
               {/* Schedule for */}
@@ -874,15 +874,15 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                           disabled={isDisabled}
                           className="p-2 text-left flex flex-col gap-1 h-auto"
                         >
-                          <div className="flex items-center gap-2">
+                          <Flex align="center" gap="2">
                             <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
                             <span className="truncate text-xs font-medium">{agent.name}</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-[10px] text-mission-control-text-dim">
+                          </Flex>
+                          <Flex align="center" gap="1" className="text-[10px] text-mission-control-text-dim">
                             <span>{activeTaskCount} task{activeTaskCount !== 1 ? 's' : ''}</span>
                             {isBusy && <span className="text-warning">(busy)</span>}
                             {isDisabled && <span className="text-error">(offline)</span>}
-                          </div>
+                          </Flex>
                           {activeTaskCount > 0 && (
                             <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
                               <div
@@ -967,9 +967,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   {selectedFiles.length > 0 && (
                     <div className="space-y-1">
                       {selectedFiles.map((file, index) => (
-                        <div
+                        <Flex
                           key={`${file.name}-${index}`}
-                          className="flex items-center justify-between gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm"
+                          align="center"
+                          justify="between"
+                          gap="2"
+                          className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm"
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <Upload size={14} className="flex-shrink-0 text-mission-control-text-dim" />
@@ -988,7 +991,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                           >
                             <X size={14} />
                           </IconButton>
-                        </div>
+                        </Flex>
                       ))}
                     </div>
                   )}
@@ -1073,7 +1076,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               </div>
 
               {/* Submit */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-mission-control-border">
+              <Flex justify="end" gap="3" className="pt-4 border-t border-mission-control-border">
                 <Button
                   type="button"
                   onClick={onClose}
@@ -1094,7 +1097,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   {assignedTo && <span className="text-xs opacity-75">& Assign</span>}
                   <kbd className="px-1.5 py-0.5 bg-mission-control-text/20 rounded text-xs">⌘S</kbd>
                 </Button>
-              </div>
+              </Flex>
             </form>
           )}
         </BaseModalBody>

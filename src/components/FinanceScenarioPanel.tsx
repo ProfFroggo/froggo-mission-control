@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { Calculator, TrendingUp, TrendingDown, Plus, Trash2, Play, Save, Loader2 } from 'lucide-react';
-import { Button, IconButton, TextField, Select, TextArea, Box } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField, Select, TextArea, Box } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { financeApi } from '../lib/api';
 
@@ -122,10 +122,10 @@ function QuickProjectionTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 gap-2 text-mission-control-text-dim">
+      <Flex align="center" justify="center" gap="2" className="py-12 text-mission-control-text-dim">
         <Loader2 className="w-5 h-5 animate-spin" />
         <span className="text-sm">Loading recurring items...</span>
-      </div>
+      </Flex>
     );
   }
 
@@ -416,11 +416,11 @@ function ScenarioBuilderTab() {
   return (
     <div className="space-y-4">
       {/* Header row */}
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <span className="text-sm text-mission-control-text-dim">
           {scenarios.length} scenario{scenarios.length !== 1 ? 's' : ''}
         </span>
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           {comparedIds.length >= 2 && (
             <Button
               onClick={() => setCompareMode((v) => !v)}
@@ -435,13 +435,13 @@ function ScenarioBuilderTab() {
             onClick={() => setShowForm(true)}
             size="2"
             variant="soft"
-           
+
             aria-label="New scenario"
           >
             <Plus className="w-4 h-4" /> New Scenario
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Comparison chart */}
       {compareMode && comparisonChartData.length > 0 && (
@@ -488,10 +488,10 @@ function ScenarioBuilderTab() {
 
       {/* Scenario list */}
       {loadingScenarios ? (
-        <div className="flex items-center justify-center py-8 gap-2 text-mission-control-text-dim">
+        <Flex align="center" justify="center" gap="2" className="py-8 text-mission-control-text-dim">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm">Loading scenarios...</span>
-        </div>
+        </Flex>
       ) : scenarios.length === 0 && !showForm ? (
         <div className="text-center py-10 text-mission-control-text-dim">
           <TrendingUp className="w-10 h-10 mx-auto mb-2" />
@@ -505,7 +505,7 @@ function ScenarioBuilderTab() {
             const color = SCENARIO_COLORS[idx % SCENARIO_COLORS.length];
             return (
               <div key={scenario.id} className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-                <div className="flex items-start justify-between gap-3 mb-3">
+                <Flex align="start" justify="between" gap="3" className="mb-3">
                   <div>
                     <h4 className="font-semibold text-mission-control-text">{scenario.name}</h4>
                     {scenario.description && (
@@ -534,7 +534,7 @@ function ScenarioBuilderTab() {
                       <Trash2 className="w-4 h-4" />
                     </IconButton>
                   </div>
-                </div>
+                </Flex>
 
                 {/* Projection chart */}
                 {months && months.length > 0 && (
@@ -575,32 +575,32 @@ function ScenarioBuilderTab() {
                               >
                                 <p className="font-semibold text-mission-control-text mb-2">Month {label}</p>
                                 <div className="space-y-1 text-mission-control-text-dim">
-                                  <div className="flex justify-between gap-4">
+                                  <Flex justify="between" gap="4">
                                     <span>Income</span>
                                     <span className="text-success">{formatCurrency(d.income)}</span>
-                                  </div>
-                                  <div className="flex justify-between gap-4">
+                                  </Flex>
+                                  <Flex justify="between" gap="4">
                                     <span>Expenses</span>
                                     <span className="text-error">{formatCurrency(d.expenses)}</span>
-                                  </div>
+                                  </Flex>
                                   {d.oneTime !== 0 && (
-                                    <div className="flex justify-between gap-4">
+                                    <Flex justify="between" gap="4">
                                       <span>One-time</span>
                                       <span>{formatCurrency(d.oneTime)}</span>
-                                    </div>
+                                    </Flex>
                                   )}
-                                  <div className="flex justify-between gap-4 border-t border-mission-control-border pt-1 mt-1">
+                                  <Flex justify="between" gap="4" className="border-t border-mission-control-border pt-1 mt-1">
                                     <span className="font-medium text-mission-control-text">Net</span>
                                     <span className={d.net >= 0 ? 'text-success' : 'text-error'}>
                                       {formatCurrency(d.net)}
                                     </span>
-                                  </div>
-                                  <div className="flex justify-between gap-4">
+                                  </Flex>
+                                  <Flex justify="between" gap="4">
                                     <span className="font-medium text-mission-control-text">Balance</span>
                                     <span className={d.runningBalance >= 0 ? 'text-success' : 'text-error'}>
                                       {formatCurrency(d.runningBalance)}
                                     </span>
-                                  </div>
+                                  </Flex>
                                 </div>
                               </div>
                             );
@@ -689,7 +689,7 @@ function ScenarioBuilderTab() {
 
           {/* Income adjustments */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <Flex align="center" justify="between" className="mb-2">
               <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
                 Income adjustments
               </span>
@@ -702,13 +702,13 @@ function ScenarioBuilderTab() {
                 }
                 size="1"
                 variant="ghost"
-               
+
               >
                 <Plus className="w-3 h-3" /> Add
               </Button>
-            </div>
+            </Flex>
             {form.incomeRows.map((row, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
+              <Flex key={i} align="center" gap="2" className="mb-2">
                 <TextField.Root
                   value={row.label}
                   onChange={(e) =>
@@ -751,13 +751,13 @@ function ScenarioBuilderTab() {
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </IconButton>
-              </div>
+              </Flex>
             ))}
           </div>
 
           {/* Expense adjustments */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <Flex align="center" justify="between" className="mb-2">
               <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
                 Expense adjustments
               </span>
@@ -770,13 +770,13 @@ function ScenarioBuilderTab() {
                 }
                 size="1"
                 variant="ghost"
-               
+
               >
                 <Plus className="w-3 h-3" /> Add
               </Button>
-            </div>
+            </Flex>
             {form.expenseRows.map((row, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
+              <Flex key={i} align="center" gap="2" className="mb-2">
                 <TextField.Root
                   value={row.category}
                   onChange={(e) =>
@@ -819,13 +819,13 @@ function ScenarioBuilderTab() {
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </IconButton>
-              </div>
+              </Flex>
             ))}
           </div>
 
           {/* One-time events */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <Flex align="center" justify="between" className="mb-2">
               <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
                 One-time events
               </span>
@@ -838,13 +838,13 @@ function ScenarioBuilderTab() {
                 }
                 size="1"
                 variant="ghost"
-               
+
               >
                 <Plus className="w-3 h-3" /> Add
               </Button>
-            </div>
+            </Flex>
             {form.eventRows.map((row, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
+              <Flex key={i} align="center" gap="2" className="mb-2">
                 <TextField.Root
                   value={row.label}
                   onChange={(e) =>
@@ -900,12 +900,12 @@ function ScenarioBuilderTab() {
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </IconButton>
-              </div>
+              </Flex>
             ))}
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-2">
+          <Flex align="center" gap="2" className="pt-2">
             <Button
               onClick={saveAndProject}
               disabled={saving || projecting}
@@ -927,7 +927,7 @@ function ScenarioBuilderTab() {
             >
               Cancel
             </Button>
-          </div>
+          </Flex>
         </div>
       )}
     </div>
@@ -949,7 +949,7 @@ export default function FinanceScenarioPanel() {
   return (
     <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
       {/* Tab strip */}
-      <div className="flex gap-1 border-b border-mission-control-border mb-4">
+      <Flex gap="1" className="border-b border-mission-control-border mb-4">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -965,7 +965,7 @@ export default function FinanceScenarioPanel() {
             {label}
           </button>
         ))}
-      </div>
+      </Flex>
 
       {/* Tab content */}
       {activeTab === 'quick' ? <QuickProjectionTab /> : <ScenarioBuilderTab />}
