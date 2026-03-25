@@ -200,12 +200,15 @@ function FileDropZone({ invoiceId, onUpload, onExtracted, existingFile, onRemove
 
   return (
     <div>
-      <div
+      <Flex
+        align="center"
+        justify="center"
+        gap="2"
         onClick={() => inputRef.current?.click()}
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) processFile(f); }}
-        className={`flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-lg cursor-pointer transition-all text-xs ${
+        className={`p-3 border-2 border-dashed rounded-lg cursor-pointer transition-all text-xs ${
           dragging
             ? 'border-mission-control-accent bg-mission-control-accent/10'
             : 'border-mission-control-border/60 hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5'
@@ -216,7 +219,7 @@ function FileDropZone({ invoiceId, onUpload, onExtracted, existingFile, onRemove
         ) : (
           <><Upload size={13} className="text-mission-control-text-dim" /><Sparkles size={11} className="text-warning" /><span className="text-mission-control-text-dim">Drop PDF/image or click — AI auto-fills fields</span></>
         )}
-      </div>
+      </Flex>
       {status && (
         <div className={`mt-1 text-[10px] px-2 py-1 rounded ${
           status.type === 'success' ? 'bg-success/10 text-success' : status.type === 'error' ? 'bg-error/10 text-error' : 'bg-info/10 text-info'

@@ -4,7 +4,7 @@
 // historical spend chart, and total monthly spend.
 
 import { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton, Badge, Heading, Select, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Heading, Select, TextField, Flex } from '@radix-ui/themes';
 import {
   DollarSign,
   TrendingUp,
@@ -184,7 +184,7 @@ function BudgetCard({
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 flex flex-col gap-3">
       {/* Header */}
-      <div className="flex items-start justify-between gap-2">
+      <Flex align="start" justify="between" gap="2">
         <div className="min-w-0">
           <div className="font-semibold text-sm truncate">{budget.name}</div>
           <div className="text-xs text-mission-control-text-dim">
@@ -210,10 +210,10 @@ function BudgetCard({
             <Trash2 size={14} />
           </IconButton>
         </div>
-      </div>
+      </Flex>
 
       {/* Ring + spend */}
-      <div className="flex items-center gap-4">
+      <Flex align="center" gap="4">
         <CircularProgress pct={pct} status={budget.status} />
         <div className="flex flex-col gap-1">
           <div className="text-2xl font-bold tabular-nums">
@@ -224,7 +224,7 @@ function BudgetCard({
           </div>
           <div className="text-xs text-mission-control-text-dim">{periodLabel}</div>
         </div>
-      </div>
+      </Flex>
 
       {/* Alert threshold */}
       <div className="text-xs text-mission-control-text-dim flex items-center gap-1">
@@ -311,7 +311,7 @@ function AddBudgetForm({
       onSubmit={handleSubmit}
       className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 flex flex-col gap-3"
     >
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <span className="font-semibold text-sm flex items-center gap-2">
           <PiggyBank size={16} className="text-mission-control-accent" />
           New Budget
@@ -319,13 +319,13 @@ function AddBudgetForm({
         <IconButton type="button" variant="ghost" size="1" onClick={onCancel} aria-label="Cancel">
           <X size={16} />
         </IconButton>
-      </div>
+      </Flex>
 
       {error && (
-        <div className="flex items-center gap-2 text-xs text-error bg-error-subtle border border-error-border rounded-lg px-3 py-2">
+        <Flex align="center" gap="2" className="text-xs text-error bg-error-subtle border border-error-border rounded-lg px-3 py-2">
           <AlertTriangle size={12} />
           {error}
-        </div>
+        </Flex>
       )}
 
       <div className="grid grid-cols-2 gap-3">
@@ -404,12 +404,12 @@ function AddBudgetForm({
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
+      <Flex justify="end" gap="2">
         <Button type="button" variant="ghost" size="2" onClick={onCancel}>Cancel</Button>
         <Button type="submit" size="2" disabled={saving}>
           {saving ? 'Creating…' : (<><Plus size={14} /> Create Budget</>)}
         </Button>
-      </div>
+      </Flex>
     </form>
   );
 }
@@ -474,16 +474,16 @@ export default function BudgetDashboard() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between">
+        <Flex align="center" gap="2">
           <PiggyBank size={18} className="text-mission-control-accent" />
           <Heading size="3" weight="medium">Cost Budgets</Heading>
-        </div>
+        </Flex>
         <Button type="button" size="1" onClick={() => setShowForm(s => !s)}>
           <Plus size={14} />
           Add Budget
         </Button>
-      </div>
+      </Flex>
 
       {/* Total spend this month */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 flex items-center gap-3">
@@ -506,9 +506,11 @@ export default function BudgetDashboard() {
       {alerts.length > 0 && (
         <div className="flex flex-col gap-2">
           {alerts.map(b => (
-            <div
+            <Flex
               key={b.id}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border ${
+              align="center"
+              gap="2"
+              className={`px-3 py-2 rounded-lg text-xs font-medium border ${
                 b.status === 'exceeded'
                   ? 'bg-error-subtle border-error-border text-error'
                   : 'bg-warning-subtle border-warning-border text-warning'
@@ -521,7 +523,7 @@ export default function BudgetDashboard() {
                 ${b.currentUsd.toFixed(4)} / ${b.limitUsd.toFixed(2)} (
                 {b.limitUsd > 0 ? Math.round((b.currentUsd / b.limitUsd) * 100) : 0}%)
               </span>
-            </div>
+            </Flex>
           ))}
         </div>
       )}
