@@ -188,7 +188,7 @@ export function XResearchView() {
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center justify-between mb-4">
+        <Flex align="center" justify="between" className="mb-4">
           <div>
             <h1 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
               <Search size={20} className="text-mission-control-accent" />
@@ -207,10 +207,10 @@ export function XResearchView() {
             <Save size={16} />
             {showLibrary ? 'Back to Results' : `Library (${savedItems.length})`}
           </Button>
-        </div>
+        </Flex>
 
         {/* Search Input */}
-        <div className="flex gap-2">
+        <Flex gap="2">
           <div className="flex-1">
             <TextField.Root
               value={query}
@@ -233,7 +233,7 @@ export function XResearchView() {
           >
             {loading ? <><Spinner size="1" /> Searching...</> : <><Send size={16} /> Start Research</>}
           </Button>
-        </div>
+        </Flex>
       </div>
 
       {/* Content */}
@@ -255,14 +255,14 @@ export function XResearchView() {
                     key={saved.id}
                     className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4"
                   >
-                    <div className="flex items-center justify-between mb-3">
+                    <Flex align="center" justify="between" className="mb-3">
                       <div>
                         <div className="font-medium text-mission-control-text">{saved.query}</div>
                         <div className="text-sm text-mission-control-text-dim">
                           {saved.results.length} items • Saved {new Date(saved.savedAt).toLocaleDateString()}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <IconButton
                           onClick={() => loadSavedResults(saved)}
                           variant="ghost"
@@ -281,8 +281,8 @@ export function XResearchView() {
                         >
                           <Trash2 size={16} />
                         </IconButton>
-                      </div>
-                    </div>
+                      </Flex>
+                    </Flex>
                     <div className="flex flex-wrap gap-2">
                       {saved.results.slice(0, 5).map((r) => (
                         <span
@@ -331,7 +331,7 @@ export function XResearchView() {
           <div className="space-y-4">
             {/* Selection Actions */}
             {selectedIds.size > 0 && (
-              <div className="flex items-center justify-between bg-mission-control-surface border border-mission-control-accent/50 rounded-lg p-3">
+              <Flex align="center" justify="between" className="bg-mission-control-surface border border-mission-control-accent/50 rounded-lg p-3">
                 <span className="text-sm text-mission-control-text">
                   <Check size={16} className="inline mr-1" />
                   {selectedIds.size} selected
@@ -345,7 +345,7 @@ export function XResearchView() {
                   <Save size={16} />
                   Save to Library
                 </Button>
-              </div>
+              </Flex>
             )}
 
             {/* Results Grid */}
@@ -363,7 +363,7 @@ export function XResearchView() {
                   onClick={() => toggleSelection(result.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSelection(result.id); }}
                 >
-                  <div className="flex items-start gap-3">
+                  <Flex align="start" gap="3">
                     {/* Selection Checkbox */}
                     <div className={`shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                       selectedIds.has(result.id)
@@ -376,7 +376,7 @@ export function XResearchView() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       {/* Type Badge */}
-                      <div className="flex items-center gap-2 mb-2">
+                      <Flex align="center" gap="2" className="mb-2">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                           result.type === 'tweet' ? 'bg-info-subtle text-info' :
                           result.type === 'thread' ? 'bg-success-subtle text-success' :
@@ -388,7 +388,7 @@ export function XResearchView() {
                         {result.username && (
                           <span className="text-sm text-mission-control-text-dim">{result.username}</span>
                         )}
-                      </div>
+                      </Flex>
 
                       {/* Tweet Content */}
                       {result.content && (
@@ -399,7 +399,7 @@ export function XResearchView() {
 
                       {/* Metrics */}
                       {(result.likes || result.retweets || result.replies || result.followers) && (
-                        <div className="flex items-center gap-4 text-xs text-mission-control-text-dim">
+                        <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim">
                           {result.followers !== undefined && (
                             <span className="flex items-center gap-1">
                               <User size={12} />
@@ -418,27 +418,27 @@ export function XResearchView() {
                           {result.impressions !== undefined && (
                             <span>{formatNumber(result.impressions)} views</span>
                           )}
-                        </div>
+                        </Flex>
                       )}
 
                       {/* Topic/Thread Count */}
                       {(result.tweetCount || result.engagement) && (
-                        <div className="flex items-center gap-4 text-xs text-mission-control-text-dim mt-2">
+                        <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim mt-2">
                           {result.tweetCount !== undefined && (
                             <span>{result.tweetCount.toLocaleString()} tweets</span>
                           )}
                           {result.engagement !== undefined && (
                             <span>{result.engagement}% engagement</span>
                           )}
-                        </div>
+                        </Flex>
                       )}
 
                       {/* Date & Link & Save as Idea */}
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-mission-control-border">
+                      <Flex align="center" justify="between" className="mt-3 pt-3 border-t border-mission-control-border">
                         <span className="text-xs text-mission-control-text-dim">
                           {result.date && new Date(result.date).toLocaleDateString()}
                         </span>
-                        <div className="flex items-center gap-2">
+                        <Flex align="center" gap="2">
                           <Button
                             onClick={(e) => { e.stopPropagation(); saveAsIdea(result); }}
                             variant="ghost"
@@ -460,10 +460,10 @@ export function XResearchView() {
                               View on X <ExternalLink size={10} />
                             </a>
                           )}
-                        </div>
-                      </div>
+                        </Flex>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               ))}
             </div>
