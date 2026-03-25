@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Send, Loader2, Check, CheckCircle, XCircle, Circle, Sparkles, GraduationCap } from 'lucide-react';
-import { Button, IconButton, TextField, Spinner } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextField, Spinner } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
 import { catalogApi } from '../lib/api';
@@ -503,7 +503,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
       <div className={`relative w-full max-w-lg bg-mission-control-bg border border-mission-control-accent/30 rounded-xl shadow-2xl shadow-mission-control-accent/10 flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
 
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3" className="p-4 border-b border-mission-control-border">
           <div className="w-10 h-10 rounded-full bg-mission-control-accent/20 flex items-center justify-center text-mission-control-accent">
             <GraduationCap size={22} />
           </div>
@@ -518,13 +518,13 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
           <IconButton onClick={handleClose} variant="ghost" color="gray" size="2">
             <X size={18} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Creating stage */}
         {stage === 'creating' && pendingConfig && (
           <div className="flex-1 overflow-y-auto p-4 min-h-[300px]">
             {/* Agent card */}
-            <div className="flex items-center gap-3 mb-4">
+            <Flex align="center" gap="3" className="mb-4">
               <div className="w-12 h-12 rounded-full overflow-hidden border border-mission-control-accent/40 flex items-center justify-center bg-mission-control-accent/20 flex-shrink-0">
                 {generatedAvatarPng ? (
                   <img src={`data:image/webp;base64,${generatedAvatarPng}`} alt={pendingConfig.name} className="w-full h-full object-cover" />
@@ -538,15 +538,15 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
               </div>
               {!creationDone && !creationError && <Loader2 size={16} className="ml-auto text-mission-control-accent animate-spin" />}
               {creationDone && <Sparkles size={18} className="ml-auto text-mission-control-accent" />}
-            </div>
+            </Flex>
 
             {/* Progress bar */}
             {totalSteps > 0 && (
               <div className="mb-4">
-                <div className="flex justify-between text-xs text-mission-control-text-dim mb-1">
+                <Flex justify="between" className="text-xs text-mission-control-text-dim mb-1">
                   <span>{doneCount}/{totalSteps} steps</span>
                   <span>{progressPct}%</span>
-                </div>
+                </Flex>
                 <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${creationError ? 'bg-error' : 'bg-mission-control-accent'}`}
@@ -619,7 +619,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
         {stage === 'chat' && (
           <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px]">
             {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <Flex key={i} justify={msg.role === 'user' ? 'end' : 'start'}>
                 {msg.role === 'hr' && (
                   <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5 text-mission-control-accent">
                     <GraduationCap size={14} />
@@ -636,22 +636,22 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                       : <span key={j}>{part}</span>
                   )}
                 </div>
-              </div>
+              </Flex>
             ))}
 
             {/* Pending config — confirm/edit prompt */}
             {pendingConfig && !isTyping && (
               <div className="mt-2 p-3 bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg space-y-2">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <span className="text-xl">{pendingConfig.emoji}</span>
                   <span className="font-semibold text-mission-control-accent">{pendingConfig.name}</span>
                   <span className="text-xs text-mission-control-text-dim">· {pendingConfig.role}</span>
-                </div>
+                </Flex>
                 <div className="text-xs text-mission-control-text-dim space-y-0.5">
                   <div>Skills: {pendingConfig.capabilities.slice(0, 4).join(', ')}{pendingConfig.capabilities.length > 4 ? '...' : ''}</div>
                   <div>Trust tier: {inferTrustTier(pendingConfig.role)}</div>
                 </div>
-                <div className="flex gap-2 mt-2">
+                <Flex gap="2" className="mt-2">
                   <Button
                     onClick={() => startCreation(pendingConfig)}
                     variant="solid"
@@ -669,23 +669,23 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                   >
                     Edit
                   </Button>
-                </div>
+                </Flex>
               </div>
             )}
 
             {isTyping && (
-              <div className="flex justify-start">
+              <Flex justify="start">
                 <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 flex items-center justify-center mr-2 text-mission-control-accent">
                   <GraduationCap size={14} />
                 </div>
                 <div className="bg-mission-control-surface px-4 py-3 rounded-lg">
-                  <div className="flex gap-1">
+                  <Flex gap="1">
                     <span className="w-2 h-2 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-2 h-2 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="w-2 h-2 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
+                  </Flex>
                 </div>
-              </div>
+              </Flex>
             )}
             <div ref={messagesEndRef} />
           </div>
@@ -698,17 +698,17 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
               <Check size={16} /> Done — View Agents
             </Button>
           ) : stage === 'creating' && creationError ? (
-            <div className="flex gap-2">
+            <Flex gap="2">
               <Button onClick={() => { setStage('chat'); setCreationSteps([]); setCreationError(null); }} variant="soft" color="gray" size="2" className="flex-1">Back</Button>
               <Button onClick={() => pendingConfig && startCreation(pendingConfig)} variant="solid" color="grass" size="2" className="flex-1">Retry</Button>
-            </div>
+            </Flex>
           ) : stage === 'creating' ? (
-            <div className="flex items-center justify-center gap-2 py-2 text-sm text-mission-control-text-dim">
+            <Flex align="center" justify="center" gap="2" className="py-2 text-sm text-mission-control-text-dim">
               <Spinner size="1" />
               Launching {pendingConfig?.name}...
-            </div>
+            </Flex>
           ) : pendingConfig ? null : (
-            <div className="flex gap-2">
+            <Flex gap="2">
               <TextField.Root
                 size="2"
                 className="flex-1"
@@ -723,7 +723,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
               <IconButton onClick={handleSend} disabled={!input.trim() || isTyping} variant="solid" color="grass" size="2">
                 {isTyping ? <Spinner size="1" /> : <Send size={18} />}
               </IconButton>
-            </div>
+            </Flex>
           )}
         </div>
       </div>
