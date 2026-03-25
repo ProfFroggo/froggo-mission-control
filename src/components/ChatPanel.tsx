@@ -1084,49 +1084,18 @@ export default function ChatPanel() {
             const evt = JSON.parse(raw);
 
             if (evt.type === 'heartbeat') {
-              // Still-working pulse — show in the message bubble while waiting.
-              // subtle:true from server → render with lighter styling (smaller, muted)
-              const pulse = evt.text || 'Still working…';
-              const isSubtle = !!evt.subtle;
-              setMessages(prev => prev.map(m =>
-                m.id === assistantId ? { ...m, content: pulse, status: 'thinking', subtle: isSubtle } : m
-              ));
-            } else if (evt.type === 'tool_use' && evt.name) {
-              // Tool execution started — update status strip
-              setCurrentTool(evt.name as string);
-            } else if (evt.type === 'thinking_block' && typeof evt.thinking === 'string') {
-              // Extended thinking block from Claude — prepend to message content as thinking block
-              thinkingContent = evt.thinking;
-              // Build structured content: thinking block + text (text added as text_deltas arrive)
-              structuredContent = [
-                { type: 'thinking', thinking: thinkingContent } as ContentBlock,
-                ...(accumulated ? [{ type: 'text', text: accumulated } as ContentBlock] : []),
-              ];
-              setMessages(prev => prev.map(m =>
-                m.id === assistantId ? { ...m, content: structuredContent! } : m
-              ));
-            } else if (evt.type === 'tool_result') {
-              // Tool finished — clear active tool
-              setCurrentTool(null);
+              // Heartbeat — agent is alive; don't alter message content, let loading state speak
+            } else if (evt.type === 'tool_use' || evt.type === 'tool_result') {
+              // Tool lifecycle — no visual indicator needed
+            } else if (evt.type === 'thinking_block') {
+              // Thinking content — not shown in UI
             } else if (evt.type === 'text_delta' && typeof evt.text === 'string') {
-              // SDK chat route: true character-by-character text_delta events
+              // Text streaming in
               accumulated += evt.text;
-              setCurrentTool(null); // Text flowing in means no active tool
-              if (thinkingContent) {
-                // Keep thinking block + update text block together
-                structuredContent = [
-                  { type: 'thinking', thinking: thinkingContent } as ContentBlock,
-                  { type: 'text', text: accumulated } as ContentBlock,
-                ];
-                setMessages(prev => prev.map(m =>
-                  m.id === assistantId ? { ...m, content: structuredContent!, status: undefined } : m
-                ));
-              } else {
-                structuredContent = null;
-                setMessages(prev => prev.map(m =>
-                  m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
-                ));
-              }
+              structuredContent = null;
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
+              ));
               // Re-enable input once text starts arriving
               setLoading(false);
             } else if (evt.type === 'error') {
@@ -1513,14 +1482,6 @@ export default function ChatPanel() {
 
               {/* Agent status pill */}
               {(() => {
-                if (loading && currentTool) {
-                  return (
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20 select-none flex-shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-info)] animate-pulse flex-shrink-0" />
-                      Using {currentTool}...
-                    </span>
-                  );
-                }
                 if (loading) {
                   return (
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 select-none flex-shrink-0">
@@ -1750,13 +1711,6 @@ export default function ChatPanel() {
           </div>
 
 
-          {/* Tool execution status strip — only visible when a tool is actively running */}
-          {currentTool && !isVoiceMode && (
-            <div className="flex items-center gap-2 px-4 py-1.5 text-[11px] text-mission-control-text-dim border-t border-mission-control-border/40 shrink-0 select-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-info)] animate-pulse flex-shrink-0" aria-hidden="true" />
-              <span>Using: {currentTool}</span>
-            </div>
-          )}
 
           {/* Escalation / human-review banner — shown when agent signals it needs human attention */}
           {!isVoiceMode && activeEscalations.length > 0 && (

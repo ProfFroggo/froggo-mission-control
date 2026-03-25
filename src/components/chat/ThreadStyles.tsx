@@ -176,6 +176,9 @@ function ensureCSS() {
     .aui-stop-btn:hover {
       background: color-mix(in srgb, var(--color-error) 20%, transparent);
     }
+    .aui-scroll-to-bottom:disabled {
+      display: none;
+    }
     .aui-scroll-to-bottom {
       position: absolute;
       bottom: 16px;
