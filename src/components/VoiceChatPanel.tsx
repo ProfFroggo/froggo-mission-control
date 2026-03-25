@@ -579,10 +579,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       )}
       
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-mission-control-surface border-b border-mission-control-border">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="px-6 py-4 bg-mission-control-surface border-b border-mission-control-border">
+        <Flex align="center" gap="3">
           {embedded ? (
-            <div className="flex items-center gap-3">
+            <Flex align="center" gap="3">
               <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0 relative">
                 <AgentAvatar agentId={selectedAgent.id} size="sm" />
                 {speaking && <div className="absolute inset-0 rounded-full border-2 border-[var(--color-success)] animate-ping opacity-40" />}
@@ -591,9 +591,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                 <h1 className="text-xl font-semibold text-mission-control-text">{selectedAgent.name}</h1>
                 <p className="text-sm text-mission-control-text-dim">Gemini Live voice chat</p>
               </div>
-            </div>
+            </Flex>
           ) : (
-            <div className="flex items-center gap-3">
+            <Flex align="center" gap="3">
               <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
                 <Mic size={24} className="text-mission-control-accent" />
               </div>
@@ -601,11 +601,11 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                 <h1 className="text-xl font-semibold text-mission-control-text">Voice Chat</h1>
                 <p className="text-sm text-mission-control-text-dim">Real-time voice with Gemini Live</p>
               </div>
-            </div>
+            </Flex>
           )}
-          
+
           {callActive && (
-            <div className="flex items-center gap-2 ml-2">
+            <Flex align="center" gap="2" className="ml-2">
               <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <span className="text-xs text-success">Gemini Live</span>
               {agentContext && agentContext.tasks.length > 0 && (
@@ -614,11 +614,11 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                 </span>
               )}
               {speaking && <Waveform level={speakLevel} color="var(--color-success)" bars={5} height={20} />}
-            </div>
+            </Flex>
           )}
-        </div>
-        
-        <div className="flex items-center gap-2">
+        </Flex>
+
+        <Flex align="center" gap="2">
           {onSwitchToText && (
             <IconButton
               variant="ghost"
@@ -665,8 +665,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           >
             <Trash2 size={16} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
       
       {/* Settings panel */}
       {showSettings && (
@@ -744,7 +744,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         )}
         
         {historyLoaded && messages.map(msg => (
-          <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <Flex key={msg.id} gap="2" justify={msg.role === 'user' ? 'end' : 'start'}>
             {msg.role === 'assistant' && (
               <div className="relative flex-shrink-0 mt-1">
                 <AgentAvatar agentId={selectedAgent.id} size="xs" />
@@ -774,7 +774,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                 <Mic size={12} className="text-mission-control-accent" />
               </div>
             )}
-          </div>
+          </Flex>
         ))}
         
         <div ref={messagesEndRef} />
@@ -802,16 +802,16 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         <div className="px-4 py-3 border-t border-mission-control-border bg-mission-control-surface/50">
           <div className="flex items-center justify-center h-12">
             {listening && !speaking && (
-              <div className="flex items-center gap-3">
+              <Flex align="center" gap="3">
                 <span className="text-xs text-mission-control-accent font-medium">⚡ Listening…</span>
                 <Waveform level={micLevel} color="var(--color-info)" bars={12} height={40} />
-              </div>
+              </Flex>
             )}
             {speaking && (
-              <div className="flex items-center gap-3">
+              <Flex align="center" gap="3">
                 <span className="text-xs text-success font-medium">{selectedAgent.name} speaking</span>
                 <Waveform level={speakLevel} color="var(--color-success)" bars={12} height={40} />
-              </div>
+              </Flex>
             )}
             {!listening && !speaking && <span className="text-xs text-mission-control-text-dim">Tap mic to speak</span>}
           </div>
@@ -821,7 +821,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       {/* Text input (during call) */}
       {callActive && (
         <div className="px-4 py-3 border-t border-mission-control-border">
-          <div className="flex gap-2">
+          <Flex gap="2">
             <TextField.Root
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
@@ -840,13 +840,13 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             >
               <Send size={20} />
             </IconButton>
-          </div>
+          </Flex>
         </div>
       )}
       
       {/* Call controls */}
       <div className="border-t border-mission-control-border p-4">
-        <div className="flex items-center justify-center gap-4">
+        <Flex align="center" justify="center" gap="4">
           {callActive && (
             <IconButton
               data-voice-meeting
@@ -903,8 +903,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               </IconButton>
             </>
           )}
-        </div>
-        
+        </Flex>
+
         {!callActive && !connecting && (
           <p className="text-center text-xs text-mission-control-text-dim mt-3">Press call to connect via Gemini Live</p>
         )}
