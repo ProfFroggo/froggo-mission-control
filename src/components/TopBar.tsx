@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Flex } from '@radix-ui/themes';
 import { Inbox, Loader, Wifi, WifiOff, Activity, Bell } from 'lucide-react';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
@@ -153,14 +154,14 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
         style={{ left: `${sidebarWidth}px` }}
       >
         {/* Left: Focus mode */}
-        <div className="no-drag flex items-center gap-2">
+        <Flex align="center" gap="2" className="no-drag">
           {focusMode && (
             <FocusModeIndicator mode={focusMode} onClick={() => setFocusSelectorOpen(true)} />
           )}
-        </div>
+        </Flex>
 
         {/* Right: Connection status + Counters */}
-        <div className="no-drag flex items-center gap-3">
+        <Flex align="center" gap="3" className="no-drag">
           {/* Notification Bell */}
           <button
             type="button"
@@ -271,7 +272,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
               <span className="tabular-nums">{status.inProgressTasks}</span>
             </span>
           )}
-        </div>
+        </Flex>
       </header>
 
       {/* Focus Mode Selector */}
