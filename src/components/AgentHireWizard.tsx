@@ -172,7 +172,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
             {/* Match result */}
             {query.trim() && (
-              <div className={`flex items-start gap-3 p-3 rounded-lg mb-4 border ${
+              <Flex align="start" gap="3" className={`p-3 rounded-lg mb-4 border ${
                 matchScore !== null && matchScore >= 50
                   ? 'bg-success-subtle border-success-border'
                   : 'bg-warning-subtle border-warning-border'
@@ -192,7 +192,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                     {agent.role || agent.description || 'Specialized AI agent'}
                   </p>
                 </div>
-              </div>
+              </Flex>
             )}
 
             <Button

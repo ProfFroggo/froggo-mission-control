@@ -13,7 +13,7 @@
 
 import { useState, useEffect } from 'react';
 import { Bot, CheckCircle, AlertTriangle, RefreshCw, X } from 'lucide-react';
-import { Button, IconButton, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, Spinner, Flex } from '@radix-ui/themes';
 import BaseModal, { BaseModalBody, BaseModalFooter } from './BaseModal';
 import IntegrationWizard from './IntegrationWizard';
 import { marketplaceApi } from '../lib/api';
@@ -123,7 +123,7 @@ export default function AgentInstallModal({
         ariaLabel={`Install agent: ${entry.name}`}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3" className="px-6 pt-6 pb-4 border-b border-mission-control-border">
           <div className="w-9 h-9 rounded-lg bg-[--accent-3] flex items-center justify-center flex-shrink-0">
             <Bot size={18} className="text-[--accent-11]" />
           </div>
@@ -134,7 +134,7 @@ export default function AgentInstallModal({
           <IconButton onClick={onCancel} variant="ghost" color="gray" size="2" aria-label="Cancel">
             <X size={16} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Body */}
         <BaseModalBody maxHeight="60vh">
@@ -219,10 +219,10 @@ export default function AgentInstallModal({
         ariaLabel="Agent installed"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3" className="px-6 pt-6 pb-4 border-b border-mission-control-border">
           <CheckCircle size={20} className="text-success flex-shrink-0" />
           <h2 className="text-base font-semibold text-mission-control-text">Agent Installed</h2>
-        </div>
+        </Flex>
 
         {/* Body */}
         <BaseModalBody>
@@ -267,10 +267,10 @@ export default function AgentInstallModal({
       ariaLabel="Installation failed"
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-mission-control-border">
+      <Flex align="center" gap="3" className="px-6 pt-6 pb-4 border-b border-mission-control-border">
         <AlertTriangle size={20} className="text-error flex-shrink-0" />
         <h2 className="text-base font-semibold text-mission-control-text">Installation Failed</h2>
-      </div>
+      </Flex>
 
       {/* Body */}
       <BaseModalBody>
