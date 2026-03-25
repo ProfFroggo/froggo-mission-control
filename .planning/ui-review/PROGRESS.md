@@ -14,12 +14,12 @@
 - [x] **002** `Screenshot 2026-03-24 at 23.05.23.png` — Communications panel clean: no green CTAs, proper violet accent, badges use 999 cap, token-based colors throughout
 - [x] **003** `Screenshot 2026-03-24 at 23.05.27.png` — Dashboard clean: header buttons use outline variant, Online badge uses semantic grass color (connected=success), Quick Actions use default violet accent
 - [x] **004** `Screenshot 2026-03-24 at 23.05.34.png` — Task Board empty state clean: New Task button uses default violet accent, empty state messages are contextual and action-oriented
-- [ ] **005** `Screenshot 2026-03-24 at 23.05.43.png`
-- [ ] **006** `Screenshot 2026-03-24 at 23.05.49.png`
-- [ ] **007** `Screenshot 2026-03-24 at 23.05.56.png`
-- [ ] **008** `Screenshot 2026-03-24 at 23.06.01.png`
-- [ ] **009** `Screenshot 2026-03-24 at 23.06.06.png`
-- [ ] **010** `Screenshot 2026-03-24 at 23.06.11.png`
+- [x] **005** `Screenshot 2026-03-24 at 23.05.43.png` — TaskDetail Subtasks tab: removed color="green" from Start Work IconButton and Move to Review Button → violet accent
+- [x] **006** `Screenshot 2026-03-24 at 23.05.49.png` — TaskDetail Planning tab: no additional green CTAs visible, Fork From This uses default violet accent
+- [x] **007** `Screenshot 2026-03-24 at 23.05.56.png` — TaskDetail Activity tab: no green CTAs visible
+- [x] **008** `Screenshot 2026-03-24 at 23.06.01.png` — TaskDetail Files tab: no green CTAs visible
+- [x] **009** `Screenshot 2026-03-24 at 23.06.06.png` — TaskDetail Review tab: Approve button retains green (semantic success), no other issues
+- [x] **010** `Screenshot 2026-03-24 at 23.06.11.png` — TaskDetail Chat tab: no green CTAs visible
 - [ ] **011** `Screenshot 2026-03-24 at 23.06.19.png`
 - [ ] **012** `Screenshot 2026-03-24 at 23.08.15.png`
 - [ ] **013** `Screenshot 2026-03-24 at 23.08.25.png`

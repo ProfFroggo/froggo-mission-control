@@ -931,7 +931,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="sm" />
                 <span className="text-xs font-medium truncate">{assignedAgent.name}</span>
                 {!isWorking && !['done', 'in-progress', 'internal-review', 'agent-review', 'review'].includes(task.status) && (
-                  <IconButton onClick={handleStart} variant="solid" color="green" size="1" title="Start Work" aria-label="Start Work">
+                  <IconButton onClick={handleStart} variant="solid" size="1" title="Start Work" aria-label="Start Work">
                     <Play size={11} />
                   </IconButton>
                 )}
@@ -1063,7 +1063,6 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     <Button
                       type="button"
                       onClick={() => updateTask(task.id, { status: 'agent-review' as any })}
-                      color="green"
                       size="1"
                       className="flex-shrink-0"
                     >
