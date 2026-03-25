@@ -40,7 +40,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
-import { Button, IconButton, Spinner as RadixSpinner, TextArea, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Spinner as RadixSpinner, TextArea, TextField } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 
 const MODULE_ICONS: Record<string, LucideIcon> = {
@@ -277,12 +277,12 @@ function ReviewModal({
         className="w-full max-w-md rounded-lg border border-mission-control-border bg-mission-control-bg p-6 shadow-xl"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-5">
+        <Flex align="center" justify="between" mb="5">
           <h3 className="font-semibold text-base">Write a Review</h3>
           <IconButton onClick={onClose} variant="ghost" color="gray" size="2" aria-label="Close">
             <X size={16} />
           </IconButton>
-        </div>
+        </Flex>
 
         <p className="text-sm text-mission-control-text-dim mb-4">
           Reviewing: <span className="text-mission-control-text font-medium">{module.name}</span>
@@ -291,20 +291,20 @@ function ReviewModal({
         {/* Existing reviews summary */}
         {existingReviews && existingReviews.reviewCount > 0 && (
           <div className="mb-4 p-3 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm">
-            <div className="flex items-center gap-2 mb-2">
+            <Flex align="center" gap="2" mb="2">
               <StarRating rating={existingReviews.averageRating ?? 0} size={14} />
               <span className="font-medium">{existingReviews.averageRating?.toFixed(1)}</span>
               <span className="text-mission-control-text-dim">
                 ({existingReviews.reviewCount} review{existingReviews.reviewCount !== 1 ? 's' : ''})
               </span>
-            </div>
+            </Flex>
             <div className="space-y-1.5 max-h-28 overflow-y-auto">
               {existingReviews.reviews.slice(0, 3).map(r => (
                 <div key={r.id} className="text-xs text-mission-control-text-dim border-t border-mission-control-border pt-1.5">
-                  <div className="flex items-center gap-1.5 mb-0.5">
+                  <Flex align="center" gap="2" mb="1">
                     <StarRating rating={r.rating} size={10} />
                     <span className="opacity-60">{formatRelativeTime(r.createdAt)}</span>
-                  </div>
+                  </Flex>
                   {r.review && <p className="line-clamp-2">{r.review}</p>}
                 </div>
               ))}
@@ -334,7 +334,7 @@ function ReviewModal({
             />
           </div>
 
-          <div className="flex gap-2 justify-end">
+          <Flex gap="2" justify="end">
             <Button type="button" onClick={onClose} variant="soft" color="gray" size="2">
               Cancel
             </Button>
@@ -347,7 +347,7 @@ function ReviewModal({
               {submitting ? <RadixSpinner size="1" /> : <CheckCircle2 size={13} />}
               Submit Review
             </Button>
-          </div>
+          </Flex>
         </form>
       </div>
     </div>
@@ -468,10 +468,10 @@ function ConfigurePanel({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border flex-shrink-0">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Settings size={16} className="text-mission-control-text-dim" />
             <h3 className="font-semibold text-sm">Configure {module.name}</h3>
-          </div>
+          </Flex>
           <IconButton onClick={onClose} variant="ghost" color="gray" size="2" aria-label="Close">
             <X size={15} />
           </IconButton>
@@ -533,11 +533,11 @@ function FeaturedCarousel({
 
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
+      <Flex align="center" justify="between" mb="3">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-mission-control-text-dim">
           Featured Modules
         </h3>
-        <div className="flex items-center gap-1">
+        <Flex align="center" gap="1">
           <IconButton
             type="button"
             disabled={offset === 0}
@@ -560,8 +560,8 @@ function FeaturedCarousel({
           >
             <ChevronRight size={14} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       <div style={{ overflow: 'hidden' }}>
         <div
@@ -580,7 +580,7 @@ function FeaturedCarousel({
                 className="rounded-lg border-2 border-mission-control-border p-4 flex flex-col gap-2 bg-mission-control-surface flex-shrink-0 hover:border-mission-control-accent/40 transition-colors"
               >
                 {/* Icon + badges */}
-                <div className="flex items-start justify-between">
+                <Flex align="start" justify="between">
                   <div className="w-10 h-10 rounded-lg bg-mission-control-bg flex items-center justify-center border border-mission-control-border text-mission-control-text-dim">
                     <Icon size={18} />
                   </div>
@@ -589,7 +589,7 @@ function FeaturedCarousel({
                       New
                     </span>
                   )}
-                </div>
+                </Flex>
 
                 {/* Name + description */}
                 <div>
@@ -599,24 +599,24 @@ function FeaturedCarousel({
 
                 {/* Rating */}
                 {reviewData && reviewData.reviewCount > 0 ? (
-                  <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+                  <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
                     <StarRating rating={reviewData.averageRating ?? 0} size={11} />
                     <span>{reviewData.averageRating?.toFixed(1)}</span>
                     <span>({reviewData.reviewCount})</span>
-                  </div>
+                  </Flex>
                 ) : (
-                  <div className="flex items-center gap-1 text-xs text-mission-control-text-dim">
+                  <Flex align="center" gap="1" className="text-xs text-mission-control-text-dim">
                     <Star size={11} className="text-mission-control-border" />
                     <span>No reviews yet</span>
-                  </div>
+                  </Flex>
                 )}
 
                 {/* CTA */}
                 {mod.installed ? (
-                  <div className="flex items-center gap-1 text-xs text-success mt-auto">
+                  <Flex align="center" gap="1" className="text-xs text-success mt-auto">
                     <CheckCircle2 size={12} />
                     Installed
-                  </div>
+                  </Flex>
                 ) : (
                   <Button
                     type="button"
@@ -878,7 +878,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
       )}
 
       {/* Search + installed/available toggle */}
-      <div className="flex items-center gap-2 mb-3">
+      <Flex align="center" gap="2" mb="3">
         <div className="relative flex-1">
           <TextField.Root
             size="2"
@@ -905,7 +905,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
             paddingX="px-0"
           />
         </div>
-      </div>
+      </Flex>
 
       {/* Category filter pills */}
       <div className="flex items-center gap-1.5 mb-5 flex-wrap">
@@ -959,7 +959,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                 }`}
               >
                 {/* Header */}
-                <div className="flex items-start gap-3 mb-3">
+                <Flex align="start" gap="3" mb="3">
                   <div className="relative flex-shrink-0">
                     <div className="w-11 h-11 rounded-lg bg-mission-control-bg flex items-center justify-center border border-mission-control-border text-mission-control-text-dim">
                       {(() => { const Icon = MODULE_ICONS[module.id] ?? Package; return <Icon size={20} />; })()}
@@ -995,12 +995,12 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                     </p>
                     {/* Star rating */}
                     {reviewData && reviewData.reviewCount > 0 && (
-                      <div className="flex items-center gap-1 mt-1">
+                      <Flex align="center" gap="1" mt="1">
                         <StarRating rating={reviewData.averageRating ?? 0} size={11} />
                         <span className="text-[11px] text-mission-control-text-dim">
                           {reviewData.averageRating?.toFixed(1)} ({reviewData.reviewCount})
                         </span>
-                      </div>
+                      </Flex>
                     )}
                   </div>
 
@@ -1033,7 +1033,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                       </IconButton>
                     )}
                   </div>
-                </div>
+                </Flex>
 
                 {/* Category badge + agent badge */}
                 <div className="flex flex-wrap gap-1.5 mb-3">
@@ -1094,10 +1094,10 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
 
                 {/* Dependencies warnings (not-installed modules) */}
                 {!module.installed && missingDeps.length > 0 && (
-                  <div className="flex items-center gap-1 text-[11px] text-warning mb-2">
+                  <Flex align="center" gap="1" mb="2" className="text-[11px] text-warning">
                     <AlertTriangle size={10} className="flex-shrink-0" />
                     <span>Missing agents: {missingDeps.join(', ')}</span>
-                  </div>
+                  </Flex>
                 )}
 
                 {/* Spacer pushes action to bottom */}
@@ -1106,12 +1106,12 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                 {/* Action area */}
                 <div className="pt-2 border-t border-mission-control-border">
                   {module.core ? (
-                    <div className="flex items-center gap-1.5 text-xs text-review">
+                    <Flex align="center" gap="2" className="text-xs text-review">
                       <Shield size={12} className="flex-shrink-0" />
                       <span>Core module — always active</span>
-                    </div>
+                    </Flex>
                   ) : module.installed ? (
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       {phase === 'installing' ? (
                         <div className="flex items-center gap-1.5 text-xs text-info flex-1">
                           <RadixSpinner size="1" />
@@ -1165,17 +1165,17 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                       >
                         <Trash2 size={10} /> Uninstall
                       </Button>
-                    </div>
+                    </Flex>
                   ) : phase === 'installing' ? (
-                    <div className="flex items-center gap-1.5 text-xs text-info">
+                    <Flex align="center" gap="2" className="text-xs text-info">
                       <RadixSpinner size="1" />
                       <span>Installing…</span>
-                    </div>
+                    </Flex>
                   ) : phase === 'error' ? (
-                    <div className="flex items-center gap-1.5 text-xs text-error">
+                    <Flex align="center" gap="2" className="text-xs text-error">
                       <XCircle size={12} className="flex-shrink-0" />
                       <span className="line-clamp-1">{installErr ?? 'Installation failed'}</span>
-                    </div>
+                    </Flex>
                   ) : (
                     <Button
                       type="button"
