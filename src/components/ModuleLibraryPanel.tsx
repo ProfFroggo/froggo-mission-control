@@ -396,7 +396,7 @@ function ConfigurePanel({
   function renderField(key: string, value: unknown) {
     if (typeof value === 'boolean') {
       return (
-        <div key={key} className="flex items-center justify-between py-2 border-b border-mission-control-border last:border-0">
+        <Flex align="center" justify="between" key={key} className="py-2 border-b border-mission-control-border last:border-0">
           <label className="text-sm font-medium">{key}</label>
           <button
             type="button"
@@ -413,12 +413,12 @@ function ConfigurePanel({
               }`}
             />
           </button>
-        </div>
+        </Flex>
       );
     }
     if (typeof value === 'number') {
       return (
-        <div key={key} className="flex items-center justify-between py-2 border-b border-mission-control-border last:border-0">
+        <Flex align="center" justify="between" key={key} className="py-2 border-b border-mission-control-border last:border-0">
           <label className="text-sm font-medium">{key}</label>
           <TextField.Root
             size="1"
@@ -427,7 +427,7 @@ function ConfigurePanel({
             value={String(value)}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(key, Number(e.target.value))}
           />
-        </div>
+        </Flex>
       );
     }
     if (Array.isArray(value)) {
