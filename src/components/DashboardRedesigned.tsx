@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, IconButton, Badge, Heading, Text } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Badge, Heading, Text } from '@radix-ui/themes';
 import { formatTimeAgo } from '../utils/formatting';
 import {
   Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff,
@@ -135,7 +135,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
         
         <div className="relative w-full px-8 py-8">
           {/* Greeting & Status Row */}
-          <div className="flex items-center justify-between mb-6">
+          <Flex align="center" justify="between" className="mb-6">
             <div className="space-y-2">
               <Heading size="8" weight="bold" className="bg-gradient-to-r from-mission-control-text via-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
                 {greeting}, Kevin
@@ -174,7 +174,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </div>
             </div>
-          </div>
+          </Flex>
 
           {/* Quick Action Pills - Large & Prominent */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -227,15 +227,15 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             )}
             
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
+              <Flex align="center" justify="between" className="mb-4">
                 <Inbox size={28} className={`${pendingApprovals.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'}`} />
                 {pendingApprovals.length > 0 && (
                   <span className="px-3 py-1 bg-danger text-white text-sm font-bold rounded-full animate-pulse shadow-lg tabular-nums">
                     {pendingApprovals.length}
                   </span>
                 )}
-              </div>
-              
+              </Flex>
+
               <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-danger)] bg-clip-text text-transparent">
                 {pendingApprovals.length}
               </div>
@@ -243,10 +243,10 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <div className="text-sm font-medium text-mission-control-text-dim mb-3">Pending Approvals</div>
               
               {pendingApprovals.length > 0 && (
-                <div className="flex items-center gap-2 text-xs text-warning font-medium">
+                <Flex align="center" gap="2" className="text-xs text-warning font-medium">
                   <Zap size={14} />
                   Action required
-                </div>
+                </Flex>
               )}
             </div>
           </button>
@@ -262,15 +262,15 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               } hover:scale-105`}
           >
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
+              <Flex align="center" justify="between" className="mb-4">
                 <ListTodo size={28} className={`${inProgressTasks.length > 0 ? 'text-info' : 'text-mission-control-text-dim'}`} />
                 {needsReview.length > 0 && (
                   <span className="px-2.5 py-0.5 bg-review text-review text-xs font-medium rounded-full">
                     {needsReview.length} review
                   </span>
                 )}
-              </div>
-              
+              </Flex>
+
               <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-info)] bg-clip-text text-transparent">
                 {inProgressTasks.length}
               </div>
@@ -300,15 +300,15 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               } hover:scale-105`}
           >
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
+              <Flex align="center" justify="between" className="mb-4">
                 <AlertTriangle size={28} className={`${urgentTasks.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'}`} />
                 {urgentTasks.length > 0 && (
                   <span className="px-2.5 py-0.5 bg-error text-error text-xs font-bold rounded-full">
                     P0
                   </span>
                 )}
-              </div>
-              
+              </Flex>
+
               <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-warning)] bg-clip-text text-transparent">
                 {urgentTasks.length + unassignedTasks.length}
               </div>
@@ -334,13 +334,13 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               } hover:scale-105`}
           >
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
+              <Flex align="center" justify="between" className="mb-4">
                 <Bot size={28} className={`${activeSubagents.length > 0 ? 'text-success' : 'text-mission-control-text-dim'}`} />
                 {activeSubagents.length > 0 && (
                   <span className="w-3 h-3 rounded-full bg-success animate-pulse shadow-lg shadow-green-400/50" />
                 )}
-              </div>
-              
+              </Flex>
+
               <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-success)] bg-clip-text text-transparent">
                 {totalAgentCount}
               </div>
@@ -405,7 +405,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                         tabIndex={0}
                         aria-label={`Task: ${task.title}, status: ${task.status}`}
                       >
-                        <div className="flex items-start gap-4">
+                        <Flex align="start" gap="4">
                           <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
                             task.status === 'review' ? 'bg-review shadow-lg shadow-purple-400/50' :
                             task.status === 'in-progress' ? 'bg-info animate-pulse shadow-lg shadow-blue-400/50' :
@@ -413,7 +413,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                           }`} />
                           
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-3 mb-1">
+                            <Flex align="start" justify="between" gap="3" className="mb-1">
                               <Text as="p" weight="medium" className="group-hover:text-mission-control-accent transition-colors">
                                 {task.title}
                               </Text>
@@ -425,9 +425,9 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                               >
                                 {task.status === 'in-progress' ? 'working' : task.status}
                               </Badge>
-                            </div>
-                            
-                            <div className="flex items-center gap-3 text-sm text-mission-control-text-dim">
+                            </Flex>
+
+                            <Flex align="center" gap="3" className="text-sm text-mission-control-text-dim">
                               {task.project && (
                                 <span className="flex items-center gap-1.5">
                                   <TrendingUp size={14} />
@@ -446,9 +446,9 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                                   {formatTimeAgo(task.updatedAt)}
                                 </span>
                               )}
-                            </div>
+                            </Flex>
                           </div>
-                        </div>
+                        </Flex>
                       </div>
                     );
                   })
@@ -489,27 +489,27 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             className="w-full p-6 flex items-center justify-between hover:bg-mission-control-bg/20 transition-all group"
             aria-expanded={showActivityStream}
           >
-            <div className="flex items-center gap-4">
+            <Flex align="center" gap="4">
               <div className="p-3 rounded-lg bg-gradient-to-br from-[var(--color-review)]/20 to-[var(--color-info)]/20 border border-review-border">
                 <Users size={24} className="text-review" />
               </div>
-              
+
               <div className="text-left">
                 <Heading size="4" weight="bold" mb="1">Activity Stream</Heading>
                 <Text size="2" color="gray">
                   {sessions.length} sessions • {totalAgentCount} agents • {activities.length} notifications
                 </Text>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
+            </Flex>
+
+            <Flex align="center" gap="3">
               <IconButton variant="ghost" size="2" onClick={(e) => { e.stopPropagation(); fetchSessions(); }} aria-label="Refresh">
                 <RefreshCw size={18} />
               </IconButton>
               <div className={`transform transition-transform duration-200 ${showActivityStream ? 'rotate-180' : ''}`}>
                 <ChevronDown size={24} className="text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
               </div>
-            </div>
+            </Flex>
           </button>
           
           {showActivityStream && (
@@ -601,7 +601,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
                 {/* Notifications */}
                 <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <Flex align="center" justify="between" className="mb-4">
                     <h4 className="text-sm font-semibold text-mission-control-text-dim uppercase tracking-wider flex items-center gap-2">
                       <Bell size={14} />
                       Notifications ({activities.length})
@@ -611,7 +611,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                         Clear all
                       </Button>
                     )}
-                  </div>
+                  </Flex>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {activities.length === 0 ? (
                       <div className="text-center py-8">
