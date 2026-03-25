@@ -127,7 +127,7 @@ export default function NewContentWidget() {
         )}
       </Flex>
 
-      <Box className="text-3xl font-bold mb-3 bg-gradient-to-br from-mission-control-text to-[var(--color-review)] bg-clip-text text-transparent">
+      <Box className="text-3xl font-bold mb-3 text-mission-control-text">
         {totalNew} New
       </Box>
 

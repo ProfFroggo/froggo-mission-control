@@ -75,7 +75,7 @@ function HeaderBar({
   return (
     <Flex align="center" justify="between" px="4" py="4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
+        <h1 className="text-2xl font-bold tracking-tight text-mission-control-text">
           {greeting}
         </h1>
         <p className="text-sm text-mission-control-text-dim mt-0.5">{dateStr}</p>

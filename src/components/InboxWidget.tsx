@@ -76,7 +76,7 @@ export default function InboxWidget() {
         )}
       </Flex>
 
-      <div className="text-5xl font-bold tabular-nums mb-2 bg-gradient-to-br from-mission-control-text to-info bg-clip-text text-transparent">
+      <div className="text-5xl font-bold tabular-nums mb-2 text-[var(--color-info)]">
         {unreadCount}
       </div>
 

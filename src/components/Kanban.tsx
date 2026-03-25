@@ -1876,8 +1876,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         isSelected
           ? 'border-mission-control-accent bg-mission-control-accent/5 shadow-[0_0_0_1px_var(--mc-accent)]'
           : task.status === 'in-progress'
-          ? 'border-success/60 bg-success-subtle shadow-[0_0_0_1px_rgba(34,197,94,0.2)]'
-          /* TODO: move to CSS token when design system tokens include status colors */
+          ? 'border-success/60 bg-success-subtle shadow-[0_0_0_1px_var(--color-success-border)]'
           : activityIndicator ? activityIndicator.color
           : dueInfo?.isOverdue ? 'border-error-border bg-error-subtle'
           : task.priority === 'p0' ? 'border-error-border'

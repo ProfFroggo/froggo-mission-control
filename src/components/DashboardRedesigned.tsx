@@ -127,17 +127,14 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   };
 
   return (
-    <div className="h-full overflow-auto bg-gradient-to-b from-mission-control-bg to-mission-control-surface">
-      {/* HERO SECTION - Modern, spacious, attention-grabbing */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-mission-control-surface via-mission-control-bg to-mission-control-surface border-b border-mission-control-border/50">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-mission-control-accent/5 via-transparent to-[var(--color-review)]/5 animate-gradient-x opacity-50" />
-        
+    <div className="h-full overflow-auto bg-mission-control-bg">
+      {/* HERO SECTION */}
+      <div className="relative overflow-hidden bg-mission-control-surface border-b border-mission-control-border">
         <div className="relative w-full px-8 py-8">
           {/* Greeting & Status Row */}
           <Flex align="center" justify="between" className="mb-6">
             <div className="space-y-2">
-              <Heading size="8" weight="bold" className="bg-gradient-to-r from-mission-control-text via-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
+              <Heading size="8" weight="bold">
                 {greeting}, Kevin
               </Heading>
               
@@ -221,10 +218,6 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
               } hover:scale-105`}
           >
-            {/* Animated background gradient */}
-            {pendingApprovals.length > 0 && (
-              <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-danger)]/10 to-[var(--color-error)]/10 animate-gradient-x opacity-50" />
-            )}
             
             <div className="relative z-10">
               <Flex align="center" justify="between" className="mb-4">
@@ -236,7 +229,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </Flex>
 
-              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-danger)] bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums text-[var(--color-danger)]">
                 {pendingApprovals.length}
               </div>
               
@@ -271,7 +264,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </Flex>
 
-              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-info)] bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums text-[var(--color-info)]">
                 {inProgressTasks.length}
               </div>
               
@@ -309,7 +302,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </Flex>
 
-              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-warning)] bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums text-[var(--color-warning)]">
                 {urgentTasks.length + unassignedTasks.length}
               </div>
               
@@ -337,11 +330,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <Flex align="center" justify="between" className="mb-4">
                 <Bot size={28} className={`${activeSubagents.length > 0 ? 'text-success' : 'text-mission-control-text-dim'}`} />
                 {activeSubagents.length > 0 && (
-                  <span className="w-3 h-3 rounded-full bg-success animate-pulse shadow-lg shadow-green-400/50" />
+                  <span className="w-3 h-3 rounded-full bg-success animate-pulse" />
                 )}
               </Flex>
 
-              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-[var(--color-success)] bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums text-mission-control-text">
                 {totalAgentCount}
               </div>
               
@@ -361,8 +354,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           
           {/* LEFT: Active Work (2 columns) */}
           <div className="lg:col-span-2">
-            <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
-              <div className="p-6 border-b border-mission-control-border/50 flex items-center justify-between bg-gradient-to-r from-mission-control-surface to-mission-control-bg">
+            <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
+              <div className="p-6 border-b border-mission-control-border flex items-center justify-between bg-mission-control-surface">
                 <Heading size="4" weight="bold" className="flex items-center gap-3">
                   <Activity size={20} className="text-info" />
                   Active Work
@@ -407,8 +400,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                       >
                         <Flex align="start" gap="4">
                           <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                            task.status === 'review' ? 'bg-review shadow-lg shadow-purple-400/50' :
-                            task.status === 'in-progress' ? 'bg-info animate-pulse shadow-lg shadow-blue-400/50' :
+                            task.status === 'review' ? 'bg-review' :
+                            task.status === 'in-progress' ? 'bg-info animate-pulse' :
                             'bg-mission-control-bg0'
                           }`} />
                           
@@ -460,29 +453,29 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           {/* RIGHT: Today at a Glance (1 column) */}
           <div className="space-y-6">
             {/* Calendar Widget */}
-            <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
+            <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
               <TodayCalendarWidget onNavigate={onNavigate} />
             </div>
 
             {/* Email Widget */}
-            <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
+            <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
               <EmailWidget />
             </div>
 
             {/* Weather & Quick Stats side-by-side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
+              <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
                 <WeatherWidget />
               </div>
-              <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
+              <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
                 <QuickStatsWidget />
               </div>
             </div>
           </div>
         </div>
 
-        {/* ACTIVITY STREAM - Collapsible glass panel */}
-        <div className="bg-mission-control-surface/60 backdrop-blur-2xl rounded-2xl border border-mission-control-border/30 overflow-hidden shadow-2xl">
+        {/* ACTIVITY STREAM */}
+        <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
           <button
             type="button"
             onClick={() => setShowActivityStream(!showActivityStream)}

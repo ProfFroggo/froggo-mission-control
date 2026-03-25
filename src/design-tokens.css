@@ -103,20 +103,20 @@
   
   /* Error */
   --color-error: #ef4444;
-  --color-error-bg: rgba(239, 68, 68, 0.1);
-  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-bg: color-mix(in srgb, var(--color-error) 10%, transparent);
+  --color-error-border: color-mix(in srgb, var(--color-error) 30%, transparent);
   --color-error-hover: #dc2626;
   
   /* Warning */
   --color-warning: #f59e0b;
-  --color-warning-bg: rgba(245, 158, 11, 0.1);
-  --color-warning-border: rgba(245, 158, 11, 0.3);
+  --color-warning-bg: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  --color-warning-border: color-mix(in srgb, var(--color-warning) 30%, transparent);
   --color-warning-hover: #d97706;
   
   /* Info */
   --color-info: #3b82f6;
-  --color-info-bg: rgba(59, 130, 246, 0.1);
-  --color-info-border: rgba(59, 130, 246, 0.3);
+  --color-info-bg: color-mix(in srgb, var(--color-info) 10%, transparent);
+  --color-info-border: color-mix(in srgb, var(--color-info) 30%, transparent);
   --color-info-hover: #2563eb;
   --color-info-text: #3b82f6;
   

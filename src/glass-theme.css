@@ -36,17 +36,6 @@ body {
   background: var(--gray-a7);
 }
 
-/* ============================================================
-   CARD GLASS PATTERN
-   ============================================================ */
-
-.card-glass {
-  background: var(--color-surface) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid var(--gray-a4) !important;
-  box-shadow: 0 1px 3px var(--black-a4) !important;
-}
 
 /* ============================================================
    MODAL / DIALOG GLASS SURFACES

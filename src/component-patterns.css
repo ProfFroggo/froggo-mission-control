@@ -33,19 +33,6 @@
   box-shadow: 0 4px 16px var(--black-a5);
 }
 
-.card-glass {
-  background: rgba(20, 20, 20, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--mission-control-border-glass);
-  border-radius: var(--radius-lg);
-  padding: var(--space-component-lg);
-  box-shadow: var(--shadow-lg);
-}
-
-:root.light .card-glass {
-  background: rgba(255, 255, 255, 0.7);
-}
 
 .card-interactive {
   cursor: pointer;

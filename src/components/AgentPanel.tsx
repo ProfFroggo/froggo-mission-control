@@ -62,7 +62,7 @@ function AvatarWithFallback({ agentId, agentName, themeRing, themeBg, themeText,
       ) : (
         <span
           className={`absolute inset-0 flex items-center justify-center text-sm font-semibold ${themeText}`}
-          style={{ backgroundColor: themeColor + '22' }}
+          style={{ backgroundColor: `color-mix(in srgb, ${themeColor} 13%, transparent)` }}
         >
           {getInitials(agentName, agentId)}
         </span>

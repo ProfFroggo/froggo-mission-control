@@ -117,10 +117,10 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
 
   // Phase bands for the track
   const PHASES = [
-    { label: 'Planning', from: 0, to: 20, color: 'rgba(99,102,241,0.15)' },
-    { label: 'Execution', from: 20, to: 60, color: 'rgba(34,197,94,0.10)' },
-    { label: 'Review', from: 60, to: 90, color: 'rgba(234,179,8,0.12)' },
-    { label: 'Complete', from: 90, to: 100, color: 'rgba(34,197,94,0.18)' },
+    { label: 'Planning', from: 0, to: 20, color: 'color-mix(in srgb, var(--color-info) 15%, transparent)' },
+    { label: 'Execution', from: 20, to: 60, color: 'color-mix(in srgb, var(--color-success) 10%, transparent)' },
+    { label: 'Review', from: 60, to: 90, color: 'color-mix(in srgb, var(--color-warning) 12%, transparent)' },
+    { label: 'Complete', from: 90, to: 100, color: 'color-mix(in srgb, var(--color-success) 18%, transparent)' },
   ];
 
   if (milestones.length === 0) {
