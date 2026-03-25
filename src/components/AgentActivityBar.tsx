@@ -5,7 +5,7 @@
  */
 
 import { useMemo, useEffect, useState } from 'react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 import AgentAvatar from './AgentAvatar';
 
@@ -63,12 +63,12 @@ export default function AgentActivityBar({ onNavigate, onTaskClick, expanded = t
       title={expanded ? undefined : `${activeWork.length} agent${activeWork.length !== 1 ? 's' : ''} working`}
     >
       {expanded && (
-        <div className="flex items-center gap-1.5 mb-2 px-1">
+        <Flex align="center" gap="2" className="mb-2 px-1">
           <span className="w-1.5 h-1.5 rounded-full bg-info animate-pulse flex-shrink-0" />
           <span className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider">
             Live
           </span>
-        </div>
+        </Flex>
       )}
       <div className={expanded ? 'space-y-1.5' : 'flex flex-col items-center gap-1.5'}>
         {activeWork.map(({ task, agent }) => {
@@ -97,14 +97,14 @@ export default function AgentActivityBar({ onNavigate, onTaskClick, expanded = t
               </div>
               {expanded && (
                 <div className="flex-1 min-w-0 text-left">
-                  <div className="flex items-center justify-between gap-1">
+                  <Flex align="center" justify="between" gap="1">
                     <p className="text-[10px] font-medium text-mission-control-text truncate leading-tight">
                       {agent.name}
                     </p>
                     <span className="text-[9px] text-mission-control-text-dim/70 flex-shrink-0 leading-tight">
                       {elapsed}
                     </span>
-                  </div>
+                  </Flex>
                   <p className="text-[9px] text-mission-control-text-dim truncate leading-tight">
                     {task.title}
                   </p>

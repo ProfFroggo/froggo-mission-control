@@ -93,7 +93,7 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
         className={`relative w-full max-w-4xl bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3" className="p-4 border-b border-mission-control-border">
           <BookOpen size={20} className="text-mission-control-accent" />
           <h2 className="text-lg font-semibold text-mission-control-text flex-1">Training Log</h2>
           <IconButton
@@ -102,11 +102,11 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
             variant="ghost"
             color="gray"
             size="2"
-           
+
           >
             <X size={18} />
           </IconButton>
-        </div>
+        </Flex>
 
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">

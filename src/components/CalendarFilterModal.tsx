@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { X, Eye, EyeOff, Calendar, RefreshCw, CheckSquare } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, Flex, IconButton } from '@radix-ui/themes';
 import { useUserSettings } from '../store/userSettings';
 
 interface CalendarSource {
@@ -247,7 +247,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
       >
         {/* Header */}
         <div className="p-6 border-b border-mission-control-border flex items-center justify-between bg-mission-control-surface sticky top-0 z-10">
-          <div className="flex items-center gap-3">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-info-subtle rounded-lg">
               <Calendar size={20} className="text-info" />
             </div>
@@ -257,8 +257,8 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
                 {sources.filter(s => s.enabled).length} of {sources.length} enabled
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <IconButton
               onClick={loadSources}
               disabled={refreshing}
@@ -280,7 +280,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
             >
               <X size={16} />
             </IconButton>
-          </div>
+          </Flex>
         </div>
 
         {/* Quick Actions */}

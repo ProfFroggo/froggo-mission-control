@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { MessageSquare, Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { gateway } from '@/lib/gateway';
 import { chatApi } from '@/lib/api';
@@ -132,10 +132,10 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
       {/* Response display */}
       {response && (
         <div className="bg-success-subtle border border-success-border rounded-lg p-4">
-          <div className="flex items-start gap-2 mb-2">
+          <Flex align="start" gap="2" className="mb-2">
             <CheckCircle size={16} className="text-success mt-0.5 flex-shrink-0" />
             <div className="text-xs font-semibold text-success">Agent Progress Report</div>
-          </div>
+          </Flex>
           <div className="text-sm text-mission-control-text-dim whitespace-pre-wrap ml-6">
             {response}
           </div>
@@ -145,10 +145,10 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
       {/* Error display */}
       {error && (
         <div className="bg-error-subtle border border-error-border rounded-lg p-4">
-          <div className="flex items-start gap-2">
+          <Flex align="start" gap="2">
             <XCircle size={16} className="text-error mt-0.5 flex-shrink-0" />
             <div className="text-xs text-error">{error}</div>
-          </div>
+          </Flex>
         </div>
       )}
     </div>

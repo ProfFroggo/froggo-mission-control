@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell, CheckCircle, XCircle, Clock, MessageSquare, Send, FileText, Zap } from 'lucide-react';
-import { Button, Spinner } from '@radix-ui/themes';
+import { Button, Flex, Spinner } from '@radix-ui/themes';
 import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
@@ -234,7 +234,7 @@ export default function XApprovalBadge() {
                   return (
                     <div key={item.id} className="px-4 py-3 hover:bg-mission-control-bg-alt/50 transition-colors">
                       {/* Type + time */}
-                      <div className="flex items-center justify-between mb-1.5">
+                      <Flex align="center" justify="between" className="mb-1.5">
                         <span className={`flex items-center gap-1 text-xs font-medium ${info.color}`}>
                           {info.icon}
                           {info.label}
@@ -242,7 +242,7 @@ export default function XApprovalBadge() {
                         <span className="text-xs text-mission-control-text-dim tabular-nums">
                           {timeAgo(item.createdAt)}
                         </span>
-                      </div>
+                      </Flex>
 
                       {/* Preview */}
                       {(() => {
@@ -265,7 +265,7 @@ export default function XApprovalBadge() {
                       })()}
 
                       {/* Actions */}
-                      <div className="flex gap-1.5">
+                      <Flex gap="2">
                         <Button
                           onClick={() => handleApprove(item.id)}
                           disabled={isLoading}
@@ -304,7 +304,7 @@ export default function XApprovalBadge() {
                           <Clock size={12} />
                           Skip
                         </Button>
-                      </div>
+                      </Flex>
                     </div>
                   );
                 })}

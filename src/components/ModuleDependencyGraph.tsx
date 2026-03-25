@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useRef, useCallback, useMemo } from 'react';
 import type { CatalogModule } from '../types/catalog';
+import { Flex } from '@radix-ui/themes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -136,7 +137,7 @@ export default function ModuleDependencyGraph({ modules }: ModuleDependencyGraph
       style={{ background: 'var(--mission-control-bg, #0f1012)' }}
     >
       {/* Legend */}
-      <div className="flex items-center gap-5 px-4 py-2.5 border-b border-mission-control-border text-xs text-mission-control-text-dim">
+      <Flex align="center" gap="5" className="px-4 py-2.5 border-b border-mission-control-border text-xs text-mission-control-text-dim">
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'var(--color-success-subtle, rgba(34,197,94,0.15))', border: '1px solid var(--color-success-border, rgba(34,197,94,0.4))' }} />
           Installed
@@ -150,7 +151,7 @@ export default function ModuleDependencyGraph({ modules }: ModuleDependencyGraph
           Optional
         </span>
         <span className="ml-auto opacity-60">Drag to pan</span>
-      </div>
+      </Flex>
 
       <div style={{ overflow: 'hidden', maxHeight: 360, cursor: 'grab' }}>
         <svg

@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronRight, ZoomIn, ZoomOut, Calendar,
   AlertCircle,
 } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, Flex, IconButton } from '@radix-ui/themes';
 import { taskApi } from '../lib/api';
 import { Spinner } from './LoadingStates';
 
@@ -237,10 +237,10 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 m-4 px-4 py-3 bg-error-subtle border border-error/30 rounded-lg text-error text-sm">
+      <Flex align="center" gap="2" className="m-4 px-4 py-3 bg-error-subtle border border-error/30 rounded-lg text-error text-sm">
         <AlertCircle size={15} />
         {error}
-      </div>
+      </Flex>
     );
   }
 
@@ -425,10 +425,10 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
             {g}
           </div>
         ))}
-        <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim ml-auto">
+        <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim ml-auto">
           <div style={{ width: 2, height: 14, backgroundColor: 'var(--color-error, #ef4444)', opacity: 0.6, borderRadius: 1 }} />
           Today
-        </div>
+        </Flex>
       </div>
     </div>
   );

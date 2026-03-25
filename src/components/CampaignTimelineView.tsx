@@ -3,7 +3,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useMemo } from 'react';
 import { Calendar, CheckCircle2, Circle, Flag, Play } from 'lucide-react';
-import { Heading } from '@radix-ui/themes';
+import { Flex, Heading } from '@radix-ui/themes';
 import type { Campaign } from '../types/campaigns';
 
 interface TaskItem {
@@ -137,15 +137,15 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
     <div className="flex flex-col gap-6 p-6">
       {/* Phase label + progress */}
       {campaignProgress !== null && phaseLabel && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between">
+          <Flex align="center" gap="2">
             <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Phase</span>
             <span className="text-xs px-2 py-0.5 rounded-full border border-mission-control-accent/40 text-mission-control-accent bg-mission-control-accent/10 font-medium">
               {phaseLabel}
             </span>
-          </div>
+          </Flex>
           <span className="text-xs tabular-nums text-mission-control-text-dim">{campaignProgress}% elapsed</span>
-        </div>
+        </Flex>
       )}
 
       {/* Horizontal timeline track */}

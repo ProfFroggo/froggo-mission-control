@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { Users, Loader2, Download, Copy, Check } from 'lucide-react';
-import { Button } from '@radix-ui/themes';
+import { Button, Flex } from '@radix-ui/themes';
 
 interface DailyPoint {
   date: string;
@@ -173,12 +173,12 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Users size={16} className="text-mission-control-accent" />
           <span className="font-medium">Agent Task Trends</span>
           <span className="text-xs text-mission-control-text-dim">last {days} days</span>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <Button
             size="1"
             variant="surface"
@@ -199,7 +199,7 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
             {copied ? <Check size={12} /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
           </Button>
-        </div>
+        </Flex>
       </div>
 
       {/* Agent toggles */}

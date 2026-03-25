@@ -3,7 +3,7 @@ import {
   Bell, BellOff, Volume2, Moon, Clock,
   AlertCircle, Save, ZapOff
 } from 'lucide-react';
-import { Button, Switch, Select, TextField, Spinner } from '@radix-ui/themes';
+import { Button, Flex, Switch, Select, TextField, Spinner } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { settingsApi } from '../lib/api';
 
@@ -117,7 +117,7 @@ export default function GlobalNotificationSettings() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Bell size={20} />
@@ -127,7 +127,7 @@ export default function GlobalNotificationSettings() {
             These settings apply to all conversations unless overridden individually
           </p>
         </div>
-      </div>
+      </Flex>
 
       {/* Do Not Disturb */}
       {isDND && (
@@ -251,7 +251,7 @@ export default function GlobalNotificationSettings() {
             <span className="text-sm">Enable quiet hours (applies to all conversations)</span>
           </label>
           {quietHoursEnabled && (
-            <div className="flex gap-3 items-center ml-10">
+            <Flex gap="3" align="center" className="ml-10">
               <TextField.Root
                 type="time"
                 value={quietStart}
@@ -265,7 +265,7 @@ export default function GlobalNotificationSettings() {
                 onChange={(e) => setQuietEnd(e.target.value)}
                 size="2"
               />
-            </div>
+            </Flex>
           )}
         </div>
       </div>
