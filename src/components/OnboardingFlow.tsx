@@ -9,7 +9,7 @@ import {
   Rocket,
   ChevronDown,
 } from 'lucide-react';
-import { Button, IconButton, Select, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Select, TextField } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 
 // ─────────────────────────────────────────────
@@ -88,9 +88,9 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
         }}
       >
         <div className="text-center z-10 px-4">
-          <div className="flex items-center justify-center mb-1">
+          <Flex align="center" justify="center" className="mb-1">
             <Rocket size={22} className="text-white/90" />
-          </div>
+          </Flex>
           <h1 className="text-2xl font-bold text-white tracking-tight">Mission Control</h1>
           <p className="text-white/75 text-sm mt-1">Your AI-powered operations platform</p>
         </div>
@@ -103,15 +103,17 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           { Icon: Check, label: 'Track tasks, projects, and automations in one place' },
           { Icon: Rocket, label: 'Ship faster with intelligent workflows' },
         ].map(({ Icon, label }) => (
-          <div
+          <Flex
             key={label}
-            className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border"
+            align="center"
+            gap="3"
+            className="p-3 rounded-lg bg-mission-control-bg border border-mission-control-border"
           >
             <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-mission-control-accent/10 flex items-center justify-center">
               <Icon size={15} className="text-mission-control-accent" />
             </div>
             <span className="text-sm text-mission-control-text">{label}</span>
-          </div>
+          </Flex>
         ))}
       </div>
 
@@ -210,7 +212,7 @@ function StepPlatformSetup({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <Flex align="center" gap="3">
         <Button onClick={onBack} variant="ghost" color="gray" size="2">
           <ArrowLeft size={14} />
           Back
@@ -219,7 +221,7 @@ function StepPlatformSetup({
           Continue
           <ArrowRight size={16} />
         </Button>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -307,7 +309,7 @@ function StepMeetAgents({
         })}
       </div>
 
-      <div className="flex items-center gap-3">
+      <Flex align="center" gap="3">
         <Button onClick={onBack} variant="ghost" color="gray" size="2">
           <ArrowLeft size={14} />
           Back
@@ -323,7 +325,7 @@ function StepMeetAgents({
           {creating ? 'Adding agents...' : `Add ${selected.size} agent${selected.size !== 1 ? 's' : ''} & continue`}
           {!creating && <ArrowRight size={16} />}
         </Button>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -424,7 +426,7 @@ function StepFirstTask({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <Flex align="center" gap="3">
         <Button onClick={onBack} disabled={loading} variant="ghost" color="gray" size="2">
           <ArrowLeft size={14} />
           Back
@@ -441,7 +443,7 @@ function StepFirstTask({
           {!loading && !taskCreated && <ArrowRight size={16} />}
           {taskCreated && <Check size={16} />}
         </Button>
-      </div>
+      </Flex>
 
       <div className="text-center">
         <Button
@@ -501,7 +503,7 @@ function StepReady({
 
       <div className="space-y-2 px-1">
         {items.map(item => (
-          <div key={item.label} className="flex items-center gap-3">
+          <Flex key={item.label} align="center" gap="3">
             <div
               className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
                 item.done ? 'bg-mission-control-accent' : 'bg-mission-control-border'
@@ -512,7 +514,7 @@ function StepReady({
             <span className={`text-sm ${item.done ? 'text-mission-control-text' : 'text-mission-control-text-dim line-through'}`}>
               {item.label}
             </span>
-          </div>
+          </Flex>
         ))}
       </div>
 
@@ -745,12 +747,12 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 pt-5 pb-0">
+          <Flex align="center" justify="between" className="px-6 pt-5 pb-0">
             <StepDots total={TOTAL_STEPS} current={step} />
             <IconButton onClick={handleSkipAll} variant="ghost" color="gray" size="1" aria-label="Skip onboarding">
               <X size={14} />
             </IconButton>
-          </div>
+          </Flex>
 
           {/* Step content */}
           <div
@@ -961,7 +963,7 @@ export function QuickTips({ onDone }: QuickTipsProps) {
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <Flex align="center" justify="between">
             <Button onClick={handleSkip} variant="ghost" color="gray" size="1">
               Skip tips
             </Button>
@@ -978,7 +980,7 @@ export function QuickTips({ onDone }: QuickTipsProps) {
                 </>
               )}
             </Button>
-          </div>
+          </Flex>
         </div>
       </div>
     </div>
