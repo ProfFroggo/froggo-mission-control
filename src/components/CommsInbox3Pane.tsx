@@ -1027,7 +1027,7 @@ function InboxDashboard({
             </h3>
             <div className="space-y-1.5">
               {allTasks.slice(0, 5).map((item) => (
-                <div key={`${item.task.title}-${item.from}`} className="flex items-center gap-2 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2">
+                <Flex key={`${item.task.title}-${item.from}`} align="center" gap="2" className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2">
                   <span className={`flex-shrink-0 ${platformColor(item.platform)}`}>{platformIcon(item.platform, 11)}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm truncate">{item.task.title}</p>
@@ -1041,7 +1041,7 @@ function InboxDashboard({
                   >
                     Create
                   </Button>
-                </div>
+                </Flex>
               ))}
             </div>
           </div>
@@ -1438,7 +1438,7 @@ function RightPane({
           /* Chat thread */
           <div className="space-y-4">
             {thread.map((msg, i) => (
-              <div key={msg.id || i} className={`flex ${msg.fromMe ? 'justify-end' : 'justify-start'}`}>
+              <Flex key={msg.id || i} justify={msg.fromMe ? 'end' : 'start'}>
                 <div className={`max-w-[75%] rounded-lg px-4 py-2.5 ${
                   msg.fromMe
                     ? 'bg-mission-control-accent/20 border border-mission-control-accent/30'
@@ -1454,7 +1454,7 @@ function RightPane({
                     : <MarkdownMessage content={msg.text} />
                   }
                 </div>
-              </div>
+              </Flex>
             ))}
             <div ref={threadEndRef} />
           </div>
