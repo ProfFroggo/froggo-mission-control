@@ -72,8 +72,8 @@ const typeConfig: Record<ApprovalType, { icon: any; color: string; label: string
 // Helper component for shortcut rows
 function ShortcutRow({ keys, description }: { keys: string[]; description: string }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <div className="flex items-center gap-1">
+    <Flex align="center" justify="between" className="text-sm">
+      <Flex align="center" gap="1">
         {keys.map((key, i) => (
           <span key={i}>
             <kbd className="px-2 py-1 bg-mission-control-border rounded text-xs font-mono">
@@ -82,9 +82,9 @@ function ShortcutRow({ keys, description }: { keys: string[]; description: strin
             {i < keys.length - 1 && <span className="mx-1 text-mission-control-text-dim">then</span>}
           </span>
         ))}
-      </div>
+      </Flex>
       <span className="text-mission-control-text-dim text-xs ml-3">{description}</span>
-    </div>
+    </Flex>
   );
 }
 
@@ -1047,8 +1047,8 @@ export default function InboxPanel() {
       <div className="flex-1 min-w-0 flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" className="mb-4">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg">
               <Inbox size={24} className="text-mission-control-accent" />
             </div>
@@ -1075,9 +1075,9 @@ export default function InboxPanel() {
                 </div>
               )}
             </div>
-          </div>
-          
-          <div className="flex gap-2">
+          </Flex>
+
+          <Flex gap="2">
             <Button
               variant="soft"
               color="gray"
@@ -1161,8 +1161,8 @@ export default function InboxPanel() {
                 </Button>
               </div>
             )}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Tab Navigation */}
         <div className="border-b border-mission-control-border mb-3 -mx-4 px-0">
@@ -1179,9 +1179,9 @@ export default function InboxPanel() {
         </div>
 
         {/* Sort Controls */}
-        <div className="flex items-center gap-3 mb-3">
+        <Flex align="center" gap="3" className="mb-3">
           <span className="text-xs text-mission-control-text-dim font-medium">Sort by:</span>
-          <div className="flex gap-2">
+          <Flex gap="2">
             <Button
               variant={sortMode === 'priority' ? 'solid' : 'soft'}
               color={sortMode === 'priority' ? 'blue' : 'gray'}
@@ -1219,7 +1219,7 @@ export default function InboxPanel() {
             >
               {sortAscending ? <ArrowUp size={16} className="flex-shrink-0" /> : <ArrowDown size={16} className="flex-shrink-0" />}
             </IconButton>
-          </div>
+          </Flex>
 
           {/* View Mode Toggle */}
           <div className="icon-text ml-auto">
@@ -1235,7 +1235,7 @@ export default function InboxPanel() {
               {viewMode === 'list' ? 'List' : 'Lanes'}
             </Button>
           </div>
-        </div>
+        </Flex>
 
         {/* Filters */}
         <div className="flex gap-2 flex-wrap">
@@ -1408,7 +1408,7 @@ export default function InboxPanel() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <Flex gap="2">
                       <IconButton
                         variant={selectedItemForAI?.id === item.id && showAIPanel ? 'solid' : 'ghost'}
                         color={selectedItemForAI?.id === item.id && showAIPanel ? 'blue' : 'gray'}
@@ -1429,7 +1429,7 @@ export default function InboxPanel() {
                       >
                         {isExpanded ? <ChevronUp size={16} className="flex-shrink-0" /> : <ChevronDown size={16} className="flex-shrink-0" />}
                       </IconButton>
-                    </div>
+                    </Flex>
                   </div>
 
                   {/* Expanded Content */}
@@ -1507,7 +1507,7 @@ export default function InboxPanel() {
                             rows={3}
                             className="w-full"
                           />
-                          <div className="flex gap-2 mt-2">
+                          <Flex gap="2" className="mt-2">
                             <Button
                               variant="solid"
                               color="violet"
@@ -1527,12 +1527,12 @@ export default function InboxPanel() {
                             >
                               Cancel
                             </Button>
-                          </div>
+                          </Flex>
                         </div>
                       )}
 
                       {/* Action Buttons */}
-                      <div className="flex gap-2">
+                      <Flex gap="2">
                         <LoadingButton
                           loading={processingItems.has(item.id)}
                           onClick={() => handleApprove(item)}
@@ -1558,7 +1558,7 @@ export default function InboxPanel() {
                         >
                           Reject
                         </LoadingButton>
-                      </div>
+                      </Flex>
                     </div>
                   )}
                 </div>
@@ -1589,17 +1589,19 @@ export default function InboxPanel() {
                 const config = typeConfig[item.type as ApprovalType] ?? typeConfig['action'];
                 const Icon = config.icon;
                 return (
-                  <div
+                  <Flex
                     key={item.id}
-                    className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg border border-mission-control-border opacity-60"
+                    align="center"
+                    justify="between"
+                    className="p-3 bg-mission-control-bg rounded-lg border border-mission-control-border opacity-60"
                   >
-                    <div className="flex items-center gap-3">
+                    <Flex align="center" gap="3">
                       <Icon size={16} className={(config?.color ?? '').split(' ')[0]} />
                       <div>
                         <div className="text-sm">{item.title}</div>
                         <div className="text-xs text-mission-control-text-dim">{formatTime(item.created ?? '')}</div>
                       </div>
-                    </div>
+                    </Flex>
                     <Badge
                       color={
                         item.status === 'approved' ? 'grass' :
@@ -1610,7 +1612,7 @@ export default function InboxPanel() {
                     >
                       {item.status}
                     </Badge>
-                  </div>
+                  </Flex>
                 );
               })}
             </div>
@@ -1647,7 +1649,7 @@ export default function InboxPanel() {
               placeholder="e.g., Too promotional, wrong tone, not relevant..."
               className="w-full mb-4"
             />
-            <div className="flex gap-2 justify-end">
+            <Flex gap="2" justify="end">
               <Button
                 variant="ghost"
                 color="gray"
@@ -1664,7 +1666,7 @@ export default function InboxPanel() {
               >
                 Reject
               </Button>
-            </div>
+            </Flex>
           </div>
         </div>
       )}
@@ -1686,7 +1688,7 @@ export default function InboxPanel() {
             role="presentation"
           >
             {/* Header */}
-            <div className="flex items-center gap-3 mb-4">
+            <Flex align="center" gap="3" className="mb-4">
               <div className={`p-2 rounded-lg ${(typeConfig[scheduleModal.item.type as ApprovalType] ?? typeConfig['action']).color}`}>
                 {scheduleModal.item.type === 'tweet' ?  <Send size={20} className="flex-shrink-0" /> :  <Mail size={20} className="flex-shrink-0" />}
               </div>
@@ -1694,7 +1696,7 @@ export default function InboxPanel() {
                 <h3 className="text-heading-3">Send or Schedule?</h3>
                 <p className="text-sm text-mission-control-text-dim">{scheduleModal.item.title}</p>
               </div>
-            </div>
+            </Flex>
 
             {/* Content Preview */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 mb-6 max-h-32 overflow-y-auto">
@@ -1710,7 +1712,7 @@ export default function InboxPanel() {
                   <CalendarClock size={16} className="text-mission-control-accent" />
                   <span className="text-sm font-medium">Schedule for:</span>
                 </div>
-                <div className="flex gap-3">
+                <Flex gap="3">
                   <div className="flex-1 min-w-0">
                     <label htmlFor="schedule-date" className="text-xs text-mission-control-text-dim mb-1 block">Date</label>
                     <input
@@ -1732,7 +1734,7 @@ export default function InboxPanel() {
                       className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
                     />
                   </div>
-                </div>
+                </Flex>
                 {/* Friendly time display */}
                 {scheduleModal.date && scheduleModal.time && (
                   <p className="text-xs text-mission-control-text-dim mt-2">
@@ -1749,7 +1751,7 @@ export default function InboxPanel() {
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <Flex gap="3">
               {!scheduleModal.showDatePicker ? (
                 <>
                   {/* Initial state: Send Now / Schedule */}
@@ -1898,7 +1900,7 @@ export default function InboxPanel() {
                   </Button>
                 </>
               )}
-            </div>
+            </Flex>
 
             {/* Cancel link */}
             <Button
@@ -1930,7 +1932,7 @@ export default function InboxPanel() {
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
           >
-            <div className="flex items-center justify-between mb-6">
+            <Flex align="center" justify="between" className="mb-6">
               <div>
                 <h2 className="text-heading-2 mb-1">Keyboard Shortcuts</h2>
                 <p className="text-sm text-mission-control-text-dim">Gmail-style navigation and actions</p>
@@ -1945,7 +1947,7 @@ export default function InboxPanel() {
               >
                 <X size={20} className="flex-shrink-0" />
               </IconButton>
-            </div>
+            </Flex>
 
             <div className="grid md:grid-cols-2 gap-6">
               {/* Navigation */}
@@ -2023,7 +2025,7 @@ export default function InboxPanel() {
         >
           <div role="dialog" aria-modal="true" aria-label="Agent active warning" className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-lg w-full mx-4">
             {/* Header */}
-            <div className="flex items-center gap-3 mb-4">
+            <Flex align="center" gap="3" className="mb-4">
               <div className="p-2 bg-warning-subtle rounded-lg">
                 <AlertTriangle size={24} className="text-warning" />
               </div>
@@ -2031,7 +2033,7 @@ export default function InboxPanel() {
                 <h3 className="text-heading-3">Agent Still Active</h3>
                 <p className="text-sm text-mission-control-text-dim">Cannot approve yet</p>
               </div>
-            </div>
+            </Flex>
 
             {/* Warning Content */}
             <div className="bg-warning-subtle border border-warning-border rounded-lg p-4 mb-4">
@@ -2060,7 +2062,7 @@ export default function InboxPanel() {
             </p>
 
             {/* Actions */}
-            <div className="flex gap-3">
+            <Flex gap="3">
               <Button
                 variant="soft"
                 color="gray"
@@ -2132,7 +2134,7 @@ export default function InboxPanel() {
                   </>
                 )}
               </Button>
-            </div>
+            </Flex>
           </div>
         </button>
       )}
