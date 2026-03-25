@@ -982,7 +982,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           style={{ minHeight: 0 }}
         >
           {messages.map(msg => (
-            <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <Flex key={msg.id} gap="3" justify={msg.role === 'user' ? 'end' : 'start'}>
               {msg.role === 'agent' && (
                 <div className="flex-shrink-0 w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center mt-0.5">
                   <Bot size={13} className="text-mission-control-accent" />
@@ -1003,7 +1003,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                   </div>
                 )}
               </div>
-            </div>
+            </Flex>
           ))}
 
           {/* Typing indicator */}

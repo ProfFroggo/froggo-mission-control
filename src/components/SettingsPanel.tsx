@@ -331,7 +331,7 @@ function PlatformUpdateTab() {
 
       {/* Result banner */}
       {updateDone && (
-        <div className={`flex items-start gap-3 px-4 py-3 rounded-lg border text-sm ${
+        <Flex align="start" gap="3" className={`px-4 py-3 rounded-lg border text-sm ${
           updateDone.success
             ? 'bg-success-subtle border-success/20 text-success'
             : 'bg-error-subtle border-error/20 text-error'
@@ -341,7 +341,7 @@ function PlatformUpdateTab() {
             : <AlertCircle size={16} className="mt-0.5 shrink-0" />
           }
           <span>{updateDone.message}</span>
-        </div>
+        </Flex>
       )}
     </div>
   );

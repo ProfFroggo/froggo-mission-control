@@ -1,3 +1,4 @@
+import { Flex } from '@radix-ui/themes';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 
 export interface TableColumn<T> {
@@ -25,9 +26,9 @@ export default function ResponsiveTable<T extends Record<string, any>>({
 
   if (data.length === 0) {
     return (
-      <div className={`flex items-center justify-center py-8 text-mission-control-text-dim text-sm ${className}`}>
+      <Flex align="center" justify="center" className={`py-8 text-mission-control-text-dim text-sm ${className}`}>
         {emptyMessage}
-      </div>
+      </Flex>
     );
   }
 

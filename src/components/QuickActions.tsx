@@ -1155,7 +1155,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               </div>
             )}
             {callTranscript.map((entry, i) => (
-              <div key={i} className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <Flex key={i} justify={entry.role === 'user' ? 'end' : 'start'}>
                 <div className={`max-w-[85%] px-2.5 py-1.5 rounded-lg ${
                   entry.role === 'user' ? 'bg-mission-control-accent text-white'
                   : entry.role === 'system' ? 'bg-mission-control-bg text-mission-control-text-dim italic text-xs'
@@ -1163,7 +1163,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 }`}>
                   {entry.text}
                 </div>
-              </div>
+              </Flex>
             ))}
           </div>
 
@@ -1278,7 +1278,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               </div>
             )}
             {chatMessages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <Flex key={i} justify={msg.role === 'user' ? 'end' : 'start'}>
                 <div className={`max-w-[85%] px-3 py-2 rounded-lg ${
                   msg.role === 'user'
                     ? 'bg-mission-control-accent text-white'
@@ -1286,7 +1286,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 }`}>
                   {msg.role === 'user' ? msg.content : <MarkdownMessage content={msg.content} />}
                 </div>
-              </div>
+              </Flex>
             ))}
             {chatLoading && chatMessages.length > 0 && (
               <Flex justify="start">

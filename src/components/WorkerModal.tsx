@@ -391,7 +391,7 @@ Be conversational, friendly, and help design an effective agent.`;
               {/* Chat Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {chatMessages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <Flex key={msg.id} justify={msg.role === 'user' ? 'end' : 'start'}>
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                         msg.role === 'user'
@@ -404,7 +404,7 @@ Be conversational, friendly, and help design an effective agent.`;
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
-                  </div>
+                  </Flex>
                 ))}
 
                 {/* Streaming message */}

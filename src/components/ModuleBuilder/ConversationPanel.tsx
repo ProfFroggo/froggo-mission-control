@@ -98,7 +98,7 @@ export default function ConversationPanel({
         )}
 
         {messages.map(msg => (
-          <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+          <Flex key={msg.id} gap="3" justify={msg.role === 'user' ? 'end' : 'start'}>
             {msg.role === 'assistant' && (
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-mission-control-accent/20 flex items-center justify-center">
                 <Bot size={16} className="text-mission-control-accent" />
@@ -118,7 +118,7 @@ export default function ConversationPanel({
                 <User size={16} className="text-mission-control-text-dim" />
               </div>
             )}
-          </div>
+          </Flex>
         ))}
         {isStreaming && (
           <Flex gap="3">

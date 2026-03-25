@@ -176,14 +176,14 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
           {STEPS.map((s, i) => (
             <Flex key={s.id} align="center" gap="1">
               {i > 0 && <div className={`w-6 h-px ${i <= stepIdx ? 'bg-mission-control-accent' : 'bg-mission-control-border'}`} />}
-              <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+              <Flex align="center" gap="1" className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                 i === stepIdx ? 'bg-mission-control-accent/20 text-mission-control-accent' :
                 i < stepIdx ? 'bg-success-subtle text-success' :
                 'bg-mission-control-border text-mission-control-text-dim'
               }`}>
                 {i < stepIdx && <CheckCircle size={10} />}
                 {s.label}
-              </div>
+              </Flex>
             </Flex>
           ))}
         </Flex>
