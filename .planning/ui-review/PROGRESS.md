@@ -22,7 +22,7 @@
 - [x] **010** `Screenshot 2026-03-24 at 23.06.11.png` — TaskDetail Chat tab: no green CTAs visible
 - [x] **011** `Screenshot 2026-03-24 at 23.06.19.png` — Create Task Chat mode: Send button no explicit color (violet default), no green CTAs
 - [x] **012** `Screenshot 2026-03-24 at 23.08.15.png` — Create Task Manual form: Create Task button no color prop (violet default), all clean
-- [ ] **013** `Screenshot 2026-03-24 at 23.08.25.png`
+- [x] **013** `Screenshot 2026-03-24 at 23.08.25.png` — Approval Queue: Approve/Approve-all use grass (semantic success=approve), Resume Work uses grass (confirm-proceed action), all consistent
 - [ ] **014** `Screenshot 2026-03-24 at 23.08.38.png`
 - [ ] **015** `Screenshot 2026-03-24 at 23.08.43.png`
 - [ ] **016** `Screenshot 2026-03-24 at 23.08.46.png`
