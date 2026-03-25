@@ -3,7 +3,7 @@ import {
   CheckCircle2, Circle, Package, Layers, Database, Settings, Shield, Code2,
   LayoutGrid, ListChecks, User, RefreshCw,
 } from 'lucide-react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, Flex, IconButton } from '@radix-ui/themes';
 import type { ModuleSpec, SectionProgress } from './types';
 import type { LiveTask } from './useConversationFlow';
 import { generateTaskPlan } from './TaskGenerator';
@@ -73,12 +73,12 @@ export default function SpecPreviewPanel({
     <div className="flex flex-col h-full bg-mission-control-bg">
       {/* Header with tabs */}
       <div className="px-4 py-3 border-b border-mission-control-border">
-        <div className="flex items-center justify-between mb-3">
+        <Flex align="center" justify="between" className="mb-3">
           <h2 className="text-base font-semibold text-mission-control-text flex items-center gap-2">
             <Package size={18} />
             {spec.name || 'Untitled Module'}
           </h2>
-          <div className="flex gap-1.5">
+          <Flex gap="2">
             {spec.type && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-mission-control-accent/20 text-mission-control-accent font-medium">
                 {spec.type}
@@ -87,9 +87,9 @@ export default function SpecPreviewPanel({
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${complexityColors[complexity]}`}>
               {complexity}
             </span>
-          </div>
-        </div>
-        <div className="flex gap-1 border-b border-mission-control-border">
+          </Flex>
+        </Flex>
+        <Flex gap="1" className="border-b border-mission-control-border">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -111,7 +111,7 @@ export default function SpecPreviewPanel({
               {tab.action}
             </button>
           ))}
-        </div>
+        </Flex>
       </div>
 
       {/* Tab content */}
@@ -161,7 +161,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
         </h3>
         <div className="space-y-1.5">
           {sectionProgress.map(s => (
-            <div key={s.id} className="flex items-center gap-2 text-sm">
+            <Flex key={s.id} align="center" gap="2" className="text-sm">
               {s.complete ? (
                 <CheckCircle2 size={16} className="text-success" />
               ) : (
@@ -173,7 +173,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
               <span className="text-[10px] text-mission-control-text-dim ml-auto">
                 {s.answeredCount}/{s.questionCount}
               </span>
-            </div>
+            </Flex>
           ))}
         </div>
       </div>
@@ -324,7 +324,7 @@ function WireframeTab({ wireframe, spec, onRegenerate }: { wireframe: string; sp
 
   return (
     <div className="p-5 space-y-4">
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
           {spec.name || 'Module'} Layout
         </h3>
@@ -338,7 +338,7 @@ function WireframeTab({ wireframe, spec, onRegenerate }: { wireframe: string; sp
             <RefreshCw size={11} /> Regenerate
           </Button>
         )}
-      </div>
+      </Flex>
       <div
         className="wireframe-preview-container"
         style={{
@@ -378,17 +378,17 @@ function TasksTab({ liveTasks }: { liveTasks: LiveTask[] }) {
 
   return (
     <div className="p-5 space-y-3">
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
           Build Plan ({liveTasks.length} tasks)
         </h3>
-      </div>
+      </Flex>
 
       {liveTasks.map((task, i) => (
         <div key={i} className="border border-mission-control-border rounded-lg overflow-hidden">
           {/* Task header */}
           <div className="px-4 py-3 bg-mission-control-surface">
-            <div className="flex items-start justify-between gap-2">
+            <Flex align="start" justify="between" gap="2">
               <h4 className="text-sm font-medium text-mission-control-text leading-tight">
                 {task.title}
               </h4>
@@ -396,7 +396,7 @@ function TasksTab({ liveTasks }: { liveTasks: LiveTask[] }) {
                 <User size={10} />
                 {task.agent}
               </span>
-            </div>
+            </Flex>
 
             {/* Plan */}
             {task.plan && (

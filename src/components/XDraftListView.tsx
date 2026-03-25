@@ -180,8 +180,8 @@ export default function XDraftListView() {
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="2">
           <FileText className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Drafts</h3>
           {drafts.length > 0 && (
@@ -189,8 +189,8 @@ export default function XDraftListView() {
               {drafts.length}
             </span>
           )}
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           {pendingDrafts.length > 0 && (
             <Button
               onClick={handleBulkApprove}
@@ -213,8 +213,8 @@ export default function XDraftListView() {
             <Plus className="w-4 h-4" />
             New Draft
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Pipeline filter pills */}
       <div className="flex items-center gap-1 px-4 py-2.5 border-b border-mission-control-border overflow-x-auto">
@@ -310,7 +310,7 @@ export default function XDraftListView() {
                 )}
 
                 {/* Action buttons */}
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-mission-control-border">
+                <Flex align="center" gap="2" className="mt-3 pt-3 border-t border-mission-control-border">
                   {/* Promote to Publish */}
                   <Button
                     onClick={() => handlePromoteToPublish(draft)}
@@ -352,7 +352,7 @@ export default function XDraftListView() {
                       Reject
                     </Button>
                   )}
-                </div>
+                </Flex>
               </div>
             );
           })}
