@@ -12,7 +12,7 @@ import { campaignsApi, agentApi } from '../../lib/api';
 import type { Campaign } from '../../types/campaigns';
 import AgentAvatar from '../AgentAvatar';
 import { CHANNEL_ICONS, CHANNEL_LABELS, ALL_CHANNELS } from './channelIcons';
-import { Button, IconButton, TextArea, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, TextArea, TextField } from '@radix-ui/themes';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -489,7 +489,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
 
       case 'dates': return step === 'dates' ? (
         <div className="mt-3 space-y-3">
-          <div className="flex gap-3">
+          <Flex gap="3">
             <div className="flex-1">
               <label className="text-xs text-mission-control-text-dim mb-1 block">Start date</label>
               <input
@@ -508,8 +508,8 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                 className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent text-sm"
               />
             </div>
-          </div>
-          <div className="flex gap-2">
+          </Flex>
+          <Flex gap="2">
             {(startDate || endDate) && (
               <Button variant="solid" size="1" onClick={() => {
                 const parts = [startDate, endDate].filter(Boolean).join(' → ');
@@ -525,7 +525,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             }}>
               <SkipForward size={13} /> Skip
             </Button>
-          </div>
+          </Flex>
         </div>
       ) : null;
 
@@ -558,9 +558,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
       case 'team': return step === 'team' ? (
         <div className="mt-3 space-y-3">
           {loadingAgents ? (
-            <div className="flex justify-center py-4">
+            <Flex justify="center" py="4">
               <Loader2 size={18} className="animate-spin text-mission-control-text-dim" />
-            </div>
+            </Flex>
           ) : (
             <div className="space-y-1.5">
               {agents.map(agent => {
@@ -598,7 +598,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
         <div className="mt-3 space-y-4">
           {/* Summary card */}
           <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4 space-y-3 text-sm">
-            <div className="flex items-center gap-3">
+            <Flex align="center" gap="3">
               <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-mission-control-accent/20 border border-mission-control-accent/30">
                 <Megaphone size={15} className="text-mission-control-accent" />
               </div>
@@ -609,7 +609,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                   {goal && ` · ${GOAL_OPTIONS.find(o => o.value === goal)?.label ?? goal}`}
                 </div>
               </div>
-            </div>
+            </Flex>
 
             <div>
               <p className="text-xs text-mission-control-text-dim mb-1.5">Channels</p>
@@ -654,7 +654,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             </div>
           )}
 
-          <div className="flex items-center gap-3">
+          <Flex align="center" gap="3">
             <Button variant="solid" size="1" onClick={handleCreate} disabled={creating}>
               {creating ? <><Loader2 size={14} className="animate-spin" /> Creating…</> : <><Rocket size={14} /> Launch Campaign</>}
             </Button>
@@ -669,7 +669,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             }}>
               Start over
             </Button>
-          </div>
+          </Flex>
         </div>
       ) : null;
 
@@ -739,7 +739,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
       );
       case 'dates': return (
         <div className="mt-2 space-y-2 max-w-[82%]">
-          <div className="flex gap-2">
+          <Flex gap="2">
             <div className="flex-1">
               <label className="text-xs text-mission-control-text-dim mb-1 block">Start</label>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
@@ -750,15 +750,15 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
                 className="w-full px-2.5 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent" />
             </div>
-          </div>
-          <div className="flex gap-2">
+          </Flex>
+          <Flex gap="2">
             <Button variant="solid" size="1" onClick={() => sendDiscoveryMessage(startDate || endDate ? `${startDate || 'TBD'} → ${endDate || 'TBD'}` : 'No specific dates')}>
               <Check size={12} /> Confirm dates
             </Button>
             <Button variant="ghost" size="1" onClick={() => sendDiscoveryMessage('No specific dates yet')}>
               <SkipForward size={12} /> Skip
             </Button>
-          </div>
+          </Flex>
         </div>
       );
       case 'budget': return (
@@ -766,14 +766,14 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           <TextField.Root type="number" placeholder="e.g. 50000" value={budget} onChange={e => setBudget(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')}
             style={{ width: '100%' }} />
-          <div className="flex gap-2">
+          <Flex gap="2">
             <Button variant="solid" size="1" onClick={() => sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')}>
               <Check size={12} /> Confirm budget
             </Button>
             <Button variant="ghost" size="1" onClick={() => sendDiscoveryMessage('No budget defined yet')}>
               <SkipForward size={12} /> Skip
             </Button>
-          </div>
+          </Flex>
         </div>
       );
       default: return null;
@@ -792,20 +792,20 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
-          <div className="flex items-center justify-between px-4 py-3.5 border-b border-mission-control-border">
-            <div className="flex items-center gap-2">
+          <Flex align="center" justify="between" className="px-4 py-3.5 border-b border-mission-control-border">
+            <Flex align="center" gap="2">
               <Sparkles size={15} className="text-mission-control-accent" />
               <span className="text-sm font-semibold text-mission-control-text">New Campaign</span>
-            </div>
-            <div className="flex items-center gap-2">
+            </Flex>
+            <Flex align="center" gap="2">
               <Button variant="ghost" size="1" onClick={() => setWizardPhase('main')}>
                 Skip
               </Button>
               <IconButton variant="ghost" size="1" onClick={onClose}>
                 <X size={16} />
               </IconButton>
-            </div>
-          </div>
+            </Flex>
+          </Flex>
 
           <div ref={discoveryScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[280px]">
             {discoveryMsgs.map((msg, i) => (
@@ -833,18 +833,18 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               </div>
             ))}
             {discoveryLoading && (
-              <div className="flex gap-2 items-start">
+              <Flex gap="2" align="start">
                 <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center flex-shrink-0">
                   <Bot size={14} className="text-mission-control-accent" />
                 </div>
                 <div className="bg-mission-control-surface px-4 py-3 rounded-lg rounded-bl-sm">
-                  <div className="flex gap-1">
+                  <Flex gap="1">
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
+                  </Flex>
                 </div>
-              </div>
+              </Flex>
             )}
             {discoveryReady && discoveryStructuredData && (
               <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-accent/30 rounded-lg">
@@ -861,7 +861,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           </div>
 
           <div className="px-4 py-3 border-t border-mission-control-border">
-            <div className="flex gap-2">
+            <Flex gap="2">
               <TextField.Root
                 value={discoveryInput}
                 onChange={e => setDiscoveryInput(e.target.value)}
@@ -873,7 +873,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               <IconButton variant="solid" size="2" onClick={handleDiscoverySend} disabled={!discoveryInput.trim() || discoveryLoading}>
                 <Send size={14} />
               </IconButton>
-            </div>
+            </Flex>
           </div>
         </div>
       </div>
@@ -885,7 +885,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
-          <div className="flex items-center justify-between px-4 py-3.5 border-b border-mission-control-border">
+          <Flex align="center" justify="between" className="px-4 py-3.5 border-b border-mission-control-border">
             <div>
               <div className="text-sm font-semibold text-mission-control-text">Add Context Files</div>
               <div className="text-xs text-mission-control-text-dim">Optional — upload files Gemini should use as context</div>
@@ -893,7 +893,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             <IconButton variant="ghost" size="1" onClick={onClose}>
               <X size={16} />
             </IconButton>
-          </div>
+          </Flex>
 
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
             <div
@@ -926,13 +926,13 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             {stagedFiles.length > 0 && (
               <div className="space-y-1.5">
                 {stagedFiles.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
+                  <Flex key={i} align="center" gap="2" className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
                     <span className="flex-1 text-sm text-mission-control-text truncate">{f.name}</span>
                     <span className="text-xs text-mission-control-text-dim">{(f.size / 1024).toFixed(0)}KB</span>
                     <IconButton variant="ghost" size="1" color="red" onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))}>
                       <Trash2 size={12} />
                     </IconButton>
-                  </div>
+                  </Flex>
                 ))}
               </div>
             )}
@@ -958,18 +958,18 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border flex-shrink-0">
-          <div className="flex items-center gap-2.5">
+          <Flex align="center" gap="3">
             <div className="w-8 h-8 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center">
               <Bot size={15} className="text-mission-control-accent" />
             </div>
             <div>
               <span className="font-semibold text-mission-control-text text-sm">Campaign Planner</span>
-              <div className="flex items-center gap-1 mt-0.5">
+              <Flex align="center" gap="1" className="mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 <span className="text-xs text-mission-control-text-dim">Active</span>
-              </div>
+              </Flex>
             </div>
-          </div>
+          </Flex>
           <IconButton variant="ghost" size="1" onClick={onClose}>
             <X size={16} />
           </IconButton>
@@ -1008,7 +1008,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
 
           {/* Typing indicator */}
           {agentTyping && (
-            <div className="flex gap-3 justify-start">
+            <Flex gap="3" justify="start">
               <div className="flex-shrink-0 w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center">
                 <Bot size={13} className="text-mission-control-accent" />
               </div>
@@ -1019,14 +1019,14 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                   <span className="w-1.5 h-1.5 rounded-full bg-mission-control-text-dim animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
-            </div>
+            </Flex>
           )}
         </div>
 
         {/* Bottom free-text input — shown for text entry steps */}
         {showTextInput && (
           <div className="flex-shrink-0 border-t border-mission-control-border px-4 py-3">
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <TextField.Root
                 ref={inputRef as React.RefObject<HTMLInputElement>}
                 type={step === 'budget' ? 'number' : 'text'}
@@ -1041,7 +1041,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               <IconButton variant="solid" size="2" onClick={handleInputSend} disabled={step === 'name' ? freeInput.trim().length < 2 : false} className="flex-shrink-0">
                 <Send size={15} />
               </IconButton>
-            </div>
+            </Flex>
           </div>
         )}
       </div>
