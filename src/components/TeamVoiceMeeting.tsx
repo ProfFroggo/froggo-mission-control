@@ -898,8 +898,8 @@ Respond as ${agentName(agentId)}:`;
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-mission-control-surface border-b border-mission-control-border">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="px-6 py-4 bg-mission-control-surface border-b border-mission-control-border">
+        <Flex align="center" gap="3">
           <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
             <Users size={24} className="text-mission-control-accent" />
           </div>
@@ -918,9 +918,9 @@ Respond as ${agentName(agentId)}:`;
               )}
             </p>
           </div>
-        </div>
+        </Flex>
 
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           {/* Push-to-talk toggle */}
           <Button
             onClick={() => setPushToTalkMode(v => !v)}
@@ -982,7 +982,7 @@ Respond as ${agentName(agentId)}:`;
             </IconButton>
             {showDeviceSettings && (
               <div className="absolute right-0 top-full mt-1 z-50 w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-4 space-y-4">
-                <div className="flex items-center justify-between">
+                <Flex align="center" justify="between">
                   <span className="text-xs font-semibold text-mission-control-text">Audio Devices</span>
                   <IconButton
                     onClick={() => setShowDeviceSettings(false)}
@@ -992,7 +992,7 @@ Respond as ${agentName(agentId)}:`;
                   >
                     <XIcon size={14} />
                   </IconButton>
-                </div>
+                </Flex>
 
                 {/* Microphone */}
                 <div>
@@ -1045,7 +1045,7 @@ Respond as ${agentName(agentId)}:`;
           </div>
 
           {/* Volume */}
-          <div className="flex items-center gap-1">
+          <Flex align="center" gap="1">
             <IconButton
               onClick={() => { setMuted(!muted); if (!muted) { stopSpeaking(); window.speechSynthesis.cancel(); } }}
               size="2"
@@ -1064,7 +1064,7 @@ Respond as ${agentName(agentId)}:`;
               onChange={e => setVolume(parseFloat(e.target.value))}
               className="w-16 h-1 accent-mission-control-accent"
             />
-          </div>
+          </Flex>
 
           {/* Download transcript */}
           {transcript.length > 0 && (
@@ -1091,21 +1091,21 @@ Respond as ${agentName(agentId)}:`;
           >
             <MessageSquare size={16} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Recording banner */}
       {isRecording && (
-        <div className="flex items-center justify-center gap-2 px-4 py-1.5 bg-error-subtle border-b border-error-border text-error text-xs font-medium">
+        <Flex align="center" justify="center" gap="2" className="px-4 py-1.5 bg-error-subtle border-b border-error-border text-error text-xs font-medium">
           <div className="w-2 h-2 rounded-full bg-error animate-pulse" />
           Meeting is being recorded
-        </div>
+        </Flex>
       )}
 
       {/* Participant list panel */}
       {showParticipants && (
         <div className="border-b border-mission-control-border bg-mission-control-surface/60 px-4 py-3">
-          <div className="flex items-center justify-between mb-2">
+          <Flex align="center" justify="between" className="mb-2">
             <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Participants</span>
             {isActive && (
               <Button
@@ -1119,10 +1119,10 @@ Respond as ${agentName(agentId)}:`;
                 Mute all agents
               </Button>
             )}
-          </div>
+          </Flex>
           <div className="space-y-1.5">
             {/* Host (user) */}
-            <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-mission-control-bg/40">
+            <Flex align="center" gap="3" className="px-2 py-1.5 rounded-lg bg-mission-control-bg/40">
               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                 K
               </div>
@@ -1131,7 +1131,7 @@ Respond as ${agentName(agentId)}:`;
                 {listening ? <Mic size={12} /> : <MicOff size={12} />}
                 {listening ? 'Speaking' : 'Muted'}
               </div>
-            </div>
+            </Flex>
             {/* Agents */}
             {room.agents.map(id => {
               const agent = agents.find(a => a.id === id);
@@ -1140,10 +1140,10 @@ Respond as ${agentName(agentId)}:`;
               const isQueued = speakQueue.includes(id);
               const isAgentMuted = agentsMuted.has(id);
               return (
-                <div key={id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-mission-control-border/40 transition-colors">
+                <Flex key={id} align="center" gap="3" className="px-2 py-1.5 rounded-lg hover:bg-mission-control-border/40 transition-colors">
                   <AgentAvatar agentId={id} size="xs" />
                   <span className="text-sm text-mission-control-text flex-1">{agent?.name || id}</span>
-                  <div className="flex items-center gap-2">
+                  <Flex align="center" gap="2">
                     {isSpeaking && (
                       <span className="text-xs text-success">Speaking</span>
                     )}
@@ -1166,8 +1166,8 @@ Respond as ${agentName(agentId)}:`;
                     >
                       {isAgentMuted ? <MicOff size={12} /> : <Mic size={12} />}
                     </IconButton>
-                  </div>
-                </div>
+                  </Flex>
+                </Flex>
               );
             })}
           </div>
@@ -1231,12 +1231,12 @@ Respond as ${agentName(agentId)}:`;
 
         {/* Speaking indicator */}
         {speakingAgent && (
-          <div className="ml-auto flex items-center gap-2">
+          <Flex align="center" gap="2" className="ml-auto">
             <Waveform level={speakLevel} color={getAgentTheme(speakingAgent).color} bars={6} height={24} />
             <span className={`text-xs font-medium ${getAgentTheme(speakingAgent).text}`}>
               {agentName(speakingAgent)} speaking
             </span>
-          </div>
+          </Flex>
         )}
       </div>
 
@@ -1315,22 +1315,22 @@ Respond as ${agentName(agentId)}:`;
 
         {/* Partial transcript */}
         {partialTranscript && (
-          <div className="flex gap-2 justify-end">
+          <Flex gap="2" justify="end">
             <div className="max-w-[75%] rounded-2xl px-3 py-2 bg-mission-control-accent/30 text-white/70">
               <p className="text-sm italic">{partialTranscript}…</p>
             </div>
-          </div>
+          </Flex>
         )}
 
         {/* Processing indicator */}
         {processingAgent && !speakingAgent && (
-          <div className="flex gap-2 items-center">
+          <Flex gap="2" align="center">
             <AgentAvatar agentId={processingAgent} size="xs" />
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl px-4 py-2 flex items-center gap-2">
               <Loader2 size={14} className="animate-spin text-mission-control-accent" />
               <span className="text-xs text-mission-control-text-dim">{agentName(processingAgent)} is thinking…</span>
             </div>
-          </div>
+          </Flex>
         )}
 
         <div ref={messagesEndRef} />
@@ -1342,13 +1342,13 @@ Respond as ${agentName(agentId)}:`;
         {isActive && (
           <div className="flex items-center justify-center mb-3 h-10">
             {listening && !speakingAgent && !processingAgent && (
-              <div className="flex items-center gap-3">
+              <Flex align="center" gap="3">
                 <span className="text-xs text-mission-control-accent">Listening…</span>
                 <Waveform level={micLevel} color="var(--color-info)" bars={10} height={32} />
-              </div>
+              </Flex>
             )}
             {speakingAgent && (
-              <div className="flex items-center gap-3">
+              <Flex align="center" gap="3">
                 <Waveform level={speakLevel} color={getAgentTheme(speakingAgent).color} bars={10} height={32} />
                 <span className={`text-xs ${getAgentTheme(speakingAgent).text}`}>
                   {agentName(speakingAgent)} speaking
@@ -1358,13 +1358,13 @@ Respond as ${agentName(agentId)}:`;
                     → {speakQueue.map(id => agentName(id)).join(', ')} next
                   </span>
                 )}
-              </div>
+              </Flex>
             )}
             {processingAgent && !speakingAgent && (
-              <div className="flex items-center gap-2">
+              <Flex align="center" gap="2">
                 <Loader2 size={14} className="animate-spin text-mission-control-accent" />
                 <span className="text-xs text-mission-control-text-dim">{agentName(processingAgent)} thinking…</span>
-              </div>
+              </Flex>
             )}
             {!listening && !speakingAgent && !processingAgent && (
               <span className="text-xs text-mission-control-text-dim">Tap mic to speak</span>
@@ -1373,7 +1373,7 @@ Respond as ${agentName(agentId)}:`;
         )}
 
         {/* Buttons */}
-        <div className="flex items-center justify-center gap-3">
+        <Flex align="center" justify="center" gap="3">
           {isActive && (
             <>
               {/* Mic toggle / interrupt */}
@@ -1447,7 +1447,7 @@ Respond as ${agentName(agentId)}:`;
           >
             {isActive ? <PhoneOff size={24} /> : <Mic size={24} />}
           </IconButton>
-        </div>
+        </Flex>
 
         {!isActive && (
           <p className="text-center text-xs text-mission-control-text-dim mt-2">
