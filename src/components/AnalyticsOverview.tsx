@@ -26,6 +26,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { Flex } from '@radix-ui/themes';
 import { analyticsApi, taskApi, inboxApi, sessionApi, agentApi } from '../lib/api';
 import { createLogger } from '../utils/logger';
 import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_MARGIN } from '../lib/chartTheme';
@@ -250,19 +251,19 @@ function StatusDonutChart({ slices }: { slices: StatusSlice[] }) {
       {/* Legend rows with counts + percentages */}
       <div className="space-y-2">
         {arcs.map((arc) => (
-          <div key={arc.status} className="flex items-center gap-3">
+          <Flex key={arc.status} align="center" gap="3">
             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: arc.color }} />
             <span className="text-sm text-mission-control-text flex-1">{arc.label}</span>
             <span className="text-sm font-medium tabular-nums text-mission-control-text">{arc.count}</span>
             <span className="text-xs tabular-nums text-mission-control-text-dim w-10 text-right">{Math.round(arc.pct * 100)}%</span>
-          </div>
+          </Flex>
         ))}
-        <div className="flex items-center gap-3 pt-2 border-t border-mission-control-border">
+        <Flex align="center" gap="3" className="pt-2 border-t border-mission-control-border">
           <span className="w-2.5 h-2.5 flex-shrink-0" />
           <span className="text-sm font-medium text-mission-control-text-dim flex-1">Total</span>
           <span className="text-sm font-bold tabular-nums text-mission-control-text">{total}</span>
           <span className="text-xs tabular-nums text-mission-control-text-dim w-10 text-right">100%</span>
-        </div>
+        </Flex>
       </div>
     </div>
   );
@@ -307,7 +308,7 @@ function AgentLeaderboard({ rows }: { rows: AgentLeaderboardRow[] }) {
               className="border-b border-mission-control-border/40 last:border-0 hover:bg-mission-control-border/40 transition-colors"
             >
               <td className="py-2.5">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <span
                     className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
                     style={{ background: row.color || 'var(--mission-control-accent)' }}
@@ -315,7 +316,7 @@ function AgentLeaderboard({ rows }: { rows: AgentLeaderboardRow[] }) {
                     {row.name.slice(0, 1).toUpperCase()}
                   </span>
                   <span className="truncate max-w-[120px]">{row.name}</span>
-                </div>
+                </Flex>
               </td>
               <td className="py-2.5 text-right font-medium text-success tabular-nums">{row.tasksDone}</td>
               <td className="py-2.5 text-right tabular-nums">{row.tasksInProgress}</td>
@@ -667,11 +668,11 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Tasks done vs last week */}
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <CheckCircle size={16} className="text-success" />
               <span className="text-sm text-mission-control-text-dim">Tasks completed</span>
-            </div>
-            <div className="flex items-baseline gap-2">
+            </Flex>
+            <Flex align="baseline" gap="2">
               <span className="text-3xl font-bold tabular-nums">{weekDone}</span>
               {weekDelta !== 0 && (
                 <span
@@ -689,30 +690,30 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
                   same as last wk
                 </span>
               )}
-            </div>
+            </Flex>
           </div>
 
           {/* New tasks created */}
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <PlusCircle size={16} className="text-info" />
               <span className="text-sm text-mission-control-text-dim">New tasks</span>
-            </div>
+            </Flex>
             <div className="text-3xl font-bold tabular-nums">{weekCreated}</div>
           </div>
 
           {/* Agent utilisation */}
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <Users size={16} className="text-review" />
               <span className="text-sm text-mission-control-text-dim">Agent utilisation</span>
-            </div>
-            <div className="flex items-baseline gap-2">
+            </Flex>
+            <Flex align="baseline" gap="2">
               <span className="text-3xl font-bold tabular-nums">{utilPct}%</span>
               <span className="text-xs text-mission-control-text-dim tabular-nums">
                 {agentUtil.active}/{agentUtil.total} online
               </span>
-            </div>
+            </Flex>
             <div className="h-1.5 bg-mission-control-bg rounded-full overflow-hidden mt-1">
               <div
                 className="h-full bg-mission-control-accent rounded-full transition-all"
@@ -732,7 +733,7 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
               key={idx}
               className="p-4 bg-mission-control-surface border border-mission-control-border rounded-2xl"
             >
-              <div className="flex items-center justify-between mb-3">
+              <Flex align="center" justify="between" mb="3">
                 <Icon size={20} className={stat.color} />
                 {stat.trend && (
                   <div
@@ -750,7 +751,7 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
                     {stat.change !== undefined && `${stat.change}%`}
                   </div>
                 )}
-              </div>
+              </Flex>
               <div className="text-2xl font-bold mb-1 tabular-nums">{stat.value}</div>
               <div className="text-sm text-mission-control-text-dim">{stat.label}</div>
             </div>
@@ -809,19 +810,19 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
 
       {/* ── Activity Chart — Real Data ────────────────────────── */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <Flex align="center" justify="between" mb="4">
           <h2 className="font-semibold">Task Activity</h2>
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
+          <Flex align="center" gap="4" className="text-sm">
+            <Flex align="center" gap="2">
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_COLORS.accent }} />
               <span className="text-xs text-mission-control-text-dim">Completed</span>
-            </div>
-            <div className="flex items-center gap-2">
+            </Flex>
+            <Flex align="center" gap="2">
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_COLORS.blue }} />
               <span className="text-xs text-mission-control-text-dim">Created</span>
-            </div>
-          </div>
-        </div>
+            </Flex>
+          </Flex>
+        </Flex>
 
         {dailyData.length > 0 ? (
           <div className="w-full" style={{ minHeight: 256 }}>
@@ -844,9 +845,9 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="flex items-center justify-center text-mission-control-text-dim" style={{ minHeight: 256 }}>
+          <Flex align="center" justify="center" className="text-mission-control-text-dim" style={{ minHeight: 256 }}>
             No task data available for this period
-          </div>
+          </Flex>
         )}
       </div>
 
@@ -865,12 +866,12 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
                   agent.total > 0 ? Math.round((agent.completed / agent.total) * 100) : 0;
                 return (
                   <div key={idx} className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
+                    <Flex align="center" justify="between" className="text-sm">
                       <span className="truncate max-w-[150px]">{agent.agent}</span>
                       <span className="text-mission-control-text-dim tabular-nums">
                         {agent.completed}/{agent.total} ({pct}%)
                       </span>
-                    </div>
+                    </Flex>
                     <div className="h-2 bg-mission-control-bg rounded-full overflow-hidden">
                       <div
                         className="h-full bg-mission-control-accent rounded-full transition-all"
@@ -898,12 +899,12 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
             <div className="space-y-3">
               {projects.slice(0, 6).map((proj, idx) => (
                 <div key={idx} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
+                  <Flex align="center" justify="between" className="text-sm">
                     <span className="truncate max-w-[150px]">{proj.project}</span>
                     <span className="text-mission-control-text-dim tabular-nums">
                       {proj.completed}/{proj.total} ({proj.completion_rate}%)
                     </span>
-                  </div>
+                  </Flex>
                   <div className="h-2 bg-mission-control-bg rounded-full overflow-hidden">
                     <div
                       className="h-full bg-mission-control-accent rounded-full transition-all"
@@ -929,7 +930,7 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
             Insights
           </h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg">
+            <Flex align="center" justify="between" className="p-2 bg-mission-control-bg rounded-lg">
               <span className="text-sm">Most productive day</span>
               <span className="text-sm font-medium text-mission-control-accent">
                 {dailyData.length > 0
@@ -942,19 +943,19 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
                     })()
                   : 'No data yet'}
               </span>
-            </div>
-            <div className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg">
+            </Flex>
+            <Flex align="center" justify="between" className="p-2 bg-mission-control-bg rounded-lg">
               <span className="text-sm">Total completed</span>
               <span className="text-sm font-medium text-mission-control-accent tabular-nums">
                 {dailyData.reduce((sum, d) => sum + d.completed, 0)} tasks
               </span>
-            </div>
-            <div className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg">
+            </Flex>
+            <Flex align="center" justify="between" className="p-2 bg-mission-control-bg rounded-lg">
               <span className="text-sm">Total created</span>
               <span className="text-sm font-medium text-mission-control-accent tabular-nums">
                 {dailyData.reduce((sum, d) => sum + d.created, 0)} tasks
               </span>
-            </div>
+            </Flex>
           </div>
         </div>
 
@@ -966,20 +967,22 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
           <div className="space-y-3">
             {agents.length > 0 ? (
               agents.slice(0, 3).map((agent, idx) => (
-                <div
+                <Flex
                   key={idx}
-                  className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg"
+                  align="center"
+                  justify="between"
+                  className="p-2 bg-mission-control-bg rounded-lg"
                 >
-                  <div className="flex items-center gap-2">
+                  <Flex align="center" gap="2">
                     <span className="w-5 h-5 flex items-center justify-center text-xs font-bold text-mission-control-text-dim">
                       {idx + 1}.
                     </span>
                     <span className="text-sm truncate max-w-[150px]">{agent.agent}</span>
-                  </div>
+                  </Flex>
                   <span className="text-sm font-medium text-mission-control-accent">
                     {agent.completed} done
                   </span>
-                </div>
+                </Flex>
               ))
             ) : (
               <div className="text-sm text-mission-control-text-dim py-4 text-center">
