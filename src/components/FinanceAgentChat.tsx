@@ -221,13 +221,13 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
   return (
     <Flex direction="column" height="100%" className="bg-mission-control-surface border-l border-mission-control-border">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="2">
           <MessageSquare className="w-5 h-5 text-success" />
           <h3 className="text-lg font-semibold text-mission-control-text">Finance Manager</h3>
           <span className="px-2 py-0.5 text-xs bg-success-subtle text-success rounded-full">AI</span>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           {messages.length > 0 && (
             <IconButton
               size="2"
@@ -251,8 +251,8 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
               <X className="w-4 h-4" />
             </IconButton>
           )}
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -278,9 +278,9 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
         ) : (
           <>
             {messages.map((msg) => (
-              <div
+              <Flex
                 key={msg.id}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                justify={msg.role === 'user' ? 'end' : 'start'}
               >
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
@@ -300,17 +300,17 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
                     {formatTimestamp(msg.timestamp)}
                   </div>
                 </div>
-              </div>
+              </Flex>
             ))}
             {loading && (
-              <div className="flex justify-start">
+              <Flex justify="start">
                 <div className="max-w-[80%] rounded-2xl px-4 py-3 shadow-sm bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-tl-sm">
-                  <div className="flex items-center gap-2 text-sm">
+                  <Flex align="center" gap="2" className="text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Finance Manager is thinking...</span>
-                  </div>
+                  </Flex>
                 </div>
-              </div>
+              </Flex>
             )}
             <div ref={messagesEndRef} />
           </>
@@ -319,7 +319,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
 
       {/* Error message */}
       {error && (
-        <div className="mx-4 mb-2 p-3 bg-error-subtle border border-error-border rounded-lg flex items-start gap-2">
+        <Flex align="start" gap="2" className="mx-4 mb-2 p-3 bg-error-subtle border border-error-border rounded-lg">
           <AlertCircle className="w-4 h-4 text-error mt-0.5 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm text-error">{error}</p>
@@ -333,12 +333,12 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
               Dismiss
             </Button>
           </div>
-        </div>
+        </Flex>
       )}
 
       {/* Input */}
       <div className="p-4 border-t border-mission-control-border bg-mission-control-surface">
-        <div className="flex gap-2">
+        <Flex gap="2">
           <TextField.Root
             ref={inputWrapperRef}
             size="2"
@@ -364,7 +364,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
               <Send className="w-5 h-5" />
             )}
           </IconButton>
-        </div>
+        </Flex>
         <p className="text-xs text-mission-control-text-dim mt-2">
           Press Enter to send • Shift+Enter for new line
         </p>

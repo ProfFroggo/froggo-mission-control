@@ -147,16 +147,16 @@ export const XContentMixTracker: React.FC = () => {
     return (
       <div key={item.type} className="mb-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="mb-2">
+          <Flex align="center" gap="2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
             <span className="text-sm font-medium text-mission-control-text">{item.type}</span>
             <span className="text-xs text-mission-control-text-dim">({item.count} posts)</span>
             <span className="text-xs text-mission-control-text-dim">
               avg {getAvgEngagement(item)} eng/post
             </span>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <span className="text-xs text-mission-control-text-dim">
               {currentPercent.toFixed(1)}% / {item.target}%
             </span>
@@ -165,8 +165,8 @@ export const XContentMixTracker: React.FC = () => {
             ) : (
               <Check size={14} className="text-success" />
             )}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Progress bars */}
         <div className="space-y-1">
@@ -253,8 +253,8 @@ export const XContentMixTracker: React.FC = () => {
   return (
     <Flex direction="column" height="100%" p="5" className="bg-mission-control-surface">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="mb-6">
+        <Flex align="center" gap="3">
           <PieChart className="text-info" size={24} />
           <div>
             <h2 className="text-lg font-semibold text-mission-control-text">Content Mix Tracker</h2>
@@ -262,7 +262,7 @@ export const XContentMixTracker: React.FC = () => {
               Analyze your content type distribution from real tweet data
             </p>
           </div>
-        </div>
+        </Flex>
 
         {/* Period selector */}
         <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
@@ -289,22 +289,22 @@ export const XContentMixTracker: React.FC = () => {
             Last Month
           </button>
         </div>
-      </div>
+      </Flex>
 
       {/* Error state */}
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-error-subtle text-error text-sm flex items-center gap-2">
+        <Flex align="center" gap="2" className="mb-4 p-3 rounded-lg bg-error-subtle text-error text-sm">
           <AlertTriangle size={16} />
           {error}
           <Button onClick={loadContentMix} variant="ghost" color="red" size="1" className="ml-auto">
             Retry
           </Button>
-        </div>
+        </Flex>
       )}
 
       {/* Overall status card */}
       <div className={`mb-6 p-4 rounded-lg border-2 ${statusClasses(status)}`}>
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" className="mb-1">
           {status === 'on-target' ? (
             <>
               <Check className="text-success" size={20} />
@@ -321,7 +321,7 @@ export const XContentMixTracker: React.FC = () => {
               <span className="font-medium text-error">Major Deviation</span>
             </>
           )}
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text-dim">
           {totalPosts} tweets analyzed from the last {period === 'week' ? '7 days' : '30 days'}
         </p>
