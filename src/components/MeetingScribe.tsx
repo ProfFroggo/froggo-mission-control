@@ -13,7 +13,7 @@ import {
   Mic, Square, Brain, ListTodo, FileText,
   Download, Send, Trash2, Clock, Sparkles, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { Button, Spinner } from '@radix-ui/themes';
+import { Button, Flex, Spinner } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
 import { createLogger } from '../utils/logger';
@@ -574,11 +574,11 @@ ${transcriptText}`;
           
           {/* Recording info */}
           {isRecording && (
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-error">
+            <Flex align="center" justify="between" className="mt-4">
+              <Flex align="center" gap="2" className="text-error">
                 <span className="animate-pulse">●</span>
                 <span className="text-sm">Recording</span>
-              </div>
+              </Flex>
               <span className="font-mono text-lg">{formatDuration(timer)}</span>
               {/* Audio level bar */}
               <div className="w-20 h-2 bg-mission-control-surface rounded-full overflow-hidden">
@@ -587,14 +587,14 @@ ${transcriptText}`;
                   style={{ width: `${Math.min(100, audioLevel * 100)}%` }}
                 />
               </div>
-            </div>
+            </Flex>
           )}
           
           {processingChunk && (
-            <div className="mt-2 text-xs text-mission-control-text-dim flex items-center gap-1">
+            <Flex align="center" gap="1" className="mt-2 text-xs text-mission-control-text-dim">
               <Spinner size="1" />
               Transcribing chunk...
-            </div>
+            </Flex>
           )}
           
           {error && (
@@ -610,13 +610,13 @@ ${transcriptText}`;
         
         {/* Live Transcript */}
         <div className="flex-1 overflow-y-auto p-4">
-          <div className="flex items-center gap-2 mb-3">
+          <Flex align="center" gap="2" className="mb-3">
             <Brain size={16} className="text-[--accent-11]" />
             <span className="font-medium text-sm">Live Transcript</span>
             {entries.length > 0 && (
               <span className="text-xs text-mission-control-text-dim">({entries.filter(e => !e.isProcessing).length} segments)</span>
             )}
-          </div>
+          </Flex>
           
           {entries.length === 0 ? (
             <div className="text-mission-control-text-dim text-sm text-center py-12">
@@ -634,12 +634,12 @@ ${transcriptText}`;
                       : 'bg-mission-control-surface text-mission-control-text'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <Flex align="start" justify="between" gap="2">
                     <p className="flex-1">{entry.text}</p>
                     <span className="text-xs text-mission-control-text-dim shrink-0 mt-0.5">
                       {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </span>
-                  </div>
+                  </Flex>
                 </div>
               ))}
               <div ref={transcriptEndRef} />
@@ -681,11 +681,11 @@ ${transcriptText}`;
         {summary ? (
           /* Post-meeting summary */
           <div className="flex-1 overflow-y-auto p-6">
-            <div className="flex items-center gap-2 mb-6">
+            <Flex align="center" gap="2" className="mb-6">
               <FileText size={20} className="text-[--accent-11]" />
               <h3 className="text-lg font-medium">Meeting Complete</h3>
               <span className="text-sm text-mission-control-text-dim">({formatDuration(summary.duration)})</span>
-            </div>
+            </Flex>
             
             {summary.savedPath && (
               <div className="bg-success-subtle border border-success-border rounded-lg p-3 mb-4">
@@ -697,10 +697,10 @@ ${transcriptText}`;
             {/* AI Summary */}
             {aiSummary ? (
               <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 mb-4">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <Sparkles size={16} className="text-review" />
                   <span className="text-sm font-medium text-review">AI Summary</span>
-                </div>
+                </Flex>
                 <div className="text-sm text-mission-control-text whitespace-pre-wrap">{aiSummary}</div>
               </div>
             ) : (
@@ -721,7 +721,7 @@ ${transcriptText}`;
             )}
             
             {/* Action buttons */}
-            <div className="flex gap-2 mb-6">
+            <Flex gap="2" className="mb-6">
               <Button
                 onClick={sendToMissionControl}
                 disabled={!hasTranscript}
@@ -742,7 +742,7 @@ ${transcriptText}`;
               >
                 <Download size={14} /> Export
               </Button>
-            </div>
+            </Flex>
             
             {/* Full transcript review */}
             <div>
@@ -786,27 +786,27 @@ ${transcriptText}`;
         ) : (
           /* During recording - show larger live view */
           <div className="flex-1 flex flex-col p-6">
-            <div className="flex items-center gap-2 mb-4">
+            <Flex align="center" gap="2" className="mb-4">
               <Clock size={16} className="text-mission-control-text-dim" />
               <span className="text-sm text-mission-control-text-dim">Recording in progress • {formatDuration(timer)}</span>
-            </div>
+            </Flex>
             
             <div className="flex-1 overflow-y-auto space-y-3">
               {entries.filter(e => !e.isProcessing).map(entry => (
                 <div key={entry.id} className="bg-mission-control-surface rounded-lg px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
+                  <Flex align="start" justify="between" gap="3">
                     <p className="text-mission-control-text">{entry.text}</p>
                     <span className="text-xs text-mission-control-text-dim shrink-0">
                       {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
-                  </div>
+                  </Flex>
                 </div>
               ))}
               {processingChunk && (
-                <div className="flex items-center gap-2 text-mission-control-text-dim text-sm px-4">
+                <Flex align="center" gap="2" className="text-mission-control-text-dim text-sm px-4">
                   <Spinner size="1" />
                   Transcribing...
-                </div>
+                </Flex>
               )}
               <div ref={transcriptEndRef} />
             </div>
