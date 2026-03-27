@@ -12,13 +12,15 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Send, Loader2, MessageCircle, Activity, AlertTriangle } from 'lucide-react';
-import { Flex, TextField } from '@radix-ui/themes';
+import { X, Send, MessageCircle, Activity, AlertTriangle } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import BaseModal from './BaseModal';
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
 import { chatApi, streamMessage } from '../lib/api';
 import { gateway } from '../lib/gateway';
+import { extractAllArtifacts, generateArtifactTitle } from '../utils/artifactExtractor';
+import { useArtifactStore } from '../store/artifactStore';
 
 interface PokeModalProps {
   taskId: string;
@@ -42,7 +44,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const streamCleanupRef = useRef<(() => void) | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -142,6 +144,17 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             timestamp: Date.now(),
           };
           responseMessages.push(assistantMsg);
+          extractAllArtifacts(assistantMsg.content).forEach(a => {
+            useArtifactStore.getState().addArtifact({
+              type: a.type,
+              title: generateArtifactTitle(a),
+              content: a.content,
+              messageId: `poke-${taskId}-${assistantMsg.timestamp}`,
+              sessionId: `poke:${taskId}`,
+              timestamp: assistantMsg.timestamp,
+              metadata: a.metadata,
+            });
+          });
           // Persist assistant response
           fetch('/api/chat', {
             method: 'POST',
@@ -215,6 +228,17 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                 content: finalContent,
                 timestamp: ts,
               }]);
+              extractAllArtifacts(finalContent).forEach(a => {
+                useArtifactStore.getState().addArtifact({
+                  type: a.type,
+                  title: generateArtifactTitle(a),
+                  content: a.content,
+                  messageId: `poke-${taskId}-${ts}`,
+                  sessionId: `poke:${taskId}`,
+                  timestamp: ts,
+                  metadata: a.metadata,
+                });
+              });
               // Persist assistant reply
               fetch('/api/chat', {
                 method: 'POST',
@@ -382,9 +406,10 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[500px]">
         {/* History loading state */}
         {!historyLoaded && (
-          <div className="flex items-center justify-center h-full text-mission-control-text-dim text-sm">
-            <Loader2 size={16} className="animate-spin mr-2" />
-            Loading...
+          <div className="flex items-center justify-center h-full gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
         )}
         {historyLoaded && messages.map((msg) => (
@@ -422,8 +447,13 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         {/* Loading indicator */}
         {(loading || sending) && !streamingContent && (
           <Flex justify="start">
-            <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-mission-control-border/20">
-              <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
+            <div className="rounded-2xl rounded-bl-md px-4 py-3 bg-mission-control-border/20">
+              <Flex gap="1" align="center">
+                <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="text-xs text-mission-control-text-dim ml-1">thinking...</span>
+              </Flex>
             </div>
           </Flex>
         )}
@@ -434,15 +464,16 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
       {/* Input area */}
       <div className="p-3 border-t border-mission-control-border bg-mission-control-bg">
         <Flex align="center" gap="2">
-          <TextField.Root
+          <textarea
             ref={inputRef}
-            type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={sending ? 'Waiting for response...' : 'Ask about this task...'}
             disabled={sending || loading}
-            className="flex-1"
+            rows={2}
+            className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-[14px] px-4 py-3 text-sm resize-none text-mission-control-text placeholder:text-mission-control-text-dim outline-none focus:border-[var(--mission-control-accent)] focus:ring-2 focus:ring-[var(--mission-control-accent)]/20 transition-colors"
+            style={{ minHeight: '44px', maxHeight: '120px' }}
           />
           <button
             onClick={sendMessage}

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import MarkdownMessage from '../MarkdownMessage';
 import { Send, Bot, User, Play, CheckCircle } from 'lucide-react';
 import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import type { ConversationMessage, SectionProgress, SectionId } from './types';
@@ -115,7 +116,7 @@ export default function ConversationPanel({
                   : 'bg-mission-control-surface text-mission-control-text'
               }`}
             >
-              {msg.content}
+              {msg.role === 'user' ? msg.content : <MarkdownMessage content={msg.content} />}
             </div>
             {msg.role === 'user' && (
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-mission-control-border flex items-center justify-center">

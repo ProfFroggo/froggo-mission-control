@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import MarkdownMessage from '../MarkdownMessage';
 import { ArrowDownToLine, Copy, Check, RotateCcw } from 'lucide-react';
 import { Flex, Box } from '@radix-ui/themes';
 import { useWritingStore } from '../../store/writingStore';
@@ -53,13 +53,12 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
         <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">{message.agent}</div>
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm text-mission-control-text">
           {isStreaming ? (
-            <div className="prose-sm">
-              <ReactMarkdown>{content}</ReactMarkdown>
-              <span className="inline-block w-1.5 h-4 bg-mission-control-accent/70 animate-pulse ml-0.5 align-text-bottom" />
+            <div>
+              <MarkdownMessage content={content} streaming={true} />
             </div>
           ) : (
-            <div className="prose-sm">
-              <ReactMarkdown>{content}</ReactMarkdown>
+            <div>
+              <MarkdownMessage content={content} />
             </div>
           )}
         </div>

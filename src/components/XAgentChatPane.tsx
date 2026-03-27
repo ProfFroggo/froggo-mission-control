@@ -5,6 +5,8 @@ import type { XTab } from './XTwitterPage';
 import MarkdownMessage from './MarkdownMessage';
 import { chatApi } from '../lib/api';
 import { showToast } from './Toast';
+import { extractAllArtifacts, generateArtifactTitle } from '../utils/artifactExtractor';
+import { useArtifactStore } from '../store/artifactStore';
 
 interface XAgentChatPaneProps {
   tab: XTab;
@@ -317,6 +319,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         agentContent = 'Failed to get a response. Check that Claude CLI is configured.';
       }
 
+      const msgTs = Date.now();
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === agentMsgId
@@ -324,6 +327,20 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
             : msg
         )
       );
+      // Extract artifacts from agent response
+      if (agentContent) {
+        extractAllArtifacts(agentContent).forEach(a => {
+          useArtifactStore.getState().addArtifact({
+            type: a.type,
+            title: generateArtifactTitle(a),
+            content: a.content,
+            messageId: agentMsgId,
+            sessionId: sessionKey,
+            timestamp: msgTs,
+            metadata: a.metadata,
+          });
+        });
+      }
 
       // Extract actionable content from response and dispatch to editor
       if (agentContent) {

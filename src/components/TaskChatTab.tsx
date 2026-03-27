@@ -4,6 +4,8 @@ import MarkdownMessage from './MarkdownMessage';
 import SessionStatsBar from './SessionStatsBar';
 // eslint-disable-next-line import/order
 import { Spinner, Flex, Box } from '@radix-ui/themes';
+import { extractAllArtifacts, generateArtifactTitle } from '../utils/artifactExtractor';
+import { useArtifactStore } from '../store/artifactStore';
 
 interface Message {
   role: 'user' | 'agent' | 'system';
@@ -13,21 +15,13 @@ interface Message {
   statusTransition?: string;
 }
 
-/** Returns true when a system message signals escalation / human review */
+/** Only fires on explicit sentinel tags agents are trained to output */
 function isEscalationSystemMessage(content: string): boolean {
-  const lower = content.toLowerCase();
   return (
-    lower.includes('human-review') ||
-    lower.includes('human review') ||
-    lower.includes('approval needed') ||
-    lower.includes('approval required') ||
-    lower.includes('needs approval') ||
-    lower.includes('waiting for approval') ||
-    lower.includes('waiting for human') ||
-    lower.includes('needs your decision') ||
-    lower.includes('needs your input') ||
-    lower.includes('escalat') ||
-    lower.includes('blocked')
+    content.includes('[ESCALATION]') ||
+    content.includes('[NEEDS YOUR DECISION]') ||
+    content.includes('[APPROVAL REQUIRED]') ||
+    content.includes('[BLOCKED]')
   );
 }
 
@@ -128,7 +122,20 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
       const data = await res.json();
 
       if (data.success && data.reply) {
-        setMessages(prev => [...prev, { role: 'agent', content: data.reply, timestamp: Date.now() }]);
+        const msgTs = Date.now();
+        const msgId = `task-${agentId}-${msgTs}`;
+        setMessages(prev => [...prev, { role: 'agent', content: data.reply, timestamp: msgTs }]);
+        extractAllArtifacts(data.reply).forEach(a => {
+          useArtifactStore.getState().addArtifact({
+            type: a.type,
+            title: generateArtifactTitle(a),
+            content: a.content,
+            messageId: msgId,
+            sessionId: sessionKey,
+            timestamp: msgTs,
+            metadata: a.metadata,
+          });
+        });
       } else {
         setMessages(prev => [...prev, {
           role: 'system',

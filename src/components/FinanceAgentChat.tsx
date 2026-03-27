@@ -4,6 +4,9 @@ import { Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { chatApi } from '../lib/api';
 import { createLogger } from '../utils/logger';
+import MarkdownMessage from './MarkdownMessage';
+import { extractAllArtifacts, generateArtifactTitle } from '../utils/artifactExtractor';
+import { useArtifactStore } from '../store/artifactStore';
 
 const logger = createLogger('FinanceChat');
 
@@ -31,7 +34,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputWrapperRef = useRef<HTMLInputElement>(null);
+  const inputWrapperRef = useRef<HTMLTextAreaElement>(null);
 
   const focusInput = () => {
     inputWrapperRef.current?.focus();
@@ -155,6 +158,22 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
             ));
           } catch { /* skip malformed */ }
         }
+      }
+
+      // Extract artifacts from agent response
+      if (accumulated) {
+        const extracted = extractAllArtifacts(accumulated);
+        extracted.forEach(a => {
+          useArtifactStore.getState().addArtifact({
+            type: a.type,
+            title: generateArtifactTitle(a),
+            content: a.content,
+            messageId: agentMsgId,
+            sessionId: FINANCE_SESSION_KEY,
+            timestamp: Date.now(),
+            metadata: a.metadata,
+          });
+        });
       }
 
       // Save agent response
@@ -300,8 +319,8 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
                         <div className="whitespace-pre-wrap break-words">{msg.content}</div>
                       </div>
                     ) : (
-                      <div className="text-sm text-mission-control-text whitespace-pre-wrap break-words">
-                        {msg.content}
+                      <div className="text-sm text-mission-control-text">
+                        <MarkdownMessage content={msg.content} />
                       </div>
                     )}
                     <div className="text-[11px] tabular-nums mt-1 text-mission-control-text-dim/70 px-1">
@@ -353,15 +372,16 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
       {/* Input */}
       <div className="border-t border-mission-control-border bg-mission-control-bg px-4 py-3">
         <Flex gap="2" align="end">
-          <input
-            ref={inputWrapperRef}
-            type="text"
+          <textarea
+            ref={inputWrapperRef as React.RefObject<HTMLTextAreaElement>}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyPress}
             placeholder="Ask about your finances..."
             disabled={loading || initializing}
-            className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-[14px] px-4 py-3 text-sm text-mission-control-text placeholder:text-mission-control-text-dim outline-none focus:border-[var(--mission-control-accent)] focus:ring-2 focus:ring-[var(--mission-control-accent)]/20 transition-colors"
+            rows={2}
+            className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-[14px] px-4 py-3 text-sm resize-none text-mission-control-text placeholder:text-mission-control-text-dim outline-none focus:border-[var(--mission-control-accent)] focus:ring-2 focus:ring-[var(--mission-control-accent)]/20 transition-colors"
+            style={{ minHeight: '44px', maxHeight: '120px' }}
           />
           <button
             onClick={sendMessage}

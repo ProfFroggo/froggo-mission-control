@@ -8,6 +8,8 @@ import VoiceChatPanel from './VoiceChatPanel';
 import { useStore } from '../store/store';
 import { chatApi } from '../lib/api';
 import { getAgentTheme } from '../utils/agentThemes';
+import { extractAllArtifacts, generateArtifactTitle } from '../utils/artifactExtractor';
+import { useArtifactStore } from '../store/artifactStore';
 
 interface AgentChatModalProps {
   agentId: string;
@@ -149,9 +151,22 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
       const finalReply = reply.trim();
       setStreamingContent('');
       if (finalReply) {
-        setMessages(prev => [...prev, { role: 'assistant', content: finalReply, timestamp: Date.now() }]);
-        // Note: chat route already persists; this is a local fallback for non-SDK-chat sessions
-        chatApi.saveMessage(sessionKey, { role: 'assistant', content: finalReply, timestamp: Date.now() }).catch(() => {});
+        const msgTs = Date.now();
+        const msgId = `modal-${agentId}-${msgTs}`;
+        setMessages(prev => [...prev, { role: 'assistant', content: finalReply, timestamp: msgTs }]);
+        chatApi.saveMessage(sessionKey, { role: 'assistant', content: finalReply, timestamp: msgTs }).catch(() => {});
+        // Extract and store artifacts from this response
+        extractAllArtifacts(finalReply).forEach(a => {
+          useArtifactStore.getState().addArtifact({
+            type: a.type,
+            title: generateArtifactTitle(a),
+            content: a.content,
+            messageId: msgId,
+            sessionId: sessionKey,
+            timestamp: msgTs,
+            metadata: a.metadata,
+          });
+        });
       } else {
         setMessages(prev => [...prev, { role: 'system', content: 'No response from agent', timestamp: Date.now() }]);
       }
