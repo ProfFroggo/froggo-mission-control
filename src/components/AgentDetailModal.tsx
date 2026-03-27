@@ -1882,17 +1882,19 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             <span className={`text-xs ${allOn ? 'text-[var(--color-success)]' : someOn ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim'}`}>
                               {enabledCount}/{server.tools.length}
                             </span>
-                            <button
-                              type="button"
+                            <span
+                              role="button"
+                              tabIndex={0}
                               onClick={(e) => { e.stopPropagation(); toggleServer(server.tools, !allOn); }}
-                              className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleServer(server.tools, !allOn); } }}
+                              className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors cursor-pointer ${
                                 allOn
                                   ? 'bg-[var(--color-success)]/10 text-[var(--color-success)] hover:bg-[var(--color-success)]/20'
                                   : 'bg-mission-control-border/50 text-mission-control-text-dim hover:text-mission-control-text'
                               }`}
                             >
                               {allOn ? 'Disable all' : 'Enable all'}
-                            </button>
+                            </span>
                             {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                           </span>
                         </button>
