@@ -65,7 +65,7 @@ function firePatch(taskId: string, body: object): void {
 }
 
 /** Awaitable PATCH — returns parsed response body. Used by agent_status_set. */
-function awaitPatch(urlPath: string, body: object): Promise<any> {
+function awaitPatch(urlPath: string, body: object): Promise<Record<string, unknown>> {
   const encoded = JSON.stringify(body);
   return new Promise((resolve) => {
     const req = http.request({
@@ -1244,11 +1244,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         try {
           let query = 'SELECT * FROM campaigns WHERE 1=1';
-          const params: any[] = [];
+          const params: unknown[] = [];
           if (args?.status) { query += ' AND status = ?'; params.push(args.status); }
           else { query += " AND status != 'archived'"; }
           query += ' ORDER BY updatedAt DESC LIMIT 20';
-          const campaigns = db.prepare(query).all(...params) as any[];
+          const campaigns = db.prepare(query).all(...params) as Record<string, unknown>[];
 
           if (campaigns.length === 0) {
             return { content: [{ type: 'text', text: JSON.stringify({ campaigns: [], hint: 'No campaigns found matching the filter.' }) }] };

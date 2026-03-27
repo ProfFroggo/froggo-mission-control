@@ -1,5 +1,8 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextRequest, NextResponse } from 'next/server';
+import { mkdirSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 import { getDb } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
@@ -102,9 +105,6 @@ export async function POST(req: NextRequest) {
 
     // Create library folder
     try {
-      const { mkdirSync } = await import('fs');
-      const { join } = await import('path');
-      const { homedir } = await import('os');
       const folderPath = join(homedir(), 'mission-control', 'library', 'campaigns', id);
       mkdirSync(folderPath, { recursive: true });
     } catch { /* non-critical */ }

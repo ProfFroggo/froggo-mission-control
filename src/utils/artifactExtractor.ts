@@ -92,11 +92,13 @@ export function extractAllArtifacts(content: string): ExtractedArtifact[] {
     }
   }
 
-  // Extract images (markdown format)
+  // Extract images (markdown format) — only include loadable URLs, not bare filenames
   const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
   while ((match = imageRegex.exec(content)) !== null) {
     const altText = match[1];
     const url = match[2];
+    // Skip bare filenames — must be absolute URL, root-relative path, or data URI
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/') && !url.startsWith('data:')) continue;
 
     artifacts.push({
       type: 'image',
