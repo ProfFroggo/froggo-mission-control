@@ -2,11 +2,12 @@
 import { useState, useEffect, useCallback, type ComponentType } from 'react';
 import {
   Zap, Clock, Globe, Bot, Plus, Play, Trash2, Edit2,
-  Search, LayoutGrid, ChevronRight, AlertCircle, CheckCircle,
+  LayoutGrid, ChevronRight, AlertCircle, CheckCircle,
   RefreshCw, FileText, MessageSquare, Archive, Layers, List, History,
   Users, BarChart2,
 } from 'lucide-react';
-import { Button, TextField, Switch, Flex } from '@radix-ui/themes';
+import { Button, Switch, Flex } from '@radix-ui/themes';
+import SearchInput from './SearchInput';
 import TabNav, { type TabNavItem } from './TabNav';
 import AutomationBuilderModal from './AutomationBuilderModal';
 import AutomationStepBuilder, { type AutomationStepDef } from './AutomationStepBuilder';
@@ -566,16 +567,12 @@ export default function AutomationsPanel() {
         <>
           {/* Search + filter bar */}
           <Flex gap="3" align="center">
-            <div className="relative flex-1 max-w-sm">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none z-[1]" />
-              <TextField.Root
-                placeholder="Search automations..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                size="2"
-                className="pl-8"
-              />
-            </div>
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search automations..."
+              className="flex-1 max-w-sm"
+            />
             <button onClick={fetchAutomations} title="Refresh" aria-label="Refresh automations" className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
               <RefreshCw size={14} />
             </button>

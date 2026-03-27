@@ -24,7 +24,8 @@ import type { CatalogAgent } from '../types/catalog';
 import { getAgentTheme } from '../utils/agentThemes';
 import { createLogger } from '../utils/logger';
 import { agentApi } from '../lib/api';
-import { Button, IconButton, Badge, TextField, Select, Box, Flex } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Select, Box, Flex } from '@radix-ui/themes';
+import SearchInput from './SearchInput';
 import TabNav from './TabNav';
 
 const logger = createLogger('AgentPanel');
@@ -414,19 +415,15 @@ export default function AgentPanel() {
           </Flex>
 
           {/* Search / filter bar */}
-          <div className="relative mb-4">
-            <TextField.Root
-              size="2"
+          <div className="mb-4">
+            <SearchInput
               value={agentSearch}
-              onChange={(e) => setAgentSearch((e.target as HTMLInputElement).value)}
+              onChange={setAgentSearch}
               placeholder="Search agents by name, role, or capability…"
               aria-label="Search agents"
               className="w-full"
-            >
-              <TextField.Slot>
-                <Search size={14} className="text-mission-control-text-dim" />
-              </TextField.Slot>
-            </TextField.Root>
+              size="md"
+            />
           </div>
 
           {mainAgents.length === 0 ? (

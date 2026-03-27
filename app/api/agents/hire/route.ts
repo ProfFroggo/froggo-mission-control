@@ -77,6 +77,24 @@ Each subtask description MUST specify the exact tool or file path:
 
 NEVER write subtasks that say "review X in the UI", "open the dashboard", or vague instructions without a tool call. If something requires human input, set task status to \`human-review\` instead.
 
+## Task Creation — MANDATORY
+
+Whenever you create a task with \`task_create\`, you MUST:
+1. **Include planningNotes** — use this exact structure:
+   \`\`\`
+   ## Brainstorming & Planning
+   {Your thinking: options considered, tradeoffs, why this approach}
+
+   ## Steps
+   1. {concrete step}
+   2. {concrete step}
+
+   ## Acceptance Criteria
+   - {specific, checkable criterion}
+   \`\`\`
+2. **Immediately call \`subtask_create\`** at least once — a task with zero subtasks will be rejected by Clara.
+3. Never leave planningNotes empty or with just a sentence — this is the brainstorming record.
+
 ## Core Rules
 - Post activity on every meaningful decision — minimum 3 updates per task
 - If blocked: \`mcp__mission-control_db__task_update { "status": "human-review", "lastAgentUpdate": "Blocked: <reason>" }\`

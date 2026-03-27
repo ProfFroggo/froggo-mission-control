@@ -177,6 +177,8 @@ export default function ChatPanel() {
   const [streamError, setStreamError] = useState<string | null>(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [dismissedEscalationIds, setDismissedEscalationIds] = useState<Set<string>>(new Set());
+  const [queuedMessage, setQueuedMessage] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const lastUserMessageRef = useRef<string>('');
   const { agents: chatAgents } = useAgentList();
   const [selectedAgent, setSelectedAgent] = useState<ChatAgent | null>(null);
@@ -594,7 +596,7 @@ export default function ChatPanel() {
     }
     
     try {
-      const res = await gateway.getChatHistory(30) as { messages?: any[] } | null;
+      const res = await gateway.getChatHistory(30, selectedAgent?.dbSessionKey) as { messages?: any[] } | null;
       if (res?.messages && Array.isArray(res.messages)) {
         const history: StructuredChatMessage[] = res.messages
           .filter((m: any) => m.role === 'user' || m.role === 'assistant')
@@ -1073,13 +1075,17 @@ export default function ChatPanel() {
     setLoading(true);
     addActivity({ type: 'chat', message: `You: ${text.slice(0, 50)}...`, timestamp: Date.now() });
 
+    let accumulated = '';
     try {
       // Stream from SDK chat route — true character-by-character output
       // /stream is reserved for background task dispatch only; /chat is for interactive use
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
       const response = await fetch(`/api/agents/${selectedAgent.id}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: content, model: 'claude-sonnet-4-6', sessionKey: selectedAgent.dbSessionKey }),
+        signal: controller.signal,
       });
 
       if (!response.ok || !response.body) {
@@ -1103,7 +1109,6 @@ export default function ChatPanel() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let accumulated = '';
       let structuredContent: ContentBlock[] | null = null;
       let thinkingChunks: string[] = []; // Each unique thinking block accumulated as separate chunk
       let liveToolCalls: Array<{ id: string; name: string; input?: unknown }> = []; // Tool calls seen during streaming
@@ -1232,6 +1237,23 @@ export default function ChatPanel() {
       if (speakResponses) speak(accumulated);
 
     } catch (e: unknown) {
+      // User-initiated abort — keep partial content, don't show error
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        setMessages(prev => prev.map(m =>
+          m.id === assistantId
+            ? { ...m, content: accumulated || m.content || 'Stopped.', streaming: false }
+            : m
+        ));
+        setLoading(false);
+        setCurrentTool(null);
+        currentMsgIdRef.current = '';
+        if (accumulated) {
+          currentResponseRef.current = accumulated;
+          currentContentRef.current = accumulated;
+          saveMessageToDb('assistant', accumulated);
+        }
+        return;
+      }
       const friendlyError = getUserFriendlyError(e, {
         action: 'send your message',
         resource: 'chat'
@@ -1251,8 +1273,33 @@ export default function ChatPanel() {
     }
   };
 
+  // Stop the current agent response
+  const handleStop = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+  }, []);
+
+  // Process queued message after stream ends
+  useEffect(() => {
+    if (!loading && queuedMessage) {
+      const queued = queuedMessage;
+      setQueuedMessage(null);
+      // Small delay to let state settle before firing next message
+      const timer = setTimeout(() => sendMessage(queued), 100);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, queuedMessage]);
+
   // Keep ref in sync so the assistant-ui runtime always calls the latest sendMessage.
-  sendMessageRef.current = (text: string) => sendMessage(text);
+  sendMessageRef.current = (text: string) => {
+    // If agent is streaming, queue the message instead of sending immediately
+    if (loading) {
+      setQueuedMessage(text);
+      return Promise.resolve();
+    }
+    return sendMessage(text);
+  };
 
   const handleRetry = () => {
     if (!lastUserMessageRef.current) return;
@@ -1942,8 +1989,9 @@ export default function ChatPanel() {
             {/* Composer — attach + mic integrated inside */}
             <MissionControlComposer
               placeholder={`Message ${selectedAgent.name}…`}
-              disabled={loading || messages.some(m => !!m.streaming)}
+              disabled={!selectedAgent}
               loading={loading}
+              onStop={handleStop}
               onAttach={() => fileInputRef.current?.click()}
               isListening={listening}
               onToggleVoice={toggleVoice}

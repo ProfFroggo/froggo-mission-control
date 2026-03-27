@@ -27,6 +27,7 @@ import { safeStorage } from '../utils/safeStorage';
 import ConfirmDialog from './ConfirmDialog';
 import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
 import { useBreakpoint } from '../hooks/useBreakpoint';
+import SearchInput from './SearchInput';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger,
@@ -939,18 +940,13 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
           <Flex align="center" gap="2">
             {/* Group 1: Search + Filters + Sort */}
-            <TextField.Root
-              size="1"
-              aria-label="Search tasks"
-              placeholder="Search tasks..."
+            <SearchInput
               value={filters.search}
-              onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-              style={{ width: '12rem' }}
-            >
-              <TextField.Slot>
-                <Search size={14} aria-hidden="true" />
-              </TextField.Slot>
-            </TextField.Root>
+              onChange={v => setFilters(f => ({ ...f, search: v }))}
+              placeholder="Search tasks..."
+              aria-label="Search tasks"
+              className="w-48"
+            />
 
             <button
               onClick={() => setShowFilters(!showFilters)}

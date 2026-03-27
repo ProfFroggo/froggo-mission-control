@@ -16,12 +16,13 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(rawLimit, 200);
     const sessionKey = searchParams.get('sessionKey') ?? null;
 
+    if (!sessionKey) {
+      throw new ApiError(400, 'sessionKey query parameter is required', 'MISSING_SESSION_KEY');
+    }
+
     const db = getDb();
-    const rows = sessionKey
-      ? db.prepare('SELECT * FROM messages WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT ?')
-          .all(sessionKey, limit)
-      : db.prepare('SELECT * FROM messages ORDER BY timestamp DESC LIMIT ?')
-          .all(limit);
+    const rows = db.prepare('SELECT * FROM messages WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT ?')
+        .all(sessionKey, limit);
 
     return NextResponse.json({ messages: rows });
   } catch (error) {

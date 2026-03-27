@@ -11,7 +11,7 @@ import { withErrorBoundary } from './ErrorBoundary';
 // Dashboard is the default first view — preloading its chunk ensures it's
 // already downloading while the app shell hydrates, eliminating the sequential
 // chunk-download → render waterfall that was gating LCP under throttled conditions.
-const _dashboardChunkPreload = import('./Dashboard');
+const _dashboardChunkPreload = import('./DashboardRedesigned');
 
 // Lazy load all panels (Dashboard reuses the pre-started download)
 const DashboardRaw = lazy(() => _dashboardChunkPreload);

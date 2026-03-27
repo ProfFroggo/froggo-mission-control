@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useEventBus } from '../lib/useEventBus';
-import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles, ChevronUp, ChevronDown, User } from 'lucide-react';
+import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles, ChevronUp, ChevronDown, User, ExternalLink, Film, Code2, Braces, Table2, Image, ZoomIn } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 // eslint-disable-next-line import/order
 import { Box, Flex, Button, Checkbox, IconButton, Spinner, TextArea, TextField, Select } from '@radix-ui/themes';
@@ -101,7 +101,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [activeAgentInfo, setActiveAgentInfo] = useState<{ sessionKey: string; displayName: string } | null>(null);
   const [checkingAgent, setCheckingAgent] = useState(false);
   const [abortingAgent, setAbortingAgent] = useState(false);
-  const [fileViewer, setFileViewer] = useState<{ name: string; content: string; ext: string } | null>(null);
+  const [fileViewer, setFileViewer] = useState<{ name: string; content?: string; ext: string; mediaType?: 'image' | 'video' | 'html'; serveUrl?: string } | null>(null);
   // Focus trap for dialog accessibility (WCAG 2.4.3 / 4.1.2)
   const focusTrapRef = useFocusTrap(!!task);
   const panelTitleId = 'task-detail-title';
@@ -677,6 +677,23 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   };
 
   const handleOpenFile = async (filePath: string) => {
+    const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+    const name = filePath.split('/').pop() ?? filePath;
+    const serveUrl = `/api/files/serve?path=${encodeURIComponent(filePath)}`;
+
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) {
+      setFileViewer({ name, ext, mediaType: 'image', serveUrl });
+      return;
+    }
+    if (['mp4', 'webm', 'mov'].includes(ext)) {
+      setFileViewer({ name, ext, mediaType: 'video', serveUrl });
+      return;
+    }
+    if (['html', 'htm'].includes(ext)) {
+      setFileViewer({ name, ext, mediaType: 'html', serveUrl });
+      return;
+    }
+
     try {
       const res = await fetch(`/api/files/read?path=${encodeURIComponent(filePath)}`);
       const data = await res.json();
@@ -866,15 +883,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <button type="button" onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} aria-label={`Remove tag ${tag}`} className="hover:text-[var(--color-error)] leading-none">×</button>
             </span>
           ))}
-          <TextField.Root
+          <input
             placeholder="+ tag"
             aria-label="Add tag"
-            size="1"
-            radius="full"
-            className="w-14 flex-shrink-0"
+            className="px-2 py-0.5 text-xs rounded-full border border-mission-control-border/60 bg-transparent text-mission-control-text-dim placeholder-mission-control-text-dim/50 hover:border-mission-control-border focus:outline-none focus:border-mission-control-accent/50 w-14 flex-shrink-0 leading-none"
             onKeyDown={(e) => {
-              const input = e.currentTarget.querySelector('input');
-              if (e.key === 'Enter' && input && input.value.trim()) {
+              const input = e.currentTarget;
+              if (e.key === 'Enter' && input.value.trim()) {
                 const newTag = input.value.trim();
                 const currentTags = JSON.parse(task.tags || '[]');
                 if (!currentTags.includes(newTag)) updateTask(task.id, { tags: JSON.stringify([...currentTags, newTag]) });
@@ -1219,7 +1234,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 <p className="text-xs">Break down this task into smaller steps</p>
               </div>
             ) : (
-              <div>
+              <div className="flex flex-col">
                 {subtasks.map((st, idx) => {
                   const isSelected = selectedSubtaskIds.has(st.id);
                   const isOverdue = st.dueDate != null && !st.completed && st.dueDate < Date.now();
@@ -1230,72 +1245,79 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     ? new Date(st.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
                     : null;
 
+                  const assignedAgent = agents.find(a => a.id === st.assignedTo);
+
                   return (
                     <div
                       key={st.id}
-                      className={`group flex items-start gap-2.5 py-2 border-b border-mission-control-border/40 last:border-0 transition-colors ${
-                        isSelected ? 'bg-mission-control-accent/5' : ''
+                      className={`relative flex items-start gap-3 px-3 py-2.5 rounded-xl mb-1.5 border transition-all ${
+                        isSelected
+                          ? 'bg-mission-control-accent/5 border-mission-control-accent/25'
+                          : 'bg-mission-control-surface border-mission-control-border/50'
                       }`}
                     >
-                      {/* Selection checkbox — appears on hover or when selected */}
+                      {/* Selection checkbox — always visible */}
                       <button
                         type="button"
                         onClick={() => handleToggleSubtaskSelect(st.id)}
                         aria-label="Select subtask"
-                        className={`mt-0.5 flex-shrink-0 w-5 h-5 flex items-center justify-center rounded border transition-colors ${
+                        className={`mt-0.5 flex-shrink-0 w-[15px] h-[15px] flex items-center justify-center rounded border transition-all ${
                           isSelected
-                            ? 'opacity-100 bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
-                            : 'opacity-0 group-hover:opacity-100 border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                            ? 'bg-mission-control-accent/20 border-mission-control-accent text-mission-control-accent'
+                            : 'border-mission-control-border/60 text-mission-control-text-dim hover:border-mission-control-accent/50'
                         }`}
                       >
-                        {isSelected && <Check size={10} />}
+                        {isSelected && <Check size={9} strokeWidth={3} />}
                       </button>
 
-                      {/* Completion toggle */}
+                      {/* Completion checkbox */}
                       <button
                         type="button"
                         onClick={() => handleToggleSubtask(st.id)}
                         aria-label="Toggle subtask completion"
-                        className={`mt-0.5 flex-shrink-0 w-5 h-5 flex items-center justify-center rounded border transition-colors ${
+                        className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] flex items-center justify-center rounded-[4px] border-2 transition-all ${
                           st.completed
-                            ? 'bg-[var(--color-success)]/20 border-[var(--color-success)] text-[var(--color-success)]'
-                            : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/50 hover:text-mission-control-text'
+                            ? 'bg-[var(--color-success)] border-[var(--color-success)] text-white'
+                            : 'border-mission-control-border hover:border-mission-control-accent/60'
                         }`}
                       >
-                        {st.completed && <Check size={12} />}
+                        {st.completed && <Check size={11} strokeWidth={3} />}
                       </button>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <span
-                          className={`block text-sm leading-snug ${st.completed ? 'line-through text-mission-control-text-dim' : 'text-mission-control-text'}`}
+                          className={`block text-sm leading-snug font-medium ${
+                            st.completed ? 'line-through text-mission-control-text-dim' : 'text-mission-control-text'
+                          }`}
                         >
                           {st.title}
                         </span>
                         {st.description && (
-                          <p className="text-xs text-mission-control-text-dim mt-0.5">{st.description}</p>
+                          <p className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-1">{st.description}</p>
                         )}
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          {/* Assignee selector */}
-                          <Flex align="center" gap="1">
-                            <User size={11} className="text-mission-control-text-dim flex-shrink-0" />
-                            <Select.Root
-                              value={st.assignedTo || '__unassigned'}
-                              onValueChange={(val) => handleSetSubtaskAssignee(st.id, val === '__unassigned' ? '' : val)}
-                            >
-                              <Select.Trigger className="max-w-[100px]" />
-                              <Select.Content>
-                                <Select.Item value="__unassigned">Unassigned</Select.Item>
-                                {agents.map((a) => (
-                                  <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>
-                                ))}
-                              </Select.Content>
-                            </Select.Root>
-                          </Flex>
 
-                          {/* Due date badge / editor */}
+                        {/* Metadata pills row */}
+                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                          {/* Assignee pill */}
+                          <Select.Root
+                            value={st.assignedTo || '__unassigned'}
+                            onValueChange={(val) => handleSetSubtaskAssignee(st.id, val === '__unassigned' ? '' : val)}
+                          >
+                            <Select.Trigger
+                              className="inline-flex items-center gap-1.5 !px-2 !py-1 !rounded-lg !text-[11px] !leading-none !bg-mission-control-bg1/80 !border !border-mission-control-border/50 !text-mission-control-text-dim hover:!text-mission-control-text hover:!border-mission-control-border !transition-colors !h-auto"
+                            />
+                            <Select.Content>
+                              <Select.Item value="__unassigned">Unassigned</Select.Item>
+                              {agents.map((a) => (
+                                <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
+
+                          {/* Due date pill */}
                           {editingDueDateId === st.id ? (
-                            <TextField.Root
+                            <input
                               type="date"
                               autoFocus
                               defaultValue={dueDateStr}
@@ -1305,61 +1327,66 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                                   handleSetDueDate(st.id, (e.target as HTMLInputElement).value);
                                 if (e.key === 'Escape') setEditingDueDateId(null);
                               }}
-                              size="1"
+                              className="px-2 py-1 text-[11px] leading-none rounded-lg border border-mission-control-accent/40 bg-mission-control-bg1 text-mission-control-text focus:outline-none w-28"
                             />
                           ) : (
                             <button
                               onClick={() => setEditingDueDateId(st.id)}
                               title={isOverdue ? 'Overdue — click to change' : 'Set due date'}
-                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors hover:bg-mission-control-surface ${isOverdue ? 'text-[var(--color-error)] hover:text-[var(--color-error)]/80' : 'text-mission-control-text-dim hover:text-mission-control-text'}${!isOverdue && !dueDateDisplay ? ' opacity-0 group-hover:opacity-60 hover:!opacity-100' : ''}`}
+                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] leading-none border transition-all ${
+                                isOverdue
+                                  ? 'text-[var(--color-error)] bg-[var(--color-error)]/10 border-[var(--color-error)]/30 hover:bg-[var(--color-error)]/20'
+                                  : dueDateDisplay
+                                    ? 'text-mission-control-text-dim bg-mission-control-bg1/80 border-mission-control-border/50 hover:text-mission-control-text hover:border-mission-control-border'
+                                    : 'text-mission-control-text-dim/50 bg-mission-control-bg1/40 border-mission-control-border/40 hover:text-mission-control-text-dim hover:border-mission-control-border'
+                              }`}
                             >
-                              <Calendar size={10} />
+                              <Calendar size={10} className="flex-shrink-0" />
                               {dueDateDisplay ?? 'Due date'}
                             </button>
                           )}
 
+                          {/* Done badge */}
                           {st.completedAt && (
-                            <span className="text-xs text-[var(--color-success)]/60">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] leading-none bg-[var(--color-success)]/10 text-[var(--color-success)]/80 border border-[var(--color-success)]/20">
+                              <Check size={9} strokeWidth={3} className="flex-shrink-0" />
                               Done {formatTime(st.completedAt)}
-                              {st.completedBy &&
-                                ` · ${agents.find((a) => a.id === st.completedBy)?.name || st.completedBy}`}
+                              {st.completedBy && ` · ${agents.find((a) => a.id === st.completedBy)?.name || st.completedBy}`}
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Reorder buttons */}
-                      <div className="flex flex-col gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Actions — reorder + delete, always visible */}
+                      <div className="flex items-center gap-0.5 flex-shrink-0 mt-0.5">
                         <button
                           onClick={() => handleMoveSubtask(idx, 'up')}
                           disabled={idx === 0}
                           title="Move up"
                           aria-label="Move subtask up"
-                          className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-30"
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-20"
                         >
-                          <ChevronUp size={14} />
+                          <ChevronUp size={13} />
                         </button>
                         <button
                           onClick={() => handleMoveSubtask(idx, 'down')}
                           disabled={idx === subtasks.length - 1}
                           title="Move down"
                           aria-label="Move subtask down"
-                          className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-30"
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-20"
                         >
-                          <ChevronDown size={14} />
+                          <ChevronDown size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSubtask(st.id)}
+                          title="Delete subtask"
+                          aria-label="Delete subtask"
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-colors ml-0.5"
+                        >
+                          <X size={13} />
                         </button>
                       </div>
-
-                      {/* Delete */}
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteSubtask(st.id)}
-                        title="Delete subtask"
-                        aria-label="Delete subtask"
-                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors mt-0.5 opacity-0 group-hover:opacity-100 flex-shrink-0"
-                      >
-                        <X size={14} />
-                      </button>
                     </div>
                   );
                 })}
@@ -1589,139 +1616,157 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
         {/* Files Tab */}
         {activeTab === 'files' && (
-          <div className="p-4">
-            <Flex align="center" justify="between" className="mb-4">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim flex items-center gap-2">
-                <Paperclip size={12} className="text-mission-control-text-dim" />
-                Task Attachments
-              </div>
+          <div className="flex flex-col h-full">
+            {/* Toolbar */}
+            <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+              <span className="text-sm font-medium text-mission-control-text">
+                Attachments
+                {attachments.length > 0 && (
+                  <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded-full bg-mission-control-border/60 text-mission-control-text-dim font-normal">
+                    {attachments.length}
+                  </span>
+                )}
+              </span>
               <Flex gap="2">
                 <Button
                   onClick={handleAutoDetect}
                   disabled={loadingAttachments}
-                  variant="outline"
+                  variant="surface"
                   color="gray"
                   size="1"
-                  title="Auto-detect agent output files"
+                  title="Scan agent output directories for new files"
                 >
-                  {loadingAttachments ? (
-                    <Spinner size="1" />
-                  ) : (
-                    <Search size={14} />
-                  )}
+                  {loadingAttachments ? <Spinner size="1" /> : <Search size={12} />}
                   Auto-detect
                 </Button>
-                <label className="flex items-center gap-2 px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim cursor-pointer transition-colors">
-                  {uploadingFile ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Upload size={14} />
-                  )}
+                <label className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:opacity-90 cursor-pointer transition-opacity">
+                  {uploadingFile ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                   Upload
-                  <input
-                    type="file"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    disabled={uploadingFile}
-                  />
+                  <input type="file" onChange={handleFileUpload} className="hidden" disabled={uploadingFile} />
                 </label>
               </Flex>
             </Flex>
 
-            {/* Upload Instructions */}
-            {attachments.length === 0 && !loadingAttachments && (
-              <div className="mb-4 p-4 bg-mission-control-surface rounded-lg border border-dashed border-mission-control-border text-center">
-                <Paperclip size={32} className="mx-auto mb-2 opacity-30" />
-                <p className="text-sm text-mission-control-text-dim">
-                  No attachments yet. Upload deliverables, screenshots, or reference files.
-                </p>
-                <p className="text-xs text-mission-control-text-dim mt-1">
-                  Click Upload or use Auto-detect to find agent output files
-                </p>
-              </div>
-            )}
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4">
 
-            {/* Loading State */}
-            {loadingAttachments && attachments.length === 0 && (
-              <Flex align="center" justify="center" className="py-8 text-mission-control-text-dim">
-                <Loader2 size={24} className="animate-spin mr-2" />
-                Loading attachments...
-              </Flex>
-            )}
-
-            {/* Attachments List */}
-            <div className="space-y-2">
-              {attachments.map((attachment) => (
-                <Flex
-                  key={attachment.id}
-                  align="center"
-                  gap="3"
-                  className="group p-3 bg-mission-control-bg rounded-lg border border-mission-control-border hover:border-mission-control-accent/50 transition-colors"
-                >
-                  <div className="text-mission-control-text-dim flex-shrink-0">
-                    {getFileIcon(null)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{attachment.fileName ?? attachment.filePath.split('/').pop()}</div>
-                    <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mt-0.5">
-                      {attachment.category && (
-                        <>
-                          <span className="px-1.5 py-0.5 bg-mission-control-border rounded text-xs">
-                            {attachment.category}
-                          </span>
-                          <span>•</span>
-                        </>
-                      )}
-                      <span>{formatTime(attachment.createdAt)}</span>
-                      {attachment.uploadedBy && attachment.uploadedBy !== 'user' && (
-                        <>
-                          <span>•</span>
-                          <span className="text-mission-control-accent">
-                            {agents.find(a => a.id === attachment.uploadedBy)?.name || attachment.uploadedBy}
-                          </span>
-                        </>
-                      )}
-                    </Flex>
-                    <div className="text-xs text-mission-control-text-dim/70 mt-0.5 truncate" title={attachment.filePath}>
-                      {attachment.filePath}
-                    </div>
-                  </div>
-                  <Flex align="center" gap="1" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleOpenFile(attachment.filePath)}
-                      title="Open file"
-                      aria-label="Open file"
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
-                    >
-                      <Download size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteAttachment(attachment.id)}
-                      title="Delete attachment"
-                      aria-label="Delete attachment"
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </Flex>
+              {/* Loading */}
+              {loadingAttachments && attachments.length === 0 && (
+                <Flex align="center" justify="center" gap="2" className="py-16 text-mission-control-text-dim text-sm">
+                  <Loader2 size={16} className="animate-spin" />
+                  Scanning for files…
                 </Flex>
-              ))}
+              )}
+
+              {/* Empty state */}
+              {!loadingAttachments && attachments.length === 0 && (
+                <label className="flex flex-col items-center justify-center py-16 px-8 rounded-2xl border-2 border-dashed border-mission-control-border/50 text-center cursor-pointer hover:border-mission-control-accent/40 hover:bg-mission-control-accent/[0.02] transition-all">
+                  <div className="w-12 h-12 rounded-xl bg-mission-control-border/30 flex items-center justify-center mb-3">
+                    <Paperclip size={22} className="text-mission-control-text-dim opacity-50" />
+                  </div>
+                  <p className="text-sm font-medium text-mission-control-text-dim mb-1">No files attached</p>
+                  <p className="text-xs text-mission-control-text-dim/60">Drop files here or click to upload · or use Auto-detect</p>
+                  <input type="file" onChange={handleFileUpload} className="hidden" disabled={uploadingFile} />
+                </label>
+              )}
+
+              {/* File list */}
+              {attachments.length > 0 && (
+                <div className="space-y-1.5">
+                  {attachments.map((attachment) => {
+                    const name = attachment.fileName ?? attachment.filePath.split('/').pop() ?? 'file';
+                    const ext = name.split('.').pop()?.toLowerCase() ?? '';
+                    const uploader = attachment.uploadedBy && attachment.uploadedBy !== 'user'
+                      ? agents.find(a => a.id === attachment.uploadedBy)?.name || attachment.uploadedBy
+                      : null;
+
+                    // File type config
+                    const fileType = ((): { icon: React.ReactNode; bg: string; label: string } => {
+                      if (['png','jpg','jpeg','gif','webp','svg'].includes(ext))
+                        return { icon: <Image size={14} />, bg: 'bg-blue-500/15 text-blue-400', label: 'Image' };
+                      if (['mp4','webm','mov','avi'].includes(ext))
+                        return { icon: <Film size={14} />, bg: 'bg-pink-500/15 text-pink-400', label: 'Video' };
+                      if (['md','txt'].includes(ext))
+                        return { icon: <FileText size={14} />, bg: 'bg-amber-500/15 text-amber-400', label: ext.toUpperCase() };
+                      if (ext === 'pdf')
+                        return { icon: <FileText size={14} />, bg: 'bg-red-500/15 text-red-400', label: 'PDF' };
+                      if (['html','htm'].includes(ext))
+                        return { icon: <Code2 size={14} />, bg: 'bg-orange-500/15 text-orange-400', label: 'HTML' };
+                      if (['ts','tsx','js','jsx'].includes(ext))
+                        return { icon: <Code2 size={14} />, bg: 'bg-emerald-500/15 text-emerald-400', label: ext.toUpperCase() };
+                      if (['py','go','rs','rb','php'].includes(ext))
+                        return { icon: <Code2 size={14} />, bg: 'bg-green-500/15 text-green-400', label: ext.toUpperCase() };
+                      if (['json','yaml','yml'].includes(ext))
+                        return { icon: <Braces size={14} />, bg: 'bg-cyan-500/15 text-cyan-400', label: ext.toUpperCase() };
+                      if (ext === 'csv')
+                        return { icon: <Table2 size={14} />, bg: 'bg-teal-500/15 text-teal-400', label: 'CSV' };
+                      return { icon: <File size={14} />, bg: 'bg-mission-control-border/40 text-mission-control-text-dim', label: ext.toUpperCase() || 'File' };
+                    })();
+
+                    return (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-mission-control-surface border border-mission-control-border/60 hover:border-mission-control-accent/30 transition-colors cursor-pointer"
+                        onClick={() => handleOpenFile(attachment.filePath)}
+                      >
+                        {/* Type icon */}
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${fileType.bg}`}>
+                          {fileType.icon}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-sm font-medium text-mission-control-text truncate">{name}</span>
+                            <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-mission-control-border/50 text-mission-control-text-dim">
+                              {fileType.label}
+                            </span>
+                            {attachment.category && attachment.category !== ext && (
+                              <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] rounded bg-mission-control-accent/10 text-mission-control-accent">
+                                {attachment.category}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-mission-control-text-dim/60 truncate" title={attachment.filePath}>
+                            {attachment.filePath}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-mission-control-text-dim/40">
+                            <span>{formatTime(attachment.createdAt)}</span>
+                            {uploader && (
+                              <>
+                                <span>·</span>
+                                <span className="text-mission-control-accent/60">{uploader}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions — always visible, stop propagation to avoid opening preview */}
+                        <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleOpenFile(attachment.filePath)}
+                            title="Open in Finder"
+                            aria-label="Open file"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+                          >
+                            <ExternalLink size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAttachment(attachment.id)}
+                            title="Remove attachment"
+                            aria-label="Remove attachment"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-
-            {/* Stats Summary */}
-            {attachments.length > 0 && (
-              <div className="mt-4 p-3 bg-mission-control-surface rounded-lg border border-mission-control-border">
-                <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim">
-                  <span>
-                    {attachments.length} file{attachments.length !== 1 ? 's' : ''} attached
-                  </span>
-                  <span>
-                    Total: {attachments.length} file{attachments.length !== 1 ? 's' : ''}
-                  </span>
-                </Flex>
-              </div>
-            )}
           </div>
         )}
 
@@ -1735,59 +1780,62 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         )}
 
         {activeTab === 'review' && (
-          <div className="p-4">
-            {/* Definition of Ready Checklist - show for internal-review status */}
-            {task.status === 'internal-review' && (
-              <div className="mb-4 p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
-                  <CheckCircle size={12} className="text-mission-control-text-dim" />
-                  Definition of Ready
-                </div>
-                <div className="space-y-2 text-sm">
-                  <Flex align="center" gap="2" className={(task.subtasks?.length || 0) >= 2 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}>
-                    {(task.subtasks?.length || 0) >= 2 ? <CheckCircle size={14} className="text-[var(--color-success)] inline" /> : <XCircle size={14} className="text-[var(--color-error)] inline" />}
-                    Subtasks: {task.subtasks?.length || 0}/2 (minimum 2)
-                  </Flex>
-                  <Flex align="center" gap="2" className={task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}>
-                    {task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? <CheckCircle size={14} className="text-[var(--color-success)] inline" /> : <XCircle size={14} className="text-[var(--color-error)] inline" />}
-                    Priority: {task.priority || 'Not set'}
-                  </Flex>
-                  <Flex align="center" gap="2" className={task.assignedTo && !isProtectedAgent(task.assignedTo) ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}>
-                    {task.assignedTo && !isProtectedAgent(task.assignedTo) ? <CheckCircle size={14} className="text-[var(--color-success)] inline" /> : <XCircle size={14} className="text-[var(--color-error)] inline" />}
-                    Assigned: {task.assignedTo || 'Not assigned'}
-                  </Flex>
-                  <Flex align="center" gap="2" className={(task.description?.length || 0) >= 20 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'}>
-                    {(task.description?.length || 0) >= 20 ? <CheckCircle size={14} className="text-[var(--color-success)] inline" /> : <AlertTriangle size={14} className="text-[var(--color-warning)] inline" />}
-                    Description: {(task.description?.length || 0)} chars (min 20)
-                  </Flex>
-                </div>
-              </div>
-            )}
+          <div className="p-4 space-y-4">
 
-            {/* Quick Approve/Reject Actions (when in review status) */}
+            {/* ── Pre-review gate summary ────────────────────────────────── */}
+            {task.status === 'internal-review' && (() => {
+              const gates = [
+                { ok: subtasks.length >= 1,                                          label: 'Subtasks',      detail: `${subtasks.length} added` },
+                { ok: ['p0','p1','p2','p3'].includes(task.priority ?? ''),           label: 'Priority',      detail: task.priority || 'not set' },
+                { ok: !!task.assignedTo && !isProtectedAgent(task.assignedTo),       label: 'Assigned',      detail: task.assignedTo || 'none' },
+                { ok: (task.description?.length ?? 0) >= 20,                         label: 'Description',   detail: `${task.description?.length ?? 0} chars` },
+                { ok: (task.planningNotes?.length ?? 0) >= 20,                       label: 'Planning notes',detail: `${task.planningNotes?.length ?? 0} chars` },
+              ];
+              const allPass = gates.every(g => g.ok);
+              return (
+                <div className={`p-4 rounded-xl border ${allPass ? 'bg-[var(--color-success)]/5 border-[var(--color-success)]/25' : 'bg-[var(--color-warning)]/5 border-[var(--color-warning)]/25'}`}>
+                  <div className="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: allPass ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                    <Clock size={12} />
+                    Clara — Pre-Review Gate &nbsp;·&nbsp; {allPass ? 'All gates pass' : `${gates.filter(g => !g.ok).length} failing`}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {gates.map(({ ok, label, detail }) => (
+                      <span
+                        key={label}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border ${
+                          ok
+                            ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/20 text-[var(--color-success)]/80'
+                            : 'bg-[var(--color-error)]/10 border-[var(--color-error)]/20 text-[var(--color-error)]/80'
+                        }`}
+                      >
+                        <span className="font-medium">{label}</span>
+                        <span className="opacity-70">{detail}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── Human action: approve / request changes ────────────────── */}
             {task.status === 'review' && task.reviewStatus !== 'approved' && (
-              <div className="mb-4 p-4 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg">
+              <div className="p-4 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-xl">
                 <Flex align="center" gap="2" className="mb-3">
-                  <AlertCircle size={16} className="text-[var(--color-warning)]" />
-                  <span className="font-medium text-[var(--color-warning)]">Awaiting Review</span>
+                  <AlertCircle size={15} className="text-[var(--color-warning)]" />
+                  <span className="text-sm font-medium text-[var(--color-warning)]">Clara requests your decision</span>
                 </Flex>
                 <Flex gap="2">
                   <Button
                     onClick={() => {
-                      // ATOMIC UPDATE: Change both reviewStatus AND status in one call
-                      const updates: { reviewStatus: 'approved'; status: 'in-progress' } = {
-                        reviewStatus: 'approved',
-                        status: 'in-progress'
-                      };
-                      updateTask(task.id, updates);
-                      logTaskActivity(task.id, 'approved', 'Task approved - moved back to in-progress');
-                      showToast('success', `Task approved! Assigned to ${task.assignedTo || 'unassigned'} to complete.`);
+                      updateTask(task.id, { reviewStatus: 'approved', status: 'in-progress' });
+                      logTaskActivity(task.id, 'approved', 'Task approved — moved back to in-progress');
+                      showToast('success', `Approved! Assigned to ${task.assignedTo || 'unassigned'}.`);
                     }}
                     color="green"
                     size="2"
                     className="flex-1"
                   >
-                    <CheckCircle size={16} />
+                    <CheckCircle size={15} />
                     Approve
                   </Button>
                   <Button
@@ -1800,105 +1848,52 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     size="2"
                     className="flex-1"
                   >
-                    <XCircle size={16} />
+                    <XCircle size={15} />
                     Request Changes
                   </Button>
                 </Flex>
               </div>
             )}
 
-            {/* Approved Notice */}
             {task.reviewStatus === 'approved' && (
-              <div className="mb-4 p-4 bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-lg">
-                <Flex align="center" gap="2">
-                  <CheckCircle size={16} className="text-[var(--color-success)]" />
-                  <span className="font-medium text-[var(--color-success)]">Review Approved</span>
-                </Flex>
-                <p className="mt-2 text-sm text-mission-control-text-dim">
-                  This task has been approved and can now be marked as done.
-                </p>
+              <div className="p-3 bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-xl flex items-center gap-2">
+                <CheckCircle size={15} className="text-[var(--color-success)] flex-shrink-0" />
+                <span className="text-sm font-medium text-[var(--color-success)]">Review approved</span>
               </div>
             )}
 
-            {reviewer ? (
-              <div className="space-y-4">
-                {/* Review Status */}
-                <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
-                    <Eye size={12} className="text-mission-control-text-dim" />
-                    Review Status
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['pending', 'in-review', 'needs-changes', 'approved'] as const).map((status) => {
-                      const isActive = task.reviewStatus === status;
-                      return (
-                        <button
-                          key={status}
-                          type="button"
-                          onClick={() => setReviewStatus(status)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                            isActive
-                              ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
-                              : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-                          }`}
-                        >
-                          {status.replace('-', ' ')}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Review Notes */}
-                <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
-                    <FileText size={12} className="text-mission-control-text-dim" />
-                    Review Notes
-                  </div>
-                  <TextArea
-                    value={task.reviewNotes || ''}
-                    onChange={(e) => updateTask(task.id, { reviewNotes: e.target.value })}
-                    placeholder="Add notes from review..."
-                    rows={4}
-                    resize="none"
-                    size="2"
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Pre-approval Checklist */}
-                <div className="p-4 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-warning)] mb-2 flex items-center gap-2">
-                    <AlertCircle size={12} className="text-[var(--color-warning)]" />
-                    Pre-Approval Checklist
-                  </div>
-                  <div className="text-sm text-mission-control-text-dim space-y-1">
-                    <Flex align="center" gap="2">
-                      <Checkbox size="1" />
-                      <span>Code reviewed for bugs</span>
-                    </Flex>
-                    <Flex align="center" gap="2">
-                      <Checkbox size="1" />
-                      <span>Matches task requirements</span>
-                    </Flex>
-                    <Flex align="center" gap="2">
-                      <Checkbox size="1" />
-                      <span>No security issues</span>
-                    </Flex>
-                    <Flex align="center" gap="2">
-                      <Checkbox size="1" />
-                      <span>Ready for human approval</span>
-                    </Flex>
-                  </div>
-                </div>
+            {/* ── Clara's review notes (read-only) ──────────────────────── */}
+            <div className="p-4 bg-mission-control-bg rounded-xl border border-mission-control-border">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Eye size={12} />
+                Clara&apos;s Review Notes
+                {reviewer && (
+                  <span className="ml-auto flex items-center gap-1.5 normal-case font-normal text-mission-control-text-dim/60">
+                    <AgentAvatar agentId={reviewer.id} fallbackEmoji={reviewer.avatar} size="sm" />
+                    {reviewer.name}
+                    {task.reviewStatus && (
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                        task.reviewStatus === 'approved'      ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' :
+                        task.reviewStatus === 'needs-changes' ? 'bg-[var(--color-error)]/15 text-[var(--color-error)]' :
+                        task.reviewStatus === 'in-review'     ? 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]' :
+                        'bg-mission-control-border/40 text-mission-control-text-dim'
+                      }`}>{task.reviewStatus}</span>
+                    )}
+                  </span>
+                )}
               </div>
-            ) : (
-              <div className="text-center text-mission-control-text-dim py-12">
-                <Eye size={48} className="mx-auto mb-3 opacity-20" />
-                <p className="text-sm">No reviewer assigned</p>
-                <p className="text-xs">Assign a review agent to enable pre-approval checks</p>
-              </div>
-            )}
+
+              {task.reviewNotes ? (
+                <div className="text-sm text-mission-control-text whitespace-pre-wrap leading-relaxed bg-mission-control-surface rounded-lg p-3 border border-mission-control-border/50">
+                  {task.reviewNotes}
+                </div>
+              ) : (
+                <div className="text-sm text-mission-control-text-dim/50 italic py-4 text-center">
+                  No review notes yet — Clara will write here after reviewing this task.
+                </div>
+              )}
+            </div>
+
           </div>
         )}
       </div>
@@ -2220,38 +2215,82 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         type={config.type}
       />
 
-      {/* File Viewer Modal */}
+      {/* File Preview Modal */}
       <BaseModal
         isOpen={!!fileViewer}
         onClose={() => setFileViewer(null)}
         size="xl"
-        ariaLabel={fileViewer ? `View file: ${fileViewer.name}` : 'View file'}
+        ariaLabel={fileViewer ? `Preview: ${fileViewer.name}` : 'File preview'}
         maxHeight="85vh"
         showCloseButton={false}
       >
+        {/* Header */}
         <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border flex-shrink-0">
           <Flex align="center" gap="2">
-            <FileText size={16} className="text-mission-control-accent" />
-            <span id="file-viewer-title" className="text-sm font-medium">{fileViewer?.name}</span>
-            <span className="text-xs text-mission-control-text-dim px-1.5 py-0.5 bg-mission-control-border rounded">.{fileViewer?.ext}</span>
+            <ZoomIn size={15} className="text-mission-control-accent" />
+            <span className="text-sm font-medium truncate max-w-sm">{fileViewer?.name}</span>
+            <span className="text-[10px] text-mission-control-text-dim px-1.5 py-0.5 bg-mission-control-border/50 rounded font-mono uppercase">
+              .{fileViewer?.ext}
+            </span>
           </Flex>
           <Flex align="center" gap="2">
-            <Button
-              onClick={() => { if (fileViewer) { navigator.clipboard.writeText(fileViewer.content); showToast('success', 'Copied to clipboard'); } }}
-              variant="outline"
-              color="gray"
-              size="1"
+            {fileViewer?.content && (
+              <Button
+                onClick={() => { navigator.clipboard.writeText(fileViewer.content!); showToast('success', 'Copied to clipboard'); }}
+                variant="surface"
+                color="gray"
+                size="1"
+              >
+                Copy
+              </Button>
+            )}
+            <button
+              type="button"
+              onClick={() => setFileViewer(null)}
+              aria-label="Close preview"
+              className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
-              Copy
-            </Button>
-            <button type="button" onClick={() => setFileViewer(null)} aria-label="Close file viewer" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
-              <X size={16} />
+              <X size={15} />
             </button>
           </Flex>
         </Flex>
-        <pre className="flex-1 overflow-auto p-4 text-xs font-mono text-mission-control-text whitespace-pre-wrap break-words">
-          {fileViewer?.content}
-        </pre>
+
+        {/* Body */}
+        <div className="flex-1 overflow-auto">
+          {fileViewer?.mediaType === 'image' && (
+            <div className="flex items-center justify-center p-6 min-h-[300px] bg-[repeating-conic-gradient(#333_0%_25%,transparent_0%_50%)] bg-[length:20px_20px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={fileViewer.serveUrl}
+                alt={fileViewer.name}
+                className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl"
+              />
+            </div>
+          )}
+          {fileViewer?.mediaType === 'video' && (
+            <div className="flex items-center justify-center p-6 bg-black">
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video
+                src={fileViewer.serveUrl}
+                controls
+                className="max-w-full max-h-[65vh] rounded-lg"
+              />
+            </div>
+          )}
+          {fileViewer?.mediaType === 'html' && (
+            <iframe
+              src={fileViewer.serveUrl}
+              title={fileViewer.name}
+              className="w-full h-[65vh] border-0"
+              sandbox="allow-scripts allow-same-origin"
+            />
+          )}
+          {!fileViewer?.mediaType && fileViewer?.content && (
+            <pre className="p-4 text-xs font-mono text-mission-control-text whitespace-pre-wrap break-words leading-relaxed">
+              {fileViewer.content}
+            </pre>
+          )}
+        </div>
       </BaseModal>
     </div>
     </>

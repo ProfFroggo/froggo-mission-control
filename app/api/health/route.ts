@@ -9,6 +9,7 @@ import { startClaraReviewCron } from '@/lib/claraReviewCron';
 import { startSessionKeepalive } from '@/lib/sessionKeepalive';
 import { startMemoryDecayCron, getVaultStats } from '@/lib/memoryDecayCron';
 import { startAutomationCron } from '@/lib/automationCron';
+import { startDriveSyncCron } from '@/lib/driveSyncCron';
 import { ENV } from '@/lib/env';
 import { getDb } from '@/lib/database';
 import { getCircuitBreakerState, getActiveDispatchCount } from '@/lib/taskDispatcher';
@@ -62,6 +63,7 @@ export async function GET() {
     startSessionKeepalive();
     startMemoryDecayCron();
     startAutomationCron();
+    startDriveSyncCron();
   }
 
   const dbPath = path.join(homedir(), 'mission-control', 'data', 'mission-control.db');

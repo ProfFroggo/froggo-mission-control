@@ -2,10 +2,11 @@ import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react'
 import { Box, Flex, Button, Select, TextField } from '@radix-ui/themes';
 import {
   Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield,
-  Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Search,
+  Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor,
   ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive, Bot, Package, Terminal, ExternalLink,
   Key, TestTube, EyeOff, AlertCircle, CircleOff, FileJson, Coins, CheckCircle, MessageSquare, Loader2,
 } from 'lucide-react';
+import SearchInput from './SearchInput';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
 import { settingsApi } from '../lib/api';
@@ -1087,8 +1088,11 @@ function TokenBudgetSection() {
 // ─── API Keys Section ──────────────────────────────────────────────────────────
 
 const API_KEY_PROVIDERS = [
-  { id: 'anthropic_api_key',     label: 'Anthropic',           placeholder: 'sk-ant-...',   group: 'AI' },
-  { id: 'gemini_api_key',        label: 'Google Gemini',       placeholder: 'AIzaSy...',    group: 'AI' },
+  { id: 'anthropic_api_key',          label: 'Anthropic',                  placeholder: 'sk-ant-...',        group: 'AI' },
+  { id: 'gemini_api_key',             label: 'Google Gemini',              placeholder: 'AIzaSy...',         group: 'AI' },
+  { id: 'mixpanel_project_id',        label: 'Mixpanel Project ID',        placeholder: '123456',            group: 'Analytics' },
+  { id: 'mixpanel_service_account_username', label: 'Mixpanel SA Username', placeholder: 'user@project.mixpanel.com', group: 'Analytics' },
+  { id: 'mixpanel_service_account_password', label: 'Mixpanel SA Password', placeholder: 'Service account secret', group: 'Analytics' },
   { id: 'twitter_api_key',       label: 'X / Twitter API Key', placeholder: 'API key',      group: 'Social' },
   { id: 'twitter_api_secret',    label: 'X / Twitter Secret',  placeholder: 'API secret',   group: 'Social' },
   { id: 'twitter_oauth_client_id',    label: 'X OAuth Client ID',   placeholder: 'Client ID',    group: 'Social' },
@@ -1644,19 +1648,13 @@ export default function EnhancedSettingsPanel() {
           >
             <Flex direction="column" gap="2">
               {/* Search Bar */}
-              <TextField.Root
-                type="text"
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
                 placeholder="Search settings..."
                 aria-label="Search settings input"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                size="2"
                 className="w-48"
-              >
-                <TextField.Slot>
-                  <Search size={16} className="text-mission-control-text-dim" />
-                </TextField.Slot>
-              </TextField.Root>
+              />
             </Flex>
           </PanelHeader>
 

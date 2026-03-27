@@ -107,11 +107,13 @@ export async function GET(request: NextRequest) {
       const bytes = readFileSync(filePath);
       const mime = getFileMime(filePath);
       const filename = path.basename(filePath);
+      const isInline = mime.startsWith('image/') || mime.startsWith('video/') || mime === 'application/pdf';
       return new NextResponse(bytes, {
         headers: {
           'Content-Type': mime,
-          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Disposition': `${isInline ? 'inline' : 'attachment'}; filename="${filename}"`,
           'Content-Length': String(bytes.length),
+          'Cache-Control': 'public, max-age=86400',
         },
       });
     }

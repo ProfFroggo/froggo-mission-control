@@ -11,41 +11,33 @@
  * RIGHT: Message detail view with thread and reply
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
 import {
   Mail,
   Inbox, Star, Archive, AlertTriangle,
-  RefreshCw, ChevronRight, ChevronDown, Search,
+  RefreshCw, ChevronRight, ChevronDown,
   Reply, Send,
   Sparkles, X, Paperclip, Eye, Check, MailOpen,
-  Activity as ActivityIcon, FileText, Code,
+  FileText, Code,
   CalendarPlus, ListPlus, Bot, CheckCheck, CheckCircle,
   Clock, Tag, MessageSquare, Filter, CheckSquare, Square,
   AtSign, ChevronUp, Trash2, Menu
 } from 'lucide-react';
+import SearchInput from './SearchInput';
 import { showToast } from './Toast';
-import { gateway } from '../lib/gateway';
 import { sanitizeHtml } from '../utils/sanitize';
-import { useStore, Activity } from '../store/store';
 import MarkdownMessage from './MarkdownMessage';
-import { inboxApi, taskApi, scheduleApi, accountsApi } from '../lib/api';
+import { taskApi, scheduleApi } from '../lib/api';
 import GoogleOAuthSetup from './GoogleOAuthSetup';
-
-// X logo
-const XIcon = ({ size = 16 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Account {
   id: string;
   label: string;
-  platform: 'email' | 'twitter' | 'system';
-  address?: string; // email address or phone number
+  platform: 'email';
+  address?: string;
   icon: React.ReactNode;
   color: string;
 }
@@ -109,102 +101,49 @@ interface AIAnalysis {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Default email accounts (empty — populated dynamically from gateway or user settings)
-const DEFAULT_EMAIL_ACCOUNTS: Account[] = [];
-
-const PLATFORM_ICON_MAP: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  twitter: { icon: <XIcon size={16} />, color: 'text-mission-control-text-dim', label: 'X / Twitter' },
-};
-
-const SYSTEM_ACCOUNT: Account = {
-  id: 'system',
-  label: 'System',
-  platform: 'system',
-  icon: <ActivityIcon size={16} />,
-  color: 'text-[var(--color-review)]',
-};
-
 const EMAIL_COLORS = ['text-[var(--color-warning)]', 'text-[var(--color-info)]', 'text-[var(--color-success)]', 'text-[var(--color-error)]', 'text-[var(--color-review)]'];
 
-// Build accounts from gateway channels + discovered email accounts + social module
-function buildAccountsFromSources(
-  channelAccounts: Record<string, Array<{ accountId: string; name?: string; connected?: boolean; enabled?: boolean; configured?: boolean; running?: boolean }>>,
-  emailAccounts: Array<{ email: string; label: string }>,
-  twitterConfigured?: boolean,
-): Account[] {
-  const accounts: Account[] = [];
-
-  // Email accounts from Google OAuth (or fallback)
-  emailAccounts.forEach((entry, i) => {
-    accounts.push({
-      id: `email-${entry.email}`,
-      label: entry.label,
-      platform: 'email',
-      address: entry.email,
-      icon: <Mail size={16} />,
-      color: EMAIL_COLORS[i % EMAIL_COLORS.length],
-    });
-  });
-
-  // Platform accounts from gateway — show if configured+running or connected or enabled
-  let hasTwitterFromGateway = false;
-  for (const [platform, entries] of Object.entries(channelAccounts)) {
-    if (platform === 'email') continue;
-    const meta = PLATFORM_ICON_MAP[platform];
-    if (!meta) continue;
-    const visible = entries.some(e => e.connected || e.enabled || e.configured);
-    if (visible) {
-      if (platform === 'twitter') hasTwitterFromGateway = true;
-      accounts.push({
-        id: platform,
-        label: meta.label,
-        platform: platform as Account['platform'],
-        icon: meta.icon,
-        color: meta.color,
-      });
-    }
-  }
-
-  // X/Twitter from social module (if not already added from gateway)
-  if (!hasTwitterFromGateway && twitterConfigured) {
-    accounts.push({
-      id: 'twitter',
-      label: 'X / Twitter',
-      platform: 'twitter' as Account['platform'],
-      icon: <XIcon size={16} />,
-      color: 'text-mission-control-text-dim',
-    });
-  }
-
-  // System always present
-  accounts.push(SYSTEM_ACCOUNT);
-
-  return accounts;
+function buildAccountsFromEmail(emailAccounts: Array<{ email: string; label: string }>): Account[] {
+  return emailAccounts.map((entry, i) => ({
+    id: `email-${entry.email}`,
+    label: entry.label,
+    platform: 'email' as const,
+    address: entry.email,
+    icon: <Mail size={16} />,
+    color: EMAIL_COLORS[i % EMAIL_COLORS.length],
+  }));
 }
 
-// Legacy fallback
 function buildAccountsFallback(): Account[] {
-  return [
-    ...DEFAULT_EMAIL_ACCOUNTS,
-    SYSTEM_ACCOUNT,
-  ];
+  return [];
 }
 
-const FOLDERS: Folder[] = [
-  { id: 'inbox', label: 'All', icon: <Inbox size={16} />, filter: () => true },
-  { id: 'unread', label: 'Unread', icon: <Eye size={16} />, filter: (m) => !m.is_read },
-  { id: 'starred', label: 'Starred', icon: <Star size={16} />, filter: (m) => !!m.is_starred },
-  { id: 'unreplied', label: 'Needs Reply', icon: <Reply size={16} />, filter: (m) => (m.unreplied_count && m.unreplied_count > 0) || (m.has_reply === false) },
-  { id: 'mentions', label: 'Mentions', icon: <AtSign size={16} />, filter: (m) => {
-    const kw = ['@you', '@me', 'mentioned you', 'tagged you'];
-    return kw.some(k => m.preview?.toLowerCase().includes(k) || m.subject?.toLowerCase().includes(k));
-  }},
-  { id: 'urgent', label: 'Urgent', icon: <AlertTriangle size={16} />, filter: (m) => {
-    const kw = ['urgent', 'asap', 'important', 'emergency', 'critical'];
-    return kw.some(k => m.preview?.toLowerCase().includes(k) || m.subject?.toLowerCase().includes(k));
-  }},
-  { id: 'archived', label: 'Archived', icon: <Archive size={16} />, filter: () => false }, // loaded separately
+// Gmail-native label folders — id matches Gmail labelIds param
+interface GmailLabel {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  gmailQ?: string;         // Gmail search query override
+  gmailLabelIds: string[]; // Gmail API labelIds param
+  clientFilter?: (m: ConversationItem) => boolean; // optional secondary filter
+}
+
+const GMAIL_LABELS: GmailLabel[] = [
+  { id: 'INBOX',   label: 'Inbox',       icon: <Inbox size={14} />,         gmailLabelIds: ['INBOX'] },
+  { id: 'STARRED', label: 'Starred',     icon: <Star size={14} />,          gmailLabelIds: ['STARRED'] },
+  { id: 'SENT',    label: 'Sent',        icon: <Send size={14} />,          gmailLabelIds: ['SENT'] },
+  { id: 'DRAFT',   label: 'Drafts',      icon: <FileText size={14} />,      gmailLabelIds: ['DRAFT'] },
+  { id: 'SPAM',    label: 'Spam',        icon: <AlertTriangle size={14} />, gmailLabelIds: ['SPAM'] },
+  { id: 'TRASH',   label: 'Trash',       icon: <Trash2 size={14} />,        gmailLabelIds: ['TRASH'] },
 ];
+
+// Keep FOLDERS alias for any existing usage during transition
+const FOLDERS = GMAIL_LABELS.map(l => ({
+  id: l.id.toLowerCase(),
+  label: l.label,
+  icon: l.icon,
+  filter: l.clientFilter ?? (() => true),
+}));
 
 // ─── Quick Reply Templates ─────────────────────────────────────────────────────
 
@@ -265,20 +204,12 @@ type TimeFilter = 'all' | 'today' | 'week';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function platformColor(p: string): string {
-  const map: Record<string, string> = {
-    email: 'text-[var(--color-warning)]', twitter: 'text-mission-control-text-dim', system: 'text-[var(--color-review)]'
-  };
-  return map[p] || 'text-mission-control-text-dim';
+function platformColor(_p: string): string {
+  return 'text-[var(--color-warning)]';
 }
 
-function platformIcon(platform: string, size: number) {
-  switch (platform) {
-    case 'email': return <Mail size={size} />;
-    case 'twitter': return <XIcon size={size} />;
-    case 'system': return <ActivityIcon size={size} />;
-    default: return <Mail size={size} />;
-  }
+function platformIcon(_platform: string, size: number) {
+  return <Mail size={size} />;
 }
 
 // Triage badge colors
@@ -519,56 +450,31 @@ function LeftPane({
         </button>
         {accountsExpanded && (
           <div className="pb-2">
-            {/* Group accounts by platform */}
-            {(() => {
-              const emailAccts = accounts.filter(a => a.platform === 'email');
-              const twitterAccts = accounts.filter(a => a.platform === 'twitter');
-              const systemAccts = accounts.filter(a => a.platform === 'system');
-
-              const renderGroup = (label: string, groupAccounts: Account[]) => {
-                if (groupAccounts.length === 0) return null;
-                return (
-                  <div key={label}>
-                    <div className="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
-                      {label}
-                    </div>
-                    {groupAccounts.map(account => (
-                      <button
-                        type="button"
-                        key={account.id}
-                        onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
-                        className={`flex items-center gap-2.5 px-4 py-2 text-sm w-full transition-colors text-left ${
-                          selectedAccount === account.id
-                            ? 'bg-mission-control-accent/10 text-mission-control-accent border-r-2 border-mission-control-accent'
-                            : 'hover:bg-mission-control-border/50'
-                        }`}
-                      >
-                        <span className={account.color}>{account.icon}</span>
-                        <div className="flex flex-col items-start flex-1 min-w-0">
-                          <span className="truncate w-full text-left">{account.label}</span>
-                          {account.address && (
-                            <span className="text-xs text-mission-control-text-dim truncate w-full text-left">{account.address}</span>
-                          )}
-                        </div>
-                        {(accountCounts[account.id] || 0) > 0 && (
-                          <span className="bg-mission-control-accent/20 text-mission-control-accent text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
-                            {accountCounts[account.id]}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                );
-              };
-
-              return (
-                <>
-                  {renderGroup('Email', emailAccts)}
-                  {renderGroup('X / Twitter', twitterAccts)}
-                  {renderGroup('System', systemAccts)}
-                </>
-              );
-            })()}
+            {accounts.map(account => (
+              <button
+                type="button"
+                key={account.id}
+                onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
+                className={`flex items-center gap-2.5 px-4 py-2 text-sm w-full transition-colors text-left ${
+                  selectedAccount === account.id
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent border-r-2 border-mission-control-accent'
+                    : 'hover:bg-mission-control-border/50'
+                }`}
+              >
+                <span className={account.color}>{account.icon}</span>
+                <div className="flex flex-col items-start flex-1 min-w-0">
+                  <span className="truncate w-full text-left">{account.label}</span>
+                  {account.address && (
+                    <span className="text-xs text-mission-control-text-dim truncate w-full text-left">{account.address}</span>
+                  )}
+                </div>
+                {(accountCounts[account.id] || 0) > 0 && (
+                  <span className="bg-mission-control-accent/20 text-mission-control-accent text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
+                    {accountCounts[account.id]}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -625,7 +531,6 @@ function CenterPane({
   accountLabel,
   onRefresh,
   refreshing,
-  selectedPlatform,
   hasMore,
   onLoadMore,
   onLoadAll,
@@ -644,21 +549,12 @@ function CenterPane({
   accountLabel: string;
   onRefresh: () => void;
   refreshing: boolean;
-  selectedPlatform?: string;
   hasMore?: boolean;
   onLoadMore?: () => void;
   onLoadAll?: () => void;
   aiAnalyses?: Map<string, AIAnalysis>;
   onMarkAllRead?: () => void;
 }) {
-  // Platform-specific empty states
-  const emptyState = () => {
-    const p = selectedPlatform;
-    if (p === 'system') return { icon: <ActivityIcon size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No system activity' };
-    if (p === 'twitter') return { icon: <XIcon size={32} />, msg: 'No X DMs' };
-    return { icon: <Mail size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No messages' };
-  };
-
   const unreadCount = conversations.filter(c => !c.is_read).length;
 
   return (
@@ -689,17 +585,12 @@ function CenterPane({
           </Flex>
         </Flex>
         {/* Search */}
-        <TextField.Root
-          aria-label="Search messages input"
+        <SearchInput
           value={searchQuery}
-          onChange={e => onSearchChange(e.target.value)}
+          onChange={onSearchChange}
           placeholder="Search messages..."
           className="w-full"
-        >
-          <TextField.Slot>
-            <Search size={14} />
-          </TextField.Slot>
-        </TextField.Root>
+        />
       </div>
 
       {/* Message List */}
@@ -809,7 +700,7 @@ function CenterPane({
                   </div>
 
                   {/* Action buttons */}
-                  {conv.platform !== 'system' && (
+                  {(
                     <div className="flex flex-col gap-0.5 flex-shrink-0 ml-auto pl-1">
                       <button
                         type="button"
@@ -1284,8 +1175,6 @@ function RightPane({
     );
   }
 
-  const isSystem = conversation.platform === 'system';
-
   return (
     <div className="flex-1 flex flex-col bg-mission-control-bg min-w-0 text-left">
       {/* Header */}
@@ -1333,7 +1222,7 @@ function RightPane({
       </div>
 
       {/* AI Analysis Banner */}
-      {!isSystem && aiAnalysis && (
+      {aiAnalysis && (
         <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
           {/* Summary + Triage */}
           <Flex align="center" gap="2" className="mb-1.5">
@@ -1399,16 +1288,6 @@ function RightPane({
       <div ref={threadScrollRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-3 text-left min-w-0">
         {loadingThread || loadingBody ? (
           <div className="text-center text-mission-control-text-dim py-8 text-sm">Loading...</div>
-        ) : isSystem ? (
-          /* System activity detail */
-          <div className="bg-mission-control-surface rounded-lg p-4 border border-mission-control-border">
-            <Flex align="center" gap="2" className="mb-3 pb-3 border-b border-mission-control-border">
-              <ActivityIcon size={14} className="text-[var(--color-review)]" />
-              <span className="font-semibold text-sm">{conversation.name || 'System'}</span>
-              <span className="text-xs text-mission-control-text-dim ml-auto">{conversation.relativeTime}</span>
-            </Flex>
-            <MarkdownMessage content={conversation.preview} />
-          </div>
         ) : conversation.platform === 'email' && emailBody ? (
           /* Email body with proper rendering */
           <EmailBodyRenderer body={emailBody} metadata={emailMetadata} />
@@ -1452,8 +1331,8 @@ function RightPane({
         )}
       </div>
 
-      {/* AI Assistant Panel — not for system messages */}
-      {!isSystem && showAIPanel && (
+      {/* AI Assistant Panel */}
+      {showAIPanel && (
         <div className="px-5 py-3 border-t border-mission-control-border bg-mission-control-surface/50">
           <Flex align="center" justify="between" className="mb-3">
             <Flex align="center" gap="2">
@@ -1532,7 +1411,7 @@ function RightPane({
       )}
 
       {/* Smart Reply Chips — Gmail-style quick replies */}
-      {!isSystem && !showAIPanel && !replyText && aiAnalysis?.reply_needed && (
+      {!showAIPanel && !replyText && aiAnalysis?.reply_needed && (
         <div className="px-5 py-2 border-t border-mission-control-border/50 bg-mission-control-surface/50 flex items-center gap-2 overflow-x-auto">
           <Sparkles size={11} className="text-mission-control-accent flex-shrink-0" />
           {aiAnalysis.reply_draft && (
@@ -1581,8 +1460,8 @@ function RightPane({
         </div>
       )}
 
-      {/* Reply Box — not for system messages */}
-      {!isSystem && (
+      {/* Reply Box */}
+      {(
         <div className="flex flex-col gap-2 px-4 py-3 border-t border-mission-control-border flex-shrink-0 bg-mission-control-surface">
           <Flex align="center" justify="between" className="mb-2">
             <span className="text-xs font-medium text-mission-control-text-dim">Reply</span>
@@ -1683,34 +1562,14 @@ export default function CommsInbox3Pane() {
     let cancelled = false;
     const loadAccounts = async () => {
       try {
-        // Fetch email accounts from Google auth if available, otherwise legacy accounts API
-        let emailAccounts: Array<{ email: string; label: string }> = [];
-
-        if (googleAuth.authenticated && googleAuth.email) {
-          emailAccounts = [{ email: googleAuth.email, label: googleAuth.email.split('@')[0] }];
-        } else {
-          const emailResult = await accountsApi.getAll()
-            .catch(() => null);
-          const emailResultAccounts = Array.isArray(emailResult) ? emailResult : (emailResult?.accounts || []);
-          emailAccounts = emailResultAccounts.length > 0
-            ? emailResultAccounts.map((a: any) => typeof a === 'string' ? { email: a, label: a } : a as { email: string; label: string })
-            : [];
-        }
+        // Email account from Google OAuth
+        const emailAccounts: Array<{ email: string; label: string }> = googleAuth.email
+          ? [{ email: googleAuth.email, label: googleAuth.email.split('@')[0] }]
+          : [];
 
         if (cancelled) return;
 
-        const channelAccounts = gateway.connected
-          ? ((await gateway.getChannelsStatus().catch(() => null))?.channelAccounts ?? {})
-          : {};
-
-        // Check if X/Twitter is configured via social module
-        let twitterConfigured = false;
-        try {
-          const flagRes = await fetch('/api/settings/twitter_setup_complete').then(r => r.ok ? r.json() : null).catch(() => null);
-          twitterConfigured = flagRes?.value === 'true';
-        } catch { /* non-critical */ }
-
-        const detected = buildAccountsFromSources(channelAccounts, emailAccounts, twitterConfigured);
+        const detected = buildAccountsFromEmail(emailAccounts);
         if (detected.length > 0) setAccounts(detected);
       } catch (e) {
         // ignore
@@ -1721,9 +1580,6 @@ export default function CommsInbox3Pane() {
     loadAccounts();
     return () => { cancelled = true; };
   }, [googleAuth.authenticated, googleAuth.email]);
-
-  // Zustand store for activities (system channel)
-  const activities = useStore((s) => s.activities);
 
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState('inbox');
@@ -1745,31 +1601,6 @@ export default function CommsInbox3Pane() {
   const [aiAnalyses, setAiAnalyses] = useState<Map<string, AIAnalysis>>(new Map());
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const analysisBatchRef = useRef<Set<string>>(new Set());
-
-  // Convert activities to ConversationItems for system channel
-  const systemMessages: ConversationItem[] = activities.map((a: Activity) => {
-    const diffMs = Date.now() - a.timestamp;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    let relativeTime = 'just now';
-    if (diffMins >= 60) relativeTime = `${diffHours}h ago`;
-    else if (diffMins >= 1) relativeTime = `${diffMins}m ago`;
-
-    const typeLabels: Record<string, string> = {
-      task: 'Task Update', chat: 'Chat', agent: 'Agent', system: 'System', error: 'Error'
-    };
-
-    return {
-      id: `system-${a.id}`,
-      platform: 'system',
-      name: typeLabels[a.type] || 'System',
-      subject: a.sessionKey ? `Session: ${a.sessionKey}` : undefined,
-      preview: a.message,
-      timestamp: new Date(a.timestamp).toISOString(),
-      relativeTime,
-      is_read: true,
-    };
-  });
 
   // Determine which account's platform we're filtering on
   const getAccountPlatform = (accountId: string | null): string | null => {
@@ -1834,10 +1665,6 @@ export default function CommsInbox3Pane() {
     const fCounts: Record<string, number> = {};
 
     for (const account of accounts) {
-      if (account.platform === 'system') {
-        aCounts[account.id] = systemMessages.filter(m => !m.is_read).length;
-        continue;
-      }
       const platform = account.platform;
       aCounts[account.id] = msgs.filter(m => {
         if (m.platform !== platform || m.is_read) return false;
@@ -1858,7 +1685,7 @@ export default function CommsInbox3Pane() {
 
     setAccountCounts(aCounts);
     setFolderCounts(fCounts);
-  }, [accounts, systemMessages.length]);
+  }, [accounts]);
 
   // Load messages from backend
   const loadMessages = useCallback(async (forceRefresh = false) => {
@@ -1870,49 +1697,22 @@ export default function CommsInbox3Pane() {
     }
 
     try {
-      // Fetch messages from all sources: Gmail + X/Twitter inbox + generic inbox
       let chats: ConversationItem[] = [];
 
-      // Source 1: Gmail (if authenticated)
       if (googleAuth.authenticated) {
-        const gmailQ = showArchived ? '-in:inbox' : 'in:inbox';
-        const gmailResult = await fetch(`/api/gmail/messages?q=${encodeURIComponent(gmailQ)}&maxResults=50`).then(r => r.json()).catch(() => ({ messages: [] }));
-        if (gmailResult.needsAuth || gmailResult.error === 'deleted_client' || gmailResult.error?.includes('invalid_client') || gmailResult.error?.includes('deleted')) {
+        // Use Gmail label for the selected folder
+        const gmailLabel = GMAIL_LABELS.find(l => l.id === selectedFolder.toUpperCase()) ?? GMAIL_LABELS[0];
+        const params = new URLSearchParams({
+          labelIds: gmailLabel.gmailLabelIds.join(','),
+          maxResults: '50',
+        });
+        const gmailResult = await fetch(`/api/gmail/messages?${params}`).then(r => r.json()).catch(() => ({ messages: [] }));
+        if (gmailResult.needsAuth || gmailResult.error?.includes('invalid_client') || gmailResult.error?.includes('deleted')) {
           setGoogleAuth({ authenticated: false, checked: true });
         } else {
           chats = (gmailResult.messages ?? []) as ConversationItem[];
         }
-      } else {
-        // Fallback: generic inbox items (non-mention)
-        const result = await inboxApi.getAll({ limit: String(messageLimit), archived: String(showArchived) });
-        const items = Array.isArray(result) ? result : (result?.chats || result?.items || []);
-        chats = items.filter((item: any) => item.type !== 'x-mention');
       }
-
-      // Source 2: X/Twitter mentions from inbox DB (always load these)
-      try {
-        const xResult = await inboxApi.getAll();
-        const xItems = (Array.isArray(xResult) ? xResult : [])
-          .filter((item: any) => item.type === 'x-mention')
-          .map((item: any) => {
-            let meta: any = {};
-            try { meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {}); } catch { /* noop */ }
-            return {
-              id: String(item.id),
-              platform: 'twitter',
-              from: meta.author_username ? `@${meta.author_username}` : 'Unknown',
-              name: meta.author_name || meta.author_username || 'Unknown',
-              subject: meta.mention_type === 'reply' ? 'Reply' : meta.mention_type === 'quote' ? 'Quote Tweet' : 'Mention',
-              preview: item.content || meta.text || '',
-              timestamp: new Date(meta.created_at || item.createdAt || Date.now()).toISOString(),
-              relativeTime: '',
-              is_read: !!item.isRead,
-              is_starred: !!item.starred,
-              priorityLevel: meta.ai_judgment?.triage === 'escalate' ? 'urgent' : undefined,
-            } as ConversationItem;
-          });
-        chats = [...chats, ...xItems];
-      } catch { /* X mentions non-critical */ }
 
       if (isMounted.current) {
         // Deduplicate by id — prevents double-rendering when sources overlap
@@ -1950,29 +1750,12 @@ export default function CommsInbox3Pane() {
     }
   }, [selectedFolder, computeCounts, messageLimit, googleAuth.authenticated]);
 
-  // Determine the selected platform for empty state
-  const selectedPlatform = selectedAccount
-    ? accounts.find(a => a.id === selectedAccount)?.platform
-    : undefined;
 
   // Update display when filters change
   useEffect(() => {
-    // If system account is selected, show system messages
-    if (selectedPlatform === 'system') {
-      let filtered = [...systemMessages];
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        filtered = filtered.filter(m =>
-          (m.name && m.name.toLowerCase().includes(q)) ||
-          m.preview.toLowerCase().includes(q)
-        );
-      }
-      setDisplayMessages(filtered);
-    } else {
-      const filtered = filterMessages(allMessages, selectedAccount, selectedFolder, searchQuery);
-      setDisplayMessages(filtered);
-    }
-  }, [allMessages, selectedAccount, selectedFolder, searchQuery, filterMessages, selectedPlatform, activities]);
+    const filtered = filterMessages(allMessages, selectedAccount, selectedFolder, searchQuery);
+    setDisplayMessages(filtered);
+  }, [allMessages, selectedAccount, selectedFolder, searchQuery, filterMessages]);
 
   // Initial load + event-driven refresh with 60s fallback
   useEffect(() => {
@@ -2081,13 +1864,17 @@ export default function CommsInbox3Pane() {
         }
       }
 
-      // Mark as read
-      try {
-        await inboxApi.markRead(Number(selectedConversation.id) || 0).catch(() => {});
-        setAllMessages(prev => prev.map(m =>
-          m.id === selectedConversation.id ? { ...m, is_read: true } : m
-        ));
-      } catch (_e) { /* ignore */ }
+      // Mark as read via Gmail API
+      if (googleAuth.authenticated) {
+        await fetch(`/api/gmail/messages/${selectedConversation.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ read: true }),
+        }).catch(() => {});
+      }
+      setAllMessages(prev => prev.map(m =>
+        m.id === selectedConversation.id ? { ...m, is_read: true } : m
+      ));
 
       // Trigger AI analysis
       if (selectedConversation.platform !== 'system') {
@@ -2262,8 +2049,6 @@ export default function CommsInbox3Pane() {
     try {
       if (googleAuth.authenticated && conv.platform === 'email') {
         await fetch(`/api/gmail/messages/${conv.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ read: newReadState }) });
-      } else {
-        await inboxApi.markRead(Number(conv.id) || 0).catch(() => {});
       }
       setAllMessages(prev => prev.map(m =>
         m.id === conv.id ? { ...m, is_read: newReadState } : m
@@ -2279,9 +2064,6 @@ export default function CommsInbox3Pane() {
       if (googleAuth.authenticated && currentMsg?.platform === 'email') {
         await fetch(`/api/gmail/messages/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ starred: newStarred }) });
         setAllMessages(prev => prev.map(m => m.id === id ? { ...m, is_starred: newStarred } : m));
-      } else {
-        const result = await inboxApi.star(Number(id) || 0, newStarred);
-        if (result) setAllMessages(prev => prev.map(m => m.id === id ? { ...m, is_starred: newStarred } : m));
       }
     } catch (e) { /* ignore */ }
   };
@@ -2450,7 +2232,6 @@ export default function CommsInbox3Pane() {
             accountLabel={getAccountLabel()}
             onRefresh={() => loadMessages(true)}
             refreshing={refreshing}
-            selectedPlatform={selectedPlatform}
             hasMore={displayMessages.length >= messageLimit}
             onLoadMore={handleLoadMore}
             onLoadAll={handleLoadAll}

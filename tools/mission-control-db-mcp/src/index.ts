@@ -170,7 +170,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'task_create',
-      description: 'Create a new task. MANDATORY RULES — task will be REJECTED if violated: (1) planningNotes is REQUIRED — must contain the full plan, approach, steps, and context (min 20 chars); (2) reviewer is always Clara — do not override; (3) after creating, immediately add at least 2 subtasks via subtask_create before starting work. description must be 1-2 sentences max. Put all detail in planningNotes. Structure planningNotes like this: "## Approach\n{how you will do it}\n\n## Acceptance Criteria\n- {specific checkable criterion 1}\n- {criterion 2}"',
+      description: 'Create a new task. ⚠️ MANDATORY RULES — Clara will REJECT the task if violated: (1) planningNotes is REQUIRED — must contain brainstorming, full approach, steps, and context structured as "## Brainstorming & Planning\\n{thinking, options considered, approach chosen}\\n\\n## Steps\\n1. {step}\\n\\n## Acceptance Criteria\\n- {criterion}"; (2) IMMEDIATELY after task_create, call subtask_create at least once — every task MUST have 1+ subtasks or it will be rejected; (3) reviewer is always Clara — do not override. description must be 1-2 sentences max. All detail goes in planningNotes.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -180,11 +180,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           priority: { type: 'string', description: 'Priority: p0, p1, p2, p3, p4 (default p2)' },
           project: { type: 'string', description: 'Project name' },
           parentTaskId: { type: 'string', description: 'Parent task ID (for sub-tasks)' },
-          planningNotes: { type: 'string', description: 'Full plan, approach, steps, context, and any relevant file paths or instructions. Structure as: "## Approach\n{steps}\n\n## Acceptance Criteria\n- {criterion 1}\n- {criterion 2}". This is where all detailed planning goes.' },
+          planningNotes: { type: 'string', description: 'REQUIRED. Brainstorming, full plan, approach, steps, context, and any relevant file paths or instructions. Structure as: "## Brainstorming & Planning\\n{thinking}\\n\\n## Steps\\n1. {step}\\n\\n## Acceptance Criteria\\n- {criterion}". This is where ALL detailed planning goes — never leave this empty.' },
           reviewerId: { type: 'string', description: 'Agent ID to review this task (default: clara)' },
           status: { type: 'string', description: 'Initial status (default: todo)' },
         },
-        required: ['title'],
+        required: ['title', 'planningNotes'],
       },
     },
     {
@@ -346,7 +346,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'schedule_create',
-      description: 'Schedule a future job for an agent. Use kind=once for one-shot tasks, kind=interval for repeating, kind=cron for time-based.',
+      description: 'Schedule a future job. Creates a TASK in the pipeline (default) so it goes through Clara review. Use mode="message" only for lightweight pings that don\'t need task tracking.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -356,9 +356,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           atMs: { type: 'number', description: 'Unix ms timestamp to run (kind=once)' },
           everyMs: { type: 'number', description: 'Repeat every N milliseconds (kind=interval)' },
           expr: { type: 'string', description: '5-field cron expression (kind=cron), e.g. "0 9 * * 1-5"' },
-          sessionTarget: { type: 'string', description: 'Agent ID, or "isolated" for anonymous run' },
-          message: { type: 'string', description: 'Message/prompt to send to the agent' },
+          sessionTarget: { type: 'string', description: 'Agent ID to assign the task to' },
+          message: { type: 'string', description: 'Task planning notes / instructions for the agent' },
           model: { type: 'string', description: 'Claude model to use (default: claude-haiku-4-5-20251001)' },
+          mode: { type: 'string', description: '"task" (default) creates a pipeline task. "message" sends a DM instead (use sparingly).' },
+          taskTitle: { type: 'string', description: 'Task title (supports {date} placeholder). Defaults to job name.' },
+          taskPriority: { type: 'string', description: 'Task priority: p0, p1, p2, p3 (default: p2)' },
+          taskTags: { type: 'array', items: { type: 'string' }, description: 'Tags for the task (default: ["scheduled", "cron"])' },
+          taskSubtasks: { type: 'array', items: { type: 'string' }, description: 'Subtask titles to create with the task' },
+          projectId: { type: 'string', description: 'Project ID to associate the task with' },
         },
         required: ['name', 'kind', 'message'],
       },
@@ -428,7 +434,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'image_generate',
-      description: 'Generate an image using Gemini AI and save it to the library. Returns markdown you can embed in chat, plus a removeBackgroundPath field ready for immediate use with image_remove_background. To remove the background after generating: image_remove_background({ inputPath: result.removeBackgroundPath, agentId: yourId })',
+      description: 'Generate an image using Gemini AI and save it to the library. Supports image-to-image: pass referenceImagePath with an existing library image to guide generation (ALWAYS do this for characters, logos, or brand assets — text prompts alone cannot replicate specific designs). Returns markdown you can embed in chat. IMPORTANT: after calling this tool, include the returned markdown field verbatim in your chat response so the image renders inline.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -436,6 +442,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           agentId: { type: 'string', description: 'Your agent ID' },
           filename: { type: 'string', description: 'Optional short filename (letters/numbers/hyphens, no extension)' },
           projectId: { type: 'string', description: 'Project ID — if provided, image saves to project folder instead of general library' },
+          referenceImagePath: { type: 'string', description: 'Absolute filesystem path to a reference image (e.g. /Users/kevin.macarthur/mission-control/library/brand-assets/Character/DEREK_Character/Derek_Track_Wave.png). Pass this when generating variants of an existing character, logo, or brand asset — Gemini uses the visual reference for far more accurate results than text alone.' },
+          referenceImageUrl: { type: 'string', description: 'Library URL of a reference image (e.g. /api/library?action=raw&id=...). Alternative to referenceImagePath when you have the library URL instead of the filesystem path.' },
         },
         required: ['prompt', 'agentId'],
       },
@@ -1177,7 +1185,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args?.kind === 'once')     schedule.atMs    = args?.atMs || Date.now() + 60_000;
         if (args?.kind === 'interval') schedule.everyMs = args?.everyMs || 3_600_000;
         if (args?.kind === 'cron')     schedule.expr    = args?.expr;
-        const job = {
+        const mode = args?.mode || 'task';
+        const job: any = {
           id,
           name: args?.name,
           description: args?.description || null,
@@ -1193,10 +1202,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           state: {},
           createdAt: Date.now(),
         };
+        // Default: create a task in the pipeline (goes through Clara review).
+        // Only skip taskTemplate if mode="message" is explicitly set.
+        if (mode !== 'message') {
+          job.taskTemplate = {
+            title: args?.taskTitle || args?.name || 'Scheduled Task',
+            description: args?.description || null,
+            planningNotes: args?.message,
+            assignTo: args?.sessionTarget || null,
+            priority: args?.taskPriority || 'p2',
+            tags: args?.taskTags || ['scheduled', 'cron'],
+            subtasks: (Array.isArray(args?.taskSubtasks) ? args.taskSubtasks : []).map((s: string) => ({ title: s })),
+            project_id: args?.projectId || null,
+          };
+        }
         jobs.push(job);
         fs.mkdirSync(path.dirname(schedulePath), { recursive: true });
         fs.writeFileSync(schedulePath, JSON.stringify(jobs, null, 2));
-        return { content: [{ type: 'text', text: JSON.stringify({ success: true, id, job }) }] };
+        return { content: [{ type: 'text', text: JSON.stringify({ success: true, id, mode, job }) }] };
       }
 
       // ── schedule_list ───────────────────────────────────────────────────────
@@ -1300,6 +1323,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           agentId: args?.agentId ?? 'unknown',
           filename: args?.filename ?? '',
           projectId: args?.projectId ?? undefined,
+          ...(args?.referenceImagePath ? { referenceImagePath: args.referenceImagePath } : {}),
+          ...(args?.referenceImageUrl  ? { referenceImageUrl:  args.referenceImageUrl  } : {}),
         });
 
         const result = await new Promise<string>((resolve) => {

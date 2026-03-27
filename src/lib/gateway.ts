@@ -104,9 +104,11 @@ class Gateway {
 
   async getAgentIdentity(_sessionKey?: string) { return {}; }
 
-  async getChatHistory(limit = 50) {
+  async getChatHistory(limit = 50, sessionKey?: string) {
     try {
-      const res = await fetch(`/api/messages?limit=${limit}`);
+      if (!sessionKey) return { messages: [] as any[] };
+      const params = new URLSearchParams({ limit: String(limit), sessionKey });
+      const res = await fetch(`/api/messages?${params}`);
       if (!res.ok) return { messages: [] as any[] };
       return res.json();
     } catch { return { messages: [] as any[] }; }

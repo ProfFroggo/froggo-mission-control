@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button, Flex, IconButton, TextField, Select } from '@radix-ui/themes';
 import {
   FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link,
@@ -14,6 +14,7 @@ import ErrorDisplay from './ErrorDisplay';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
 import { libraryApi } from '../lib/api';
+import SearchInput from './SearchInput';
 import { humanizeFilename } from '@/utils/formatting';
 
 type FileCategory = 'code' | 'design' | 'docs' | 'campaigns' | 'projects' | 'other';
@@ -113,6 +114,16 @@ function saveStarred(set: Set<string>) {
   localStorage.setItem(STARRED_KEY, JSON.stringify([...set]));
 }
 
+// ─── Filesystem dir entry (from /api/library/fs) ─────────────────────────────
+interface FsDirEntry {
+  name: string;
+  path: string;
+  rel: string;
+  depth: number;
+  hasChildren: boolean;
+  fileCount: number;
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface LibraryFilesTabProps {
   initialPath?: string | null;
@@ -139,7 +150,12 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   // Folder sidebar
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [folders, setFolders] = useState<LibraryFolder[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState<string>('all'); // 'all' | 'recent' | 'starred' | folderId
+  const [selectedFolder, setSelectedFolder] = useState<string>('all'); // 'all' | 'recent' | 'starred' | 'dir:...' | folderId
+
+  // Filesystem directory navigation
+  const [basePath, setBasePath] = useState<string>('');
+  const [fsDirs, setFsDirs] = useState<FsDirEntry[]>([]);
+  const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
 
   // File detail panel
   const [detailFile, setDetailFile] = useState<LibraryFileItem | null>(null);
@@ -190,11 +206,12 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     setLoading(true);
     setLoadError(null);
     try {
-      const libraryResult = await libraryApi.getFiles();
+      const libraryResult = await libraryApi.getFiles() as { files: any[]; basePath?: string };
       const libraryFiles: LibraryFileItem[] = Array.isArray(libraryResult?.files)
         ? (libraryResult.files as unknown as LibraryFileItem[])
         : [];
       setFiles(libraryFiles);
+      if (libraryResult?.basePath) setBasePath(libraryResult.basePath);
       const projectMap: Record<string, string> = {};
       for (const f of libraryFiles) {
         projectMap[f.id] = f.project || '';
@@ -218,6 +235,19 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       // silent
     }
   }, []);
+
+  const loadDirs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/library/fs');
+      if (res.ok) {
+        const data = await res.json();
+        setFsDirs(data.dirs || []);
+        if (data.basePath && !basePath) setBasePath(data.basePath);
+      }
+    } catch {
+      // silent
+    }
+  }, [basePath]);
 
   const loadTags = useCallback(async () => {
     try {
@@ -270,7 +300,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     loadFiles();
     loadFolders();
     loadTags();
-  }, [loadFiles, loadFolders, loadTags]);
+    loadDirs();
+  }, [loadFiles, loadFolders, loadTags, loadDirs]);
 
   useEffect(() => {
     if (newFolderInputVisible) {
@@ -607,6 +638,22 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     showToast('info', 'File upload not available in web mode');
   };
 
+  // ─── Directory tree helpers ──────────────────────────────────────────────────
+  // fsDirs comes from /api/library/fs — real filesystem directories
+  // Count files in a directory (recursive)
+  const countFilesInDir = useCallback((dirPath: string) =>
+    files.filter(f => f.path.startsWith(dirPath + '/')).length,
+  [files]);
+
+  const toggleDirExpand = (dirPath: string) => {
+    setExpandedDirs(prev => {
+      const next = new Set<string>(prev);
+      if (next.has(dirPath)) next.delete(dirPath);
+      else next.add(dirPath);
+      return next;
+    });
+  };
+
   // ─── Filtering ──────────────────────────────────────────────────────────────
   const categoryCounts: Record<string, number> = { all: files.length };
   for (const key of Object.keys(categoryConfig)) {
@@ -624,6 +671,10 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     }
     if (selectedFolder === 'starred') {
       return fileList.filter(f => starred.has(f.id));
+    }
+    if (selectedFolder.startsWith('dir:')) {
+      const dirPath = selectedFolder.slice(4);
+      return fileList.filter(f => f.path.startsWith(dirPath + '/') || f.path === dirPath);
     }
     // Real folder: match by folder_id field (DB-tracked files) or project name (legacy)
     const folder = folders.find(f => f.id === selectedFolder);
@@ -695,19 +746,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         {/* Single row: search + filters + actions */}
         <Flex align="center" gap="2">
           {/* Search input */}
-          <div className="flex-1">
-            <TextField.Root
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && searchMode === 'ask') handleAskAgent(); }}
-              placeholder="Search files..."
-              size="1"
-            >
-              <TextField.Slot>
-                <Search size={14} />
-              </TextField.Slot>
-            </TextField.Root>
-          </div>
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onKeyDown={e => { if (e.key === 'Enter' && searchMode === 'ask') handleAskAgent(); }}
+            placeholder="Search files..."
+            className="flex-1"
+          />
 
           {/* Category dropdown */}
           <Select.Root
@@ -912,24 +957,53 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 onClick={() => setSelectedFolder('starred')}
               />
 
-              {/* Real folders */}
-              {folders.length > 0 && (
+              {/* Filesystem directory tree — real directories from LIBRARY_PATH */}
+              {fsDirs.length > 0 && (
                 <div className="pt-2 mt-2 border-t border-mission-control-border">
-                  {folders.map(folder => {
-                    const count = files.filter(f =>
-                      (f as unknown as Record<string, unknown>).folder_id === folder.id || f.project === folder.name
-                    ).length;
-                    return (
-                      <SidebarItem
-                        key={folder.id}
-                        label={folder.name}
-                        icon={FolderOpen}
-                        count={count}
-                        selected={selectedFolder === folder.id}
-                        onClick={() => setSelectedFolder(folder.id)}
-                      />
-                    );
-                  })}
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-mission-control-text-dim px-2.5 pb-1">Folders</p>
+                  {fsDirs
+                    .filter(node => {
+                      if (node.depth === 0) return true;
+                      const parentPath = node.path.substring(0, node.path.lastIndexOf('/'));
+                      return expandedDirs.has(parentPath);
+                    })
+                    .map(node => {
+                      const isExpanded = expandedDirs.has(node.path);
+                      const isSelected = selectedFolder === `dir:${node.path}`;
+                      const fileCount = countFilesInDir(node.path);
+                      return (
+                        <div
+                          key={node.path}
+                          style={{ paddingLeft: `${node.depth * 12 + 10}px` }}
+                          className={`flex items-center gap-1 py-1 pr-2 rounded-lg text-xs cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                              : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
+                          }`}
+                          onClick={() => setSelectedFolder(`dir:${node.path}`)}
+                        >
+                          {node.hasChildren ? (
+                            <button
+                              type="button"
+                              onClick={e => { e.stopPropagation(); toggleDirExpand(node.path); }}
+                              className="flex-shrink-0 w-4 h-4 flex items-center justify-center"
+                            >
+                              {isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+                            </button>
+                          ) : (
+                            <span className="w-4 flex-shrink-0" />
+                          )}
+                          <FolderOpen size={12} className="flex-shrink-0" />
+                          <span className="truncate flex-1 min-w-0">{node.name}</span>
+                          {fileCount > 0 && (
+                            <span className={`text-[10px] flex-shrink-0 ml-1 ${isSelected ? 'text-mission-control-accent' : 'text-mission-control-text-dim'}`}>
+                              {fileCount}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })
+                  }
                 </div>
               )}
             </div>
@@ -951,6 +1025,39 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
         {/* ── Main File Area ───────────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Directory breadcrumb */}
+          {selectedFolder.startsWith('dir:') && basePath && (
+            <div className="flex-shrink-0 flex items-center gap-1 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setSelectedFolder('all')}
+                className="text-[11px] text-mission-control-accent hover:underline flex-shrink-0"
+              >
+                Library
+              </button>
+              {selectedFolder.slice(4).replace(basePath, '').split('/').filter(Boolean).map((part, idx, parts) => {
+                const pathUpTo = basePath + '/' + parts.slice(0, idx + 1).join('/');
+                const isLast = idx === parts.length - 1;
+                return (
+                  <span key={pathUpTo} className="flex items-center gap-1">
+                    <ChevronRight size={10} className="text-mission-control-text-dim flex-shrink-0" />
+                    <button
+                      type="button"
+                      onClick={() => !isLast && setSelectedFolder(`dir:${pathUpTo}`)}
+                      className={`text-[11px] flex-shrink-0 transition-colors ${
+                        isLast
+                          ? 'text-mission-control-text font-medium cursor-default'
+                          : 'text-mission-control-accent hover:underline'
+                      }`}
+                    >
+                      {part}
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
           {/* Recent files strip */}
           {selectedFolder === 'all' && recentFiles.length > 0 && (
             <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-bg flex-shrink-0">

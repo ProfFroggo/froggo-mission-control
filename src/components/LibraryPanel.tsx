@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { FolderOpen, FileText, Lightbulb } from 'lucide-react';
+import { FolderOpen, FileText, Lightbulb, HardDrive } from 'lucide-react';
 import { Flex } from '@radix-ui/themes';
 import LibraryFilesTab from './LibraryFilesTab';
 import LibraryTemplatesTab from './LibraryTemplatesTab';
 import LibrarySkillsTab from './LibrarySkillsTab';
+import LibraryDriveTab from './LibraryDriveTab';
 
-type LibraryTab = 'files' | 'templates' | 'skills';
+type LibraryTab = 'files' | 'drive' | 'templates' | 'skills';
 
 const tabs: Array<{ id: LibraryTab; label: string; icon: any }> = [
   { id: 'files', label: 'Files', icon: FolderOpen },
+  { id: 'drive', label: 'Google Drive', icon: HardDrive },
   { id: 'templates', label: 'Templates', icon: FileText },
   { id: 'skills', label: 'Skills', icon: Lightbulb },
 ];
@@ -77,6 +79,7 @@ export default function LibraryPanel() {
         aria-labelledby={`library-tab-${activeTab}`}
       >
         {activeTab === 'files' && <LibraryFilesTab initialPath={navigatePath} />}
+        {activeTab === 'drive' && <LibraryDriveTab />}
         {activeTab === 'templates' && <LibraryTemplatesTab />}
         {activeTab === 'skills' && <LibrarySkillsTab />}
       </div>

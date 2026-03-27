@@ -15,6 +15,15 @@ import { useArtifactOpen } from '../hooks/useArtifactOpen';
 import ToolPermissionCard, { type ToolPermissionRequest } from './ToolPermissionCard';
 import MessageReactions from './MessageReactions';
 import RoomSettingsPanel, { useRoomNotifSetting } from './RoomSettingsPanel';
+import {
+  MissionControlComposer,
+  ensureCSS,
+  parseMessageContent,
+  groupParsedItems,
+  ThinkingBlock,
+  ToolGroupBlock,
+  MarkdownText,
+} from './chat/ThreadStyles';
 
 interface AttachedFile {
   id: string;
@@ -48,12 +57,35 @@ function formatToolName(name: string): string {
   return last.replace(/_/g, ' ');
 }
 
+/** Renders structured agent messages with collapsible thinking/tool blocks — same as main chat */
+function RoomStructuredMessage({ content, streaming, onArtifactOpen }: { content: string; streaming: boolean; onArtifactOpen?: (lang: string, code: string) => void }) {
+  ensureCSS();
+  const { items, isParsed } = parseMessageContent(content);
+
+  if (!isParsed) {
+    return <MarkdownMessage content={content} onArtifactOpen={onArtifactOpen} />;
+  }
+
+  const grouped = groupParsedItems(items, streaming);
+  return (
+    <div className="flex flex-col gap-1">
+      {grouped.map((g, i) => {
+        if (g.kind === 'thinking') return <ThinkingBlock key={i} text={g.text} />;
+        if (g.kind === 'tools') return <ToolGroupBlock key={i} tools={g.tools} hasRunning={g.hasRunning} />;
+        return <MarkdownText key={i} text={g.text} />;
+      })}
+    </div>
+  );
+}
+
 export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideHeader = false }: ChatRoomViewProps) {
+  ensureCSS();
   const { rooms, addMessage, updateMessage, updateRoomAgents, updateRoom, deleteRoom, loadMessages } = useChatRoomStore();
   const agents = useStore(s => s.agents);
   const room = rooms.find(r => r.id === roomId);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [queuedMessage, setQueuedMessage] = useState<string | null>(null);
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
   // Auto-extract artifacts from messages
   const projectId = roomId.startsWith('project-') ? roomId.slice('project-'.length) : undefined;
@@ -391,25 +423,28 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
   };
 
   /** Send a message to a specific agent using per-runId callbacks.
-   *  Returns a promise that resolves only when the agent finishes (onEnd/onError/timeout). */
+   *  Returns a promise that resolves only when the agent finishes (onEnd/onError/timeout).
+   *  Accumulates structured content blocks (thinking, tool_use, text) for rich rendering. */
   const sendToAgent = (agentId: string, prompt: string): Promise<string> => {
     return new Promise<string>((resolve) => {
       const msgId = `rm-${Date.now()}-${agentId}-${Math.random().toString(36).slice(2, 6)}`;
-      let content = '';
+      let textContent = '';
+      const blocks: any[] = [];
       let settled = false;
+
+      const serializeBlocks = () => JSON.stringify(blocks);
 
       const settle = () => {
         if (settled) return;
         settled = true;
         setTypingAgents(prev => { const n = new Set(prev); n.delete(agentId); return n; });
         setStreamingStatus(prev => { const n = { ...prev }; delete n[msgId]; return n; });
-        // Clear shared refs only if they still belong to this agent
         if (pendingAgentRef.current === agentId) {
           pendingAgentRef.current = null;
           pendingMsgIdRef.current = null;
           pendingContentRef.current = '';
         }
-        resolve(content);
+        resolve(textContent);
       };
 
       pendingAgentRef.current = agentId;
@@ -418,7 +453,6 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
       setTypingAgents(prev => new Set(prev).add(agentId));
 
-      // Add placeholder message
       addMessage(roomId, {
         id: msgId,
         role: 'agent',
@@ -428,15 +462,13 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         streaming: true,
       });
 
-      // Safety timeout — 30s
       const timer = setTimeout(() => {
         if (!settled) {
-          updateMessage(roomId, msgId, { content: content || '', streaming: false });
+          updateMessage(roomId, msgId, { content: blocks.length > 0 ? serializeBlocks() : textContent || '', streaming: false });
           settle();
         }
       }, 30000);
 
-      // Use IIFE to avoid async Promise executor
       (async () => {
         try {
           abortControllerRef.current = new AbortController();
@@ -468,28 +500,34 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 if (evt.type === 'assistant' && evt.message?.content) {
                   for (const block of evt.message.content) {
                     if (block.type === 'text') {
-                      content += block.text;
-                      pendingContentRef.current = content;
-                      updateMessage(roomId, msgId, { content });
-                      // Clear streaming status once text starts flowing
+                      textContent += block.text;
+                      blocks.push({ type: 'text', text: block.text });
+                      pendingContentRef.current = textContent;
+                      updateMessage(roomId, msgId, { content: serializeBlocks() });
                       setStreamingStatus(prev => { const n = { ...prev }; delete n[msgId]; return n; });
                     } else if (block.type === 'tool_use' && block.name) {
-                      // Show which tool is being called
+                      blocks.push({ type: 'tool_use', name: block.name, input: block.input, id: block.id });
                       const toolLabel = formatToolName(block.name as string);
                       setStreamingStatus(prev => ({ ...prev, [msgId]: toolLabel }));
+                      updateMessage(roomId, msgId, { content: serializeBlocks() });
+                    } else if (block.type === 'tool_result') {
+                      blocks.push({ type: 'tool_result', tool_use_id: block.tool_use_id, content: block.content, is_error: block.is_error });
+                      updateMessage(roomId, msgId, { content: serializeBlocks() });
                     } else if (block.type === 'thinking' && block.thinking) {
-                      // Show a truncated excerpt of the thinking
+                      blocks.push({ type: 'thinking', thinking: block.thinking });
                       const excerpt = (block.thinking as string).slice(0, 120).replace(/\n+/g, ' ').trim();
                       setStreamingStatus(prev => ({ ...prev, [msgId]: excerpt + (block.thinking.length > 120 ? '…' : '') }));
+                      updateMessage(roomId, msgId, { content: serializeBlocks() });
                     }
                   }
                 } else if (evt.type === 'result' && evt.result) {
-                  content = evt.result;
-                  pendingContentRef.current = content;
-                  updateMessage(roomId, msgId, { content });
+                  textContent = evt.result;
+                  pendingContentRef.current = textContent;
+                  // Result might be structured JSON or plain text
+                  updateMessage(roomId, msgId, { content: evt.result });
                 } else if (evt.type === 'error' && evt.text) {
-                  content = evt.text;
-                  pendingContentRef.current = content;
+                  textContent = evt.text;
+                  pendingContentRef.current = textContent;
                 } else if (evt.type === 'tool_permission_request' && evt.toolName && evt.approvalId) {
                   const req: ToolPermissionRequest & { msgId: string } = {
                     approvalId: evt.approvalId as string,
@@ -501,11 +539,12 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   };
                   setPendingPermissions(prev => new Map(prev).set(req.approvalId, req));
                 } else if (evt.type === 'timeout') {
-                  content = 'Response timed out — please try again.';
-                  pendingContentRef.current = content;
+                  textContent = 'Response timed out — please try again.';
+                  pendingContentRef.current = textContent;
                 } else if (evt.type === 'done') {
                   clearTimeout(timer);
-                  updateMessage(roomId, msgId, { content: content || '*(no response)*', streaming: false });
+                  const finalContent = blocks.length > 0 ? serializeBlocks() : (textContent || '*(no response)*');
+                  updateMessage(roomId, msgId, { content: finalContent, streaming: false });
                   settle();
                   return;
                 }
@@ -513,10 +552,17 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             }
           }
           clearTimeout(timer);
-          updateMessage(roomId, msgId, { content: content || '*(no response)*', streaming: false });
+          const finalContent = blocks.length > 0 ? serializeBlocks() : (textContent || '*(no response)*');
+          updateMessage(roomId, msgId, { content: finalContent, streaming: false });
           settle();
         } catch (e: unknown) {
           clearTimeout(timer);
+          if (e instanceof DOMException && e.name === 'AbortError') {
+            const finalContent = blocks.length > 0 ? serializeBlocks() : (textContent || '*(stopped)*');
+            updateMessage(roomId, msgId, { content: finalContent, streaming: false });
+            settle();
+            return;
+          }
           updateMessage(roomId, msgId, {
             content: `Error: ${e instanceof Error ? e.message : 'Failed to reach agent'}`,
             streaming: false,
@@ -566,18 +612,22 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     setLoading(false);
   };
 
-  /** Handle user sending a message */
+  /** Handle user sending a message — queues if agents are currently responding */
   const handleSend = async () => {
     const text = input.trim();
     if (!text && attachments.length === 0) return;
-
     if (!room) return;
 
-    // Process attachments
+    // If agents are currently streaming, queue this message for after they finish
+    if (loading) {
+      setQueuedMessage(text);
+      setInput('');
+      return;
+    }
+
     const fileContent = attachments.length > 0 ? await processAttachments() : '';
     const fullContent = text + fileContent;
 
-    // Display message (show attachment badges to user)
     const displayContent = text + (attachments.length > 0 ? `\n\n📎 ${attachments.map(a => a.name).join(', ')}` : '');
 
     const userMsg: RoomMessage = {
@@ -592,8 +642,6 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     setAttachments([]);
     setReplyToMsg(null);
 
-    // Determine which agents to address
-    // When no @mention, only route to mission-control (orchestrator) to avoid waking all agents
     const mentioned = extractMentions(text, room.agents);
     const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('mission-control') ? ['mission-control'] : room.agents);
 
@@ -602,6 +650,36 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     turnResponseCountRef.current = 0;
     await routeToAgents(targets, fullContent);
   };
+
+  // Process queued message after agents finish responding
+  useEffect(() => {
+    if (!loading && queuedMessage) {
+      const queued = queuedMessage;
+      setQueuedMessage(null);
+      setInput(queued);
+      // Small delay so state settles, then auto-send
+      const timer = setTimeout(() => {
+        setInput('');
+        // Re-run handleSend logic inline since we can't call async in effect cleanly
+        if (!room) return;
+        const mentioned = extractMentions(queued, room.agents);
+        const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('mission-control') ? ['mission-control'] : room.agents);
+        const userMsg: RoomMessage = {
+          id: `rm-${Date.now()}-user`,
+          role: 'user',
+          content: queued,
+          timestamp: Date.now(),
+        };
+        addMessage(roomId, userMsg);
+        setStopped(false);
+        setLoading(true);
+        turnResponseCountRef.current = 0;
+        routeToAgents(targets, queued);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, queuedMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1054,18 +1132,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                             : 'thinking...'}
                         </span>
                       </Flex>
-                    ) : !isUser ? (
-                      <MarkdownMessage
-                        content={msg.content}
-                        mentions={{ ids: room.agents, names: Object.fromEntries(room.agents.map(id => [id, agentName(id)])) }}
-                        onArtifactOpen={handleArtifactOpen}
-                      />
-                    ) : (
-                      <MentionText 
-                        text={msg.content} 
+                    ) : isUser ? (
+                      <MentionText
+                        text={msg.content}
                         agentIds={room.agents}
                         agentNames={Object.fromEntries(room.agents.map(id => [id, agentName(id)]))}
                       />
+                    ) : (
+                      <RoomStructuredMessage content={msg.content} streaming={!!msg.streaming} onArtifactOpen={handleArtifactOpen} />
                     )}
                     {msg.streaming && msg.content && (
                       <div className="flex items-center gap-1.5 mt-2 opacity-60">
@@ -1282,49 +1356,62 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           </div>
         )}
 
-        <Flex align="center" gap="3">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            title="Attach file"
-            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
-          >
-            <Paperclip size={20} />
-          </button>
-          <button
-            onClick={() => setShowMentions(!showMentions)}
-            title="Mention an agent"
-            className={`inline-flex items-center justify-center w-10 h-10 rounded-md transition-colors ${
-              showMentions
-                ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
-                : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <AtSign size={20} />
-          </button>
-
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Message the room... (use @name to mention)"
-              rows={1}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-[14px] px-4 py-3 text-sm resize-none text-mission-control-text placeholder:text-mission-control-text-dim outline-none focus:border-[var(--mission-control-accent)] focus:ring-2 focus:ring-[var(--mission-control-accent)]/20 transition-colors"
-              style={{ minHeight: '44px' }}
-            />
+        <div className="aui-composer-root">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder={loading ? "Type to queue next message…" : "Message the room… (@name to mention)"}
+            rows={1}
+            className="aui-composer-input min-h-[22px] max-h-[160px] overflow-auto"
+            style={{ resize: 'none' }}
+          />
+          <div className="aui-composer-footer">
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                title="Attach file"
+                className="aui-composer-icon-btn"
+              >
+                <Paperclip size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMentions(!showMentions)}
+                title="Mention an agent"
+                className={`aui-composer-icon-btn ${showMentions ? 'aui-composer-icon-btn-active' : ''}`}
+              >
+                <AtSign size={15} />
+              </button>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {loading ? (
+                <button
+                  type="button"
+                  onClick={stopAll}
+                  aria-label="Stop generation"
+                  title="Stop (Escape)"
+                  className="aui-stop-btn"
+                >
+                  <Square size={14} fill="currentColor" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={!input.trim() && attachments.length === 0}
+                  aria-label="Send message"
+                  title="Send (Enter)"
+                  className="aui-send-btn"
+                >
+                  <Send size={15} />
+                </button>
+              )}
+            </div>
           </div>
-
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={!input.trim() && attachments.length === 0}
-            className="w-8 h-8 rounded-lg bg-[var(--mission-control-accent)] text-white flex items-center justify-center hover:opacity-85 transition-opacity flex-shrink-0 disabled:opacity-40"
-            title="Send message"
-          >
-            <Send size={16} />
-          </button>
-        </Flex>
+        </div>
       </div>
       </>
       )}

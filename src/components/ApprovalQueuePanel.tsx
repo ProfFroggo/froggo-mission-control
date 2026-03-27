@@ -10,7 +10,7 @@ import {
   Check, X, User, MessageSquare,
   Mail, Zap, ListTodo, Send, Bot,
   GitBranch, CalendarClock, AlertTriangle, Edit2, CheckCircle,
-  CheckSquare, ChevronDown, ChevronUp, Square, Trash2, XCircle,
+  CheckSquare, XSquare, ChevronDown, ChevronUp, Square, Trash2, XCircle,
 } from 'lucide-react';
 import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -807,6 +807,8 @@ export default function ApprovalQueuePanel() {
   const [showBatchRejectInput, setShowBatchRejectInput] = useState(false);
   const [approveAllConfirm, setApproveAllConfirm] = useState(false);
   const [approveAllWorking, setApproveAllWorking] = useState(false);
+  const [rejectAllConfirm, setRejectAllConfirm] = useState(false);
+  const [rejectAllWorking, setRejectAllWorking] = useState(false);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -890,6 +892,17 @@ export default function ApprovalQueuePanel() {
     setApproveAllWorking(false);
   };
 
+  const rejectAll = async () => {
+    if (!rejectAllConfirm) { setRejectAllConfirm(true); setTimeout(() => setRejectAllConfirm(false), 4000); return; }
+    setRejectAllConfirm(false);
+    setRejectAllWorking(true);
+    const targets = filtered.filter(a => a.status === 'pending');
+    await Promise.allSettled(targets.map(a => approvalApi.respond(a.id, 'rejected', undefined, undefined)));
+    showToast(`${targets.length} approvals rejected`, 'error');
+    await load(true);
+    setRejectAllWorking(false);
+  };
+
   const toggleSelect = (id: string) => {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
@@ -956,21 +969,36 @@ export default function ApprovalQueuePanel() {
           </Flex>
 
           <Flex align="center" gap="2">
-            {/* Approve all shortcut — only when pending items exist */}
+            {/* Approve all / Reject all — only when pending items exist */}
             {statusTab === 'pending' && filtered.filter(a => a.status === 'pending').length > 1 && (
-              <Button
-                onClick={approveAll}
-                disabled={approveAllWorking}
-                color="grass"
-                variant={approveAllConfirm ? 'solid' : 'soft'}
-                size="1"
-                radius="full"
-              >
-                {approveAllWorking ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckSquare className="w-3 h-3" />}
-                {approveAllConfirm
-                  ? `Confirm — approve all ${filtered.filter(a => a.status === 'pending').length}`
-                  : `Approve all ${filtered.filter(a => a.status === 'pending').length}`}
-              </Button>
+              <>
+                <Button
+                  onClick={approveAll}
+                  disabled={approveAllWorking || rejectAllWorking}
+                  color="grass"
+                  variant={approveAllConfirm ? 'solid' : 'soft'}
+                  size="1"
+                  radius="full"
+                >
+                  {approveAllWorking ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckSquare className="w-3 h-3" />}
+                  {approveAllConfirm
+                    ? `Confirm — approve all ${filtered.filter(a => a.status === 'pending').length}`
+                    : `Approve all ${filtered.filter(a => a.status === 'pending').length}`}
+                </Button>
+                <Button
+                  onClick={rejectAll}
+                  disabled={rejectAllWorking || approveAllWorking}
+                  color="red"
+                  variant={rejectAllConfirm ? 'solid' : 'soft'}
+                  size="1"
+                  radius="full"
+                >
+                  {rejectAllWorking ? <RefreshCw className="w-3 h-3 animate-spin" /> : <XSquare className="w-3 h-3" />}
+                  {rejectAllConfirm
+                    ? `Confirm — reject all ${filtered.filter(a => a.status === 'pending').length}`
+                    : `Reject all ${filtered.filter(a => a.status === 'pending').length}`}
+                </Button>
+              </>
             )}
 
             <button
@@ -987,7 +1015,7 @@ export default function ApprovalQueuePanel() {
       </div>
 
       {/* ── Status tabs ── */}
-      <div className="border-b border-mission-control-border bg-mission-control-surface">
+      <div className="border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
         <TabNav
           tabs={STATUS_TABS.map(tab => ({
             id: tab.id,
@@ -1003,7 +1031,7 @@ export default function ApprovalQueuePanel() {
 
       {/* ── Type filter segment control ── */}
       {statusTab !== 'scheduled' && (
-        <div className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <div className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
           <div className="inline-flex items-center bg-mission-control-bg border border-mission-control-border rounded-lg p-1 gap-0.5">
             {TYPE_FILTER_TABS.map(tab => {
               const count = pendingCounts[tab.id];
@@ -1040,7 +1068,7 @@ export default function ApprovalQueuePanel() {
       {statusTab === 'pending' && <HumanReviewSection tasks={tasks} />}
 
       {/* ── Main list ── */}
-      <div className="flex-1 overflow-y-auto relative">
+      <div className="flex-1 overflow-y-auto relative min-h-0">
         {loading ? (
           <Flex align="center" justify="center" gap="2" className="h-40 text-mission-control-text-dim">
             <RefreshCw className="w-4 h-4 animate-spin" />

@@ -32,11 +32,11 @@ function spawnClaude(args: string[], opts: Parameters<typeof spawn>[2]): ReturnT
     : spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], opts!);
 }
 const LOCK_TTL_MS = 3 * 60_000;
-// Dynamic idle timeout: 5 min with NO output at all → timeout.
+// Dynamic idle timeout: 15 min with NO output at all → timeout.
 // Resets every time the agent produces any stdout (thinking, tool calls, text).
-// Hard cap of 30 min prevents runaway processes regardless of activity.
-const IDLE_TIMEOUT_MS = 5 * 60_000;
-const MAX_TOTAL_TIMEOUT_MS = 30 * 60_000;
+// Hard cap of 60 min prevents runaway processes regardless of activity.
+const IDLE_TIMEOUT_MS = 15 * 60_000;
+const MAX_TOTAL_TIMEOUT_MS = 60 * 60_000;
 
 // ── Per-agent lock ───────────────────────────────────────────────────────────
 type G2 = typeof globalThis & { _chatAgentLocks?: Map<string, number> };
@@ -185,6 +185,21 @@ Example — chart:
 \`\`\`json
 { "@type": "chart", "chartType": "bar", "title": "Weekly Active Users", "xKey": "week", "data": [{ "week": "W1", "users": 1200 }, { "week": "W2", "users": 1450 }] }
 \`\`\`
+
+## FILE ROUTING — MANDATORY
+**ALL output files MUST be saved inside ~/mission-control/library/ using absolute paths.**
+**NEVER save files to ~/Downloads/, ~/Desktop/, /tmp/, the current directory, or any path outside ~/mission-control/library/.**
+
+| File Type | Save To (absolute path) |
+|-----------|------------------------|
+| Code, scripts, HTML | \`~/mission-control/library/code/\` |
+| Images, visuals | \`~/mission-control/library/design/images/\` |
+| Design specs, mockups | \`~/mission-control/library/design/ui/\` |
+| Research, analysis | \`~/mission-control/library/docs/research/\` |
+| Strategy, plans | \`~/mission-control/library/docs/strategies/\` |
+
+Use descriptive filenames: \`YYYY-MM-DD_brief-description.ext\`
+After saving any file, attach it: \`mcp__mission-control-db__task_add_attachment { "taskId": "<id>", "filePath": "~/mission-control/library/...", "fileName": "...", "category": "...", "uploadedBy": "<your-id>" }\`
 
 ## Memory Protocol (mandatory)
 After EVERY message, call mcp__memory__memory_write if ANY of the following are true:
@@ -502,25 +517,41 @@ SUMMARY:`;
           // Fresh session — inject recent conversation history as a readable transcript
           // so the agent has context even when starting a new Claude session.
           let historyContext = '';
+
+          // Check for compact summary first — if the session was compacted, use the summary
+          // instead of message history (messages were cleared during compact).
           try {
-            const rows = getDb()
-              .prepare(`SELECT role, content, timestamp FROM messages
-                        WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 100`)
-              .all(sessionKey) as { role: string; content: string; timestamp?: number }[];
-            if (rows.length > 0) {
-              const reversed = rows.reverse();
-              const transcript = reversed.map((r, i) => {
-                const speaker = r.role === 'user' ? 'User' : 'Assistant';
-                const contentLimit = i >= reversed.length - 10 ? 1500 : 600;
-                const timeStr = r.timestamp
-                  ? new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : '';
-                const label = timeStr ? `${speaker}, ${timeStr}` : speaker;
-                return `[${label}]: ${r.content.slice(0, contentLimit)}`;
-              }).join('\n');
-              historyContext = `\n\n=== PREVIOUS CONVERSATION CONTEXT ===\n${transcript}\n=== END CONTEXT — Continue from here ===`;
+            const sessRow = getDb()
+              .prepare(`SELECT compact_summary FROM sessions WHERE key = ? AND compact_summary IS NOT NULL`)
+              .get(sessionKey) as { compact_summary: string } | undefined;
+            if (sessRow?.compact_summary) {
+              historyContext = `\n\n=== COMPACTED CONVERSATION SUMMARY ===\n${sessRow.compact_summary}\n=== END SUMMARY — Continue from here ===`;
             }
           } catch { /* non-critical */ }
+
+          // If no compact summary, fall back to message history
+          if (!historyContext) {
+            try {
+              const rows = getDb()
+                .prepare(`SELECT role, content, timestamp FROM messages
+                          WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 100`)
+                .all(sessionKey) as { role: string; content: string; timestamp?: number }[];
+              if (rows.length > 0) {
+                const reversed = rows.reverse();
+                const transcript = reversed.map((r, i) => {
+                  const speaker = r.role === 'user' ? 'User' : 'Assistant';
+                  const contentLimit = i >= reversed.length - 10 ? 1500 : 600;
+                  const timeStr = r.timestamp
+                    ? new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : '';
+                  const label = timeStr ? `${speaker}, ${timeStr}` : speaker;
+                  return `[${label}]: ${r.content.slice(0, contentLimit)}`;
+                }).join('\n');
+                historyContext = `\n\n=== PREVIOUS CONVERSATION CONTEXT ===\n${transcript}\n=== END CONTEXT — Continue from here ===`;
+              }
+            } catch { /* non-critical */ }
+          }
+
           const systemPrompt = (buildSystemPrompt(agentId) ?? '') + historyContext;
           if (systemPrompt) args.push('--system-prompt', systemPrompt);
         }

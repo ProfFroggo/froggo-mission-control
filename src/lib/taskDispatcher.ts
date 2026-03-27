@@ -360,6 +360,9 @@ task_update({ status: "human-review", lastAgentUpdate: "Blocked: <reason>. Tried
 Do not loop silently — move to human-review so the human can help.
 
 ## FILE ROUTING — CRITICAL
+**NEVER save files to ~/Downloads/, ~/Desktop/, /tmp/, or any path outside ~/mission-control/library/.**
+**ALWAYS use absolute paths starting with ~/mission-control/library/.**
+
 **If this task has a project_id, ALL files MUST go in the project directory:**
   ~/mission-control/library/projects/{project_id}/
   Use subdirectories: images/, docs/, code/, design/
@@ -371,8 +374,9 @@ Do not loop silently — move to human-review so the human can help.
 |-----------|---------|
 | Research, analysis, notes | ~/mission-control/library/docs/research/ |
 | Strategy, plans, roadmaps | ~/mission-control/library/docs/strategies/ |
-| Code, scripts | ~/mission-control/library/code/ |
-| Images | ~/mission-control/library/design/images/ |
+| Code, scripts, HTML | ~/mission-control/library/code/ |
+| Images, visuals | ~/mission-control/library/design/images/ |
+| Design specs | ~/mission-control/library/design/ui/ |
 
 After saving any file: task_add_attachment({ taskId, filePath, fileName, category, uploadedBy })
 
@@ -677,6 +681,29 @@ function loadRelevantKnowledge(taskTitle: string, taskDesc?: string | null): str
 
 // ── Project context injection ─────────────────────────────────────────────────
 
+function buildGeneralLibraryContext(): string {
+  return `
+
+## FILE ROUTING — MANDATORY (No Project Assigned)
+
+This task has no project_id. **ALL output files MUST go in the general library using absolute paths.**
+
+| File Type | Save To (absolute path) |
+|-----------|------------------------|
+| Code, scripts, HTML | \`~/mission-control/library/code/\` |
+| Images, visuals | \`~/mission-control/library/design/images/\` |
+| Design specs, mockups | \`~/mission-control/library/design/ui/\` |
+| Research, analysis | \`~/mission-control/library/docs/research/\` |
+| Strategy, plans | \`~/mission-control/library/docs/strategies/\` |
+
+**Rules:**
+- ALWAYS use absolute paths starting with \`~/mission-control/library/\`
+- NEVER save to ~/Downloads/, ~/Desktop/, /tmp/, or any other location
+- Use descriptive filenames: \`YYYY-MM-DD_brief-description.ext\`
+- After saving any file: \`mcp__mission-control_db__task_add_attachment { "taskId": "<id>", "filePath": "~/mission-control/library/...", "fileName": "...", "category": "...", "uploadedBy": "<your-id>" }\`
+`;
+}
+
 function buildProjectContext(projectId: string): string {
   try {
     const projectDir = join(HOME, 'mission-control', 'library', 'projects', projectId);
@@ -832,7 +859,7 @@ function buildTaskSystemPrompt(
     ? (projectId.startsWith('cmp-')
         ? buildCampaignContext(projectId)
         : buildProjectContext(projectId))
-    : '';
+    : buildGeneralLibraryContext();
 
   // Structured dispatch context: project name, parent task, blockers
   const dispatchContext = task ? buildDispatchContextEnrichment(task) : '';
@@ -912,6 +939,12 @@ function buildTaskMessage(task: Record<string, unknown>): string {
     ? subtasks.map(s => `  [${s.completed ? 'x' : ' '}] ${s.title} (id: ${s.id})`).join('\n')
     : '  (no subtasks yet — create them with subtask_create)';
 
+  // Determine output directory — project-specific or general library
+  const projectId = task.project_id as string | undefined;
+  const outputDir = projectId
+    ? `~/mission-control/library/projects/${projectId}/`
+    : '~/mission-control/library/ (see routing table in system prompt)';
+
   lines.push(
     `=== TASK CONTEXT ANCHOR ===`,
     `Task ID: ${taskId}`,
@@ -919,10 +952,13 @@ function buildTaskMessage(task: Record<string, unknown>): string {
     `Priority: ${task.priority || 'p2'}`,
     `Assigned to: ${task.assignedTo || '(you)'}`,
     `Status: ${status}`,
+    `Output directory: ${outputDir}`,
     `Planning notes: ${task.planningNotes ? String(task.planningNotes).slice(0, 500) + (String(task.planningNotes).length > 500 ? '… (call task_get for full notes)' : '') : '(none — add with task_update)'}`,
     `Subtasks (${subtasks.length}):`,
     subtaskLines,
     `===========================`,
+    ``,
+    `**SAVE ALL FILES TO: ${outputDir}** — never ~/Downloads/, ~/Desktop/, /tmp/, or CWD.`,
     ``,
   );
 

@@ -38,11 +38,11 @@ import {
   Layout,
   Star,
   Layers,
-  Search,
   ShieldCheck,
   Bot,
 } from 'lucide-react';
-import { Button, Flex, IconButton, Spinner, TextField } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Spinner } from '@radix-ui/themes';
+import SearchInput from './SearchInput';
 import { Skeleton } from './LoadingStates';
 import AgentInstallModal from './AgentInstallModal';
 import { marketplaceApi } from '../lib/api';
@@ -487,20 +487,13 @@ export default function MarketplaceBrowse() {
       </div>
 
       {/* Search */}
-      <div className="relative">
-        <TextField.Root
-          size="2"
-          className="w-full"
-          type="text"
-          placeholder="Search modules…"
-          value={searchQuery}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-        >
-          <TextField.Slot>
-            <Search size={15} className="text-mission-control-text-dim" />
-          </TextField.Slot>
-        </TextField.Root>
-      </div>
+      <SearchInput
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search modules…"
+        className="w-full"
+        size="md"
+      />
 
       {/* Category filter */}
       {!loading && categories.length > 0 && (

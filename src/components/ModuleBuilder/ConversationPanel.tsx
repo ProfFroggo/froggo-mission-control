@@ -13,6 +13,7 @@ interface Props {
   isStarted: boolean;
   isFinished: boolean;
   isStreaming: boolean;
+  streamingContent?: string;
   onSend: (content: string) => void;
   onStart: () => void;
   onJumpToSection: (sectionId: SectionId) => void;
@@ -26,6 +27,7 @@ export default function ConversationPanel({
   isStarted,
   isFinished,
   isStreaming,
+  streamingContent,
   onSend,
   onStart,
   onJumpToSection,
@@ -35,7 +37,7 @@ export default function ConversationPanel({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamingContent]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,12 +132,16 @@ export default function ConversationPanel({
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-mission-control-accent/20 flex items-center justify-center">
               <Bot size={16} className="text-mission-control-accent animate-pulse" />
             </div>
-            <div className="max-w-[80%] rounded-lg px-4 py-2.5 text-sm bg-mission-control-surface">
-              <span className="inline-flex gap-1 text-mission-control-text-dim">
-                <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
-                <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
-                <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
-              </span>
+            <div className="max-w-[80%] rounded-lg px-4 py-2.5 text-sm bg-mission-control-surface text-mission-control-text">
+              {streamingContent ? (
+                <MarkdownMessage content={streamingContent} streaming={true} />
+              ) : (
+                <span className="inline-flex gap-1 text-mission-control-text-dim">
+                  <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
+                  <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
+                  <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
+                </span>
+              )}
             </div>
           </Flex>
         )}

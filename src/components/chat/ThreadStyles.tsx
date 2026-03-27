@@ -32,16 +32,29 @@ import {
   CheckCircle2,
   XCircle,
   Brain,
+  FolderOpen,
+  Expand,
+  FileText,
+  FileCode2,
+  Image as ImageIcon,
+  Network,
+  Database,
+  Search,
+  Globe,
+  Zap,
+  Bot,
+  ListChecks,
 } from "lucide-react";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import MarkdownMessage from "../MarkdownMessage";
+import { useArtifactStore, type Artifact, type ArtifactType } from "../../store/artifactStore";
 
 // ─────────────────────────────────────────────────────────────────
 // CSS keyframes — injected once on load
 // ─────────────────────────────────────────────────────────────────
 
 let _cssInjected = false;
-function ensureCSS() {
+export function ensureCSS() {
   if (_cssInjected || typeof document === "undefined") return;
   _cssInjected = true;
   const s = document.createElement("style");
@@ -202,35 +215,67 @@ function ensureCSS() {
       color: var(--mission-control-text);
       box-shadow: 0 4px 20px color-mix(in srgb, black 30%, transparent);
     }
-    /* Tool call block */
-    .aui-tool-block {
-      font-size: 12px; border-radius: 8px; overflow: hidden;
+    /* Tool group — chain style */
+    .aui-tool-group {
+      margin: 6px 0; border-radius: 10px; overflow: hidden;
       border: 1px solid var(--mission-control-border);
-      margin: 6px 0;
       animation: aui-fade-in 0.15s ease both;
     }
-    .aui-tool-header {
+    .aui-tool-group-header {
       display: flex; align-items: center; gap: 8px;
-      padding: 7px 12px; cursor: pointer;
-      background: color-mix(in srgb, var(--mission-control-border) 20%, transparent);
-      user-select: none;
-      transition: background 0.12s;
+      padding: 8px 12px; cursor: pointer; user-select: none;
+      background: color-mix(in srgb, var(--mission-control-border) 18%, transparent);
+      transition: background 0.12s; border: none; width: 100%; text-align: left;
     }
-    .aui-tool-header:hover {
-      background: color-mix(in srgb, var(--mission-control-border) 35%, transparent);
+    .aui-tool-group-header:hover {
+      background: color-mix(in srgb, var(--mission-control-border) 32%, transparent);
     }
-    .aui-tool-body {
-      padding: 10px 12px;
+    .aui-tool-group-body { border-top: 1px solid var(--mission-control-border); }
+    /* Each tool row */
+    .aui-tool-row {
+      display: flex; align-items: stretch;
+      padding-left: 12px; padding-right: 12px;
+      cursor: pointer; transition: background 0.1s;
+    }
+    .aui-tool-row:hover {
+      background: color-mix(in srgb, var(--mission-control-border) 15%, transparent);
+    }
+    /* Vertical connector line */
+    .aui-tool-row-line {
+      width: 1px; flex-shrink: 0; margin-right: 10px;
+      background: var(--mission-control-border); align-self: stretch;
+    }
+    .aui-tool-row:first-child .aui-tool-row-line { margin-top: 16px; }
+    .aui-tool-done-row .aui-tool-row-line { margin-bottom: 16px; }
+    /* Row content */
+    .aui-tool-row-content {
+      display: flex; align-items: center; gap: 6px;
+      flex: 1; min-width: 0; padding: 6px 0;
+    }
+    /* Result / file badges */
+    .aui-result-badge {
+      font-size: 10px; padding: 1px 5px; border-radius: 4px; flex-shrink: 0;
+      background: color-mix(in srgb, var(--mission-control-border) 50%, transparent);
+      color: var(--mission-control-text-dim);
+    }
+    .aui-file-chip {
+      font-size: 10px; padding: 1px 6px; border-radius: 4px; flex-shrink: 0;
+      border: 1px solid color-mix(in srgb, var(--mission-control-accent) 18%, transparent);
+      background: color-mix(in srgb, var(--mission-control-accent) 7%, transparent);
+      color: color-mix(in srgb, var(--mission-control-accent) 75%, var(--mission-control-text));
+      max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    /* Expanded detail inside a row */
+    .aui-tool-row-detail {
+      padding: 8px 12px 8px 35px;
       background: color-mix(in srgb, var(--mission-control-bg) 60%, transparent);
       border-top: 1px solid var(--mission-control-border);
-      overflow: hidden;
     }
     .aui-tool-code {
       font-family: ui-monospace, 'SF Mono', Consolas, monospace;
-      font-size: 11px; line-height: 1.6;
-      color: var(--mission-control-text);
+      font-size: 11px; line-height: 1.6; color: var(--mission-control-text);
       white-space: pre-wrap; word-break: break-all;
-      max-height: 240px; overflow-y: auto;
+      max-height: 200px; overflow-y: auto;
     }
     /* Thinking block */
     .aui-thinking-block {
@@ -266,7 +311,7 @@ function ensureCSS() {
 // MarkdownText — assistant content renderer
 // ─────────────────────────────────────────────────────────────────
 
-function MarkdownText({ text }: { text: string }) {
+export function MarkdownText({ text }: { text: string }) {
   return <MarkdownMessage content={text} />;
 }
 
@@ -300,72 +345,283 @@ function AssistantStreamState() {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// Tool display name — converts raw tool names to human-readable labels
+// ─────────────────────────────────────────────────────────────────
+
+function getToolDisplayName(name: string, inputStr?: string): string {
+  let input: Record<string, any> = {};
+  if (inputStr) {
+    try { input = JSON.parse(inputStr); } catch { /* not JSON */ }
+  }
+
+  // ── MCP tools: "mcp_server_tool-name" ─────────────────────────
+  if (name.startsWith('mcp_')) {
+    // Priority: description/query/title in the input (agent-provided human label)
+    const label = input.description || input.query || input.title || input.name;
+    if (label && typeof label === 'string' && label.trim().length > 0 && label.length < 100) {
+      return label.trim();
+    }
+
+    // Server-specific fallbacks
+    if (name.includes('mixpanel'))  return input.event_name ? `Mixpanel: ${input.event_name}` : 'Querying Mixpanel';
+    if (name.includes('supabase')) {
+      if (name.includes('execute_sql'))   return 'Running database query';
+      if (name.includes('list_tables'))   return 'Listing tables';
+      if (name.includes('apply_migration')) return 'Applying migration';
+      if (name.includes('get_logs'))      return 'Fetching logs';
+      return 'Supabase';
+    }
+    if (name.includes('birdeye'))   return 'Fetching market data';
+    if (name.includes('n8n'))       return 'Automation workflow';
+    if (name.includes('google'))    return 'Google Workspace';
+    if (name.includes('solana'))    return 'Solana query';
+    // Generic: strip "mcp_server_" prefix and clean up
+    return name.replace(/^mcp_[^_]+_/, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  // ── Standard Claude Code / built-in tools ─────────────────────
+  const file = (input.path || input.file_path || '') as string;
+  const filename = file ? file.split('/').pop() : '';
+
+  switch (name) {
+    case 'str_replace_editor':
+    case 'Edit':         return filename ? `Editing ${filename}` : 'Editing file';
+    case 'Write':
+    case 'create_file':  return filename ? `Writing ${filename}` : 'Writing file';
+    case 'Read':
+    case 'read_file':    return filename ? `Reading ${filename}` : 'Reading file';
+    case 'Glob':         return input.pattern ? `Finding: ${input.pattern}` : 'Finding files';
+    case 'Grep':         return input.pattern ? `Searching code for: ${String(input.pattern).slice(0, 40)}` : 'Searching code';
+    case 'Bash':
+    case 'bash': {
+      const cmd = (input.command || input.cmd || '') as string;
+      const desc = input.description as string | undefined;
+      if (desc) return desc;
+      if (cmd) return cmd.trim().replace(/\s+/g, ' ').slice(0, 60);
+      return 'Running command';
+    }
+    case 'WebSearch':
+    case 'web_search':   return input.query ? `Searching: ${String(input.query).slice(0, 50)}` : 'Web search';
+    case 'WebFetch':     return input.url ? `Fetching ${new URL(input.url as string).hostname}` : 'Fetching URL';
+    case 'Agent':        return input.description ? String(input.description).slice(0, 60) : 'Spawning agent';
+    case 'TodoWrite':    return 'Updating tasks';
+    case 'TaskCreate':
+    case 'TaskUpdate':   return 'Task management';
+    default:
+      // Last resort: clean up the raw name
+      return name.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
 // Tool call block — collapsible
 // ─────────────────────────────────────────────────────────────────
 
-interface ToolBlockProps {
-  name: string;
-  input?: string;
-  result?: string;
-  isError?: boolean;
-  isRunning?: boolean;
+// ── Tool group helpers ──────────────────────────────────────────
+
+export type ToolItem = { name: string; input?: string; result?: string; isError?: boolean; id?: string };
+
+export type GroupedItem =
+  | { kind: 'thinking'; text: string }
+  | { kind: 'text'; text: string }
+  | { kind: 'tools'; tools: ToolItem[]; hasRunning: boolean };
+
+export function groupParsedItems(items: ParsedItem[], isRunning: boolean): GroupedItem[] {
+  const groups: GroupedItem[] = [];
+  let toolBuf: ToolItem[] = [];
+
+  const flushTools = () => {
+    if (toolBuf.length === 0) return;
+    const hasRunning = isRunning && toolBuf.some(t => t.result === undefined);
+    groups.push({ kind: 'tools', tools: toolBuf, hasRunning });
+    toolBuf = [];
+  };
+
+  for (const item of items) {
+    if (item.kind === 'tool') {
+      toolBuf.push(item);
+    } else {
+      flushTools();
+      if (item.kind === 'thinking') groups.push({ kind: 'thinking', text: item.text });
+      else groups.push({ kind: 'text', text: item.text });
+    }
+  }
+  flushTools();
+  return groups;
 }
 
-function ToolBlock({ name, input, result, isError, isRunning }: ToolBlockProps) {
-  ensureCSS();
-  const [open, setOpen] = useState(false);
-  const hasDetails = !!(input || result);
+function generateGroupSummary(tools: ToolItem[]): string {
+  let edits = 0, reads = 0, writes = 0, searches = 0, cmds = 0;
+  const mcpServers: string[] = [];
 
-  const statusIcon = isRunning ? (
-    <Loader2 size={12} className="animate-spin text-[var(--color-info)]" />
-  ) : isError ? (
-    <XCircle size={12} className="text-[var(--color-error)] flex-shrink-0" />
-  ) : result !== undefined ? (
-    <CheckCircle2 size={12} className="text-[var(--color-success)] flex-shrink-0" />
+  for (const t of tools) {
+    const n = t.name.toLowerCase();
+    if (['str_replace_editor', 'edit'].includes(n)) edits++;
+    else if (['read', 'read_file'].includes(n)) reads++;
+    else if (['write', 'create_file'].includes(n)) writes++;
+    else if (['grep', 'glob', 'websearch', 'web_search', 'webfetch'].includes(n)) searches++;
+    else if (n === 'bash') cmds++;
+    else if (n === 'todowrite') { /* ignore todo updates in summary */ }
+    else if (n.startsWith('mcp_')) {
+      const server = n.split('_')[1];
+      if (!mcpServers.includes(server)) mcpServers.push(server);
+    }
+  }
+
+  const parts: string[] = [];
+  if (edits)   parts.push(edits   === 1 ? 'Edited a file'   : `Edited ${edits} files`);
+  if (writes)  parts.push(writes  === 1 ? 'Created a file'  : `Created ${writes} files`);
+  if (reads)   parts.push(reads   === 1 ? 'Read a file'     : `Read ${reads} files`);
+  if (searches) parts.push('Searched code');
+  if (cmds)    parts.push(cmds    === 1 ? 'Ran a command'   : `Ran ${cmds} commands`);
+  mcpServers.forEach(s => parts.push(`Called ${s}`));
+
+  if (!parts.length) return `Used ${tools.length} tool${tools.length > 1 ? 's' : ''}`;
+  return parts.join(', ');
+}
+
+function getToolIcon(name: string): typeof FileText {
+  const n = name.toLowerCase();
+  if (['read', 'read_file'].includes(n)) return FileText;
+  if (['write', 'create_file'].includes(n)) return FileCode2;
+  if (['str_replace_editor', 'edit'].includes(n)) return Edit3;
+  if (n === 'grep') return Search;
+  if (n === 'glob') return FolderOpen;
+  if (n === 'bash') return Terminal;
+  if (n === 'websearch' || n === 'web_search') return Globe;
+  if (n === 'webfetch') return Globe;
+  if (n === 'agent') return Bot;
+  if (n === 'todowrite') return ListChecks;
+  if (n.startsWith('mcp_supabase')) return Database;
+  if (n.startsWith('mcp_')) return Zap;
+  return Wrench;
+}
+
+function getFileChip(name: string, inputStr?: string): string | null {
+  if (!inputStr) return null;
+  let input: Record<string, unknown> = {};
+  try { input = JSON.parse(inputStr); } catch { return null; }
+  const p = (input.path || input.file_path || input.filePath) as string | undefined;
+  if (p && typeof p === 'string') return p.split('/').pop() || null;
+  return null;
+}
+
+// ── ToolGroupBlock ──────────────────────────────────────────────
+
+export function ToolGroupBlock({ tools, hasRunning }: { tools: ToolItem[]; hasRunning: boolean }) {
+  ensureCSS();
+  // Start expanded while running so progress is visible; collapsed once done
+  const [expanded, setExpanded] = useState(hasRunning);
+  const [openRows, setOpenRows] = useState<Set<number>>(new Set());
+
+  useEffect(() => { if (hasRunning) setExpanded(true); }, [hasRunning]);
+
+  const allDone = !hasRunning && tools.every(t => t.result !== undefined || t.isError);
+  const hasError = tools.some(t => t.isError);
+  const summary = generateGroupSummary(tools);
+
+  const toggleRow = (i: number) =>
+    setOpenRows(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s; });
+
+  const summaryIcon = hasRunning ? (
+    <Loader2 size={13} className="animate-spin text-mission-control-accent flex-shrink-0" />
+  ) : hasError ? (
+    <XCircle size={13} className="text-[var(--color-error)] flex-shrink-0" />
+  ) : allDone ? (
+    <CheckCircle2 size={13} className="text-[var(--color-success)] flex-shrink-0" />
   ) : (
-    <Wrench size={12} className="text-mission-control-text-dim flex-shrink-0" />
+    <Wrench size={13} className="text-mission-control-text-dim flex-shrink-0" />
   );
 
   return (
-    <div
-      className="aui-tool-block"
-      style={isError ? { borderColor: 'color-mix(in srgb, var(--color-error) 30%, transparent)' } : undefined}
-    >
-      <div
-        className="aui-tool-header"
-        onClick={() => hasDetails && setOpen(o => !o)}
-        role={hasDetails ? "button" : undefined}
-        aria-expanded={hasDetails ? open : undefined}
+    <div className="aui-tool-group">
+      <button
+        type="button"
+        className="aui-tool-group-header"
+        onClick={() => setExpanded(v => !v)}
+        aria-expanded={expanded}
       >
-        {statusIcon}
-        <Terminal size={11} className="text-mission-control-text-dim flex-shrink-0" />
-        <span className="font-mono text-[11px] font-medium text-mission-control-text flex-1 truncate">{name}</span>
-        {isRunning && (
-          <span className="text-[10px] text-[var(--color-info)] font-medium ml-auto flex-shrink-0">Running…</span>
-        )}
-        {hasDetails && !isRunning && (
-          <CollapseChevron
-            size={11}
-            className="text-mission-control-text-dim flex-shrink-0 ml-auto transition-[transform] duration-150"
-            style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
-          />
-        )}
-      </div>
-      {open && hasDetails && (
-        <div className="aui-tool-body">
-          {input && (
-            <>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1.5">Input</p>
-              <pre className="aui-tool-code">{input}</pre>
-            </>
-          )}
-          {result && (
-            <>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mt-3 mb-1.5">
-                {isError ? 'Error' : 'Result'}
-              </p>
-              <pre className={`aui-tool-code ${isError ? 'text-[var(--color-error)]' : ''}`}>{result}</pre>
-            </>
+        {summaryIcon}
+        <span className="text-[11px] font-medium text-mission-control-text-dim flex-1 truncate">{summary}</span>
+        <ChevronDown
+          size={12}
+          className="text-mission-control-text-dim flex-shrink-0 transition-[transform] duration-150"
+          style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        />
+      </button>
+
+      {expanded && (
+        <div className="aui-tool-group-body">
+          {tools.map((tool, i) => {
+            const Icon = getToolIcon(tool.name);
+            const label = getToolDisplayName(tool.name, tool.input);
+            const chip = getFileChip(tool.name, tool.input);
+            const isToolRunning = hasRunning && tool.result === undefined && !tool.isError;
+            const rowOpen = openRows.has(i);
+            const hasDetail = !!(tool.input || tool.result);
+
+            return (
+              <div key={i}>
+                <div
+                  className={`aui-tool-row ${i === 0 ? 'first' : ''} ${!allDone && i === tools.length - 1 ? 'aui-tool-done-row' : ''}`}
+                  onClick={() => hasDetail && toggleRow(i)}
+                  role={hasDetail ? 'button' : undefined}
+                >
+                  <div className="aui-tool-row-line" />
+                  <div className="aui-tool-row-content">
+                    {isToolRunning ? (
+                      <Loader2 size={12} className="animate-spin text-mission-control-accent flex-shrink-0" />
+                    ) : tool.isError ? (
+                      <XCircle size={12} className="text-[var(--color-error)] flex-shrink-0" />
+                    ) : tool.result !== undefined ? (
+                      <Icon size={12} className="text-mission-control-text-dim flex-shrink-0" />
+                    ) : (
+                      <Icon size={12} className="text-mission-control-text-dim flex-shrink-0 opacity-50" />
+                    )}
+                    <span className="text-[11px] text-mission-control-text truncate flex-1">{label}</span>
+                    {tool.result !== undefined && !isToolRunning && (
+                      <span className="aui-result-badge">{tool.isError ? 'Error' : 'Result'}</span>
+                    )}
+                    {chip && <span className="aui-file-chip">{chip}</span>}
+                    {hasDetail && (
+                      <CollapseChevron
+                        size={10}
+                        className="text-mission-control-text-dim flex-shrink-0 transition-[transform] duration-100"
+                        style={{ transform: rowOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                      />
+                    )}
+                  </div>
+                </div>
+                {rowOpen && hasDetail && (
+                  <div className="aui-tool-row-detail">
+                    {tool.input && (
+                      <>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Input</p>
+                        <pre className="aui-tool-code">{tool.input}</pre>
+                      </>
+                    )}
+                    {tool.result && (
+                      <>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider mt-2.5 mb-1 ${tool.isError ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}>
+                          {tool.isError ? 'Error' : 'Result'}
+                        </p>
+                        <pre className={`aui-tool-code ${tool.isError ? 'text-[var(--color-error)]' : ''}`}>{tool.result}</pre>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {allDone && (
+            <div className="aui-tool-row aui-tool-done-row">
+              <div className="aui-tool-row-line" />
+              <div className="aui-tool-row-content">
+                <CheckCircle2 size={12} className="text-[var(--color-success)] flex-shrink-0" />
+                <span className="text-[11px] text-mission-control-text-dim">Done</span>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -377,7 +633,7 @@ function ToolBlock({ name, input, result, isError, isRunning }: ToolBlockProps) 
 // Thinking block — collapsible
 // ─────────────────────────────────────────────────────────────────
 
-function ThinkingBlock({ text }: { text: string }) {
+export function ThinkingBlock({ text }: { text: string }) {
   ensureCSS();
   const [open, setOpen] = useState(false);
   if (!text?.trim()) return null;
@@ -416,12 +672,14 @@ function ThinkingBlock({ text }: { text: string }) {
                   >
                     {i + 1}.
                   </span>
-                  <span>{chunk.trim()}</span>
+                  <div className="flex-1 min-w-0">
+                    <MarkdownMessage content={chunk.trim()} />
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            text
+            <MarkdownMessage content={text} />
           )}
         </div>
       )}
@@ -507,21 +765,25 @@ function UserActionBar() {
 // Message bubbles
 // ─────────────────────────────────────────────────────────────────
 
+export type ParsedItem =
+  | { kind: 'thinking'; text: string }
+  | { kind: 'text'; text: string }
+  | { kind: 'tool'; name: string; input?: string; result?: string; isError?: boolean; id?: string };
+
 /**
  * Parses raw text content that may contain serialized ContentBlock[] JSON.
- * Returns { textParts, toolCalls, thinkingBlocks } for structured rendering.
+ * Returns ordered items preserving the original block sequence so that tool
+ * calls appear inline between text segments (not lumped after all text).
  */
-function parseMessageContent(text: string) {
+export function parseMessageContent(text: string): { items: ParsedItem[]; isParsed: boolean } {
   try {
     if (text.startsWith("[")) {
       const blocks = JSON.parse(text);
       if (Array.isArray(blocks) && blocks[0]?.type) {
-        const textParts: string[] = [];
-        const toolCalls: { name: string; input?: string; result?: string; isError?: boolean; id?: string }[] = [];
-        const thinkingBlocks: string[] = [];
+        const items: ParsedItem[] = [];
         const toolResults: Record<string, { content: string; isError: boolean }> = {};
 
-        // First pass: collect tool results
+        // First pass: collect tool results keyed by tool_use_id
         for (const b of blocks) {
           if (b.type === "tool_result") {
             const id = b.tool_use_id ?? "";
@@ -534,15 +796,16 @@ function parseMessageContent(text: string) {
           }
         }
 
-        // Second pass: build structured output
+        // Second pass: build items in original block order
         for (const b of blocks) {
           if (b.type === "text" && b.text?.trim()) {
-            textParts.push(b.text);
+            items.push({ kind: 'text', text: b.text });
           } else if (b.type === "thinking" && b.thinking?.trim()) {
-            thinkingBlocks.push(b.thinking);
+            items.push({ kind: 'thinking', text: b.thinking });
           } else if (b.type === "tool_use") {
             const tr = toolResults[b.id ?? ""];
-            toolCalls.push({
+            items.push({
+              kind: 'tool',
               name: b.name ?? "unknown",
               input: b.input ? JSON.stringify(b.input, null, 2) : undefined,
               result: tr?.content,
@@ -552,50 +815,220 @@ function parseMessageContent(text: string) {
           }
         }
 
-        return { textParts, toolCalls, thinkingBlocks, isParsed: true };
+        return { items, isParsed: true };
       }
     }
   } catch { /* fall through */ }
 
-  return { textParts: [text], toolCalls: [], thinkingBlocks: [], isParsed: false };
+  return { items: [{ kind: 'text', text }], isParsed: false };
 }
+
+// ─────────────────────────────────────────────────────────────────
+// Artifact cards — shown at bottom of assistant messages
+// ─────────────────────────────────────────────────────────────────
+
+const ARTIFACT_TYPE_ICONS: Record<ArtifactType, typeof FileText> = {
+  file: FileCode2,
+  text: FileText,
+  diagram: Network,
+  image: ImageIcon,
+  data: Database,
+  code: FileCode2,
+};
+
+function isLibraryFilePath(content: string): boolean {
+  return (
+    (content.startsWith('/') || content.startsWith('~')) &&
+    /\/mission-control\/library\//.test(content)
+  );
+}
+
+function ArtifactCard({ artifact }: { artifact: Artifact }) {
+  const { selectArtifact, setCollapsed } = useArtifactStore();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const isPath = artifact.type === 'file' && isLibraryFilePath(artifact.content);
+  const lang = artifact.metadata?.language?.toUpperCase();
+  const typeLabel = [
+    artifact.type.charAt(0).toUpperCase() + artifact.type.slice(1),
+    lang,
+  ].filter(Boolean).join(' · ');
+  const Icon = ARTIFACT_TYPE_ICONS[artifact.type] ?? FileText;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
+
+  const openInPanel = () => {
+    setCollapsed(false);
+    selectArtifact(artifact.id);
+    setMenuOpen(false);
+  };
+
+  const copyPath = () => {
+    navigator.clipboard.writeText(artifact.content);
+    setMenuOpen(false);
+  };
+
+  const revealInFinder = async () => {
+    setMenuOpen(false);
+    await fetch('/api/library/reveal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: artifact.content }),
+    }).catch(() => { /* non-critical */ });
+  };
+
+  return (
+    <div
+      className="mt-2 flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[var(--mission-control-border)] bg-[var(--mission-control-surface)] hover:border-[var(--mission-control-accent)]/30 transition-colors cursor-pointer select-none"
+      onClick={openInPanel}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openInPanel(); }}
+    >
+      {/* File type icon */}
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border border-[var(--mission-control-border)] bg-[var(--mission-control-bg)]">
+        <Icon size={16} className="text-[var(--mission-control-accent)]" />
+      </div>
+
+      {/* Title + type */}
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] font-semibold leading-snug truncate text-[var(--mission-control-text)]">
+          {artifact.title}
+        </div>
+        <div className="text-[11px] text-[var(--mission-control-text-dim)]">{typeLabel}</div>
+      </div>
+
+      {/* Action button + dropdown */}
+      <div
+        className="flex items-center gap-1 flex-shrink-0"
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={openInPanel}
+          className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-[var(--mission-control-accent)]/10 text-[var(--mission-control-accent)] border border-[var(--mission-control-accent)]/20 hover:bg-[var(--mission-control-accent)]/20 transition-colors"
+        >
+          Open
+        </button>
+
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen(v => !v)}
+            className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--mission-control-border)] text-[var(--mission-control-text-dim)] hover:text-[var(--mission-control-text)] hover:bg-[var(--mission-control-border)]/40 transition-colors"
+            aria-label="More options"
+          >
+            <ChevronDown size={13} />
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-1 bg-[var(--mission-control-surface)] border border-[var(--mission-control-border)] rounded-xl shadow-xl z-50 py-1.5 min-w-[168px]">
+              <button
+                type="button"
+                onClick={openInPanel}
+                className="w-full text-left px-3 py-1.5 text-[12px] flex items-center gap-2.5 text-[var(--mission-control-text)] hover:bg-[var(--mission-control-bg)] transition-colors"
+              >
+                <Expand size={13} className="text-[var(--mission-control-text-dim)]" />
+                Open in Artifacts
+              </button>
+              <button
+                type="button"
+                onClick={copyPath}
+                className="w-full text-left px-3 py-1.5 text-[12px] flex items-center gap-2.5 text-[var(--mission-control-text)] hover:bg-[var(--mission-control-bg)] transition-colors"
+              >
+                <Copy size={13} className="text-[var(--mission-control-text-dim)]" />
+                Copy Path
+              </button>
+              {isPath && (
+                <button
+                  type="button"
+                  onClick={revealInFinder}
+                  className="w-full text-left px-3 py-1.5 text-[12px] flex items-center gap-2.5 text-[var(--mission-control-text)] hover:bg-[var(--mission-control-bg)] transition-colors"
+                >
+                  <FolderOpen size={13} className="text-[var(--mission-control-text-dim)]" />
+                  Show in Finder
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MessageArtifactCards() {
+  const messageId = useMessage((s: any) => s.id as string);
+  const allArtifacts = useArtifactStore(s => s.artifacts);
+  const messageArtifacts = useMemo(
+    () => allArtifacts.filter(a => a.messageId === messageId),
+    [allArtifacts, messageId]
+  );
+
+  if (messageArtifacts.length === 0) return null;
+
+  return (
+    <div>
+      {messageArtifacts.map(artifact => (
+        <ArtifactCard key={artifact.id} artifact={artifact} />
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
 
 export function AssistantMessageBubble() {
   ensureCSS();
+  const isRunning = useMessage((s) => s.status?.type === "running");
   return (
     <MessagePrimitive.Root className="aui-message-root aui-message-enter flex flex-col max-w-full">
-      <div className="text-[var(--font-size-2)] leading-[1.7] text-[var(--mission-control-text)] break-words py-0.5">
-        <MessagePrimitive.Content
-          components={{
-            Text: ({ text }: { text: string }) => {
-              const { textParts, toolCalls, thinkingBlocks } = parseMessageContent(text);
-              return (
-                <>
-                  {thinkingBlocks.map((t, i) => (
-                    <ThinkingBlock key={`think-${i}`} text={t} />
-                  ))}
-                  {toolCalls.map((tc, i) => (
-                    <ToolBlock
-                      key={`tool-${i}-${tc.id ?? tc.name}`}
-                      name={tc.name}
-                      input={tc.input}
-                      result={tc.result}
-                      isError={tc.isError}
-                    />
-                  ))}
-                  {textParts.filter(Boolean).map((t, i) => (
-                    <MarkdownText key={`text-${i}`} text={t} />
-                  ))}
-                </>
-              );
-            },
-          }}
-        />
-        <AssistantStreamState />
+      <div className="max-w-[67%]">
+        <div className="text-[var(--font-size-2)] leading-[1.7] text-[var(--mission-control-text)] break-words py-0.5">
+          <MessagePrimitive.Content
+            components={{
+              Text: ({ text }: { text: string }) => {
+                const { items } = parseMessageContent(text);
+                const groups = groupParsedItems(items, isRunning);
+                return (
+                  <>
+                    {groups.map((group, i) => {
+                      if (group.kind === 'thinking') {
+                        return <ThinkingBlock key={`think-${i}`} text={group.text} />;
+                      }
+                      if (group.kind === 'tools') {
+                        return (
+                          <ToolGroupBlock
+                            key={`tools-${i}`}
+                            tools={group.tools}
+                            hasRunning={group.hasRunning}
+                          />
+                        );
+                      }
+                      return <MarkdownText key={`text-${i}`} text={group.text} />;
+                    })}
+                  </>
+                );
+              },
+            }}
+          />
+          <AssistantStreamState />
+        </div>
+        <MessageArtifactCards />
+        <ActionBarPrimitive.Root hideWhenRunning autohide="never" style={{ display: "contents" }}>
+          <AssistantActionBar />
+        </ActionBarPrimitive.Root>
       </div>
-      <ActionBarPrimitive.Root hideWhenRunning autohide="never" style={{ display: "contents" }}>
-        <AssistantActionBar />
-      </ActionBarPrimitive.Root>
     </MessagePrimitive.Root>
   );
 }
@@ -642,6 +1075,7 @@ interface ComposerProps {
   onAttach?: () => void;
   isListening?: boolean;
   onToggleVoice?: () => void;
+  onStop?: () => void;
 }
 
 export function MissionControlComposer({
@@ -651,18 +1085,19 @@ export function MissionControlComposer({
   onAttach,
   isListening,
   onToggleVoice,
+  onStop,
 }: ComposerProps) {
   ensureCSS();
   const isRunning = loading;
 
   return (
     <ComposerPrimitive.Root className="aui-composer-root">
-      {/* Textarea */}
+      {/* Textarea — always enabled so users can type queued messages while agent streams */}
       <ComposerPrimitive.Input
         className="aui-composer-input min-h-[22px] max-h-[160px] overflow-auto"
-        placeholder={placeholder ?? "Message… (Enter to send, Shift+Enter for newline)"}
+        placeholder={isRunning ? "Type to queue next message…" : (placeholder ?? "Message… (Enter to send, Shift+Enter for newline)")}
         submitMode="enter"
-        disabled={disabled}
+        disabled={disabled && !isRunning}
         rows={1}
         autoFocus
       />
@@ -699,16 +1134,15 @@ export function MissionControlComposer({
         {/* Right: stop or send */}
         <div className="flex items-center gap-1.5">
           {isRunning ? (
-            <ComposerPrimitive.Cancel asChild>
-              <button
-                type="button"
-                aria-label="Stop generation"
-                title="Stop (Escape)"
-                className="aui-stop-btn"
-              >
-                <Square size={14} fill="currentColor" />
-              </button>
-            </ComposerPrimitive.Cancel>
+            <button
+              type="button"
+              onClick={onStop}
+              aria-label="Stop generation"
+              title="Stop (Escape)"
+              className="aui-stop-btn"
+            >
+              <Square size={14} fill="currentColor" />
+            </button>
           ) : (
             <ComposerPrimitive.Send asChild>
               <button
@@ -718,11 +1152,7 @@ export function MissionControlComposer({
                 title="Send (Enter)"
                 className="aui-send-btn"
               >
-                {loading ? (
-                  <Loader2 size={15} className="animate-spin" />
-                ) : (
-                  <Send size={15} />
-                )}
+                <Send size={15} />
               </button>
             </ComposerPrimitive.Send>
           )}

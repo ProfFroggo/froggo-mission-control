@@ -7,7 +7,8 @@ import {
   CheckCircle2, Clock, AlertCircle, ChevronRight,
   Users, Zap, LayoutGrid, List, BarChart3, TrendingUp, RotateCcw,
 } from 'lucide-react';
-import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
+import SearchInput from '../SearchInput';
 import { getProjectIcon } from './projectIcons';
 import { projectsApi } from '../../lib/api';
 import type { Project } from '../../types/projects';
@@ -569,19 +570,14 @@ export default function ProjectsPanel() {
       {/* Filters (only for active tab) */}
       {tabView === 'active' && (
         <Flex align="center" gap="3" className="px-4 py-3 border-b border-mission-control-border">
-          <div className="flex-1 max-w-xs">
-            <TextField.Root
-              aria-label="Search projects"
-              placeholder="Search projects..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              size="2"
-            >
-              <TextField.Slot>
-                <Search size={14} />
-              </TextField.Slot>
-            </TextField.Root>
-          </div>
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search projects..."
+            aria-label="Search projects"
+            className="flex-1 max-w-xs"
+            size="md"
+          />
           <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
             {(['all', 'active', 'paused', 'completed'] as const).map(s => (
               <button
@@ -604,19 +600,14 @@ export default function ProjectsPanel() {
       {/* Archived search */}
       {tabView === 'archived' && (
         <Flex align="center" gap="3" className="px-4 py-3 border-b border-mission-control-border">
-          <div className="flex-1 max-w-xs">
-            <TextField.Root
-              aria-label="Search archived projects"
-              placeholder="Search archived..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              size="2"
-            >
-              <TextField.Slot>
-                <Search size={14} />
-              </TextField.Slot>
-            </TextField.Root>
-          </div>
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search archived..."
+            aria-label="Search archived projects"
+            className="flex-1 max-w-xs"
+            size="md"
+          />
         </Flex>
       )}
 
