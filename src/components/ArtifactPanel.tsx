@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { Button, TextField, Flex } from '@radix-ui/themes';
 import { useArtifactStore, type Artifact, type ArtifactType } from '../store/artifactStore';
-import MarkdownMessage from './MarkdownMessage';
+import MarkdownMessage, { CodeBlock } from './MarkdownMessage';
 
 interface ArtifactPanelProps {
   sessionId?: string;
@@ -88,6 +88,8 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
   const [loadedPortUrl, setLoadedPortUrl] = useState<string>('');
   const [reloadKey, setReloadKey] = useState(0);
   const [portError, setPortError] = useState(false);
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileContentLoading, setFileContentLoading] = useState(false);
 
   // Resize state — all stable refs, no useCallback needed
   const MIN_WIDTH = 280;
@@ -146,11 +148,41 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
     setPortError(false);
   }, [portUrl, loadedPortUrl]);
 
-  // Filter artifacts by session if provided, newest first
-  const displayArtifacts = (sessionId
-    ? artifacts.filter(a => a.sessionId === sessionId)
-    : getFilteredArtifacts()
-  ).slice().sort((a, b) => b.timestamp - a.timestamp);
+  // Derive the file path to fetch — stable dep for the effect below.
+  // Covers: file-type library paths + text-type markdown library paths.
+  const _fileArtifactPath = (() => {
+    const a = artifacts.find(a => a.id === selectedArtifactId);
+    if (!a) return undefined;
+    if (a.type === 'file' && a.content && isFilePath(a.content)) return a.content;
+    // Markdown library files land as text type; metadata.filePath holds the path
+    if (a.type === 'text' && typeof a.metadata?.filePath === 'string') return a.metadata.filePath as string;
+    return undefined;
+  })();
+
+  // Fetch actual file content when a library file-path artifact is selected
+  useEffect(() => {
+    if (!_fileArtifactPath) {
+      setFileContent(null);
+      setFileContentLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setFileContentLoading(true);
+    setFileContent(null);
+    fetch(`/api/library/serve?path=${encodeURIComponent(_fileArtifactPath)}`)
+      .then(res => res.text())
+      .then(text => { if (!cancelled) setFileContent(text); })
+      .catch(() => { if (!cancelled) setFileContent(null); })
+      .finally(() => { if (!cancelled) setFileContentLoading(false); });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_fileArtifactPath]);
+
+  // Filter artifacts strictly by session — never show cross-session artifacts.
+  // If no sessionId, show empty list rather than falling through to all artifacts.
+  const displayArtifacts = sessionId
+    ? artifacts.filter(a => a.sessionId === sessionId).sort((a, b) => b.timestamp - a.timestamp)
+    : [];
 
   // Only show a selected artifact if it belongs to the current session's display list
   const selectedArtifact = displayArtifacts.find(a => a.id === selectedArtifactId);
@@ -164,7 +196,10 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
   };
 
   const handleDownload = (artifact: Artifact) => {
-    const blob = new Blob([artifact.content], { type: 'text/plain' });
+    const isLibraryBacked = (artifact.type === 'file' && isFilePath(artifact.content)) ||
+      (artifact.type === 'text' && typeof artifact.metadata?.filePath === 'string');
+    const content = (isLibraryBacked && fileContent) ? fileContent : artifact.content;
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -212,11 +247,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 <span className="ml-auto text-mission-control-text-dim">{artifact.metadata.filename}</span>
               )}
             </Flex>
-            <div className="bg-mission-control-bg rounded-lg p-4 overflow-x-auto">
-              <pre className="text-sm font-mono whitespace-pre-wrap break-words">
-                <code>{artifact.content}</code>
-              </pre>
-            </div>
+            <CodeBlock code={artifact.content} language={artifact.metadata?.language || 'text'} />
           </div>
         );
 
@@ -257,16 +288,91 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
               <Icon size={14} />
               <span>Data</span>
             </Flex>
-            <div className="bg-mission-control-bg rounded-lg p-4 overflow-x-auto">
-              <pre className="text-sm font-mono whitespace-pre-wrap break-words">
-                <code>{artifact.content}</code>
-              </pre>
-            </div>
+            <CodeBlock code={artifact.content} language={artifact.metadata?.language || 'json'} />
           </div>
         );
 
-      case 'text':
-      case 'file':
+      case 'text': {
+        const isLibraryMd = typeof artifact.metadata?.filePath === 'string';
+        return (
+          <div className="space-y-2">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+              <Icon size={14} />
+              <span>markdown</span>
+              {isLibraryMd && (
+                <span className="ml-auto truncate text-mission-control-text-dim max-w-[60%] font-mono" title={artifact.content}>
+                  {artifact.content.split('/').pop()}
+                </span>
+              )}
+            </Flex>
+            {isLibraryMd ? (
+              fileContentLoading ? (
+                <div className="flex items-center justify-center py-8 text-mission-control-text-dim text-sm gap-2">
+                  <RefreshCw size={14} className="animate-spin" />
+                  <span>Loading file…</span>
+                </div>
+              ) : fileContent !== null ? (
+                <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
+                  <MarkdownMessage content={fileContent} />
+                </div>
+              ) : (
+                <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
+                  <p className="text-sm font-mono text-mission-control-text-dim break-all">{artifact.content}</p>
+                </div>
+              )
+            ) : (
+              <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
+                <MarkdownMessage content={artifact.content} />
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      case 'file': {
+        // Library file-path artifacts: fetch and show actual file content
+        if (isFilePath(artifact.content)) {
+          const ext = artifact.content.split('.').pop()?.toLowerCase() ?? '';
+          const lang = artifact.metadata?.language || (ext === 'htm' ? 'html' : ext) || 'file';
+          return (
+            <div className="space-y-2">
+              <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+                <Icon size={14} />
+                <span className="font-mono">{lang}</span>
+                <span
+                  className="ml-auto truncate text-mission-control-text-dim max-w-[50%] font-mono"
+                  title={artifact.content}
+                >
+                  {artifact.content.split('/').pop()}
+                </span>
+              </Flex>
+              {fileContentLoading ? (
+                <div className="flex items-center justify-center py-8 text-mission-control-text-dim text-sm gap-2">
+                  <RefreshCw size={14} className="animate-spin" />
+                  <span>Loading file…</span>
+                </div>
+              ) : fileContent !== null ? (
+                <CodeBlock code={fileContent} language={lang} />
+              ) : (
+                <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
+                  <p className="text-sm font-mono text-mission-control-text-dim break-all">{artifact.content}</p>
+                </div>
+              )}
+            </div>
+          );
+        }
+        // Inline file content
+        return (
+          <div className="space-y-2">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+              <Icon size={14} />
+              <span className="font-mono">{artifact.metadata?.language || 'file'}</span>
+            </Flex>
+            <CodeBlock code={artifact.content} language={artifact.metadata?.language || 'html'} />
+          </div>
+        );
+      }
+
       default:
         return (
           <div className="space-y-2">
@@ -349,7 +455,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
             <span className="text-xs text-mission-control-text-dim flex-shrink-0 tabular-nums">v{selectedArtifact.currentVersion}</span>
             <div className="flex items-center gap-1 flex-shrink-0">
               <button
-                onClick={() => handleCopy(selectedArtifact.content, selectedArtifact.id)}
+                onClick={() => handleCopy(fileContent ?? selectedArtifact.content, selectedArtifact.id)}
                 title="Copy"
                 aria-label="Copy"
                 className={`inline-flex items-center gap-1 px-1.5 py-1 rounded border text-xs transition-colors ${
@@ -485,7 +591,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                   <iframe
                     key={`preview-${selectedArtifact.id}-${reloadKey}`}
                     src={src}
-                    sandbox="allow-scripts allow-forms allow-popups allow-same-origin"
+                    sandbox="allow-scripts allow-forms allow-popups"
                     className="w-full h-full border-0 rounded-b-lg bg-mission-control-surface"
                     title={selectedArtifact.title}
                     style={{ minHeight: '400px' }}

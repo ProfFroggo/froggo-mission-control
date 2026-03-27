@@ -1,4 +1,40 @@
-import { memo, useState, type ComponentPropsWithoutRef } from 'react';
+import { memo, useState, type ComponentPropsWithoutRef, type CSSProperties } from 'react';
+import SyntaxHighlighter from 'react-syntax-highlighter/dist/cjs/prism-light';
+import javascript from 'react-syntax-highlighter/dist/cjs/languages/prism/javascript';
+import typescript from 'react-syntax-highlighter/dist/cjs/languages/prism/typescript';
+import jsx from 'react-syntax-highlighter/dist/cjs/languages/prism/jsx';
+import tsx from 'react-syntax-highlighter/dist/cjs/languages/prism/tsx';
+import python from 'react-syntax-highlighter/dist/cjs/languages/prism/python';
+import bash from 'react-syntax-highlighter/dist/cjs/languages/prism/bash';
+import json from 'react-syntax-highlighter/dist/cjs/languages/prism/json';
+import css from 'react-syntax-highlighter/dist/cjs/languages/prism/css';
+import markdown from 'react-syntax-highlighter/dist/cjs/languages/prism/markdown';
+import sql from 'react-syntax-highlighter/dist/cjs/languages/prism/sql';
+import yaml from 'react-syntax-highlighter/dist/cjs/languages/prism/yaml';
+import rust from 'react-syntax-highlighter/dist/cjs/languages/prism/rust';
+import go from 'react-syntax-highlighter/dist/cjs/languages/prism/go';
+
+SyntaxHighlighter.registerLanguage('javascript', javascript);
+SyntaxHighlighter.registerLanguage('js', javascript);
+SyntaxHighlighter.registerLanguage('typescript', typescript);
+SyntaxHighlighter.registerLanguage('ts', typescript);
+SyntaxHighlighter.registerLanguage('jsx', jsx);
+SyntaxHighlighter.registerLanguage('tsx', tsx);
+SyntaxHighlighter.registerLanguage('python', python);
+SyntaxHighlighter.registerLanguage('py', python);
+SyntaxHighlighter.registerLanguage('bash', bash);
+SyntaxHighlighter.registerLanguage('sh', bash);
+SyntaxHighlighter.registerLanguage('shell', bash);
+SyntaxHighlighter.registerLanguage('json', json);
+SyntaxHighlighter.registerLanguage('css', css);
+SyntaxHighlighter.registerLanguage('markdown', markdown);
+SyntaxHighlighter.registerLanguage('md', markdown);
+SyntaxHighlighter.registerLanguage('sql', sql);
+SyntaxHighlighter.registerLanguage('yaml', yaml);
+SyntaxHighlighter.registerLanguage('yml', yaml);
+SyntaxHighlighter.registerLanguage('rust', rust);
+SyntaxHighlighter.registerLanguage('rs', rust);
+SyntaxHighlighter.registerLanguage('go', go);
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Copy, Check, ExternalLink, FileCode, GitBranch, FileJson, FileText as FileTextIcon } from 'lucide-react';
@@ -100,7 +136,7 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
             }
 
             return (
-              <code className="bg-mission-control-bg font-mono text-xs px-1.5 py-0.5 rounded text-[var(--color-info)]" {...props}>
+              <code className="bg-mission-control-bg font-mono text-xs px-1.5 py-0.5 rounded text-mission-control-accent" {...props}>
                 {children}
               </code>
             );
@@ -204,32 +240,84 @@ function ArtifactCard({ lang, code, onOpen }: { lang: string; code: string; onOp
   );
 }
 
-function CodeBlock({ code, language }: { code: string; language: string }) {
+// Mission Control syntax theme — maps Prism token types to CSS variables
+const MC_THEME: Record<string, CSSProperties> = {
+  'code[class*="language-"]': { color: 'var(--color-mission-control-text, #e2e8f0)', background: 'transparent', fontFamily: 'inherit', fontSize: 'inherit', lineHeight: '1.6', whiteSpace: 'pre' },
+  'pre[class*="language-"]': { color: 'var(--color-mission-control-text, #e2e8f0)', background: 'transparent', margin: 0, padding: 0, overflow: 'auto' },
+  'token.comment': { color: '#6b7a8d', fontStyle: 'italic' },
+  'token.prolog': { color: '#6b7a8d' },
+  'token.doctype': { color: '#6b7a8d' },
+  'token.cdata': { color: '#6b7a8d' },
+  'token.punctuation': { color: '#94a3b8' },
+  'token.property': { color: '#7dd3fc' },
+  'token.tag': { color: '#86efac' },
+  'token.boolean': { color: '#f97316' },
+  'token.number': { color: '#fb923c' },
+  'token.constant': { color: '#fb923c' },
+  'token.symbol': { color: '#fb923c' },
+  'token.deleted': { color: '#f87171' },
+  'token.selector': { color: '#86efac' },
+  'token.attr-name': { color: '#7dd3fc' },
+  'token.string': { color: '#86efac' },
+  'token.char': { color: '#86efac' },
+  'token.builtin': { color: '#818cf8' },
+  'token.inserted': { color: '#86efac' },
+  'token.operator': { color: '#94a3b8' },
+  'token.entity': { color: '#fbbf24', cursor: 'help' },
+  'token.url': { color: '#7dd3fc', textDecoration: 'underline' },
+  'token.atrule': { color: '#a78bfa' },
+  'token.attr-value': { color: '#86efac' },
+  'token.keyword': { color: '#c084fc' },
+  'token.function': { color: '#60a5fa' },
+  'token.class-name': { color: '#fcd34d' },
+  'token.regex': { color: '#fb923c' },
+  'token.important': { color: '#f97316', fontWeight: 'bold' },
+  'token.variable': { color: '#e2e8f0' },
+  'token.bold': { fontWeight: 'bold' },
+  'token.italic': { fontStyle: 'italic' },
+};
+
+const KNOWN_LANGS = new Set(['javascript','js','typescript','ts','jsx','tsx','python','py','bash','sh','shell','json','css','markdown','md','sql','yaml','yml','rust','rs','go']);
+
+export function CodeBlock({ code, language }: { code: string; language: string }) {
   const [copied, setCopied] = useState(false);
-  const lang = language || 'code';
+  const lang = language || 'text';
+  const useSyntax = KNOWN_LANGS.has(lang.toLowerCase());
 
   return (
     <div className="relative my-3 rounded-lg overflow-hidden bg-mission-control-bg border border-mission-control-border shadow-sm group/code">
-      {/* Language label — always visible, top-left */}
-      <div className="flex items-center px-4 py-1.5 bg-mission-control-border/20 border-b border-mission-control-border/50">
+      {/* Header bar: language label left, copy button right */}
+      <div className="flex items-center justify-between px-4 py-1.5 bg-mission-control-border/20 border-b border-mission-control-border/50">
         <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-mission-control-text-dim select-none">
           {lang}
         </span>
+        <button
+          type="button"
+          onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
+          title="Copy code"
+          aria-label="Copy code to clipboard"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover/code:opacity-100"
+        >
+          {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
+          <span>{copied ? 'Copied!' : 'Copy'}</span>
+        </button>
       </div>
-      {/* Copy button — overlaid top-right, visible on hover */}
-      <button
-        type="button"
-        onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
-        title="Copy code"
-        aria-label="Copy code to clipboard"
-        className="absolute top-1 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] text-mission-control-text-dim hover:text-mission-control-text bg-mission-control-bg/80 hover:bg-mission-control-border/60 border border-transparent hover:border-mission-control-border transition-all opacity-0 group-hover/code:opacity-100 z-10"
-      >
-        {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
-        <span>{copied ? 'Copied!' : 'Copy'}</span>
-      </button>
-      <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
-        <code className="font-mono text-mission-control-text whitespace-pre">{code}</code>
-      </pre>
+      {useSyntax ? (
+        <SyntaxHighlighter
+          language={lang.toLowerCase()}
+          style={MC_THEME}
+          customStyle={{ margin: 0, padding: '1rem', background: 'transparent', fontSize: '0.8125rem', lineHeight: '1.6' }}
+          codeTagProps={{ style: { fontFamily: 'var(--font-mono, ui-monospace, monospace)', whiteSpace: 'pre' } }}
+          wrapLongLines={false}
+          PreTag="div"
+        >
+          {code}
+        </SyntaxHighlighter>
+      ) : (
+        <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
+          <code className="font-mono text-mission-control-text whitespace-pre">{code}</code>
+        </pre>
+      )}
     </div>
   );
 }

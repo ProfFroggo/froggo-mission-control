@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo, Component, type ReactNode, type ErrorInfo } from 'react';
 import { Button, TextField, Flex } from '@radix-ui/themes';
 import { Send, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle, ThumbsUp, ThumbsDown, UserCheck, PanelRight } from 'lucide-react';
 import { AssistantRuntimeProvider } from '@assistant-ui/react';
@@ -83,27 +83,70 @@ interface StructuredChatMessage extends Omit<ChatMessage, 'content'> {
   isEscalation?: boolean; // true when message requires human attention
 }
 
-/** Returns true when message text signals an escalation / approval request */
+/**
+ * Silent auto-retry error boundary for @assistant-ui/store race conditions.
+ * Catches "tapClientLookup" / index-out-of-bounds crashes and remounts children
+ * after one frame — invisible to the user for transient concurrent-render races.
+ */
+class AssistantUIBoundary extends Component<{ children: ReactNode }, { crashed: boolean }> {
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  state = { crashed: false };
+  static getDerivedStateFromError() { return { crashed: true }; }
+  componentDidCatch(_err: Error, _info: ErrorInfo) {
+    this.retryTimer = setTimeout(() => this.setState({ crashed: false }), 80);
+  }
+  componentWillUnmount() { if (this.retryTimer) clearTimeout(this.retryTimer); }
+  render() {
+    return this.state.crashed ? null : this.props.children;
+  }
+}
+
+/**
+ * Extract plain text from any message content shape:
+ *  - ContentBlock[]  → join text blocks only (skip thinking/tool blocks)
+ *  - JSON string     → parse first, then extract text blocks
+ *  - plain string    → return as-is
+ * Also strips embedded library URLs that artifact extraction renders separately.
+ */
+function extractTextContent(content: string | ContentBlock[]): string {
+  let blocks: ContentBlock[] | null = null;
+
+  if (typeof content === 'string') {
+    const trimmed = content.trimStart();
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) blocks = parsed;
+      } catch { /* not JSON — treat as plain text */ }
+    }
+    if (!blocks) {
+      // Plain text: strip library artifact URLs agents sometimes embed inline
+      return content.replace(/\/(?:api\/)?library\?action=raw&id=[A-Za-z0-9_=+/-]+/g, '').trim();
+    }
+  } else {
+    blocks = content;
+  }
+
+  return blocks
+    .filter((b: ContentBlock) => b.type === 'text')
+    .map((b: ContentBlock) => b.text ?? '')
+    .join('')
+    .replace(/\/(?:api\/)?library\?action=raw&id=[A-Za-z0-9_=+/-]+/g, '')
+    .trim();
+}
+
+/**
+ * Returns true ONLY when an agent explicitly signals it needs a human decision.
+ * Requires very specific sentinel phrases — not just any mention of approval/review.
+ * Agents should output [ESCALATION] or [NEEDS YOUR DECISION] explicitly.
+ */
 function isEscalationMessage(content: string | ContentBlock[]): boolean {
-  const text =
-    typeof content === 'string'
-      ? content
-      : content
-          .filter((b: ContentBlock) => b.type === 'text')
-          .map((b: ContentBlock) => b.text ?? '')
-          .join('');
-  const lower = text.toLowerCase();
+  const text = extractTextContent(content);
   return (
-    lower.includes('human-review') ||
-    lower.includes('human review') ||
-    lower.includes('approval needed') ||
-    lower.includes('approval required') ||
-    lower.includes('needs approval') ||
-    lower.includes('waiting for approval') ||
-    lower.includes('waiting for human') ||
-    lower.includes('needs your decision') ||
-    lower.includes('needs your input') ||
-    lower.includes('escalat')
+    text.includes('[ESCALATION]') ||
+    text.includes('[NEEDS YOUR DECISION]') ||
+    text.includes('[APPROVAL REQUIRED]') ||
+    text.includes('[BLOCKED]')
   );
 }
 
@@ -152,12 +195,16 @@ export default function ChatPanel() {
     useCallback((text: string) => sendMessageRef.current(text), [])
   );
 
-  // Auto-extract artifacts from 1-1 chat messages
+  // Auto-extract artifacts from 1-1 chat messages.
+  // streaming flag MUST be passed so the hook waits until the message is complete
+  // before processing — otherwise partial content is processed, no artifact found,
+  // and the message is permanently marked as processed before the path appears.
   const artifactMessages = useMemo(() => messages.map(m => ({
     id: m.id ?? '',
     role: m.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
     content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
     timestamp: m.timestamp,
+    streaming: m.streaming,
   })), [messages]);
   useArtifactExtraction(artifactMessages, currentSessionId);
 
@@ -291,19 +338,12 @@ export default function ChatPanel() {
         const result = await chatApi.getMessages(selectedAgent.dbSessionKey);
         if (result?.success && result.messages?.length > 0) {
           // Parse any messages saved as ContentBlock[] JSON — extract plain text
-          const normalized = result.messages.map((m: StructuredChatMessage) => {
-            if (m.role === 'assistant' && typeof m.content === 'string' && m.content.startsWith('[')) {
-              try {
-                const blocks = JSON.parse(m.content as string);
-                if (Array.isArray(blocks) && blocks.length > 0 && blocks[0]?.type) {
-                  const text = blocks.filter((b: ContentBlock) => b.type === 'text').map((b: ContentBlock) => b.text ?? '').join('');
-                  return { ...m, content: text || m.content };
-                }
-              } catch { /* not JSON, keep as-is */ }
-            }
-            // Normalize DB integer 0/1 → boolean, and clear any stale streaming state
-            return { ...m, streaming: false, status: undefined };
-          });
+          const normalized = result.messages.map((m: StructuredChatMessage) => ({
+            ...m,
+            // Clear stale streaming/status state from DB — parseMessageContent handles the JSON content
+            streaming: false,
+            status: undefined,
+          }));
           // Deduplicate by message ID to prevent double-entries from DB + stream
           const seen = new Set<string>();
           const deduped = normalized.filter((m: StructuredChatMessage) => {
@@ -1007,7 +1047,7 @@ export default function ChatPanel() {
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}-u`,
       role: 'user',
-      content: text + (attachments.length > 0 ? `\n\n📎 ${attachments.length} file(s) attached` : ''),
+      content: text + (attachments.length > 0 ? `\n\n[${attachments.length} file(s) attached]` : ''),
       timestamp: Date.now(),
     };
     
@@ -1066,13 +1106,17 @@ export default function ChatPanel() {
       let accumulated = '';
       let structuredContent: ContentBlock[] | null = null;
       let thinkingChunks: string[] = []; // Each unique thinking block accumulated as separate chunk
+      let liveToolCalls: Array<{ id: string; name: string; input?: unknown }> = []; // Tool calls seen during streaming
 
-      // Build structured content from current thinking + text for live rendering
-      const buildStructuredMsg = (thinking: string[], text: string): ContentBlock[] | string => {
-        if (thinking.length === 0) return text;
+      // Build structured content from current thinking + tool calls + text for live rendering
+      const buildStructuredMsg = (thinking: string[], toolCalls: Array<{ id: string; name: string; input?: unknown }>, text: string): ContentBlock[] | string => {
+        if (thinking.length === 0 && toolCalls.length === 0) return text;
         const blocks: ContentBlock[] = [];
         if (thinking.length > 0) blocks.push({ type: 'thinking', thinking: thinking.join('\n\n') } as ContentBlock);
         if (text) blocks.push({ type: 'text', text } as ContentBlock);
+        for (const tc of toolCalls) {
+          blocks.push({ type: 'tool_use', name: tc.name, id: tc.id, input: tc.input } as ContentBlock);
+        }
         return blocks;
       };
 
@@ -1094,14 +1138,31 @@ export default function ChatPanel() {
 
             if (evt.type === 'heartbeat') {
               // Heartbeat — agent is alive; don't alter message content, let loading state speak
-            } else if (evt.type === 'tool_use' || evt.type === 'tool_result') {
-              // Tool lifecycle — no visual indicator needed
+            } else if (evt.type === 'tool_result') {
+              // tool_result arrives in subsequent turns — no action needed
+            } else if (evt.type === 'tool_use' && typeof evt.name === 'string') {
+              // Add new tool call to live progress display
+              const tc = { id: evt.id ?? `tool-${Date.now()}`, name: evt.name, input: evt.input };
+              liveToolCalls = [...liveToolCalls, tc];
+              const liveContent = buildStructuredMsg(thinkingChunks, liveToolCalls, accumulated);
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, content: liveContent as string | ContentBlock[] } : m
+              ));
             } else if (evt.type === 'thinking_block' && typeof evt.thinking === 'string' && evt.thinking.trim()) {
-              // Accumulate thinking as a chain — each event replaces the last chunk (backend sends cumulative)
-              // Split by double-newline to detect individual thoughts
-              const incomingChunks = evt.thinking.split(/\n\n+/).filter((c: string) => c.trim());
-              thinkingChunks = incomingChunks;
-              const liveContent = buildStructuredMsg(thinkingChunks, accumulated);
+              // Smart thinking accumulation:
+              // - If new thinking is a superset of existing (backend resending cumulative), replace
+              // - If new thinking is a different/new block (separate thought), append
+              const existingJoined = thinkingChunks.join('\n\n');
+              const incoming = evt.thinking.trim();
+              if (!existingJoined || incoming.startsWith(existingJoined) || incoming.length >= existingJoined.length) {
+                // Update/replace — same block, just longer
+                thinkingChunks = incoming.split(/\n\n+/).filter((c: string) => c.trim());
+              } else {
+                // New distinct thought — append without losing previous
+                const newChunks = incoming.split(/\n\n+/).filter((c: string) => c.trim());
+                thinkingChunks = [...thinkingChunks, ...newChunks];
+              }
+              const liveContent = buildStructuredMsg(thinkingChunks, liveToolCalls, accumulated);
               setMessages(prev => prev.map(m =>
                 m.id === assistantId ? { ...m, content: liveContent as string | ContentBlock[] } : m
               ));
@@ -1109,7 +1170,7 @@ export default function ChatPanel() {
               // Text streaming in
               accumulated += evt.text;
               structuredContent = null;
-              const liveTextContent = buildStructuredMsg(thinkingChunks, accumulated);
+              const liveTextContent = buildStructuredMsg(thinkingChunks, liveToolCalls, accumulated);
               setMessages(prev => prev.map(m =>
                 m.id === assistantId ? { ...m, content: liveTextContent as string | ContentBlock[], status: undefined } : m
               ));
@@ -1139,8 +1200,8 @@ export default function ChatPanel() {
       }
 
       // Finalize — if stream completed with no content, show error instead of disappearing
-      const finalContent = thinkingChunks.length > 0
-        ? buildStructuredMsg(thinkingChunks, accumulated)
+      const finalContent = (thinkingChunks.length > 0 || liveToolCalls.length > 0)
+        ? buildStructuredMsg(thinkingChunks, liveToolCalls, accumulated)
         : (accumulated || null);
 
       if (!accumulated && thinkingChunks.length === 0) {
@@ -1160,8 +1221,8 @@ export default function ChatPanel() {
       currentResponseRef.current = accumulated;
       currentContentRef.current = structuredContent ?? (finalContent as ContentBlock[] | null) ?? accumulated;
 
-      // Persist the assistant response to the DB — save full structured content if we have thinking
-      const contentToSave = thinkingChunks.length > 0 && finalContent
+      // Persist the assistant response to the DB — save full structured content if we have thinking or tool calls
+      const contentToSave = (thinkingChunks.length > 0 || liveToolCalls.length > 0) && finalContent
         ? (typeof finalContent === 'string' ? finalContent : JSON.stringify(finalContent))
         : accumulated;
       if (contentToSave) {
@@ -1303,6 +1364,7 @@ export default function ChatPanel() {
   }
 
   return (
+    <AssistantUIBoundary>
     <AssistantRuntimeProvider runtime={assistantRuntime}>
     <div
       className={`relative flex h-full overflow-hidden ${isDragging ? 'ring-2 ring-mission-control-accent ring-inset' : ''}`}
@@ -1397,11 +1459,7 @@ export default function ChatPanel() {
             const isActive = selectedAgent?.id === agent.id;
             const agentMessages = messageCacheRef.current.get(agent.id);
             const lastMsg = agentMessages?.[agentMessages.length - 1];
-            const lastMsgText = lastMsg
-              ? (typeof lastMsg.content === 'string'
-                  ? lastMsg.content
-                  : (lastMsg.content as any[]).filter((b: any) => b.type === 'text').map((b: any) => b.text).join(''))
-              : null;
+            const lastMsgText = lastMsg ? extractTextContent(lastMsg.content) || null : null;
             const lastMsgTime = lastMsg?.timestamp
               ? formatTimeAgo(lastMsg.timestamp)
               : null;
@@ -1740,13 +1798,7 @@ export default function ChatPanel() {
           {!isVoiceMode && activeEscalations.length > 0 && (
             <div className="mx-4 mb-2 flex-shrink-0 space-y-2" aria-live="assertive">
               {activeEscalations.map((msg) => {
-                const text =
-                  typeof msg.content === 'string'
-                    ? msg.content
-                    : (msg.content as ContentBlock[])
-                        .filter((b: ContentBlock) => b.type === 'text')
-                        .map((b: ContentBlock) => b.text ?? '')
-                        .join('');
+                const text = extractTextContent(msg.content);
                 return (
                   <div
                     key={msg.id}
@@ -1924,6 +1976,7 @@ export default function ChatPanel() {
       {lightboxSrc && <ImageLightbox src={lightboxSrc.src} alt={lightboxSrc.alt} onClose={() => setLightboxSrc(null)} />}
     </div>
     </AssistantRuntimeProvider>
+    </AssistantUIBoundary>
   );
 }
 

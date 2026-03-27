@@ -291,12 +291,315 @@ export function safeParseCitation(data: unknown) {
   return r.success ? r.data : null;
 }
 
+// ─── Chart ────────────────────────────────────────────────────────────────────
+
+const ChartSeriesSchema = z.object({
+  key: z.string(),
+  label: z.string().optional(),
+  color: z.enum(['accent', 'blue', 'violet', 'amber', 'rose', 'cyan', 'success', 'warning', 'error', 'neutral']).optional(),
+});
+
+export const ChartSchema = z.object({
+  '@type': z.literal('chart'),
+  chartType: z.enum(['bar', 'line', 'area', 'pie']).optional(),
+  title: z.string().optional(),
+  subtitle: z.string().optional(),
+  data: z.array(z.record(z.string(), z.unknown())).min(1).max(200),
+  series: z.array(ChartSeriesSchema).min(1).optional(),
+  xKey: z.string().optional(),
+  xLabel: z.string().optional(),
+  yLabel: z.string().optional(),
+  height: z.number().optional(),
+  stacked: z.boolean().optional(),
+});
+export type SerializableChart = z.infer<typeof ChartSchema>;
+export function safeParseChart(data: unknown) {
+  const r = ChartSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── Code Diff ────────────────────────────────────────────────────────────────
+
+export const CodeDiffSchema = z.object({
+  '@type': z.literal('code-diff'),
+  before: z.string(),
+  after: z.string(),
+  language: z.string().optional(),
+  filename: z.string().optional(),
+  context: z.number().optional(),
+});
+export type SerializableCodeDiff = z.infer<typeof CodeDiffSchema>;
+export function safeParseCodeDiff(data: unknown) {
+  const r = CodeDiffSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── X Post ───────────────────────────────────────────────────────────────────
+
+export const XPostSchema = z.object({
+  '@type': z.literal('x-post'),
+  username: z.string(),
+  handle: z.string().optional(),
+  avatarUrl: z.string().optional(),
+  content: z.string(),
+  likes: z.number().optional(),
+  retweets: z.number().optional(),
+  replies: z.number().optional(),
+  views: z.number().optional(),
+  postedAt: z.string().optional(),
+  verified: z.boolean().optional(),
+  mediaUrl: z.string().optional(),
+});
+export type SerializableXPost = z.infer<typeof XPostSchema>;
+export function safeParseXPost(data: unknown) {
+  const r = XPostSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── Image Gallery ────────────────────────────────────────────────────────────
+
+export const ImageGallerySchema = z.object({
+  '@type': z.literal('image-gallery'),
+  title: z.string().optional(),
+  images: z.array(z.object({
+    src: z.string(),
+    alt: z.string().optional(),
+    caption: z.string().optional(),
+    href: z.string().optional(),
+  })).min(1).max(50),
+  columns: z.number().optional(),
+});
+export type SerializableImageGallery = z.infer<typeof ImageGallerySchema>;
+export function safeParseImageGallery(data: unknown) {
+  const r = ImageGallerySchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── Parameter Slider ─────────────────────────────────────────────────────────
+
+export const ParameterSliderSchema = z.object({
+  '@type': z.literal('parameter-slider'),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  params: z.array(z.object({
+    id: z.string(),
+    label: z.string(),
+    description: z.string().optional(),
+    min: z.number(),
+    max: z.number(),
+    step: z.number().optional(),
+    default: z.number(),
+    unit: z.string().optional(),
+  })).min(1),
+});
+export type SerializableParameterSlider = z.infer<typeof ParameterSliderSchema>;
+export function safeParseParameterSlider(data: unknown) {
+  const r = ParameterSliderSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── Question Flow ────────────────────────────────────────────────────────────
+
+export const QuestionFlowSchema = z.object({
+  '@type': z.literal('question-flow'),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  questions: z.array(z.object({
+    id: z.string(),
+    question: z.string(),
+    type: z.enum(['text', 'choice', 'multi-choice', 'rating', 'yes-no']).optional(),
+    options: z.array(z.string()).optional(),
+    required: z.boolean().optional(),
+    placeholder: z.string().optional(),
+  })).min(1),
+  submitLabel: z.string().optional(),
+});
+export type SerializableQuestionFlow = z.infer<typeof QuestionFlowSchema>;
+export function safeParseQuestionFlow(data: unknown) {
+  const r = QuestionFlowSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── Item Carousel ────────────────────────────────────────────────────────────
+
+export const ItemCarouselSchema = z.object({
+  '@type': z.literal('item-carousel'),
+  title: z.string().optional(),
+  items: z.array(z.object({
+    id: z.string(),
+    title: z.string(),
+    subtitle: z.string().optional(),
+    image: z.string().optional(),
+    badge: z.string().optional(),
+    href: z.string().optional(),
+    meta: z.string().optional(),
+  })).min(1).max(50),
+});
+export type SerializableItemCarousel = z.infer<typeof ItemCarouselSchema>;
+export function safeParseItemCarousel(data: unknown) {
+  const r = ItemCarouselSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── Preferences Panel ────────────────────────────────────────────────────────
+
+export const PreferencesPanelSchema = z.object({
+  '@type': z.literal('preferences-panel'),
+  title: z.string().optional(),
+  groups: z.array(z.object({
+    label: z.string().optional(),
+    prefs: z.array(z.object({
+      id: z.string(),
+      label: z.string(),
+      description: z.string().optional(),
+      type: z.enum(['toggle', 'select', 'text', 'number']).optional(),
+      value: z.unknown().optional(),
+      options: z.array(z.string()).optional(),
+    })),
+  })).min(1),
+});
+export type SerializablePreferencesPanel = z.infer<typeof PreferencesPanelSchema>;
+export function safeParsePreferencesPanel(data: unknown) {
+  const r = PreferencesPanelSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── Weather ──────────────────────────────────────────────────────────────────
+
+export const WeatherSchema = z.object({
+  '@type': z.literal('weather'),
+  location: z.string(),
+  condition: z.enum(['sunny', 'cloudy', 'rainy', 'snowy', 'stormy', 'partly-cloudy', 'foggy', 'windy', 'clear-night']).optional(),
+  temperature: z.number().optional(),
+  unit: z.enum(['F', 'C']).optional(),
+  humidity: z.number().optional(),
+  windSpeed: z.number().optional(),
+  windUnit: z.string().optional(),
+  feelsLike: z.number().optional(),
+  uvIndex: z.number().optional(),
+  forecast: z.array(z.object({
+    day: z.string(),
+    high: z.number(),
+    low: z.number(),
+    condition: z.string().optional(),
+  })).max(7).optional(),
+});
+export type SerializableWeather = z.infer<typeof WeatherSchema>;
+export function safeParseWeather(data: unknown) {
+  const r = WeatherSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── Audio ────────────────────────────────────────────────────────────────────
+
+export const AudioSchema = z.object({
+  '@type': z.literal('audio'),
+  title: z.string(),
+  artist: z.string().optional(),
+  duration: z.number().optional(),
+  src: z.string().optional(),
+  coverUrl: z.string().optional(),
+  genre: z.string().optional(),
+  album: z.string().optional(),
+  waveform: z.array(z.number()).max(200).optional(),
+});
+export type SerializableAudio = z.infer<typeof AudioSchema>;
+export function safeParseAudio(data: unknown) {
+  const r = AudioSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── Video ────────────────────────────────────────────────────────────────────
+
+export const VideoSchema = z.object({
+  '@type': z.literal('video'),
+  title: z.string().optional(),
+  src: z.string().optional(),
+  thumbnailUrl: z.string().optional(),
+  duration: z.number().optional(),
+  platform: z.enum(['youtube', 'vimeo', 'file', 'loom']).optional(),
+  embedId: z.string().optional(),
+  description: z.string().optional(),
+  author: z.string().optional(),
+});
+export type SerializableVideo = z.infer<typeof VideoSchema>;
+export function safeParseVideo(data: unknown) {
+  const r = VideoSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── Geo Map ──────────────────────────────────────────────────────────────────
+
+export const GeoMapSchema = z.object({
+  '@type': z.literal('geo-map'),
+  title: z.string().optional(),
+  locations: z.array(z.object({
+    name: z.string(),
+    address: z.string().optional(),
+    lat: z.number().optional(),
+    lng: z.number().optional(),
+    note: z.string().optional(),
+    type: z.string().optional(),
+  })).min(1).max(20),
+});
+export type SerializableGeoMap = z.infer<typeof GeoMapSchema>;
+export function safeParseGeoMap(data: unknown) {
+  const r = GeoMapSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── Instagram Post ───────────────────────────────────────────────────────────
+
+export const InstagramPostSchema = z.object({
+  '@type': z.literal('instagram-post'),
+  username: z.string(),
+  avatarUrl: z.string().optional(),
+  verified: z.boolean().optional(),
+  image: z.string().optional(),
+  images: z.array(z.string()).optional(),
+  caption: z.string().optional(),
+  likes: z.number().optional(),
+  comments: z.number().optional(),
+  postedAt: z.string().optional(),
+  location: z.string().optional(),
+});
+export type SerializableInstagramPost = z.infer<typeof InstagramPostSchema>;
+export function safeParseInstagramPost(data: unknown) {
+  const r = InstagramPostSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
+// ─── LinkedIn Post ────────────────────────────────────────────────────────────
+
+export const LinkedInPostSchema = z.object({
+  '@type': z.literal('linkedin-post'),
+  authorName: z.string(),
+  authorTitle: z.string().optional(),
+  authorCompany: z.string().optional(),
+  avatarUrl: z.string().optional(),
+  content: z.string(),
+  image: z.string().optional(),
+  likes: z.number().optional(),
+  comments: z.number().optional(),
+  reposts: z.number().optional(),
+  postedAt: z.string().optional(),
+  hashtags: z.array(z.string()).optional(),
+});
+export type SerializableLinkedInPost = z.infer<typeof LinkedInPostSchema>;
+export function safeParseLinkedInPost(data: unknown) {
+  const r = LinkedInPostSchema.safeParse(data);
+  return r.success ? r.data : null;
+}
+
 // ─── Registry — all schemas for auto-detection ────────────────────────────────
 
 export type ToolUIType =
   | 'image' | 'stats-display' | 'data-table' | 'approval-card'
   | 'terminal' | 'plan' | 'option-list' | 'link-preview'
-  | 'progress-tracker' | 'message-draft' | 'order-summary' | 'citation';
+  | 'progress-tracker' | 'message-draft' | 'order-summary' | 'citation'
+  | 'chart' | 'code-diff' | 'x-post' | 'image-gallery' | 'parameter-slider'
+  | 'question-flow' | 'item-carousel' | 'preferences-panel' | 'weather'
+  | 'audio' | 'video' | 'geo-map' | 'instagram-post' | 'linkedin-post';
 
 export function detectToolUIType(data: unknown): ToolUIType | null {
   if (typeof data !== 'object' || data === null) return null;
@@ -306,6 +609,9 @@ export function detectToolUIType(data: unknown): ToolUIType | null {
     'image', 'stats-display', 'data-table', 'approval-card',
     'terminal', 'plan', 'option-list', 'link-preview',
     'progress-tracker', 'message-draft', 'order-summary', 'citation',
+    'chart', 'code-diff', 'x-post', 'image-gallery', 'parameter-slider',
+    'question-flow', 'item-carousel', 'preferences-panel', 'weather',
+    'audio', 'video', 'geo-map', 'instagram-post', 'linkedin-post',
   ];
   return valid.includes(t as ToolUIType) ? (t as ToolUIType) : null;
 }

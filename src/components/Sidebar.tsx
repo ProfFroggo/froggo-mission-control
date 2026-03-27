@@ -99,28 +99,13 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     localStorage.setItem('sidebarExpanded', String(expanded));
   }, [expanded]);
 
-  // Load pending inbox item count — used for both approvals and notifications badges
-  // Also counts human-review tasks so the approvals badge reflects "needs your attention" total
+  // Load pending inbox item count — only shown on the Inbox badge
   const loadInboxCount = useCallback(async () => {
     try {
-      const [inboxRes, humanReviewRes, approvalsRes] = await Promise.allSettled([
-        fetch('/api/inbox?status=pending'),
-        fetch('/api/tasks?status=human-review'),
-        fetch('/api/approvals?status=pending'),
-      ]);
-      let count = 0;
-      if (inboxRes.status === 'fulfilled' && inboxRes.value.ok) {
-        const data = await inboxRes.value.json();
-        count += Array.isArray(data) ? data.length : (data?.items?.length || 0);
-      }
-      if (humanReviewRes.status === 'fulfilled' && humanReviewRes.value.ok) {
-        const data = await humanReviewRes.value.json();
-        count += Array.isArray(data) ? data.length : 0;
-      }
-      if (approvalsRes.status === 'fulfilled' && approvalsRes.value.ok) {
-        const data = await approvalsRes.value.json();
-        count += Array.isArray(data) ? data.length : 0;
-      }
+      const res = await fetch('/api/inbox?status=pending');
+      if (!res.ok) return;
+      const data = await res.json();
+      const count = Array.isArray(data) ? data.length : (data?.items?.length || 0);
       setInboxCount(count);
     } catch {
       // Failed to load inbox count
@@ -238,8 +223,6 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               const isActive = currentView === id;
               let badge = 0;
               if (id === 'inbox') badge = inboxCount;
-              if (id === 'approvals') badge = inboxCount;
-              if (id === 'notifications') badge = inboxCount;
               if (id === 'kanban') badge = activeTasks;
 
               return (

@@ -89,26 +89,29 @@ export function useArtifactExtraction(
       for (const artifact of extracted) {
         const title = generateArtifactTitle(artifact);
 
-        // Check if this artifact already exists (by content similarity)
+        // Find existing artifact by:
+        // 1. Exact content match (same file path or same inline code)
+        // 2. Same title + type within session (catches updated versions of the same doc)
         const existingArtifact = artifacts.find(
           (a) =>
-            a.content === artifact.content &&
+            a.sessionId === sessionId &&
             a.type === artifact.type &&
-            a.sessionId === sessionId
+            (a.content === artifact.content || a.title === title)
         );
 
         if (existingArtifact) {
-          // Check if content actually changed
+          // Content changed → add a new version (true version control)
           if (existingArtifact.content !== artifact.content) {
             addVersion(
               existingArtifact.id,
               artifact.content,
               message.id,
-              'Updated from message'
+              'Updated'
             );
           }
+          // Same content → already tracked, skip
         } else {
-          // Add new artifact
+          // New artifact for this session
           addArtifact({
             type: artifact.type,
             title,
@@ -119,7 +122,6 @@ export function useArtifactExtraction(
             metadata: artifact.metadata,
             tags: [message.role],
           });
-          // Persist to project directory if in a project context
           if (projectId && artifact.type !== 'image') {
             saveArtifactToProject(projectId, title, artifact.type, artifact.content, artifact.metadata?.language);
           }
