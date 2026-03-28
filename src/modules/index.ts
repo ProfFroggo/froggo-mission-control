@@ -21,5 +21,6 @@ import './kanban';
 import './approvals';
 import './notifications';
 import './agent-mgmt';
+import './workflow-studio';
 // library, knowledge, projects, campaigns, automations, schedule are deferred:
 // loaded asynchronously in ModuleLoader.initAll() via deferred-core-registry.ts

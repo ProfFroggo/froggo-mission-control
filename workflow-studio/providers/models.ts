@@ -11,7 +11,7 @@ import type React from 'react'
 import {
   AnthropicIcon,
   GeminiIcon,
-  OllamaIcon,
+  MiniMaxIcon,
   OpenAIIcon,
 } from '@/components/icons'
 import type { ModelPricing } from '@/providers/types'
@@ -606,18 +606,61 @@ export const PROVIDER_DEFINITIONS: Record<string, ProviderDefinition> = {
       },
     ],
   },
-  ollama: {
-    id: 'ollama',
-    name: 'Ollama',
-    description: 'Local LLM models via Ollama',
-    defaultModel: '',
-    modelPatterns: [],
-    icon: OllamaIcon,
+  minimax: {
+    id: 'minimax',
+    name: 'MiniMax',
+    description: "MiniMax's AI models",
+    defaultModel: 'MiniMax-M1',
+    modelPatterns: [/^MiniMax/, /^abab/],
+    icon: MiniMaxIcon,
     capabilities: {
-      toolUsageControl: false, // Ollama does not support tool_choice parameter
+      toolUsageControl: true,
     },
-    contextInformationAvailable: false,
-    models: [], // Populated dynamically
+    models: [
+      {
+        id: 'MiniMax-M1',
+        pricing: {
+          input: 0.5,
+          output: 2.2,
+          updatedAt: '2026-03-28',
+        },
+        capabilities: {
+          temperature: { min: 0, max: 1 },
+          maxOutputTokens: 1048576,
+          thinking: {
+            levels: ['low', 'medium', 'high'],
+            default: 'medium',
+          },
+        },
+        contextWindow: 1048576,
+      },
+      {
+        id: 'MiniMax-M1-40k',
+        pricing: {
+          input: 0.5,
+          output: 2.2,
+          updatedAt: '2026-03-28',
+        },
+        capabilities: {
+          temperature: { min: 0, max: 1 },
+          maxOutputTokens: 40000,
+        },
+        contextWindow: 1048576,
+      },
+      {
+        id: 'MiniMax-Text-01',
+        pricing: {
+          input: 1.0,
+          output: 5.5,
+          updatedAt: '2026-03-28',
+        },
+        capabilities: {
+          temperature: { min: 0, max: 1 },
+          maxOutputTokens: 1048576,
+        },
+        contextWindow: 4096000,
+      },
+    ],
   },
 }
 
@@ -712,6 +755,7 @@ export function getHostedModels(): string[] {
     ...getProviderModels('openai'),
     ...getProviderModels('anthropic'),
     ...getProviderModels('google'),
+    ...getProviderModels('minimax'),
   ]
 }
 
@@ -741,17 +785,8 @@ export function supportsToolUsageControl(providerId: string): boolean {
   return getProvidersWithToolUsageControl().includes(providerId)
 }
 
-export function updateOllamaModels(models: string[]): void {
-  PROVIDER_DEFINITIONS.ollama.models = models.map((modelId) => ({
-    id: modelId,
-    pricing: {
-      input: 0,
-      output: 0,
-      updatedAt: new Date().toISOString().split('T')[0],
-    },
-    capabilities: {},
-  }))
-}
+/** @deprecated Ollama removed — kept for API compat */
+export function updateOllamaModels(_models: string[]): void {}
 
 export const EMBEDDING_MODEL_PRICING: Record<string, ModelPricing> = {
   'text-embedding-3-small': {

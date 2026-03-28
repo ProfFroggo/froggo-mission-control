@@ -37,7 +37,7 @@ import {
   PROVIDER_DEFINITIONS,
   supportsTemperature as supportsTemperatureFromDefinitions,
   supportsToolUsageControl as supportsToolUsageControlFromDefinitions,
-  updateOllamaModels as updateOllamaModelsInDefinitions,
+  updateOllamaModels as updateOllamaModelsInDefinitions, // deprecated — ollama removed
 } from '@/providers/models'
 import type { ProviderId, ProviderToolConfig } from '@/providers/types'
 import { useProvidersStore } from '@/stores/providers/store'
@@ -129,7 +129,7 @@ const emptyProvider = (id: string): ProviderMetadata => ({
 })
 
 export const providers: Record<ProviderId, ProviderMetadata> = {
-  ollama: buildProviderMetadata('ollama'),
+  minimax: buildProviderMetadata('minimax'),
   openai: {
     ...buildProviderMetadata('openai'),
     computerUseModels: ['computer-use-preview'],
@@ -142,6 +142,7 @@ export const providers: Record<ProviderId, ProviderMetadata> = {
   },
   google: buildProviderMetadata('google'),
   // Stripped providers — empty stubs to prevent runtime errors in block definitions
+  ollama: emptyProvider('ollama'),
   vertex: emptyProvider('vertex'),
   bedrock: emptyProvider('bedrock'),
   vllm: emptyProvider('vllm'),
@@ -150,10 +151,8 @@ export const providers: Record<ProviderId, ProviderMetadata> = {
   'azure-anthropic': emptyProvider('azure-anthropic'),
 }
 
-export function updateOllamaProviderModels(models: string[]): void {
-  updateOllamaModelsInDefinitions(models)
-  providers.ollama.models = getProviderModelsFromDefinitions('ollama')
-}
+/** @deprecated Ollama removed */
+export function updateOllamaProviderModels(_models: string[]): void {}
 
 export function updateVLLMProviderModels(_models: string[]): void {
   // no-op — vLLM stripped in local mode
@@ -167,7 +166,7 @@ export function getBaseModelProviders(): Record<string, ProviderId> {
   const allProviders = Object.entries(providers)
     .filter(
       ([providerId]) =>
-        providerId !== 'ollama' && providerId !== 'vllm' && providerId !== 'openrouter'
+        providerId !== 'vllm' && providerId !== 'openrouter'
     )
     .reduce(
       (map, [providerId, config]) => {
@@ -231,8 +230,8 @@ export function getProviderFromModel(model: string): ProviderId {
   }
 
   if (!providerId) {
-    logger.warn(`No provider found for model: ${model}, defaulting to ollama`)
-    providerId = 'ollama'
+    logger.warn(`No provider found for model: ${model}, defaulting to openai`)
+    providerId = 'openai'
   }
 
   if (isProviderBlacklisted(providerId)) {
@@ -712,11 +711,7 @@ export function shouldBillModelUsage(model: string): boolean {
 export function getApiKey(provider: string, model: string, userProvidedKey?: string): string {
   const hasUserKey = !!userProvidedKey
 
-  const isOllamaModel =
-    provider === 'ollama' || useProvidersStore.getState().providers.ollama.models.includes(model)
-  if (isOllamaModel) {
-    return 'empty'
-  }
+  // MiniMax requires an API key — no free pass like the old Ollama local mode
 
   const isVllmModel =
     provider === 'vllm' || useProvidersStore.getState().providers.vllm.models.includes(model)

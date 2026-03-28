@@ -1,7 +1,7 @@
 import { createLogger } from '@sim/logger'
 import { anthropicProvider } from '@/providers/anthropic'
 import { googleProvider } from '@/providers/google'
-import { ollamaProvider } from '@/providers/ollama'
+import { minimaxProvider } from '@/providers/minimax'
 import { openaiProvider } from '@/providers/openai'
 import type { ProviderConfig, ProviderId } from '@/providers/types'
 
@@ -11,7 +11,7 @@ const providerRegistry: Record<ProviderId, ProviderConfig> = {
   openai: openaiProvider,
   anthropic: anthropicProvider,
   google: googleProvider,
-  ollama: ollamaProvider,
+  minimax: minimaxProvider,
 }
 
 export async function getProviderExecutor(

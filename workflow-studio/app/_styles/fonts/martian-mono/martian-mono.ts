@@ -1,14 +1,6 @@
-import { Martian_Mono } from 'next/font/google'
-
-/**
- * Martian Mono font configuration
- * Monospaced variable font used for code snippets, technical content, and accent text
- * on the landing page. Supports weights 100-800.
- */
-export const martianMono = Martian_Mono({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-martian-mono',
-  weight: 'variable',
-  fallback: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-})
+/** Martian Mono font stub — loaded via system font stack instead of next/font/google */
+export const martianMono = {
+  variable: 'font-martian-mono',
+  className: 'font-martian-mono',
+  style: { fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace' },
+}

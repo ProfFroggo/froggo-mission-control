@@ -3,7 +3,7 @@ import { IconButton, Box, Flex } from '@radix-ui/themes';
 import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
-  FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone, Menu, X, Zap, Keyboard,
+  FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone, Menu, X, Zap, Keyboard, Workflow,
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
@@ -27,6 +27,7 @@ const BUILTIN_PANEL_ICONS: Record<string, ComponentType<any>> = {
   library:       FolderOpen,
   knowledge:     BookOpen,
   campaigns:     Megaphone,
+  'workflow-studio': Workflow,
   automations:   Zap,
   agents:        Bot,
   notifications: Bell,

@@ -1,3 +1,5 @@
+@import './mc-theme-bridge.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -962,3 +964,5 @@ input[type="search"]::-ms-clear {
 .react-flow__node[data-parent-node-id] .react-flow__handle {
   z-index: 30;
 }
+
+/* MC theme bridge imported at top of file (CSS requires @import before other rules) */

@@ -1,0 +1,188 @@
+/**
+ * MISSION CONTROL THEME BRIDGE
+ *
+ * Maps Workflow Studio's CSS variable system to Mission Control's design tokens.
+ * Works in two modes:
+ *
+ * 1. Standalone (WS on port 4000) — applies MC-compatible values directly.
+ * 2. Iframe (embedded in MC) — detects parent theme via postMessage and adapts.
+ *
+ * Import order: this file is loaded AFTER globals.css so overrides take effect.
+ */
+
+/* ============================================
+   FONT OVERRIDE
+   Replace Season brand font with Inter (MC standard).
+   Martian Mono → JetBrains Mono for monospace.
+   ============================================ */
+
+:root {
+  --font-season: 'Inter', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ============================================
+   BORDER RADIUS — MC scale
+   MC uses: sm=8px, default=12px, lg=16px
+   WS uses: --radius (0.5rem=8px) as base with calc offsets.
+   Set --radius to 12px (MC default) so the calc chain aligns:
+     sm = calc(12px - 4px) = 8px   ✓
+     md = calc(12px - 2px) = 10px  (close to MC sm)
+     lg = 12px                     ✓
+   ============================================ */
+
+:root {
+  --radius: 0.75rem; /* 12px — MC default */
+}
+
+/* ============================================
+   LIGHT MODE — MC-compatible overrides
+   ============================================ */
+
+:root,
+.light {
+  /* Surfaces */
+  --bg: #fafafa;                     /* MC light background — slightly warm */
+  --surface-1: #f4f4f5;             /* MC panel equivalent */
+  --surface-2: #ffffff;             /* Cards/modals — pure white */
+  --surface-3: #f4f4f5;             /* Popovers/headers */
+  --surface-4: #f0f0f1;             /* Button base */
+  --surface-5: #ebebec;             /* Inputs/forms */
+  --surface-6: #e4e4e5;             /* Elevated surfaces */
+  --surface-7: #d9d9da;
+  --surface-hover: #f0f0f1;
+  --surface-active: #e8e8e9;
+
+  /* Borders — MC uses gray-5 (Radix) ≈ #d9d9de in light */
+  --border: #d9d9de;
+  --border-1: #c8c8cd;
+  --divider: #e8e8ed;
+  --border-muted: #dcdce0;
+
+  /* Text — MC uses gray-12/gray-9 (Radix) */
+  --text-primary: #1c2024;          /* Radix gray-12 light */
+  --text-secondary: #60646c;        /* Radix gray-10 light */
+  --text-tertiary: #7c7f86;
+  --text-muted: #8b8d98;            /* Radix gray-9 light */
+  --text-subtle: #8b8d98;
+  --text-body: #3e4047;
+  --text-icon: #696e77;
+
+  /* Brand — MC accent is violet (Radix accent-9) */
+  --brand: #6e56cf;                  /* Radix violet-9 */
+  --brand-hover: #5b4ab5;           /* Radix violet-10 */
+  --brand-link: #6e56cf;
+  --brand-link-hover: #5b4ab5;
+  --selection: #6e56cf;
+
+  /* Legacy HSL-based vars — keep in sync for Tailwind hsl() wrappers */
+  --gradient-primary: 271 54% 57%;  /* violet-9 as HSL */
+  --gradient-secondary: 271 54% 50%;
+
+  /* Font weights — MC uses standard scale */
+  --font-weight-base: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+}
+
+/* ============================================
+   DARK MODE — MC-compatible overrides
+   ============================================ */
+
+.dark {
+  /* Surfaces — MC dark bg ≈ Radix dark background */
+  --bg: #111113;                     /* Radix dark background */
+  --surface-1: #18191b;             /* MC surface / panel */
+  --surface-2: #1e1f22;             /* Cards */
+  --surface-3: #212225;             /* Popovers */
+  --surface-4: #272a2d;             /* Buttons */
+  --surface-5: #2e3135;             /* Inputs */
+  --surface-6: #383b40;             /* Elevated */
+  --surface-7: #43474d;
+  --surface-hover: #1e1f24;
+  --surface-active: #25272b;
+
+  /* Borders — MC gray-5 dark ≈ #2e3135 */
+  --border: #2e3135;
+  --border-1: #383b40;
+  --divider: #2e3135;
+  --border-muted: #363a3f;
+
+  /* Text — MC gray-12 dark, gray-9 dark */
+  --text-primary: #edeef0;          /* Radix gray-12 dark */
+  --text-secondary: #b0b4ba;
+  --text-tertiary: #9b9fa6;
+  --text-muted: #7c8088;            /* Radix gray-9 dark */
+  --text-subtle: #7c8088;
+  --text-body: #c1c5cb;
+  --text-icon: #8b8f96;
+
+  /* Brand — violet accent in dark */
+  --brand: #7c66dc;                  /* Radix violet-9 dark */
+  --brand-hover: #9180e3;           /* Radix violet-10 dark */
+  --brand-link: #9b8aea;
+  --brand-link-hover: #9180e3;
+  --selection: #7c66dc;
+
+  /* Legacy HSL-based vars */
+  --gradient-primary: 271 54% 63%;
+  --gradient-secondary: 271 54% 70%;
+
+  /* Font weights — MC standard */
+  --font-weight-base: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+}
+
+/* ============================================
+   MC DESIGN TOKEN ALIASES
+   Map MC token names into WS scope so components
+   using MC tokens work without changes.
+   ============================================ */
+
+:root,
+.light {
+  --mission-control-bg: var(--bg);
+  --mission-control-surface: var(--surface-1);
+  --mission-control-border: var(--border);
+  --mission-control-text: var(--text-primary);
+  --mission-control-text-dim: var(--text-muted);
+  --mission-control-accent: var(--brand);
+}
+
+.dark {
+  --mission-control-bg: var(--bg);
+  --mission-control-surface: var(--surface-1);
+  --mission-control-border: var(--border);
+  --mission-control-text: var(--text-primary);
+  --mission-control-text-dim: var(--text-muted);
+  --mission-control-accent: var(--brand);
+}
+
+/* ============================================
+   MC RADIUS TOKENS
+   Expose MC's radius scale for mixed-context usage.
+   ============================================ */
+
+:root {
+  --radius-sm: 0.5rem;              /* 8px */
+  --radius-lg: 1rem;                /* 16px */
+  --radius-full: 9999px;
+}
+
+/* ============================================
+   IFRAME MODE — inherit MC parent theme
+   When embedded in Mission Control, the parent
+   sends a postMessage with theme data. This is
+   handled by the companion JS module.
+   The [data-mc-embedded] attribute signals iframe mode;
+   CSS uses it to remove standalone chrome (e.g., margins).
+   ============================================ */
+
+html[data-mc-embedded] body {
+  background: transparent;
+}
+
+html[data-mc-embedded] .workspace-root {
+  border-radius: 0;
+}

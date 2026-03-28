@@ -12,8 +12,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        /* MC bridge: --font-season is remapped to Inter in mc-theme-bridge.css */
         season: ['var(--font-season)'],
         body: [
+          'Inter',
           'ui-sans-serif',
           '-apple-system',
           'system-ui',
@@ -26,6 +28,7 @@ export default {
           'Segoe UI Symbol',
         ],
         mono: [
+          '"JetBrains Mono"',
           'var(--font-martian-mono, ui-monospace)',
           'SFMono-Regular',
           'Menlo',
@@ -105,6 +108,17 @@ export default {
           900: '#171717',
           950: '#0a0a0a',
         },
+        /* MC design system tokens — resolve from CSS vars set by mc-theme-bridge */
+        'mc-bg': 'var(--bg)',
+        'mc-surface': 'var(--surface-1)',
+        'mc-border': 'var(--border)',
+        'mc-text': 'var(--text-primary)',
+        'mc-text-dim': 'var(--text-muted)',
+        'mc-accent': 'var(--brand)',
+        violet: {
+          9: 'var(--brand)',
+          10: 'var(--brand-hover)',
+        },
       },
       fontWeight: {
         base: 'var(--font-weight-base)',
@@ -116,6 +130,10 @@ export default {
         sm: 'calc(var(--radius) - 4px)',
         md: 'calc(var(--radius) - 2px)',
         lg: 'var(--radius)',
+        /* MC radius scale — explicit pixel values */
+        'mc-sm': '8px',
+        'mc': '12px',
+        'mc-lg': '16px',
       },
       boxShadow: {
         subtle: 'var(--shadow-subtle)',

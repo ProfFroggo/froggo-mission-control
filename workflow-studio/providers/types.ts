@@ -12,7 +12,7 @@ export type ProviderId =
   | 'cerebras'
   | 'groq'
   | 'mistral'
-  | 'ollama'
+  | 'minimax'
   | 'openrouter'
   | 'vllm'
   | 'bedrock'
