@@ -162,7 +162,7 @@ export const useUndoRedoStore = create<UndoRedoState>()(
         const stack = currentStacks[key] || { undo: [], redo: [] }
 
         // Prevent duplicate diff operations (apply-diff, accept-diff, reject-diff)
-        if (['apply-diff', 'accept-diff', 'reject-diff'].includes(entry.operation.type)) {
+        if (([UNDO_REDO_OPERATIONS.APPLY_DIFF, UNDO_REDO_OPERATIONS.ACCEPT_DIFF, UNDO_REDO_OPERATIONS.REJECT_DIFF] as string[]).includes(entry.operation.type)) {
           const lastEntry = stack.undo[stack.undo.length - 1]
           if (lastEntry && lastEntry.operation.type === entry.operation.type) {
             // Check if it's a duplicate by comparing the relevant state data
@@ -171,17 +171,17 @@ export const useUndoRedoStore = create<UndoRedoState>()(
 
             // For each diff operation type, check the relevant state
             let isDuplicate = false
-            if (entry.operation.type === 'apply-diff') {
+            if (entry.operation.type === UNDO_REDO_OPERATIONS.APPLY_DIFF) {
               isDuplicate =
                 JSON.stringify(lastData.baselineSnapshot?.blocks) ===
                   JSON.stringify(newData.baselineSnapshot?.blocks) &&
                 JSON.stringify(lastData.proposedState?.blocks) ===
                   JSON.stringify(newData.proposedState?.blocks)
-            } else if (entry.operation.type === 'accept-diff') {
+            } else if (entry.operation.type === UNDO_REDO_OPERATIONS.ACCEPT_DIFF) {
               isDuplicate =
                 JSON.stringify(lastData.afterAccept?.blocks) ===
                 JSON.stringify(newData.afterAccept?.blocks)
-            } else if (entry.operation.type === 'reject-diff') {
+            } else if (entry.operation.type === UNDO_REDO_OPERATIONS.REJECT_DIFF) {
               isDuplicate =
                 JSON.stringify(lastData.afterReject?.blocks) ===
                 JSON.stringify(newData.afterReject?.blocks)
@@ -199,7 +199,7 @@ export const useUndoRedoStore = create<UndoRedoState>()(
         }
 
         // Coalesce consecutive batch-move-blocks operations for overlapping blocks
-        if (entry.operation.type === 'batch-move-blocks') {
+        if (entry.operation.type === UNDO_REDO_OPERATIONS.BATCH_MOVE_BLOCKS) {
           const incoming = entry.operation as BatchMoveBlocksOperation
           const last = stack.undo[stack.undo.length - 1]
 
@@ -215,8 +215,8 @@ export const useUndoRedoStore = create<UndoRedoState>()(
 
           if (
             last &&
-            last.operation.type === 'batch-move-blocks' &&
-            last.inverse.type === 'batch-move-blocks'
+            last.operation.type === UNDO_REDO_OPERATIONS.BATCH_MOVE_BLOCKS &&
+            last.inverse.type === UNDO_REDO_OPERATIONS.BATCH_MOVE_BLOCKS
           ) {
             const prev = last.operation as BatchMoveBlocksOperation
             const prevBlockIds = new Set(prev.data.moves.map((m) => m.blockId))
@@ -256,7 +256,7 @@ export const useUndoRedoStore = create<UndoRedoState>()(
                       createdAt: entry.createdAt,
                       operation: {
                         id: op.id,
-                        type: 'batch-move-blocks',
+                        type: UNDO_REDO_OPERATIONS.BATCH_MOVE_BLOCKS,
                         timestamp: op.timestamp,
                         workflowId,
                         userId,
@@ -264,7 +264,7 @@ export const useUndoRedoStore = create<UndoRedoState>()(
                       },
                       inverse: {
                         id: inv.id,
-                        type: 'batch-move-blocks',
+                        type: UNDO_REDO_OPERATIONS.BATCH_MOVE_BLOCKS,
                         timestamp: inv.timestamp,
                         workflowId,
                         userId,

@@ -23,15 +23,26 @@ export const client = {
     email: async (_params: any) => ({ data: { user: LOCAL_USER } }),
   },
   signOut: async () => {},
-  getSession: async () => ({ data: { user: LOCAL_USER, session: LOCAL_SESSION } }),
+  getSession: async (_params?: any) => ({ data: { user: LOCAL_USER, session: LOCAL_SESSION } }),
   organization: {
-    getFullOrganization: async (_params: any) => ({ data: null }),
-    listOrganizations: async () => ({ data: [] }),
-    setActive: async (_params: any) => {},
+    getFullOrganization: async (..._args: any[]) => ({ data: null }),
+    listOrganizations: async (..._args: any[]) => ({ data: [] }),
+    list: async (..._args: any[]) => ({ data: [] }),
+    setActive: async (..._args: any[]) => {},
   },
   admin: {
     listUsers: async (_params: any) => ({ data: { users: [] } }),
   },
+  oauth2: {
+    link: async (_params: any) => ({ data: {} }),
+    unlink: async (_params: any) => ({ data: {} }),
+  },
+}
+
+export async function signOut() {}
+
+export function useSubscription() {
+  return { data: null, isPending: false, error: null }
 }
 
 export const authClient = client

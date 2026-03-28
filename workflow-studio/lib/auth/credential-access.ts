@@ -3,7 +3,7 @@
  */
 
 export interface AccessResult {
-  ok: true
+  ok: boolean
   status?: number
   reason?: string
   notFound?: boolean
@@ -12,7 +12,7 @@ export interface AccessResult {
 }
 
 export interface DocumentAccessCheck {
-  ok: true
+  ok: boolean
   status?: number
   reason?: string
   notFound?: boolean
@@ -20,7 +20,7 @@ export interface DocumentAccessCheck {
 }
 
 export interface KnowledgeBaseAccessCheck {
-  ok: true
+  ok: boolean
   status?: number
   reason?: string
   notFound?: boolean
@@ -48,5 +48,17 @@ export async function checkWorkflowAccess(..._args: any[]): Promise<AccessResult
 }
 
 export async function checkWorkspaceAccess(..._args: any[]): Promise<AccessResult> {
+  return { ok: true }
+}
+
+export interface ChunkAccessCheck {
+  ok: boolean
+  status?: number
+  reason?: string
+  notFound?: boolean
+  [key: string]: any
+}
+
+export async function checkChunkAccess(..._args: any[]): Promise<ChunkAccessCheck> {
   return { ok: true }
 }

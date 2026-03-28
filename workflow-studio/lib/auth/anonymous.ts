@@ -20,3 +20,10 @@ export async function createAnonymousSession(): Promise<AnonymousSession> {
 export async function ensureAnonymousUserExists(): Promise<string> {
   return ANONYMOUS_USER_ID
 }
+
+export function createAnonymousGetSessionResponse() {
+  return {
+    user: ANONYMOUS_USER,
+    session: { id: 'local-session', userId: ANONYMOUS_USER_ID, expiresAt: new Date(Date.now() + 86400000) },
+  }
+}

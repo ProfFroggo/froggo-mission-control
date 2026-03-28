@@ -94,13 +94,14 @@ export async function checkAccess(
 }
 
 export function accessError(
-  result: { ok: false; status: 404 | 403 },
+  result: { ok: boolean; status?: number },
   requestId: string,
   context?: string
 ): NextResponse {
-  const message = result.status === 404 ? 'Table not found' : 'Access denied'
+  const status = result.status ?? 403
+  const message = status === 404 ? 'Table not found' : 'Access denied'
   logger.warn(`[${requestId}] ${message}${context ? `: ${context}` : ''}`)
-  return NextResponse.json({ error: message }, { status: result.status })
+  return NextResponse.json({ error: message }, { status })
 }
 
 /**

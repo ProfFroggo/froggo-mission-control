@@ -12,6 +12,10 @@ interface Session {
 /** No-op auth handler — always authenticated */
 export const auth = {
   handler: async (_req: Request) => new Response(JSON.stringify({ session: getLocalSession() })),
+  api: {
+    generateOneTimeToken: async (_opts?: any) => ({ token: 'local-token' }),
+    getSession: async (_opts?: any) => getLocalSession(),
+  },
 }
 
 function getLocalSession(): Session {

@@ -13,5 +13,10 @@ export interface WorkflowExecutionPayload {
 export async function executeWorkflowJob(payload: WorkflowExecutionPayload): Promise<any> {
   // In local mode, this would call the executor directly
   const { executeWorkflow } = await import('@/lib/workflows/executor/execute-workflow')
-  return executeWorkflow(payload)
+  return executeWorkflow(
+    { id: payload.workflowId, workspaceId: payload.workspaceId || '' } as any,
+    `job-${payload.workflowId}`,
+    payload.inputs,
+    payload.userId
+  )
 }

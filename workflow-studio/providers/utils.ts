@@ -124,6 +124,10 @@ function buildProviderMetadata(providerId: ProviderId): ProviderMetadata {
   }
 }
 
+const emptyProvider = (id: string): ProviderMetadata => ({
+  id, name: id, description: '', version: '1.0.0', models: [], defaultModel: '',
+})
+
 export const providers: Record<ProviderId, ProviderMetadata> = {
   ollama: buildProviderMetadata('ollama'),
   openai: {
@@ -137,6 +141,13 @@ export const providers: Record<ProviderId, ProviderMetadata> = {
     ),
   },
   google: buildProviderMetadata('google'),
+  // Stripped providers — empty stubs to prevent runtime errors in block definitions
+  vertex: emptyProvider('vertex'),
+  bedrock: emptyProvider('bedrock'),
+  vllm: emptyProvider('vllm'),
+  openrouter: emptyProvider('openrouter'),
+  'azure-openai': emptyProvider('azure-openai'),
+  'azure-anthropic': emptyProvider('azure-anthropic'),
 }
 
 export function updateOllamaProviderModels(models: string[]): void {
@@ -144,7 +155,13 @@ export function updateOllamaProviderModels(models: string[]): void {
   providers.ollama.models = getProviderModelsFromDefinitions('ollama')
 }
 
-// vLLM and OpenRouter stripped
+export function updateVLLMProviderModels(_models: string[]): void {
+  // no-op — vLLM stripped in local mode
+}
+
+export async function updateOpenRouterProviderModels(_models: string[]): Promise<void> {
+  // no-op — OpenRouter stripped in local mode
+}
 
 export function getBaseModelProviders(): Record<string, ProviderId> {
   const allProviders = Object.entries(providers)

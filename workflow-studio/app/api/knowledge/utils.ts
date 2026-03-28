@@ -104,12 +104,15 @@ export interface EmbeddingData {
 export interface KnowledgeBaseAccessResult {
   hasAccess: true
   knowledgeBase: Pick<KnowledgeBaseData, 'id' | 'userId' | 'workspaceId' | 'name'>
+  notFound?: boolean
+  reason?: string
 }
 
 export interface KnowledgeBaseAccessDenied {
   hasAccess: false
   notFound?: boolean
   reason?: string
+  knowledgeBase?: undefined
 }
 
 export type KnowledgeBaseAccessCheck = KnowledgeBaseAccessResult | KnowledgeBaseAccessDenied
@@ -118,12 +121,16 @@ export interface DocumentAccessResult {
   hasAccess: true
   document: DocumentData
   knowledgeBase: Pick<KnowledgeBaseData, 'id' | 'userId' | 'workspaceId' | 'name'>
+  notFound?: boolean
+  reason?: string
 }
 
 export interface DocumentAccessDenied {
   hasAccess: false
   notFound?: boolean
   reason: string
+  document?: undefined
+  knowledgeBase?: undefined
 }
 
 export type DocumentAccessCheck = DocumentAccessResult | DocumentAccessDenied
@@ -133,12 +140,17 @@ export interface ChunkAccessResult {
   chunk: EmbeddingData
   document: DocumentData
   knowledgeBase: Pick<KnowledgeBaseData, 'id' | 'userId' | 'workspaceId' | 'name'>
+  notFound?: boolean
+  reason?: string
 }
 
 export interface ChunkAccessDenied {
   hasAccess: false
   notFound?: boolean
   reason: string
+  chunk?: undefined
+  document?: undefined
+  knowledgeBase?: undefined
 }
 
 export type ChunkAccessCheck = ChunkAccessResult | ChunkAccessDenied

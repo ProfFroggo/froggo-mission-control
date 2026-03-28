@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
@@ -11,39 +15,151 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [{ "name": "next" }],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@/components/*": ["components/*"],
-      "@/lib/*": ["./lib/*"],
-      "@/stores": ["./stores"],
-      "@/stores/*": ["./stores/*"],
-      "@/hooks/*": ["./hooks/*"],
-      "@/blocks": ["./blocks"],
-      "@/blocks/*": ["./blocks/*"],
-      "@/providers/*": ["./providers/*"],
-      "@/providers": ["./providers"],
-      "@/tools": ["./tools"],
-      "@/tools/*": ["./tools/*"],
-      "@/serializer": ["./serializer"],
-      "@/serializer/*": ["./serializer/*"],
-      "@/executor": ["./executor"],
-      "@/executor/*": ["./executor/*"],
-      "@/triggers": ["./triggers"],
-      "@/triggers/*": ["./triggers/*"],
-      "@/connectors": ["./connectors"],
-      "@/connectors/*": ["./connectors/*"],
-      "@sim/db": ["./_db"],
-      "@sim/db/*": ["./_db/*"],
-      "@sim/logger": ["./_logger/src"]
+      "@/*": [
+        "./*"
+      ],
+      "@/components/*": [
+        "components/*"
+      ],
+      "@/lib/*": [
+        "./lib/*"
+      ],
+      "@/stores": [
+        "./stores"
+      ],
+      "@/stores/*": [
+        "./stores/*"
+      ],
+      "@/hooks/*": [
+        "./hooks/*"
+      ],
+      "@/blocks": [
+        "./blocks"
+      ],
+      "@/blocks/*": [
+        "./blocks/*"
+      ],
+      "@/providers/*": [
+        "./providers/*"
+      ],
+      "@/providers": [
+        "./providers"
+      ],
+      "@/tools": [
+        "./tools"
+      ],
+      "@/tools/*": [
+        "./tools/*"
+      ],
+      "@/serializer": [
+        "./serializer"
+      ],
+      "@/serializer/*": [
+        "./serializer/*"
+      ],
+      "@/executor": [
+        "./executor"
+      ],
+      "@/executor/*": [
+        "./executor/*"
+      ],
+      "@/triggers": [
+        "./triggers"
+      ],
+      "@/triggers/*": [
+        "./triggers/*"
+      ],
+      "@/connectors": [
+        "./connectors"
+      ],
+      "@/connectors/*": [
+        "./connectors/*"
+      ],
+      "@sim/db": [
+        "./_db"
+      ],
+      "@sim/db/*": [
+        "./_db/*"
+      ],
+      "@sim/logger": [
+        "./_logger/src"
+      ],
+      "@azure/storage-blob": [
+        "./_stubs/azure-storage-blob"
+      ],
+      "react-joyride": [
+        "./_stubs/react-joyride"
+      ],
+      "react-window": [
+        "./_stubs/react-window"
+      ],
+      "posthog-js": [
+        "./_stubs/posthog-js"
+      ],
+      "@trigger.dev/sdk": [
+        "./_stubs/trigger-dev-sdk"
+      ],
+      "@a2a-js/sdk": [
+        "./_stubs/a2a-js-sdk"
+      ],
+      "better-auth/next-js": [
+        "./_stubs/better-auth-nextjs"
+      ],
+      "better-auth/cookies": [
+        "./_stubs/better-auth-cookies"
+      ],
+      "posthog-js/react": [
+        "./_stubs/posthog-js-react"
+      ],
+      "drizzle-kit": [
+        "./_stubs/drizzle-kit"
+      ],
+      "resend": [
+        "./_stubs/resend"
+      ],
+      "socket.io-client": [
+        "./_stubs/socket-io-client"
+      ],
+      "svix": [
+        "./_stubs/svix"
+      ],
+      "twilio": [
+        "./_stubs/twilio"
+      ],
+      "@azure/communication-email": [
+        "./_stubs/azure-communication-email"
+      ],
+      "@e2b/code-interpreter": [
+        "./_stubs/e2b-code-interpreter"
+      ],
+      "@react-email/render": [
+        "./_stubs/react-email-render"
+      ],
+      "imapflow": [
+        "./_stubs/imapflow"
+      ],
+      "pptxviewjs": [
+        "./_stubs/pptxviewjs"
+      ],
+      "@sim/testing": [
+        "./_stubs/sim-testing"
+      ]
     }
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -4,6 +4,6 @@
 export const OG_IMAGE_WIDTH = 1200
 export const OG_IMAGE_HEIGHT = 630
 
-export async function captureAndUploadOGImage(_params: any): Promise<string | null> {
+export async function captureAndUploadOGImage(..._args: any[]): Promise<string | null> {
   return null
 }

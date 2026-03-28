@@ -1,8 +1,8 @@
 import type { Edge } from 'reactflow'
-import type { UNDO_REDO_OPERATIONS, UndoRedoOperation } from '@/socket/constants'
+import type { UNDO_REDO_OPERATIONS } from '@/socket/constants'
 import type { BlockState } from '@/stores/workflows/workflow/types'
 
-export type OperationType = UndoRedoOperation
+export type OperationType = (typeof UNDO_REDO_OPERATIONS)[keyof typeof UNDO_REDO_OPERATIONS]
 
 export interface BaseOperation {
   id: string
