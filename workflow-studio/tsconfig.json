@@ -1,0 +1,56 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@/components/*": ["components/*"],
+      "@/lib/*": ["./lib/*"],
+      "@/stores": ["./stores"],
+      "@/stores/*": ["./stores/*"],
+      "@/hooks/*": ["./hooks/*"],
+      "@/blocks": ["./blocks"],
+      "@/blocks/*": ["./blocks/*"],
+      "@/providers/*": ["./providers/*"],
+      "@/providers": ["./providers"],
+      "@/tools": ["./tools"],
+      "@/tools/*": ["./tools/*"],
+      "@/serializer": ["./serializer"],
+      "@/serializer/*": ["./serializer/*"],
+      "@/executor": ["./executor"],
+      "@/executor/*": ["./executor/*"],
+      "@/triggers": ["./triggers"],
+      "@/triggers/*": ["./triggers/*"],
+      "@/connectors": ["./connectors"],
+      "@/connectors/*": ["./connectors/*"],
+      "@sim/db": ["./_db"],
+      "@sim/db/*": ["./_db/*"],
+      "@sim/logger": ["./_logger/src"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    "_db/migrations",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts"
+  ]
+}

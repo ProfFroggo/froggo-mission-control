@@ -1,0 +1,124 @@
+import { Sandbox } from '@e2b/code-interpreter'
+import { createLogger } from '@sim/logger'
+import { env } from '@/lib/core/config/env'
+import { CodeLanguage } from '@/lib/execution/languages'
+
+export interface SandboxFile {
+  path: string
+  content: string
+}
+
+export interface E2BExecutionRequest {
+  code: string
+  language: CodeLanguage
+  timeoutMs: number
+  sandboxFiles?: SandboxFile[]
+}
+
+export interface E2BExecutionResult {
+  result: unknown
+  stdout: string
+  sandboxId?: string
+  error?: string
+  /** Base64-encoded PNG images captured from rich outputs (e.g. matplotlib figures). */
+  images?: string[]
+}
+
+const logger = createLogger('E2BExecution')
+
+export async function executeInE2B(req: E2BExecutionRequest): Promise<E2BExecutionResult> {
+  const { code, language, timeoutMs } = req
+
+  const apiKey = env.E2B_API_KEY
+  if (!apiKey) {
+    throw new Error('E2B_API_KEY is required when E2B is enabled')
+  }
+
+  const sandbox = await Sandbox.create({ apiKey })
+  const sandboxId = sandbox.sandboxId
+
+  if (req.sandboxFiles?.length) {
+    for (const file of req.sandboxFiles) {
+      await sandbox.files.write(file.path, file.content)
+    }
+    logger.info('Wrote sandbox input files', {
+      sandboxId,
+      fileCount: req.sandboxFiles.length,
+      paths: req.sandboxFiles.map((f) => f.path),
+    })
+  }
+
+  const stdoutChunks = []
+
+  try {
+    const execution = await sandbox.runCode(code, {
+      language: language === CodeLanguage.Python ? 'python' : 'javascript',
+      timeoutMs,
+    })
+
+    if (execution.error) {
+      const errorMessage = `${execution.error.name}: ${execution.error.value}`
+      logger.error(`E2B execution error`, {
+        sandboxId,
+        error: execution.error,
+        errorMessage,
+      })
+
+      const errorOutput = execution.error.traceback || errorMessage
+      return {
+        result: null,
+        stdout: errorOutput,
+        error: errorMessage,
+        sandboxId,
+      }
+    }
+
+    if (execution.text) {
+      stdoutChunks.push(execution.text)
+    }
+    if (execution.logs?.stdout) {
+      stdoutChunks.push(...execution.logs.stdout)
+    }
+    if (execution.logs?.stderr) {
+      stdoutChunks.push(...execution.logs.stderr)
+    }
+
+    const stdout = stdoutChunks.join('\n')
+
+    let result: unknown = null
+    const prefix = '__SIM_RESULT__='
+    const lines = stdout.split('\n')
+    const marker = lines.find((l) => l.startsWith(prefix))
+    let cleanedStdout = stdout
+    if (marker) {
+      const jsonPart = marker.slice(prefix.length)
+      try {
+        result = JSON.parse(jsonPart)
+      } catch {
+        result = jsonPart
+      }
+      const filteredLines = lines.filter((l) => !l.startsWith(prefix))
+      if (filteredLines.length > 0 && filteredLines[filteredLines.length - 1] === '') {
+        filteredLines.pop()
+      }
+      cleanedStdout = filteredLines.join('\n')
+    }
+
+    const images: string[] = []
+    if (execution.results?.length) {
+      for (const r of execution.results) {
+        if (r.png) {
+          images.push(r.png)
+        } else if (r.jpeg) {
+          images.push(r.jpeg)
+        }
+      }
+    }
+
+    return { result, stdout: cleanedStdout, sandboxId, images: images.length ? images : undefined }
+  } finally {
+    try {
+      await sandbox.kill()
+    } catch {}
+  }
+}

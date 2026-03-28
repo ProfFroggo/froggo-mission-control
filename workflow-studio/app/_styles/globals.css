@@ -1,0 +1,964 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * CSS-based sidebar and panel widths to prevent SSR hydration mismatches.
+ * Default widths are set here and updated via blocking script before React hydrates.
+ *
+ * @important These values must stay in sync with stores/constants.ts
+ * @see stores/constants.ts for the source of truth
+ */
+:root {
+  --sidebar-width: 248px; /* SIDEBAR_WIDTH.DEFAULT */
+  --panel-width: 320px; /* PANEL_WIDTH.DEFAULT */
+  --toolbar-triggers-height: 300px; /* TOOLBAR_TRIGGERS_HEIGHT.DEFAULT */
+  --editor-connections-height: 172px; /* EDITOR_CONNECTIONS_HEIGHT.DEFAULT */
+  --terminal-height: 206px; /* TERMINAL_HEIGHT.DEFAULT */
+
+  /* z-index scale for layered UI
+     Popover must be above modal so dropdowns inside modals render correctly */
+  --z-dropdown: 100;
+  --z-modal: 200;
+  --z-popover: 300;
+  --z-tooltip: 400;
+  --z-toast: 500;
+
+  /* Shadow scale */
+  --shadow-subtle: 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-overlay: 0 16px 48px rgba(0, 0, 0, 0.15);
+  --shadow-kbd: 0 4px 0 0 rgba(48, 48, 48, 1);
+  --shadow-kbd-sm: 0 2px 0 0 rgba(48, 48, 48, 1);
+  --shadow-brand-inset: inset 0 1.25px 2.5px 0 #9b77ff;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.workspace-root {
+  letter-spacing: 0.02em;
+}
+
+.workspace-root code,
+.workspace-root kbd,
+.workspace-root samp,
+.workspace-root pre,
+.workspace-root .font-mono {
+  letter-spacing: normal;
+}
+
+.sidebar-container {
+  width: var(--sidebar-width);
+  transition: width 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.sidebar-container span,
+.sidebar-container .text-small {
+  transition: opacity 120ms ease;
+  white-space: nowrap;
+}
+
+.sidebar-container[data-collapsed] span,
+.sidebar-container[data-collapsed] .text-small {
+  opacity: 0;
+}
+
+html[data-sidebar-collapsed] .sidebar-container span,
+html[data-sidebar-collapsed] .sidebar-container .text-small {
+  opacity: 0;
+}
+
+.sidebar-container .sidebar-collapse-hide {
+  transition: opacity 60ms ease;
+}
+
+.sidebar-container .sidebar-collapse-show {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+
+.sidebar-container[data-collapsed] .sidebar-collapse-hide,
+html[data-sidebar-collapsed] .sidebar-container .sidebar-collapse-hide {
+  opacity: 0;
+}
+
+.sidebar-container[data-collapsed] .sidebar-collapse-show,
+html[data-sidebar-collapsed] .sidebar-container .sidebar-collapse-show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+html[data-sidebar-collapsed] .sidebar-container .sidebar-collapse-remove {
+  display: none;
+}
+
+html[data-sidebar-collapsed] .sidebar-container .sidebar-collapse-btn {
+  width: 0;
+  opacity: 0;
+}
+
+@keyframes sidebar-collapse-guard {
+  from {
+    pointer-events: none;
+  }
+  to {
+    pointer-events: auto;
+  }
+}
+
+.sidebar-container[data-collapsed] {
+  animation: sidebar-collapse-guard 250ms step-end;
+}
+
+.sidebar-container.is-resizing {
+  transition: none;
+}
+
+.panel-container {
+  width: var(--panel-width);
+}
+
+.terminal-container {
+  height: var(--terminal-height);
+}
+
+/**
+ * Landing loop animation styles (keyframes defined in tailwind.config.ts)
+ */
+.landing-loop-animated-dash {
+  animation: dash-animation 1.5s linear infinite;
+  will-change: stroke-dashoffset;
+  transform: translateZ(0);
+}
+
+.react-flow__node-landingLoop svg rect.landing-loop-animated-dash {
+  animation: dash-animation 1.5s linear infinite !important;
+}
+
+/**
+ * React Flow selection box styling
+ * Uses brand-secondary color for selection highlighting
+ */
+.react-flow__selection {
+  background: rgba(51, 180, 255, 0.08) !important;
+  border: 1px solid var(--brand-secondary) !important;
+}
+
+.react-flow__nodesselection-rect,
+.react-flow__nodesselection {
+  background: transparent !important;
+  border: none !important;
+  pointer-events: none !important;
+}
+
+/**
+ * Workflow canvas cursor styles
+ * Override React Flow's default selection cursor based on canvas mode
+ */
+.workflow-container.canvas-mode-cursor .react-flow__pane,
+.workflow-container.canvas-mode-cursor .react-flow__selectionpane {
+  cursor: default !important;
+}
+
+.workflow-container.canvas-mode-hand .react-flow__pane,
+.workflow-container.canvas-mode-hand .react-flow__selectionpane {
+  cursor: grab !important;
+}
+
+.workflow-container.canvas-mode-hand .react-flow__pane:active,
+.workflow-container.canvas-mode-hand .react-flow__selectionpane:active {
+  cursor: grabbing !important;
+}
+
+/**
+ * Color tokens - single source of truth for all colors
+ * Light mode: Warm theme
+ * Dark mode: Dark neutral theme
+ */
+@layer base {
+  :root,
+  .light {
+    --bg: #fefefe; /* main canvas - neutral near-white */
+    --surface-1: #f9f9f9; /* sidebar, panels */
+    --surface-2: #ffffff; /* blocks, cards, modals - pure white */
+    --surface-3: #f7f7f7; /* popovers, headers */
+    --surface-4: #f5f5f5; /* buttons base */
+    --border: #dedede; /* primary border */
+    --surface-5: #f3f3f3; /* inputs, form elements */
+    --border-1: #e0e0e0; /* stronger border */
+    --surface-6: #e5e5e5; /* popovers, elevated surfaces */
+    --surface-7: #d9d9d9;
+    --surface-hover: #f2f2f2; /* hover state */
+    --surface-active: #ececec; /* active/selected state */
+
+    --workflow-edge: #e0e0e0; /* workflow handles/edges - matches border-1 */
+
+    /* Text - neutral */
+    --text-primary: #1a1a1a;
+    --text-secondary: #525252;
+    --text-tertiary: #5c5c5c;
+    --text-muted: #707070;
+    --text-subtle: #8c8c8c;
+    --text-body: #3b3b3b;
+    --text-icon: #5e5e5e;
+
+    --text-inverse: #ffffff;
+    --text-muted-inverse: #a0a0a0;
+    --text-error: #ef4444;
+
+    /* Borders / dividers */
+    --divider: #ededed;
+    --border-muted: #e4e4e4;
+    --border-success: #e0e0e0;
+
+    /* Brand & state */
+    --brand-secondary: #33b4ff;
+    --brand-accent: #33c482;
+    --selection: #1a5cf6;
+    --warning: #ea580c;
+
+    /* Inverted surface (dark chrome on light page, e.g. tag dropdown) */
+    --surface-inverted: #1b1b1b;
+    --surface-inverted-hover: #363636;
+    --border-inverted: #363636;
+
+    /* Tooltip (true inversion: always opposite of page) */
+    --tooltip-bg: #1b1b1b;
+
+    /* Utility */
+    --white: #ffffff;
+
+    /* Font weights - lighter for light mode */
+    --font-weight-base: 420;
+    --font-weight-medium: 440;
+    --font-weight-semibold: 500;
+
+    /* Landing / marketing - text (static dark-section colors) */
+    --landing-text: #ececec;
+    --landing-text-muted: #999999;
+    --landing-text-subtle: #f6f6f6;
+    --landing-text-dark: #1c1c1c;
+    --landing-text-secondary: #666666;
+    --landing-text-body: #cdcdcd;
+    --landing-text-icon: #939393;
+
+    /* Landing / marketing - surfaces */
+    --landing-bg: #1c1c1c;
+    --landing-bg-elevated: #2a2a2a;
+    --landing-bg-card: #232323;
+    --landing-bg-section: #f6f6f6;
+    --landing-bg-subtle: #fafafa;
+    --landing-bg-surface: #1e1e1e;
+    --landing-bg-hover: #f0f0f0;
+    --landing-bg-skeleton: #e8e8e8;
+
+    /* Landing / marketing - borders */
+    --landing-border: #2a2a2a;
+    --landing-border-light: #e5e5e5;
+    --landing-border-strong: #3d3d3d;
+    --landing-border-subtle: #d4d4d4;
+
+    /* Code editor (theme-aware) */
+    --code-bg: #f5f5f5;
+    --code-foreground: #1a1a1a;
+    --code-line-number: #737373;
+
+    /* Workspace: additional text */
+    --text-placeholder: #8d8d8d;
+    --text-success: #22c55e;
+
+    /* Status / semantic colors */
+    --error: #dc2626;
+    --error-muted: #fecaca;
+    --error-emphasis: #b91c1c;
+    --caution: #f59e0b;
+    --success: #22c55e;
+
+    /* Brand extended */
+    --brand-knowledge: #00b0b0;
+    --selection-dark: #264f78;
+
+    /* Terminal status badges */
+    --terminal-status-error-bg: #fef2f2;
+    --terminal-status-error-border: #f87171;
+    --terminal-status-info-bg: #f7f7f7;
+    --terminal-status-info-border: #a3a3a3;
+    --terminal-status-info-color: #525252;
+    --terminal-status-warning-bg: #fefce8;
+    --terminal-status-warning-border: #facc15;
+    --terminal-status-warning-color: #a16207;
+
+    /* Badge semantic colors */
+    --badge-success-bg: #bbf7d0;
+    --badge-success-text: #15803d;
+    --badge-error-bg: #fecaca;
+    --badge-error-text: #dc2626;
+    --badge-gray-bg: #e7e5e4;
+    --badge-gray-text: #57534e;
+    --badge-blue-bg: #bfdbfe;
+    --badge-blue-text: #1d4ed8;
+    --badge-blue-secondary-bg: #bae6fd;
+    --badge-blue-secondary-text: #0369a1;
+    --badge-purple-bg: #e9d5ff;
+    --badge-purple-text: #7c3aed;
+    --badge-orange-bg: #fed7aa;
+    --badge-orange-text: #c2410c;
+    --badge-amber-bg: #fde68a;
+    --badge-amber-text: #a16207;
+    --badge-teal-bg: #99f6e4;
+    --badge-teal-text: #0f766e;
+    --badge-cyan-bg: #cffafe;
+    --badge-cyan-text: #0891b2;
+    --badge-pink-bg: #fbcfe8;
+    --badge-pink-text: #be185d;
+
+    /* Search/highlight */
+    --highlight-search-active: #f6ad55;
+    --highlight-search: #fcd34d;
+    --highlight-match-bg: #bae6fd;
+    --highlight-match-text: #0369a1;
+
+    /* Selection */
+    --selection-bg: #add6ff;
+
+    /* Active indicator */
+    --indicator-online: #33c482;
+    --indicator-active: #4ade80;
+    --indicator-inactive: #b7b7b7;
+    --indicator-seat-filled: #34b5ff;
+
+    /* Scrollbar colors */
+    --scrollbar-thumb-color: #c0c0c0;
+    --scrollbar-thumb-hover-color: #a8a8a8;
+  }
+  .dark {
+    /* Surface */
+    --bg: #1b1b1b;
+    --surface-1: #1e1e1e;
+    --surface-2: #232323;
+    --surface-3: #242424;
+    --surface-4: #292929;
+    --border: #333333;
+    --surface-5: #363636;
+    --border-1: #3d3d3d;
+    --surface-6: #454545;
+    --surface-7: #505050;
+    --surface-hover: #262626; /* hover state */
+    --surface-active: #2c2c2c; /* active/selected state */
+
+    --workflow-edge: #454545; /* workflow handles/edges - same as surface-6 in dark */
+
+    /* Text */
+    --text-primary: #e6e6e6;
+    --text-secondary: #cccccc;
+    --text-tertiary: #b3b3b3;
+    --text-muted: #787878;
+    --text-subtle: #7d7d7d;
+    --text-body: #cdcdcd;
+    --text-icon: #939393;
+
+    --text-inverse: #1b1b1b;
+    --text-muted-inverse: #b3b3b3;
+    --text-error: #ef4444;
+
+    /* --border-strong: #303030; */
+    --divider: #393939;
+    --border-muted: #424242;
+    --border-success: #575757;
+
+    /* Brand & state */
+    --brand-secondary: #33b4ff;
+    --brand-accent: #33c482;
+    --selection: #4b83f7;
+    --warning: #ff6600;
+
+    /* Inverted surface (in dark mode, falls back to standard surfaces) */
+    --surface-inverted: #242424;
+    --surface-inverted-hover: #363636;
+    --border-inverted: #3d3d3d;
+
+    /* Tooltip (true inversion: always opposite of page) */
+    --tooltip-bg: #fdfdfd;
+
+    /* Utility */
+    --white: #ffffff;
+
+    /* Font weights - standard weights for dark mode */
+    --font-weight-base: 420;
+    --font-weight-medium: 480;
+    --font-weight-semibold: 550;
+
+    /* Code editor (dark mode overrides) */
+    --code-bg: #1f1f1f;
+    --code-foreground: #eeeeee;
+    --code-line-number: #a8a8a8;
+
+    /* Workspace text */
+    --text-placeholder: #8d8d8d;
+    --text-success: #22c55e;
+
+    /* Status / semantic (dark overrides where needed) */
+    --error: #f87171;
+    --error-muted: #f6d2d2;
+    --error-emphasis: #b91c1c;
+    --caution: #f59e0b;
+    --success: #22c55e;
+
+    /* Brand extended */
+    --brand-knowledge: #00b0b0;
+    --selection-dark: #264f78;
+
+    /* Terminal status badges */
+    --terminal-status-error-bg: #491515;
+    --terminal-status-error-border: #883827;
+    --terminal-status-info-bg: #383838;
+    --terminal-status-info-border: #686868;
+    --terminal-status-info-color: #b7b7b7;
+    --terminal-status-warning-bg: #3d3520;
+    --terminal-status-warning-border: #5c4d1f;
+    --terminal-status-warning-color: #d4a72c;
+
+    /* Badge semantic colors */
+    --badge-success-bg: rgba(34, 197, 94, 0.2);
+    --badge-success-text: #86efac;
+    --badge-error-bg: #551a1a;
+    --badge-error-text: #fca5a5;
+    --badge-gray-bg: #3a3a3a;
+    --badge-gray-text: #a8a8a8;
+    --badge-blue-bg: rgba(59, 130, 246, 0.2);
+    --badge-blue-text: #93c5fd;
+    --badge-blue-secondary-bg: rgba(51, 180, 255, 0.2);
+    --badge-blue-secondary-text: #7dd3fc;
+    --badge-purple-bg: rgba(168, 85, 247, 0.2);
+    --badge-purple-text: #d8b4fe;
+    --badge-orange-bg: rgba(249, 115, 22, 0.2);
+    --badge-orange-text: #fdba74;
+    --badge-amber-bg: rgba(245, 158, 11, 0.2);
+    --badge-amber-text: #fcd34d;
+    --badge-teal-bg: rgba(20, 184, 166, 0.2);
+    --badge-teal-text: #5eead4;
+    --badge-cyan-bg: rgba(14, 165, 233, 0.2);
+    --badge-cyan-text: #7dd3fc;
+    --badge-pink-bg: rgba(236, 72, 153, 0.2);
+    --badge-pink-text: #f9a8d4;
+
+    /* Search/highlight */
+    --highlight-search-active: #f6ad55;
+    --highlight-search: #fcd34d;
+    --highlight-match-bg: rgba(51, 180, 255, 0.2);
+    --highlight-match-text: #7dd3fc;
+
+    /* Selection */
+    --selection-bg: #264f78;
+
+    /* Active indicator */
+    --indicator-online: #33c482;
+    --indicator-active: #4ade80;
+    --indicator-inactive: #b7b7b7;
+    --indicator-seat-filled: #34b5ff;
+
+    /* Scrollbar colors */
+    --scrollbar-thumb-color: #5a5a5a;
+    --scrollbar-thumb-hover-color: #6a6a6a;
+
+    /* Shadow scale - dark */
+    --shadow-overlay: 0 16px 48px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/**
+ * Base styles for body, scrollbars, and global elements
+ */
+@layer base {
+  * {
+    border-color: var(--border);
+    overscroll-behavior-x: none;
+  }
+
+  *:focus {
+    outline: none;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text-primary);
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: none;
+    min-height: 100vh;
+    scrollbar-gutter: stable;
+    text-rendering: optimizeSpeed;
+    letter-spacing: 0.28px;
+  }
+
+  /* Ensure visible text caret across inputs and editors */
+  input,
+  textarea,
+  [contenteditable="true"] {
+    caret-color: var(--text-primary);
+  }
+
+  .dark input,
+  .dark textarea,
+  .dark [contenteditable="true"] {
+    caret-color: var(--text-primary);
+  }
+
+  ::-webkit-scrollbar {
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb-color);
+    border-radius: var(--radius);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover-color);
+  }
+
+  /* Dark Mode Global Scrollbar */
+  .dark ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb-color);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover-color);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb-color) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: var(--scrollbar-thumb-color) transparent;
+  }
+
+  .copilot-scrollable {
+    scrollbar-gutter: stable;
+  }
+}
+
+/**
+ * Panel tab styles
+ */
+.panel-tab-base {
+  color: var(--base-muted-foreground);
+}
+
+.panel-tab-active {
+  background-color: var(--surface-5);
+  color: var(--text-primary);
+  border-color: var(--border-muted);
+}
+
+.dark .panel-tab-active {
+  background-color: var(--surface-1);
+  color: var(--white);
+  border-color: var(--border-muted);
+}
+
+.panel-tab-inactive:hover {
+  background-color: var(--surface-5);
+  color: var(--text-primary);
+}
+
+/**
+ * Subblock divider visibility
+ * Hides dividers when adjacent subblocks render empty content (e.g., schedule-info without data).
+ * Uses CSS :has() to detect empty .subblock-content elements and hide associated dividers.
+ * Selectors ordered by ascending specificity: (0,4,0) then (0,5,0)
+ */
+.subblock-row:has(> .subblock-content:empty) > .subblock-divider,
+.subblock-row:has(+ .subblock-row > .subblock-content:empty) > .subblock-divider {
+  display: none;
+}
+
+/**
+ * Dark mode specific overrides
+ */
+.dark .bg-red-500 {
+  @apply bg-red-700;
+}
+
+/**
+ * Browser input overrides
+ */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="search"]::-moz-search-cancel-button {
+  display: none;
+}
+
+input[type="search"]::-ms-clear {
+  display: none;
+}
+
+/**
+ * Utilities and special effects
+ * Animation keyframes are defined in tailwind.config.ts
+ */
+@layer utilities {
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -webkit-scrollbar: none;
+    -webkit-scrollbar-width: none;
+    -webkit-scrollbar-track: transparent;
+    -webkit-scrollbar-thumb: transparent;
+    scrollbar-width: none;
+    scrollbar-color: transparent transparent;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar-track {
+    display: none;
+    background: transparent;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar-thumb {
+    display: none;
+    background: transparent;
+  }
+
+  .gradient-text {
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-input-background {
+    background-color: hsl(var(--input-background));
+  }
+
+  .transition-ring {
+    transition-property: box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  .loading-placeholder::placeholder {
+    animation: placeholder-pulse 1.5s ease-in-out infinite;
+  }
+
+  /**
+   * Panel tab visibility and styling to prevent hydration flash
+   */
+  html[data-panel-active-tab="copilot"] .panel-container [data-tab-content="toolbar"],
+  html[data-panel-active-tab="copilot"] .panel-container [data-tab-content="editor"] {
+    display: none !important;
+  }
+
+  html[data-panel-active-tab="toolbar"] .panel-container [data-tab-content="copilot"],
+  html[data-panel-active-tab="toolbar"] .panel-container [data-tab-content="editor"] {
+    display: none !important;
+  }
+
+  html[data-panel-active-tab="editor"] .panel-container [data-tab-content="copilot"],
+  html[data-panel-active-tab="editor"] .panel-container [data-tab-content="toolbar"] {
+    display: none !important;
+  }
+
+  html[data-panel-active-tab="copilot"] .panel-container [data-tab-button="copilot"] {
+    background-color: var(--border-1) !important;
+    color: var(--text-primary) !important;
+  }
+  html[data-panel-active-tab="copilot"] .panel-container [data-tab-button="toolbar"],
+  html[data-panel-active-tab="copilot"] .panel-container [data-tab-button="editor"] {
+    background-color: transparent !important;
+    color: var(--text-tertiary) !important;
+  }
+
+  html[data-panel-active-tab="toolbar"] .panel-container [data-tab-button="toolbar"] {
+    background-color: var(--border-1) !important;
+    color: var(--text-primary) !important;
+  }
+  html[data-panel-active-tab="toolbar"] .panel-container [data-tab-button="copilot"],
+  html[data-panel-active-tab="toolbar"] .panel-container [data-tab-button="editor"] {
+    background-color: transparent !important;
+    color: var(--text-tertiary) !important;
+  }
+
+  html[data-panel-active-tab="editor"] .panel-container [data-tab-button="editor"] {
+    background-color: var(--border-1) !important;
+    color: var(--text-primary) !important;
+  }
+  html[data-panel-active-tab="editor"] .panel-container [data-tab-button="copilot"],
+  html[data-panel-active-tab="editor"] .panel-container [data-tab-button="toolbar"] {
+    background-color: transparent !important;
+    color: var(--text-tertiary) !important;
+  }
+}
+
+/**
+ * @depricated
+ * Legacy globals (light/dark) kept for backward-compat with old classes.
+ * Do not modify; remove after migration.
+ */
+@layer base {
+  :root,
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 99.2%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 11.2%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 11.2%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 46.9%;
+    --accent: 0 0% 92.5%;
+    --accent-foreground: 0 0% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --input: 0 0% 89.8%;
+    --input-background: 0 0% 100%;
+    --ring: 0 0% 3.9%;
+    --radius: 0.5rem;
+    --scrollbar-track: 0 0% 85%;
+    --scrollbar-thumb: 0 0% 65%;
+    --scrollbar-thumb-hover: 0 0% 55%;
+    --scrollbar-size: 8px;
+    --workflow-background: 0 0% 100%;
+    --card-background: 0 0% 99.2%;
+    --card-border: 0 0% 89.8%;
+    --card-text: 0 0% 3.9%;
+    --card-hover: 0 0% 96.1%;
+    --base-muted-foreground: #737373;
+    --gradient-primary: 263 85% 70%;
+    --gradient-secondary: 336 95% 65%;
+    --brand: #6f3dfa;
+    --brand-hover: #6338d9;
+    --brand-link: #6f3dfa;
+    --brand-link-hover: #6f3dfa;
+  }
+
+  .dark {
+    --background: 0 0% 10.59%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 9.0%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 9.0%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 11.2%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 12.0%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 17.5%;
+    /* --muted-foreground: 0 0% 65.1%; */
+    --accent: 0 0% 17.5%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --input: 0 0% 16.1%;
+    --input-background: 0 0% 20.78%;
+    --ring: 0 0% 83.9%;
+    --scrollbar-track: 0 0% 17.5%;
+    --scrollbar-thumb: 0 0% 30%;
+    --scrollbar-thumb-hover: 0 0% 40%;
+    --workflow-background: 0 0% 10.59%;
+    --card-background: 0 0% 9.0%;
+    --card-border: 0 0% 22.7%;
+    --card-text: 0 0% 98%;
+    --card-hover: 0 0% 12.0%;
+    --base-muted-foreground: #a3a3a3;
+    --gradient-primary: 263 90% 75%;
+    --gradient-secondary: 336 100% 72%;
+    --brand: #701ffc;
+    --brand-hover: #802fff;
+    --brand-link: #9d54ff;
+    --brand-link-hover: #a66fff;
+  }
+}
+
+/**
+ * Remove backticks from inline code in prose (Tailwind Typography default)
+ */
+.prose code::before,
+.prose code::after {
+  content: none !important;
+}
+
+/**
+ * Remove underlines from heading anchor links in prose
+ */
+.prose h1 a,
+.prose h2 a,
+.prose h3 a,
+.prose h4 a,
+.prose h5 a,
+.prose h6 a {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+/**
+ * Respect user's prefers-reduced-motion setting (WCAG 2.3.3)
+ * Disables animations and transitions for users who prefer reduced motion.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes notification-enter {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--stack-offset, 0px) - 8px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(var(--stack-offset, 0px)) scale(1);
+  }
+}
+
+@keyframes notification-countdown {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 34.56;
+  }
+}
+
+@keyframes notification-exit {
+  from {
+    opacity: 1;
+    transform: translateX(var(--stack-offset, 0px)) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--stack-offset, 0px) + 8px)) scale(0.97);
+  }
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+/* WandPromptBar status indicator */
+@keyframes smoke-pulse {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.status-indicator {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: hsl(var(--muted-foreground) / 0.5);
+  transition: background-color 0.3s ease;
+}
+
+.status-indicator.streaming {
+  background-color: transparent;
+}
+
+.status-indicator.streaming::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    hsl(var(--primary) / 0.9) 0%,
+    hsl(var(--primary) / 0.4) 60%,
+    transparent 80%
+  );
+  animation: smoke-pulse 1.8s ease-in-out infinite;
+  opacity: 0.9;
+}
+
+.dark .status-indicator.streaming::before {
+  background: #6b7280;
+  opacity: 0.9;
+  animation: smoke-pulse 1.8s ease-in-out infinite;
+}
+
+/* MessageContainer loading dot */
+@keyframes growShrink {
+  0%,
+  100% {
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.loading-dot {
+  animation: growShrink 1.5s infinite ease-in-out;
+}
+
+/* Subflow node drag-over styles */
+.loop-node-drag-over,
+.parallel-node-drag-over {
+  box-shadow: 0 0 0 1.75px var(--brand-secondary) !important;
+  border-radius: 8px !important;
+}
+
+.react-flow__node[data-parent-node-id] .react-flow__handle {
+  z-index: 30;
+}
