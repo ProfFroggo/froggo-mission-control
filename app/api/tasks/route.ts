@@ -1,38 +1,9 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextRequest, NextResponse } from 'next/server';
-import { gzipSync } from 'zlib';
 import { getDb } from '@/lib/database';
 import { emitSSEEvent } from '@/lib/sseEmitter';
 import { createNotification } from '@/lib/notificationWriter';
-
-/** Serialize `data` to JSON and gzip-compress it if the client supports it.
- *  Next.js App Router does not apply the global compression middleware to
- *  API routes, so large responses must be compressed here explicitly. */
-function jsonResponse(
-  data: unknown,
-  request: NextRequest,
-  init?: ResponseInit
-): NextResponse {
-  const json = JSON.stringify(data);
-  const acceptEncoding = request.headers.get('Accept-Encoding') ?? '';
-  const supportsGzip = acceptEncoding.includes('gzip');
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'private, max-age=5, stale-while-revalidate=30',
-    'Vary': 'Accept-Encoding',
-    ...((init?.headers ?? {}) as Record<string, string>),
-  };
-
-  if (supportsGzip) {
-    const compressed = gzipSync(Buffer.from(json, 'utf8'), { level: 6 });
-    headers['Content-Encoding'] = 'gzip';
-    headers['Content-Length'] = String(compressed.length);
-    return new NextResponse(compressed, { ...init, headers });
-  }
-
-  return new NextResponse(json, { ...init, headers });
-}
+import { jsonResponse } from '@/lib/jsonResponse';
 
 
 const JSON_FIELDS = ['tags', 'labels', 'blockedBy', 'blocks', 'recurrence'];
@@ -105,12 +76,25 @@ export async function GET(request: NextRequest) {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const sql = `SELECT * FROM tasks ${where} ORDER BY priority ASC, createdAt DESC LIMIT 200`;
 
-    // idx_tasks_priority_status and idx_tasks_status_updated cover the ORDER BY priority ASC, createdAt DESC
-    // idx_tasks_assignedTo_status covers ?assignedTo= filter; idx_tasks_status covers ?status= filter
-    const rows = db.prepare(sql).all(...values) as Record<string, unknown>[];
+    // Pagination: ?limit=N&offset=N — defaults to 100 rows, max 500.
+    // Sorted by updatedAt DESC so the most recently-active tasks load first.
+    const rawLimit = searchParams.get('limit');
+    const rawOffset = searchParams.get('offset');
+    const limit = Math.min(Math.max(1, rawLimit ? parseInt(rawLimit, 10) || 100 : 100), 500);
+    const offset = Math.max(0, rawOffset ? parseInt(rawOffset, 10) || 0 : 0);
+
+    const sql = `SELECT * FROM tasks ${where} ORDER BY updatedAt DESC LIMIT ? OFFSET ?`;
+
+    // idx_tasks_status_updated covers the ORDER BY updatedAt DESC for most filter combinations
+    const rows = db.prepare(sql).all(...values, limit, offset) as Record<string, unknown>[];
     const tasks = rows.map(parseTask);
+
+    // Return totalCount in a header so the client knows if more pages exist
+    // without needing a separate count query on every paginated request.
+    const countSql = `SELECT COUNT(*) as count FROM tasks ${where}`;
+    const { count: totalCount } = db.prepare(countSql).get(...values) as { count: number };
+
 
     // ?summary=1 — strip large text-only fields to reduce initial payload for faster LCP.
     // Excluded fields are lazy-hydrated by TaskDetailPanel when a task is opened.
@@ -155,7 +139,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return jsonResponse(tasks, request);
+    return jsonResponse(tasks, request, {
+      headers: {
+        'X-Total-Count': String(totalCount),
+        'X-Limit': String(limit),
+        'X-Offset': String(offset),
+      },
+    });
   } catch (error) {
     console.error('GET /api/tasks error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

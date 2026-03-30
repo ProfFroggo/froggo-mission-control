@@ -5,25 +5,10 @@
  * Shows unread count, starred count, 24h count, and the 4 most recent items
  * (unread prioritised).
  */
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Inbox, MessageSquare } from 'lucide-react';
 import { formatTimeAgo } from '../../utils/formatting';
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface InboxItem {
-  id: number;
-  type: string;
-  title: string;
-  content: string;
-  channel: string | null;
-  status: string | null;
-  createdAt: number;
-  metadata: Record<string, unknown>;
-  starred: 0 | 1;
-  isRead: 0 | 1;
-  tags: string[];
-}
+import { useInboxData, type InboxItem } from '../../hooks/useInboxData';
 
 interface DashInboxCardProps {
   onNavigate?: (view: string) => void;
@@ -104,27 +89,14 @@ function SkeletonRows() {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function DashInboxCard({ onNavigate }: DashInboxCardProps) {
-  const [items, setItems] = useState<InboxItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Shared hook — deduplicates with Sidebar inbox count
+  const { items, loading, refresh } = useInboxData();
 
-  async function fetchInbox() {
-    try {
-      const res = await fetch('/api/inbox?limit=50');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as InboxItem[];
-      setItems(Array.isArray(data) ? data : []);
-    } catch {
-      // Silently keep existing state on error; avoid clearing the list
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // Periodic refresh (visibility-aware polling)
   useEffect(() => {
-    fetchInbox();
-    const timer = setInterval(fetchInbox, POLL_INTERVAL_MS);
+    const timer = setInterval(refresh, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, []);
+  }, [refresh]);
 
   // ── Derived metrics ──────────────────────────────────────────────────────────
 

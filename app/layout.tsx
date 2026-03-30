@@ -30,11 +30,36 @@ export default function RootLayout({
           one full RTT from the data-fetch waterfall.
 
           Must match the exact URLs constructed by apiCall() in src/lib/api.ts:
-          - taskApi.getAll({ include: 'subtasks', summary: '1' }) → /api/tasks?include=subtasks&summary=1
+          - taskApi.getAll({ include: 'subtasks', summary: '1', limit: '100' }) → /api/tasks?include=subtasks&summary=1&limit=100
           - agentApi.getAll() → /api/agents
         */}
-        <link rel="preload" href="/api/tasks?include=subtasks&summary=1" as="fetch" crossOrigin="anonymous" />
+        <link rel="preload" href="/api/tasks?include=subtasks&summary=1&limit=100" as="fetch" crossOrigin="anonymous" />
         <link rel="preload" href="/api/agents" as="fetch" crossOrigin="anonymous" />
+        {/*
+          Critical inline CSS for the loading skeleton (LCP fix).
+
+          The full Tailwind + Radix CSS files are ~114 KB compressed. Under 4G
+          throttling, they take ~1.2 s to download. Without this inline block,
+          the skeleton <p> (our LCP candidate) can't paint until those files
+          arrive, pushing LCP from ~0.6 s to ~2.8 s.
+
+          This block defines the minimum CSS custom properties the skeleton
+          needs to paint. The browser resolves these immediately from the
+          inline <style> in the HTML <head>, so the skeleton paints at
+          TTFB + HTML-parse time (~0.6 s) without waiting for external CSS.
+        */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          :root, .dark {
+            --gray-5: #3b3b3b;
+            --gray-9: #8d8d8d;
+            --color-background: #111113;
+            --color-panel: #19191b;
+            --mission-control-bg: var(--color-background);
+            --mission-control-surface: var(--color-panel);
+            --mission-control-border: var(--gray-5);
+            --mission-control-text-dim: var(--gray-9);
+          }
+        ` }} />
       </head>
       <body>{children}</body>
     </html>

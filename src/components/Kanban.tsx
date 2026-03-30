@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo, useRef, lazy, Suspense } from 'react';
 import { Button, Checkbox, Flex, IconButton, Select, TextField } from '@radix-ui/themes';
 import { useEventBus } from '../lib/useEventBus';
 import { createPortal } from 'react-dom';
@@ -11,9 +11,16 @@ import {
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
-import TaskModal from './TaskModal';
-import TaskDetailPanel from './TaskDetailPanel';
-import PokeModal from './PokeModal';
+// ── Lazy-loaded modals ─────────────────────────────────────────────────────
+// TaskDetailPanel → MarkdownMessage → react-markdown + react-syntax-highlighter
+// PokeModal → MarkdownMessage (same chain)
+// TaskModal → gateway, form logic
+// These are only rendered on user interaction (click task, create task, poke),
+// so deferring their chunks removes ~300 KB of markdown/syntax-highlighter
+// from the initial Kanban bundle.
+const TaskModal = lazy(() => import('./TaskModal'));
+const TaskDetailPanel = lazy(() => import('./TaskDetailPanel'));
+const PokeModal = lazy(() => import('./PokeModal'));
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { taskApi, sessionApi } from '../lib/api';
@@ -1604,23 +1611,34 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         </BaseModalBody>
       </BaseModal>
 
-      <TaskModal 
-        isOpen={modalOpen} 
-        onClose={() => setModalOpen(false)}
-        initialStatus={modalStatus}
-      />
-      
-      <TaskDetailPanel 
-        task={selectedTask}
-        onClose={() => setSelectedTask(null)}
-      />
+      {/* Lazy-loaded modals — chunks download on first interaction, not on page load */}
+      {modalOpen && (
+        <Suspense fallback={null}>
+          <TaskModal
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            initialStatus={modalStatus}
+          />
+        </Suspense>
+      )}
+
+      {selectedTask && (
+        <Suspense fallback={null}>
+          <TaskDetailPanel
+            task={selectedTask}
+            onClose={() => setSelectedTask(null)}
+          />
+        </Suspense>
+      )}
 
       {pokeTask && (
-        <PokeModal
-          taskId={pokeTask.id}
-          taskTitle={pokeTask.title}
-          onClose={() => setPokeTask(null)}
-        />
+        <Suspense fallback={null}>
+          <PokeModal
+            taskId={pokeTask.id}
+            taskTitle={pokeTask.title}
+            onClose={() => setPokeTask(null)}
+          />
+        </Suspense>
       )}
 
       {showHealthCheck && (

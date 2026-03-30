@@ -40,7 +40,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
     status: 200,
     headers: {
       'Content-Type': found.type,
-      'Cache-Control': 'no-cache, must-revalidate',
+      // Agent avatars are static images that rarely change.
+      // Cache for 1 hour to avoid re-downloading on every page load.
+      // Browsers will revalidate after max-age expires.
+      'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
     },
   });
 }

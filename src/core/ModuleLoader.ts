@@ -8,7 +8,10 @@
  */
 
 import { ServiceRegistry } from './ServiceRegistry';
-import { validateManifestSafe } from './manifestSchema';
+// Zod validation is loaded lazily to keep it out of the initial JS bundle.
+// manifestSchema.ts imports `zod` (~90 KB) — deferring the import to initAll()
+// avoids pulling it into the critical App chunk via Sidebar → panelConfig → ModuleLoader.
+let _validateManifestSafe: ((raw: unknown) => { success: boolean; data?: any; error?: string }) | null = null;
 import { moduleApi, catalogApi } from '../lib/api';
 import { OPTIONAL_MODULE_IMPORTS } from '../modules/optional-registry';
 import { DEFERRED_CORE_MODULE_IMPORTS } from '../modules/deferred-core-registry';
@@ -118,10 +121,10 @@ class ModuleLoaderClass {
       return;
     }
 
-    // Validate manifest with Zod schema
-    const validation = validateManifestSafe(manifest);
-    if (!validation.success) {
-      console.error(`[ModuleLoader] Invalid manifest for "${manifest.id || 'unknown'}": ${validation.error}`);
+    // Manifest validation is deferred to initAll() where Zod is lazy-loaded.
+    // Basic sanity check here to catch obviously broken manifests early.
+    if (!manifest.id || typeof manifest.id !== 'string') {
+      console.error(`[ModuleLoader] Invalid manifest — missing or invalid id`);
       return;
     }
 
@@ -138,6 +141,28 @@ class ModuleLoaderClass {
    */
   async initAll(): Promise<void> {
     if (this.initialized) return;
+
+    // Lazy-load Zod manifest validation now (deferred from register() to keep
+    // the ~90 KB zod library out of the initial App chunk).
+    if (!_validateManifestSafe) {
+      try {
+        const { validateManifestSafe } = await import('./manifestSchema');
+        _validateManifestSafe = validateManifestSafe;
+      } catch (err) {
+        console.warn('[ModuleLoader] Could not load manifest validator:', err);
+      }
+    }
+
+    // Validate all registered manifests now that Zod is available
+    if (_validateManifestSafe) {
+      for (const [id, mod] of this.modules) {
+        const validation = _validateManifestSafe(mod.manifest);
+        if (!validation.success) {
+          console.error(`[ModuleLoader] Invalid manifest for "${id}": ${validation.error}`);
+          this.modules.delete(id);
+        }
+      }
+    }
 
     // Start loading deferred core modules immediately (always-on, no catalog check).
     // Running in parallel with the catalog fetch keeps total wait time minimal.

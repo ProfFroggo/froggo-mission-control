@@ -4,9 +4,10 @@
  * Tasks completed · Active agents · X impressions (range-filtered) · Pending approvals
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { CheckCircle, Bot, TrendingUp, AlertCircle } from 'lucide-react';
 import { useStore } from '../../store/store';
+import { useXAnalytics } from '../../hooks/useXAnalytics';
 
 interface DashSnapshotKPIProps {
   range: '24h' | '48h';
@@ -72,33 +73,22 @@ function formatNumber(n: number): string {
 export default function DashSnapshotKPI({ range, onNavigate }: DashSnapshotKPIProps) {
   const { tasks, agents, approvals } = useStore();
 
-  const [xImpressions, setXImpressions] = useState<number | null>(null);
-  const [xTweetCount, setXTweetCount] = useState<number | null>(null);
+  const { data: xData } = useXAnalytics();
 
   const rangeHours = range === '24h' ? 24 : 48;
   const cutoff = Date.now() - rangeHours * 60 * 60 * 1000;
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchX() {
-      try {
-        const res = await fetch('/api/x/analytics');
-        if (!res.ok) return;
-        const json = await res.json();
-        if (cancelled) return;
-        if (json?.ok && Array.isArray(json.tweets)) {
-          // Filter to range only
-          const inRange = (json.tweets as Array<{ created_at?: string; public_metrics: { impression_count: number } }>)
-            .filter((t) => t.created_at && new Date(t.created_at).getTime() >= cutoff);
-          const total = inRange.reduce((sum, t) => sum + (t.public_metrics?.impression_count ?? 0), 0);
-          setXImpressions(total);
-          setXTweetCount(inRange.length);
-        }
-      } catch { /* not configured */ }
+  // Derive impressions and tweet count from shared analytics data
+  const { xImpressions, xTweetCount } = useMemo(() => {
+    if (!xData?.ok || !Array.isArray(xData.tweets)) {
+      return { xImpressions: null as number | null, xTweetCount: null as number | null };
     }
-    fetchX();
-    return () => { cancelled = true; };
-  }, [range, cutoff]);
+    const inRange = xData.tweets.filter(
+      (t) => t.created_at && new Date(t.created_at).getTime() >= cutoff,
+    );
+    const total = inRange.reduce((sum, t) => sum + (t.public_metrics?.impression_count ?? 0), 0);
+    return { xImpressions: total, xTweetCount: inRange.length };
+  }, [xData, cutoff]);
 
   const doneInRange = tasks.filter((t) => t.status === 'done' && t.updatedAt >= cutoff).length;
   const activeAgents = agents.filter(

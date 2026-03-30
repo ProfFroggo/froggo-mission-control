@@ -36,6 +36,9 @@
  */
 
 export const DEFERRED_CORE_MODULE_IMPORTS: Record<string, () => Promise<unknown>> = {
+  'workflow-studio': () => import('./workflow-studio'),
+  notifications: () => import('./notifications'),
+  'agent-mgmt':  () => import('./agent-mgmt'),
   schedule:    () => import('./schedule'),
   automations: () => import('./automations'),
   library:     () => import('./library'),

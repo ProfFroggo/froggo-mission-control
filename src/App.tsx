@@ -18,7 +18,7 @@ import './modules';
 import { ViewRegistry } from './core/ViewRegistry';
 import { ModuleLoader } from './core/ModuleLoader';
 import ToastContainer from './components/Toast';
-import QuickActions, { QuickActionsRef } from './components/QuickActions';
+import type { QuickActionsRef } from './components/QuickActions';
 import { usePanelConfigStore } from './store/panelConfig';
 import TourGuide, { useTour } from './components/TourGuide';
 import { useFirstTimeUser } from './hooks/useFirstTimeUser';
@@ -39,6 +39,12 @@ const MorningBrief      = dynamic(() => import('./components/MorningBrief'),    
 const ContactModal      = dynamic(() => import('./components/ContactModal'),      { ssr: false });
 const SkillModal        = dynamic(() => import('./components/SkillModal'),        { ssr: false });
 const EditPanelsModal   = dynamic(() => import('./components/EditPanelsModal'),   { ssr: false });
+
+// QuickActions is the floating toolbar — only shown when toolbarVisible is true.
+// Dynamically imported because it transitively pulls in MarkdownMessage →
+// ToolUIRenderer → Recharts + react-markdown + react-syntax-highlighter (~550 KB).
+// Deferring this to a separate chunk cuts the main App bundle in half.
+const QuickActions      = dynamic(() => import('./components/QuickActions'),      { ssr: false });
 
 // OnboardingWizard is shown to every first-time user immediately on mount.
 // Preloading the chunk at module-eval time means it's already downloading when

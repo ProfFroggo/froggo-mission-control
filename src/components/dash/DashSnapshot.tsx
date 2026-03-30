@@ -1,12 +1,36 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { useState } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import DashSnapshotKPI from './DashSnapshotKPI';
 import DashInterventionQueue from './DashInterventionQueue';
 import DashXMetrics from './DashXMetrics';
-import DashMixpanelCard from './DashMixpanelCard';
 import DashAgentPerf from './DashAgentPerf';
 import DashInboxCard from './DashInboxCard';
 import DashCalendarCard from './DashCalendarCard';
+
+// Lazy-load DashMixpanelCard: it imports Recharts (~325 KB) which is not needed
+// for the initial Dashboard render. Deferring it keeps Recharts out of the
+// Dashboard preload chunk, reducing the critical-path JS by ~325 KB.
+const DashMixpanelCard = lazy(() => import('./DashMixpanelCard'));
+
+/**
+ * Defers rendering of children until the browser is idle after mount.
+ * Prevents the DashMixpanelCard lazy import from triggering during the
+ * LCP-critical render pass — the Recharts chunk (~102 KB compressed)
+ * downloads only after the main content has painted.
+ */
+function DeferredRender({ children, fallback }: { children: React.ReactNode; fallback: React.ReactNode }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(() => setReady(true));
+      return () => cancelIdleCallback(id);
+    }
+    // Fallback for browsers without requestIdleCallback
+    const timer = setTimeout(() => setReady(true), 150);
+    return () => clearTimeout(timer);
+  }, []);
+  return <>{ready ? children : fallback}</>;
+}
 
 interface DashSnapshotProps {
   onNavigate?: (view: string) => void;
@@ -53,7 +77,11 @@ export default function DashSnapshot({ onNavigate }: DashSnapshotProps) {
       {/* Row 1: X / Twitter + Mixpanel (Mixpanel hidden when not configured) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <DashXMetrics range={range} onNavigate={onNavigate} />
-        <DashMixpanelCard range={range} onNavigate={onNavigate} />
+        <DeferredRender fallback={<div className="h-48 rounded-xl bg-mission-control-surface animate-pulse" />}>
+          <Suspense fallback={<div className="h-48 rounded-xl bg-mission-control-surface animate-pulse" />}>
+            <DashMixpanelCard range={range} onNavigate={onNavigate} />
+          </Suspense>
+        </DeferredRender>
       </div>
 
       {/* Row 2: Agent Performance + Inbox + Today */}

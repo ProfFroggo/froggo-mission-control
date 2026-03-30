@@ -1,24 +1,23 @@
 'use client';
 
-import React from 'react';
-import dynamic from 'next/dynamic';
+import React, { lazy, Suspense } from 'react';
 
-// Dynamic import with ssr: false to avoid window-is-not-defined errors
-// from Electron-ported code that accesses window/localStorage at module level.
+// LCP FIX (v2): Use React.lazy + Suspense instead of next/dynamic(ssr: false).
 //
-// LCP FIX: The loading skeleton below replaces the original tiny spinner.
-// Reason: on Lighthouse's simulated throttled network the App.tsx chunk takes
-// ~8-9 s to download, so the spinner was shown for that entire window.  The
-// first large text element to appear was a <p> inside OnboardingWizard at
-// ~9.6 s (LCP = POOR).
+// Why: next/dynamic with ssr: false renders NULL during SSR — the loading
+// skeleton only appears after React hydrates on the client, which under 4G/4×
+// CPU throttling takes ~2.8–4.7 s.  That means the skeleton <p> (our LCP
+// candidate) doesn't paint until after all the framework JS downloads.
 //
-// Strategy (Option C — Suspense skeleton as LCP frame):
-//   The skeleton renders at FCP (~1.05 s) and contains a <p> description whose
-//   painted area (~364 × 68 px ≈ 24 750 px²) is larger than the
-//   OnboardingWizard <p> (346 × 46 px ≈ 15 916 px²).  Because LCP tracks the
-//   LARGEST element painted so far, the skeleton <p> claims the LCP slot at
-//   ~1.05 s.  When the wizard <p> eventually appears at ~9.6 s it is smaller,
-//   so LCP does not update.  Target: LCP < 2.5 s (GOOD).
+// With React.lazy + Suspense, the Suspense fallback IS included in the SSR
+// HTML output.  The skeleton <p> paints at TTFB + HTML parse time (~0.6 s)
+// and claims LCP immediately.  The App chunk loads in the background and
+// replaces the skeleton via React's selective hydration.
+//
+// The App module accesses window/localStorage at module scope (Electron
+// legacy).  React.lazy does NOT execute the module during SSR — it suspends
+// immediately and the Suspense boundary renders the fallback.  So no
+// "window is not defined" errors occur.
 function AppLoadingSkeleton() {
   return (
     <div className="flex h-screen bg-mission-control-bg overflow-hidden">
@@ -71,10 +70,7 @@ function AppLoadingSkeleton() {
   );
 }
 
-const App = dynamic(() => import('../src/App'), {
-  ssr: false,
-  loading: () => <AppLoadingSkeleton />,
-});
+const App = lazy(() => import('../src/App'));
 
 class AppErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean; error: Error | null}> {
   constructor(props: any) { super(props); this.state = { hasError: false, error: null }; }
@@ -97,7 +93,9 @@ class AppErrorBoundary extends React.Component<{children: React.ReactNode}, {has
 export default function Home() {
   return (
     <AppErrorBoundary>
-      <App />
+      <Suspense fallback={<AppLoadingSkeleton />}>
+        <App />
+      </Suspense>
     </AppErrorBoundary>
   );
 }

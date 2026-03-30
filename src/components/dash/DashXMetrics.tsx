@@ -4,37 +4,8 @@
  * Filters tweets to the selected range (24h / 48h) so metrics reflect
  * actual activity in that window, not lifetime totals.
  */
-import { useState, useEffect } from 'react';
 import { Twitter } from 'lucide-react';
-
-interface XProfile {
-  name?: string;
-  username?: string;
-  public_metrics: {
-    followers_count: number;
-    following_count: number;
-    tweet_count: number;
-    like_count: number;
-  };
-}
-
-interface XTweet {
-  id: string;
-  text: string;
-  created_at?: string;
-  public_metrics: {
-    impression_count: number;
-    like_count: number;
-    retweet_count: number;
-    reply_count: number;
-  };
-}
-
-interface XAnalyticsResponse {
-  ok: boolean;
-  profile?: XProfile;
-  tweets?: XTweet[];
-}
+import { useXAnalytics } from '../../hooks/useXAnalytics';
 
 interface DashXMetricsProps {
   range: '24h' | '48h';
@@ -71,29 +42,10 @@ function SkeletonGrid() {
 }
 
 export default function DashXMetrics({ range, onNavigate }: DashXMetricsProps) {
-  const [data, setData] = useState<XAnalyticsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Shared hook — deduplicates with DashSnapshotKPI and other consumers
+  const { data, loading } = useXAnalytics();
 
   const rangeMs = range === '24h' ? 24 * 60 * 60 * 1000 : 48 * 60 * 60 * 1000;
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    async function fetchAnalytics() {
-      try {
-        const res = await fetch('/api/x/analytics');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = (await res.json()) as XAnalyticsResponse;
-        if (!cancelled) setData(json);
-      } catch {
-        if (!cancelled) setData({ ok: false });
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    fetchAnalytics();
-    return () => { cancelled = true; };
-  }, []);  // data doesn't change with range — we filter client-side below
 
   const isConfigured = data?.ok && data.profile;
 

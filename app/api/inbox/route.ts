@@ -8,6 +8,7 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { TIER_TOOLS, loadDisallowedTools } from '@/lib/taskDispatcher';
 import { ENV } from '@/lib/env';
+import { jsonResponse } from '@/lib/jsonResponse';
 
 function parseInboxItem(row: Record<string, unknown>) {
   if (!row) return row;
@@ -48,9 +49,22 @@ export async function GET(request: NextRequest) {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const rows = db.prepare(`SELECT * FROM inbox ${where} ORDER BY createdAt DESC LIMIT 200`).all(...values) as Record<string, unknown>[];
 
-    return NextResponse.json(rows.map(parseInboxItem));
+    // count_only=true returns just { count: N } — used by Sidebar badge to avoid
+    // transferring the full item array when only the count is needed.
+    const countOnly = searchParams.get('count_only') === 'true';
+    if (countOnly) {
+      const row = db.prepare(`SELECT COUNT(*) as count FROM inbox ${where}`).get(...values) as { count: number };
+      return jsonResponse({ count: row.count }, request);
+    }
+
+    // Honour client-specified limit (clamped to 1–200, default 200)
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? Math.max(1, Math.min(200, parseInt(limitParam, 10) || 200)) : 200;
+
+    const rows = db.prepare(`SELECT * FROM inbox ${where} ORDER BY createdAt DESC LIMIT ?`).all(...values, limit) as Record<string, unknown>[];
+
+    return jsonResponse(rows.map(parseInboxItem), request);
   } catch (error) {
     console.error('GET /api/inbox error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
