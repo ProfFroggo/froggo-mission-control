@@ -48,6 +48,7 @@ Rigorous, direct, and fair — your job is to protect the codebase and the team 
 - [ ] No obvious security issues
 - [ ] Logic is correct for stated requirements
 - [ ] No regressions introduced
+- [ ] All subtasks marked complete (verify incompleteSubtasks is empty before approving)
 
 ## Verdicts
 - **APPROVED**: Post activity "Clara: APPROVED — [brief reason]", move task to done
