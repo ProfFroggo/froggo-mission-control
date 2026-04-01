@@ -318,14 +318,14 @@ function AgentLeaderboard({ rows }: { rows: AgentLeaderboardRow[] }) {
                   <span className="truncate max-w-[120px]">{row.name}</span>
                 </Flex>
               </td>
-              <td className="py-2.5 text-right font-medium text-[var(--color-success)] tabular-nums">{row.tasksDone}</td>
+              <td className="py-2.5 text-right font-medium text-success tabular-nums">{row.tasksDone}</td>
               <td className="py-2.5 text-right tabular-nums">{row.tasksInProgress}</td>
               <td className="py-2.5 text-right tabular-nums text-mission-control-text-dim">
                 {fmtDuration(row.avgCompletionMs)}
               </td>
               <td className="py-2.5 text-right">
                 {row.online ? (
-                  <span className="inline-flex items-center gap-1 text-[var(--color-success)] text-xs">
+                  <span className="inline-flex items-center gap-1 text-success text-xs">
                     <Wifi size={11} />
                     Online
                   </span>
@@ -580,7 +580,7 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
             value: sessionsCount,
             trend: sessionsCount > 0 ? 'up' : 'neutral',
             icon: MessageSquare,
-            color: 'text-[var(--color-info)]',
+            color: 'text-info',
           },
           {
             label: 'Tasks Completed',
@@ -588,21 +588,21 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
             change: completionTrend > 0 ? completionTrend : undefined,
             trend: completionTrend > 0 ? 'up' : completionTrend < 0 ? 'down' : 'neutral',
             icon: Zap,
-            color: 'text-[var(--color-success)]',
+            color: 'text-success',
           },
           {
             label: 'Avg/Day',
             value: avgPerDay,
             trend: avgPerDay > 3 ? 'up' : avgPerDay > 0 ? 'neutral' : 'down',
             icon: Activity,
-            color: 'text-[var(--color-review)]',
+            color: 'text-review',
           },
           {
             label: 'Pending Approvals',
             value: pendingApprovals,
             trend: pendingApprovals > 5 ? 'down' : 'neutral',
             icon: Clock,
-            color: 'text-[var(--color-warning)]',
+            color: 'text-warning',
           },
         ]);
       } else {
@@ -612,28 +612,28 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
             value: sessionsCount,
             trend: 'neutral',
             icon: MessageSquare,
-            color: 'text-[var(--color-info)]',
+            color: 'text-info',
           },
           {
             label: 'Tasks Completed',
             value: `${completedTasks}/${tasksCount}`,
             trend: completedTasks > 0 ? 'up' : 'neutral',
             icon: Zap,
-            color: 'text-[var(--color-success)]',
+            color: 'text-success',
           },
           {
             label: 'Pending Approvals',
             value: pendingApprovals,
             trend: pendingApprovals > 5 ? 'down' : 'neutral',
             icon: Clock,
-            color: 'text-[var(--color-warning)]',
+            color: 'text-warning',
           },
           {
             label: 'Total Tasks',
             value: tasksCount,
             trend: 'neutral',
             icon: Activity,
-            color: 'text-[var(--color-review)]',
+            color: 'text-review',
           },
         ]);
         setDailyData([]);
@@ -672,7 +672,7 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
           {/* Tasks done vs last week */}
           <div className="flex flex-col gap-1">
             <Flex align="center" gap="2">
-              <CheckCircle size={14} className="text-[var(--color-success)]" />
+              <CheckCircle size={14} className="text-success" />
               <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Tasks completed</span>
             </Flex>
             <Flex align="baseline" gap="2">
@@ -680,7 +680,7 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
               {weekDelta !== 0 && (
                 <span
                   className={`flex items-center gap-0.5 text-xs font-medium tabular-nums ${
-                    weekDelta > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'
+                    weekDelta > 0 ? 'text-success' : 'text-error'
                   }`}
                 >
                   {weekDelta > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
@@ -699,7 +699,7 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
           {/* New tasks created */}
           <div className="flex flex-col gap-1">
             <Flex align="center" gap="2">
-              <PlusCircle size={14} className="text-[var(--color-info)]" />
+              <PlusCircle size={14} className="text-info" />
               <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">New tasks</span>
             </Flex>
             <div className="text-3xl font-bold tabular-nums text-mission-control-text">{weekCreated}</div>
@@ -745,9 +745,9 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
                     gap="1"
                     className={`text-xs ${
                       stat.trend === 'up'
-                        ? 'text-[var(--color-success)]'
+                        ? 'text-success'
                         : stat.trend === 'down'
-                        ? 'text-[var(--color-error)]'
+                        ? 'text-error'
                         : 'text-mission-control-text-dim'
                     }`}
                   >
@@ -797,8 +797,10 @@ export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
               <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Status Distribution</span>
             </div>
           </div>
-          <div className="px-4 pt-3 pb-4 flex-1 flex items-center">
-            <StatusDonutChart slices={statusSlices} />
+          <div className="px-4 pt-3 pb-4 flex-1 flex items-center w-full">
+            <div className="w-full">
+              <StatusDonutChart slices={statusSlices} />
+            </div>
           </div>
         </div>
       </div>

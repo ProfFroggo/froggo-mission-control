@@ -8,19 +8,19 @@ import { showToast } from './Toast';
 import IconBadge from './IconBadge';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { label: string; badgeClass: string; iconColor: string }> = {
-  p0: { label: 'P0 — Urgent', badgeClass: 'bg-[var(--color-error)]/10 text-[var(--color-error)]',     iconColor: 'text-[var(--color-error)] bg-[var(--color-error)]/10' },
-  p1: { label: 'P1 — High',   badgeClass: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]',  iconColor: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10' },
-  p2: { label: 'P2 — Medium', badgeClass: 'bg-[var(--color-info)]/10 text-[var(--color-info)]',        iconColor: 'text-[var(--color-info)] bg-[var(--color-info)]/10' },
+  p0: { label: 'P0 — Urgent', badgeClass: 'bg-error/10 text-error',     iconColor: 'text-error bg-error/10' },
+  p1: { label: 'P1 — High',   badgeClass: 'bg-warning/10 text-warning',  iconColor: 'text-warning bg-warning/10' },
+  p2: { label: 'P2 — Medium', badgeClass: 'bg-info/10 text-info',        iconColor: 'text-info bg-info/10' },
   p3: { label: 'P3 — Low',    badgeClass: 'bg-mission-control-border/50 text-mission-control-text-dim', iconColor: 'text-mission-control-text-dim bg-mission-control-border/50' },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; class: string }> = {
   'todo':            { label: 'Todo',            class: 'bg-mission-control-border/50 text-mission-control-text-dim' },
-  'in-progress':     { label: 'In Progress',     class: 'bg-[var(--color-info)]/10 text-[var(--color-info)]' },
-  'review':          { label: 'Review',          class: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' },
-  'human-review':    { label: 'Needs Review',    class: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' },
-  'internal-review': { label: 'Pre-review', class: 'bg-[var(--color-review)]/10 text-[var(--color-review)]' },
-  'done':            { label: 'Done',            class: 'bg-[var(--color-success)]/10 text-[var(--color-success)]' },
+  'in-progress':     { label: 'In Progress',     class: 'bg-info/10 text-info' },
+  'review':          { label: 'Review',          class: 'bg-warning/10 text-warning' },
+  'human-review':    { label: 'Needs Review',    class: 'bg-warning/10 text-warning' },
+  'internal-review': { label: 'Pre-review', class: 'bg-review/10 text-review' },
+  'done':            { label: 'Done',            class: 'bg-success/10 text-success' },
 };
 
 const PRIORITIES: TaskPriority[] = ['p0', 'p1', 'p2', 'p3'];
@@ -522,7 +522,7 @@ export default function TaskScheduler() {
                   key={task.id}
                   className={`p-4 bg-mission-control-surface border rounded-xl transition-colors ${
                     isOverdue
-                      ? 'border-[var(--color-error)]/40 hover:border-[var(--color-error)]/60'
+                      ? 'border-error/40 hover:border-error/60'
                       : task.status === 'done'
                       ? 'border-mission-control-border opacity-70'
                       : 'border-mission-control-border hover:border-mission-control-accent/30'
@@ -546,7 +546,7 @@ export default function TaskScheduler() {
                           </span>
                         )}
                         {task.dueDate ? (
-                          <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}>
+                          <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-error' : 'text-mission-control-text-dim'}`}>
                             <Clock size={12} />
                             {formatDueDate(task.dueDate)}
                           </span>
@@ -633,9 +633,9 @@ export default function TaskScheduler() {
                 due.getMonth() === now.getMonth() &&
                 due.getDate() === now.getDate();
               const statusColor =
-                task.status === 'in-progress' ? 'text-[var(--color-info)]' :
-                task.status === 'review' ? 'text-[var(--color-review)]' :
-                task.status === 'done' ? 'text-[var(--color-success)]' :
+                task.status === 'in-progress' ? 'text-info' :
+                task.status === 'review' ? 'text-review' :
+                task.status === 'done' ? 'text-success' :
                 'text-mission-control-text-dim';
 
               return (
@@ -643,13 +643,13 @@ export default function TaskScheduler() {
                   key={task.id}
                   className={`px-3 py-2 rounded-xl border transition-colors ${
                     isDueToday
-                      ? 'border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5'
+                      ? 'border-warning/30 bg-warning/5'
                       : 'border-mission-control-border hover:border-mission-control-accent/30'
                   }`}
                 >
                   <Flex align="start" gap="2">
                     {isDueToday && (
-                      <AlertTriangle size={11} className="text-[var(--color-warning)] mt-0.5 shrink-0" />
+                      <AlertTriangle size={11} className="text-warning mt-0.5 shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate" title={task.title}>
@@ -660,7 +660,7 @@ export default function TaskScheduler() {
                           {STATUS_CONFIG[task.status]?.label ?? task.status}
                         </span>
                         {due && (
-                          <span className={`text-xs tabular-nums ${isDueToday ? 'text-[var(--color-warning)] font-medium' : 'text-mission-control-text-dim'}`}>
+                          <span className={`text-xs tabular-nums ${isDueToday ? 'text-warning font-medium' : 'text-mission-control-text-dim'}`}>
                             · {isDueToday ? 'Today' : due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             {' '}
                             {due.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}

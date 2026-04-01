@@ -14,7 +14,7 @@ export async function GET(_request: NextRequest) {
         SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)                    AS completedTasks,
         SUM(CASE WHEN status = 'in-progress' THEN 1 ELSE 0 END)             AS inProgressTasks,
         SUM(CASE WHEN status IN ('review','internal-review') THEN 1 ELSE 0 END) AS reviewTasks,
-        SUM(CASE WHEN status = 'blocked' THEN 1 ELSE 0 END)                 AS blockedTasks,
+        SUM(CASE WHEN status = 'human-review' THEN 1 ELSE 0 END)             AS blockedTasks,
         AVG(CASE WHEN completedAt IS NOT NULL
                  THEN (completedAt - createdAt) / 3600000.0
                  ELSE NULL END)                                               AS avgTaskTimeHours,
@@ -23,6 +23,7 @@ export async function GET(_request: NextRequest) {
       FROM tasks
       WHERE assignedTo IS NOT NULL
       GROUP BY assignedTo
+      LIMIT 200
     `).all(sevenDaysAgo) as {
       assignedTo: string;
       totalTasks: number;
@@ -69,6 +70,7 @@ export async function GET(_request: NextRequest) {
         JOIN tasks t ON t.id = s.taskId
         WHERE t.assignedTo IS NOT NULL
         GROUP BY t.assignedTo
+        LIMIT 200
       `).all() as { assignedTo: string; total: number; completed: number }[];
 
       for (const sr of subtaskRows) {

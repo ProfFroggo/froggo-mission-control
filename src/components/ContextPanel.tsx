@@ -212,7 +212,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
               {uploadSteps.map((step, i) => (
                 <Flex key={i} align="center" gap="2">
                   {step.status === 'done' ? (
-                    <CheckCircle2 size={14} className="text-[var(--color-success)] flex-shrink-0" />
+                    <CheckCircle2 size={14} className="text-success flex-shrink-0" />
                   ) : step.status === 'active' ? (
                     <Loader2 size={14} className="animate-spin text-mission-control-accent flex-shrink-0" />
                   ) : (
@@ -234,7 +234,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
         </div>
 
         {uploadError && (
-          <p className="text-xs text-[var(--color-error)] mb-3">{uploadError}</p>
+          <p className="text-xs text-error mb-3">{uploadError}</p>
         )}
 
         {/* File Grid */}
@@ -276,6 +276,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
                 <Flex align="center" gap="1" className="flex-shrink-0">
                   {file.processedContent && (
                     <button
+                      type="button"
                       onClick={() => setViewingFile(file)}
                       title="View processed content"
                       aria-label="View processed content"

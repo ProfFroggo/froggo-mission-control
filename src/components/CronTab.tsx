@@ -319,20 +319,20 @@ export default function CronTab() {
                       <span className="font-mono text-xs text-mission-control-text-dim bg-mission-control-bg px-2 py-0.5 rounded">{formatSchedule(job.schedule)}</span>
                       <span className="text-[10px] text-mission-control-text-dim tabular-nums">Next: {formatTimeUntil(job.state.nextRunAtMs)}</span>
                       {job.state.lastStatus && (
-                        <span className={`text-[10px] tabular-nums ${job.state.lastStatus === 'ok' ? 'text-[var(--color-success)]' : job.state.lastStatus === 'error' ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}>
+                        <span className={`text-[10px] tabular-nums ${job.state.lastStatus === 'ok' ? 'text-success' : job.state.lastStatus === 'error' ? 'text-error' : 'text-mission-control-text-dim'}`}>
                           Last: {job.state.lastStatus} {formatTimeAgo(job.state.lastRunAtMs)}
                         </span>
                       )}
                     </div>
                   </div>
                   <Flex align="center" gap="1">
-                    <button onClick={e => { e.stopPropagation(); runJob(job.id); }} aria-label="Run job now" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                    <button type="button" onClick={e => { e.stopPropagation(); runJob(job.id); }} aria-label="Run job now" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                       <Play size={14} />
                     </button>
-                    <button onClick={e => { e.stopPropagation(); openEdit(job); }} aria-label="Edit job" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                    <button type="button" onClick={e => { e.stopPropagation(); openEdit(job); }} aria-label="Edit job" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                       <Edit2 size={14} />
                     </button>
-                    <button onClick={e => { e.stopPropagation(); removeJob(job); }} aria-label="Delete job" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors">
+                    <button type="button" onClick={e => { e.stopPropagation(); removeJob(job); }} aria-label="Delete job" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors">
                       <Trash2 size={14} />
                     </button>
                     {isExpanded ? <ChevronDown size={16} className="text-mission-control-text-dim" /> : <ChevronRight size={16} className="text-mission-control-text-dim" />}
@@ -354,7 +354,7 @@ export default function CronTab() {
                       </div>
                     )}
                     {job.state.lastError && (
-                      <Flex align="start" gap="2" className="mb-4 p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg text-sm text-[var(--color-error)]">
+                      <Flex align="start" gap="2" className="mb-4 p-3 bg-error/10 border border-error/30 rounded-lg text-sm text-error">
                         <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                         {job.state.lastError}
                       </Flex>
@@ -367,12 +367,12 @@ export default function CronTab() {
                         {jobRuns.map((run, i) => (
                           <Flex key={i} align="center" gap="3" className="text-sm py-1">
                             <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                              run.status === 'ok' ? 'bg-[var(--color-success)]' : run.status === 'error' ? 'bg-[var(--color-error)]' : 'bg-mission-control-text-dim'
+                              run.status === 'ok' ? 'bg-success' : run.status === 'error' ? 'bg-error' : 'bg-mission-control-text-dim'
                             }`} />
                             <span className="text-mission-control-text-dim w-24 flex-shrink-0">{new Date(run.ts).toLocaleTimeString()}</span>
-                            <span className={run.status === 'error' ? 'text-[var(--color-error)]' : ''}>{run.status}</span>
+                            <span className={run.status === 'error' ? 'text-error' : ''}>{run.status}</span>
                             {run.durationMs && <span className="text-mission-control-text-dim">{(run.durationMs / 1000).toFixed(1)}s</span>}
-                            {run.error && <span className="text-[var(--color-error)] truncate">{run.error}</span>}
+                            {run.error && <span className="text-error truncate">{run.error}</span>}
                           </Flex>
                         ))}
                       </div>

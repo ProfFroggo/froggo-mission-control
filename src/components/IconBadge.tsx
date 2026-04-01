@@ -57,28 +57,28 @@ export default function IconBadge({
  */
 export const BadgePresets = {
   // Notification types
-  taskComplete: { color: 'text-[var(--color-success)] bg-[var(--color-success)]/10' },
-  taskDeadline: { color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10' },
-  agentUpdate: { color: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle' },
-  messageArrival: { color: 'text-[var(--color-info)] bg-[var(--color-info)]/10' },
-  approvalPending: { color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10' },
-  calendarEvent: { color: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle' },
-  systemAlert: { color: 'text-[var(--color-error)] bg-[var(--color-error)]/10' },
-  skillLearned: { color: 'text-[var(--color-info)] bg-[var(--color-info)]/10' },
-  error: { color: 'text-[var(--color-error)] bg-[var(--color-error)]/10' },
+  taskComplete: { color: 'text-success bg-success/10' },
+  taskDeadline: { color: 'text-warning bg-warning/10' },
+  agentUpdate: { color: 'text-review bg-review-subtle' },
+  messageArrival: { color: 'text-info bg-info/10' },
+  approvalPending: { color: 'text-warning bg-warning/10' },
+  calendarEvent: { color: 'text-review bg-review-subtle' },
+  systemAlert: { color: 'text-error bg-error/10' },
+  skillLearned: { color: 'text-info bg-info/10' },
+  error: { color: 'text-error bg-error/10' },
   
   // Approval types
-  tweet: { color: 'text-[var(--color-info)] bg-[var(--color-info)]/10' },
-  reply: { color: 'text-[var(--color-info)] bg-[var(--color-info)]/10' },
-  email: { color: 'text-[var(--color-success)] bg-[var(--color-success)]/10' },
-  message: { color: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle' },
-  task: { color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10' },
-  action: { color: 'text-[var(--color-success)] bg-[var(--color-success)]/10' },
+  tweet: { color: 'text-info bg-info/10' },
+  reply: { color: 'text-info bg-info/10' },
+  email: { color: 'text-success bg-success/10' },
+  message: { color: 'text-review bg-review-subtle' },
+  task: { color: 'text-warning bg-warning/10' },
+  action: { color: 'text-success bg-success/10' },
   
   // Channels - using CSS custom properties for theme consistency
   discord: { color: 'text-[var(--channel-discord)] bg-[var(--channel-discord-bg)]' },
   telegram: { color: 'text-[var(--channel-telegram)] bg-[var(--channel-telegram-bg)]' },
   whatsapp: { color: 'text-[var(--channel-whatsapp)] bg-[var(--channel-whatsapp-bg)]' },
-  webchat: { color: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle' },
-  agents: { color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10' },
+  webchat: { color: 'text-review bg-review-subtle' },
+  agents: { color: 'text-warning bg-warning/10' },
 } as const;

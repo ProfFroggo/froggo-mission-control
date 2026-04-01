@@ -26,6 +26,7 @@ import OnboardingFlow, { QuickTips, useOnboardingFlow } from './components/Onboa
 import NetworkStatus from './components/NetworkStatus';
 import { DependencyGate } from './components/DependencyGate';
 import { useKeyboardShortcuts, useChordShortcuts } from './lib/useKeyboardShortcuts';
+import { useSSEStoreSync } from './hooks/useSSEStoreSync';
 
 // ─── Lazy-loaded overlays — only downloaded when first rendered ───────────────
 // Splitting these into separate async chunks reduces initial JS parse cost and
@@ -111,6 +112,9 @@ function App() {
     fetchAgents();
     loadTasksFromDB();
   }, [loadApprovals, fetchAgents, loadTasksFromDB]);
+
+  // Phase 88.4: Central SSE→Store bridge — applies SSE deltas to Zustand store
+  useSSEStoreSync();
 
   // Phase 79: Root-level visibility handler — pauses polling when tab is hidden
   useEffect(() => {

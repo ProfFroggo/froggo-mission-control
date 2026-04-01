@@ -25,19 +25,19 @@ import type { Project } from '../../types/projects';
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
-  { id: 'p0', label: 'Urgent', color: 'text-[var(--color-error)]', bg: 'bg-[var(--color-error)]/10', icon: <AlertTriangle size={12} /> },
-  { id: 'p1', label: 'High', color: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10', icon: <ArrowUp size={12} /> },
-  { id: 'p2', label: 'Medium', color: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10', icon: <Circle size={12} /> },
+  { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-error/10', icon: <AlertTriangle size={12} /> },
+  { id: 'p1', label: 'High', color: 'text-warning', bg: 'bg-warning/10', icon: <ArrowUp size={12} /> },
+  { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-warning/10', icon: <Circle size={12} /> },
   { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface/20', icon: <ArrowDown size={12} /> },
 ];
 
 const COLUMNS: { id: TaskStatus; label: string; color: string; iconColor: string; borderColor: string; icon: React.ReactNode }[] = [
-  { id: 'todo',            label: 'To Do',            color: 'text-[#6b7a8d]', iconColor: 'text-[#6b7a8d]', borderColor: 'border-t-[#6b7a8d]', icon: <FileText size={13} /> },
-  { id: 'internal-review', label: 'Pre-review',   color: 'text-[var(--color-review)]',  iconColor: 'text-[var(--color-review)]',  borderColor: 'border-t-review',  icon: <Search size={13} /> },
-  { id: 'in-progress',     label: 'In Progress',      color: 'text-[var(--color-info)]', iconColor: 'text-[var(--color-info)]', borderColor: 'border-t-info', icon: <Zap size={13} /> },
-  { id: 'review',          label: 'Agent Review',     color: 'text-[var(--color-review)]',  iconColor: 'text-[var(--color-review)]',  borderColor: 'border-t-review',  icon: <Bot size={13} /> },
-  { id: 'human-review',    label: 'Human Review',     color: 'text-[var(--color-warning)]', iconColor: 'text-[var(--color-warning)]', borderColor: 'border-t-warning', icon: <User size={13} /> },
-  { id: 'done',            label: 'Done',             color: 'text-[var(--color-success)]', iconColor: 'text-[var(--color-success)]', borderColor: 'border-t-success', icon: <CheckCircle size={13} /> },
+  { id: 'todo',            label: 'To Do',            color: 'text-muted', iconColor: 'text-muted', borderColor: 'border-t-muted', icon: <FileText size={13} /> },
+  { id: 'internal-review', label: 'Pre-review',   color: 'text-review',  iconColor: 'text-review',  borderColor: 'border-t-review',  icon: <Search size={13} /> },
+  { id: 'in-progress',     label: 'In Progress',      color: 'text-info', iconColor: 'text-info', borderColor: 'border-t-info', icon: <Zap size={13} /> },
+  { id: 'review',          label: 'Agent Review',     color: 'text-review',  iconColor: 'text-review',  borderColor: 'border-t-review',  icon: <Bot size={13} /> },
+  { id: 'human-review',    label: 'Human Review',     color: 'text-warning', iconColor: 'text-warning', borderColor: 'border-t-warning', icon: <User size={13} /> },
+  { id: 'done',            label: 'Done',             color: 'text-success', iconColor: 'text-success', borderColor: 'border-t-success', icon: <CheckCircle size={13} /> },
 ];
 
 function formatDue(ts: number) {
@@ -87,8 +87,8 @@ function TaskCard({
       onClick={onOpen}
       className={`group bg-mission-control-surface border rounded-xl p-3 cursor-pointer select-none transition-colors duration-150 ${
         isDragging ? 'opacity-40 scale-95 rotate-1 shadow-lg' :
-        dueInfo?.isOverdue ? 'border-[var(--color-error)]/30 bg-[var(--color-error)]/10/30' :
-        task.priority === 'p0' ? 'border-[var(--color-error)]/30' :
+        dueInfo?.isOverdue ? 'border-error/30 bg-error/10/30' :
+        task.priority === 'p0' ? 'border-error/30' :
         'border-mission-control-border hover:border-mission-control-accent/30 hover:shadow-lg hover:-translate-y-0.5'
       }`}
     >
@@ -155,8 +155,8 @@ function TaskCard({
       {/* Clara review badge */}
       {task.reviewStatus && (
         <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded mb-2 w-fit ${
-          task.reviewStatus === 'approved' ? 'bg-[var(--color-success)] text-[var(--color-success)]' :
-          task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+          task.reviewStatus === 'approved' ? 'bg-success text-success' :
+          task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-error/10 text-error' :
           'bg-mission-control-accent/10 text-mission-control-accent animate-pulse'
         }`}>
           {task.reviewStatus === 'approved' ? <ShieldCheck size={11} /> :
@@ -173,7 +173,7 @@ function TaskCard({
             <CheckSquare size={11} /> {completedSubtasks}/{subtaskCount}
           </Flex>
           <div className="h-1 bg-mission-control-surface rounded-full overflow-hidden">
-            <div className={`h-full transition-colors ${subtaskProgress === 100 ? 'bg-[var(--color-success)]' : 'bg-mission-control-accent'}`}
+            <div className={`h-full transition-colors ${subtaskProgress === 100 ? 'bg-success' : 'bg-mission-control-accent'}`}
               style={{ width: `${subtaskProgress}%` }} />
           </div>
         </div>
@@ -184,8 +184,8 @@ function TaskCard({
         <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
           {dueInfo && (
             <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded flex-shrink-0 ${
-              dueInfo.isOverdue ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
-              dueInfo.isDueSoon ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+              dueInfo.isOverdue ? 'bg-error/10 text-error' :
+              dueInfo.isDueSoon ? 'bg-warning/10 text-warning' :
               'bg-mission-control-surface text-mission-control-text-dim'
             }`}>
               <Calendar size={10} /> {dueInfo.text}
@@ -194,7 +194,7 @@ function TaskCard({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {task.status === 'in-progress' ? (
-            <span className="flex items-center justify-center w-5 h-5 rounded bg-[var(--color-success)] text-[var(--color-success)] animate-pulse" title="Agent working">
+            <span className="flex items-center justify-center w-5 h-5 rounded bg-success text-success animate-pulse" title="Agent working">
               <Zap size={11} />
             </span>
           ) : canStart ? (
@@ -309,8 +309,8 @@ export default function ProjectKanban({ project, onNewTask }: ProjectKanbanProps
       <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border bg-mission-control-surface/50 flex-shrink-0">
         <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
           <span>{projectTasks.length} tasks</span>
-          <span className="text-[var(--color-success)]">{doneCount} done</span>
-          <span className="text-[var(--color-warning)]">{openCount} open</span>
+          <span className="text-success">{doneCount} done</span>
+          <span className="text-warning">{openCount} open</span>
         </Flex>
         <Flex align="center" gap="2">
           <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={handleRefresh} disabled={isRefreshing} title="Refresh">

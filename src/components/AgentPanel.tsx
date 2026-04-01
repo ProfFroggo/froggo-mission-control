@@ -210,16 +210,16 @@ export default function AgentPanel() {
 
   const statusConfig: Record<Agent['status'], { color: string; label: string; pulse?: boolean; hideDot?: boolean }> = {
     // online / active → green with pulse
-    active:     { color: 'bg-[var(--color-success)]',               label: 'Active',    pulse: true },
+    active:     { color: 'bg-success',               label: 'Active',    pulse: true },
     // busy / working / in-progress → amber, solid (no pulse)
-    busy:       { color: 'bg-[var(--color-warning)]',               label: 'Working…' },
+    busy:       { color: 'bg-warning',               label: 'Working…' },
     // idle / offline → gray, no pulse
     idle:       { color: 'bg-mission-control-border', label: 'Idle' },
     offline:    { color: 'bg-mission-control-surface',   label: 'Offline',   hideDot: true },
-    suspended:  { color: 'bg-[var(--color-error)]',                 label: 'Suspended', hideDot: true },
+    suspended:  { color: 'bg-error',                 label: 'Suspended', hideDot: true },
     archived:   { color: 'bg-mission-control-surface',   label: 'Archived',  hideDot: true },
     draft:      { color: 'bg-mission-control-border', label: 'Draft',    hideDot: true },
-    disabled:   { color: 'bg-[var(--color-error)]',                 label: 'Stopped',   hideDot: true },
+    disabled:   { color: 'bg-error',                 label: 'Stopped',   hideDot: true },
   };
 
   const tasksByAgent = useMemo(() => {
@@ -385,10 +385,10 @@ export default function AgentPanel() {
                 const activeAgentCount = agents.filter(a => a.status === 'active' || a.status === 'busy').length;
                 const formatTokens = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n);
                 return [
-                  { val: activeAgentCount, label: 'Active Agents', color: 'text-[var(--color-success)]' },
-                  { val: activeSubagents.length, label: 'Active Sub-Agents', color: 'text-[var(--color-warning)]' },
-                  { val: gatewaySessions.length, label: 'Total Sessions', color: 'text-[var(--color-info)]' },
-                  { val: formatTokens(totalTokens), label: 'Total Tokens', color: 'text-[var(--color-review)]' },
+                  { val: activeAgentCount, label: 'Active Agents', color: 'text-success' },
+                  { val: activeSubagents.length, label: 'Active Sub-Agents', color: 'text-warning' },
+                  { val: gatewaySessions.length, label: 'Total Sessions', color: 'text-info' },
+                  { val: formatTokens(totalTokens), label: 'Total Tokens', color: 'text-review' },
                 ];
               })().map((s, i) => (
                 <div key={i} className="rounded-lg border border-mission-control-border p-4">
@@ -498,14 +498,14 @@ export default function AgentPanel() {
                           {(agent.status === 'busy' || agent.status === 'disabled' || agent.status === 'suspended' || agent.status === 'archived' || agent.status === 'draft') && (
                             <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
                               agent.status === 'busy'
-                                ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
+                                ? 'bg-warning/10 text-warning'
                                 : 'bg-mission-control-border/50 text-mission-control-text-dim'
                             }`}>
                               {sc.label}
                             </span>
                           )}
                           {circuitOpenAgents.has(agent.id) && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 bg-[var(--color-error)]/10 text-[var(--color-error)]">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 bg-error/10 text-error">
                               <AlertTriangle size={9} /> Circuit open
                             </span>
                           )}
@@ -513,7 +513,7 @@ export default function AgentPanel() {
                         <div className="flex items-center gap-1.5">
                           <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
                           {currentTask && (
-                            <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] text-[var(--color-warning)]">
+                            <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] text-warning">
                               <Zap size={9} /><span className="truncate max-w-20">{currentTask.title}</span>
                             </span>
                           )}
@@ -569,7 +569,7 @@ export default function AgentPanel() {
                               {session.label}
                             </span>
                           )}
-                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${session.isActive ? 'bg-[var(--color-success)] agent-dot-pulse' : 'bg-mission-control-surface'}`} />
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${session.isActive ? 'bg-success agent-dot-pulse' : 'bg-mission-control-surface'}`} />
                         </div>
                         <div className="flex items-center gap-3 text-[10px] tabular-nums text-mission-control-text-dim overflow-hidden">
                           <span className="flex-shrink-0">{session.model?.split('/').pop() || 'unknown'}</span>
@@ -578,7 +578,7 @@ export default function AgentPanel() {
                         </div>
                       </div>
                       <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                        session.isActive ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-mission-control-border/50 text-mission-control-text-dim'
+                        session.isActive ? 'bg-success/10 text-success' : 'bg-mission-control-border/50 text-mission-control-text-dim'
                       }`}>
                         {session.isActive ? 'Running' : 'Idle'}
                       </span>
@@ -608,7 +608,7 @@ export default function AgentPanel() {
                             {session.label}
                           </span>
                         )}
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${session.isActive ? 'bg-[var(--color-success)] agent-dot-pulse' : 'bg-mission-control-surface'}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${session.isActive ? 'bg-success agent-dot-pulse' : 'bg-mission-control-surface'}`} />
                       </div>
                       <div className="flex items-center gap-3 text-[10px] tabular-nums text-mission-control-text-dim overflow-hidden">
                         <span className="flex-shrink-0">{session.model?.split('/').pop() || 'unknown'}</span>
@@ -617,7 +617,7 @@ export default function AgentPanel() {
                       </div>
                     </div>
                     <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                      session.isActive ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-mission-control-border/50 text-mission-control-text-dim'
+                      session.isActive ? 'bg-success/10 text-success' : 'bg-mission-control-border/50 text-mission-control-text-dim'
                     }`}>
                       {session.isActive ? 'Running' : 'Idle'}
                     </span>
@@ -667,7 +667,7 @@ export default function AgentPanel() {
                           <StopCircle size={12} /> Disable
                         </Button>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)]">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success">
                           <CheckCircle size={10} /> Done
                         </span>
                       )}
@@ -704,7 +704,7 @@ export default function AgentPanel() {
                         <StopCircle size={12} /> Disable
                       </Button>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)]">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success">
                         <CheckCircle size={10} /> Done
                       </span>
                     )}

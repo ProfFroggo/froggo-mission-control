@@ -640,6 +640,58 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['mention_id', 'reply_text'],
       },
     },
+
+    // ── Notes Tools ─────────────────────────────────────────────────────────
+    {
+      name: 'notes_list',
+      description: 'List recent human notes/thoughts. Call this at the START of every task to check for relevant instructions or context from the last 24 hours. Pass since (Unix ms) to filter by recency. Notes are short thoughts, reminders, and directives from the human operator.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          since: { type: 'number', description: 'Only return notes created after this Unix ms timestamp. Tip: for last 24h use Date.now() - 86400000' },
+          limit: { type: 'number', description: 'Max notes to return (default 50)' },
+        },
+      },
+    },
+    {
+      name: 'notes_create',
+      description: 'Create a note on behalf of the human. Only use when the human explicitly asks you to save a note or reminder.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          content: { type: 'string', description: 'Note text' },
+        },
+        required: ['content'],
+      },
+    },
+    {
+      name: 'scratchpad_list',
+      description: 'List files in the shared scratchpad directory. The scratchpad is a shared working area for agents to leave files, notes, and intermediate outputs that other agents can pick up.',
+      inputSchema: { type: 'object', properties: {} },
+    },
+    {
+      name: 'scratchpad_read',
+      description: 'Read a file from the shared scratchpad.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          filename: { type: 'string', description: 'Filename to read (no path separators allowed)' },
+        },
+        required: ['filename'],
+      },
+    },
+    {
+      name: 'scratchpad_write',
+      description: 'Write a file to the shared scratchpad. Max 10KB per file. Use this to leave outputs, notes, or intermediate results for other agents.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          filename: { type: 'string', description: 'Filename to write (no path separators allowed)' },
+          content: { type: 'string', description: 'File content (max 10KB)' },
+        },
+        required: ['filename', 'content'],
+      },
+    },
   ],
 }));
 
@@ -1490,11 +1542,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             'SELECT id, title, dueDate, completed, completedAt FROM project_milestones WHERE projectId = ? ORDER BY createdAt ASC'
           ).all(projectId) as any[];
           const openTaskCount = (db.prepare(
-            "SELECT COUNT(*) as c FROM tasks WHERE project_id = ? AND status NOT IN ('done')"
-          ).get(projectId) as { c: number }).c;
+            "SELECT COUNT(*) as c FROM tasks WHERE project = ? AND status NOT IN ('done')"
+          ).get(project.name) as { c: number }).c;
           const doneTaskCount = (db.prepare(
-            "SELECT COUNT(*) as c FROM tasks WHERE project_id = ? AND status = 'done'"
-          ).get(projectId) as { c: number }).c;
+            "SELECT COUNT(*) as c FROM tasks WHERE project = ? AND status = 'done'"
+          ).get(project.name) as { c: number }).c;
 
           // Detect GSD planning files
           let gsdPlanning: Record<string, any> | null = null;
@@ -1532,8 +1584,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ).all() as any[];
           const result = projects.map((p) => {
             const openTasks = (db.prepare(
-              "SELECT COUNT(*) as c FROM tasks WHERE project_id = ? AND status NOT IN ('done')"
-            ).get(p.id) as { c: number }).c;
+              "SELECT COUNT(*) as c FROM tasks WHERE project = ? AND status NOT IN ('done')"
+            ).get(p.name) as { c: number }).c;
             const memberCount = (db.prepare(
               'SELECT COUNT(*) as c FROM project_members WHERE projectId = ?'
             ).get(p.id) as { c: number }).c;
@@ -1601,8 +1653,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             WHERE cm.campaignId = ?
           `).all(c.id) as any[];
           const openTasks = (db.prepare(
-            "SELECT COUNT(*) as cnt FROM tasks WHERE project_id = ? AND status NOT IN ('done')"
-          ).get(c.id) as { cnt: number }).cnt;
+            "SELECT COUNT(*) as cnt FROM tasks WHERE project = ? AND status NOT IN ('done')"
+          ).get(c.name) as { cnt: number }).cnt;
           return { ...c, channels, kpis, members, openTasks };
         });
         return { content: [{ type: 'text', text: JSON.stringify({ campaigns: result, hint: result.length === 0 ? 'No campaigns found. Create one via the Campaigns section in the dashboard.' : `Found ${result.length} campaign(s).` }, null, 2) }] };
@@ -1839,15 +1891,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
           // Open task count
           const openTasks = db.prepare(
-            "SELECT COUNT(*) as c FROM tasks WHERE (project = ? OR project_id = ?) AND status NOT IN ('done')"
-          ).get(project.name, args.projectId) as { c: number };
+            "SELECT COUNT(*) as c FROM tasks WHERE project = ? AND status NOT IN ('done')"
+          ).get(project.name) as { c: number };
 
           // Milestone summary — tasks grouped by status
           const statusBreakdown = db.prepare(`
             SELECT status, COUNT(*) as count FROM tasks
-            WHERE project = ? OR project_id = ?
+            WHERE project = ?
             GROUP BY status
-          `).all(project.name, args.projectId) as any[];
+          `).all(project.name) as any[];
 
           return { content: [{ type: 'text', text: JSON.stringify({
             hint: 'This is your project context. Read goal and status before starting work.',
@@ -1869,8 +1921,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const projects = db.prepare("SELECT * FROM projects WHERE status = 'active' ORDER BY updatedAt DESC").all() as any[];
         const enriched = projects.map((p: any) => {
           const open = db.prepare(
-            "SELECT COUNT(*) as c FROM tasks WHERE (project = ? OR project_id = ?) AND status NOT IN ('done')"
-          ).get(p.name, p.id) as { c: number };
+            "SELECT COUNT(*) as c FROM tasks WHERE project = ? AND status NOT IN ('done')"
+          ).get(p.name) as { c: number };
           const memberCount = db.prepare('SELECT COUNT(*) as c FROM project_members WHERE projectId = ?').get(p.id) as { c: number };
           return {
             id: p.id,
@@ -2006,11 +2058,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
         const limit = Math.min(a.limit || 20, 100);
         const rows = db.prepare(`SELECT * FROM x_mentions ${where} ORDER BY tweet_created_at DESC LIMIT ?`).all(...vals, limit) as any[];
+        const safeJson = (v: string | null, fallback: any = null) => {
+          if (!v) return fallback;
+          try { return JSON.parse(v); } catch { return fallback; }
+        };
         const parsed = rows.map((r: any) => ({
           ...r,
-          ai_replies: r.ai_replies ? JSON.parse(r.ai_replies) : null,
-          ai_replies_english: r.ai_replies_english ? JSON.parse(r.ai_replies_english) : null,
-          ai_safety_flags: r.ai_safety_flags ? JSON.parse(r.ai_safety_flags) : [],
+          ai_replies: safeJson(r.ai_replies),
+          ai_replies_english: safeJson(r.ai_replies_english),
+          ai_safety_flags: safeJson(r.ai_safety_flags, []),
           is_reply_to_us: !!r.is_reply_to_us,
           is_spam: !!r.is_spam,
         }));
@@ -2139,6 +2195,80 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           Date.now(),
         );
         return { content: [{ type: 'text', text: JSON.stringify({ ok: true, approval_id: apId, tier, mention_id: mention.id, status: 'queued for human approval' }) }] };
+      }
+
+      // ── notes_list ───────────────────────────────────────────────────────
+      case 'notes_list': {
+        const limit = Math.min(Number(args?.limit) || 50, 200);
+        const sinceMs = Number(args?.since) || 0;
+
+        let query = 'SELECT * FROM notes';
+        const params: any[] = [];
+
+        if (sinceMs) {
+          query += ' WHERE createdAt >= ?';
+          params.push(sinceMs);
+        }
+
+        query += ' ORDER BY pinned DESC, createdAt DESC LIMIT ?';
+        params.push(limit);
+
+        const notes = db.prepare(query).all(...params);
+        return { content: [{ type: 'text', text: JSON.stringify({ notes, hint: notes.length === 0 ? 'No recent notes from the human. Proceed with the task.' : 'Review these notes for any relevant context or instructions before starting work.' }) }] };
+      }
+
+      // ── notes_create ──────────────────────────────────────────────────────
+      case 'notes_create': {
+        if (!args?.content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content is required' }) }], isError: true };
+        const id = `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const now = Date.now();
+        db.prepare('INSERT INTO notes (id, content, color, pinned, createdAt, updatedAt) VALUES (?, ?, ?, 0, ?, ?)').run(id, args.content, 'default', now, now);
+        return { content: [{ type: 'text', text: JSON.stringify({ ok: true, id }) }] };
+      }
+
+      // ── scratchpad tools ───────────────────────────────────────────────────
+
+      case 'scratchpad_list': {
+        const scratchDir = path.join(process.env.HOME || '/tmp', 'mission-control', 'scratchpad');
+        if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
+        const files: { name: string; size: number; modified: string }[] = [];
+        for (const f of fs.readdirSync(scratchDir)) {
+          try {
+            const s = fs.statSync(path.join(scratchDir, f));
+            files.push({ name: f, size: s.size, modified: new Date(s.mtimeMs).toISOString() });
+          } catch { /* file deleted between readdir and stat — skip */ }
+        }
+        return { content: [{ type: 'text', text: files.length === 0 ? 'Scratchpad is empty.' : JSON.stringify(files, null, 2) }] };
+      }
+
+      case 'scratchpad_read': {
+        const filename = String(args?.filename || '');
+        if (!filename || filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
+          return { content: [{ type: 'text', text: 'Invalid filename — no path separators or .. allowed' }], isError: true };
+        }
+        const scratchDir = path.join(process.env.HOME || '/tmp', 'mission-control', 'scratchpad');
+        const filePath = path.join(scratchDir, filename);
+        try {
+          const content = fs.readFileSync(filePath, 'utf-8');
+          return { content: [{ type: 'text', text: content }] };
+        } catch {
+          return { content: [{ type: 'text', text: `File not found or unreadable: ${filename}` }], isError: true };
+        }
+      }
+
+      case 'scratchpad_write': {
+        const filename = String(args?.filename || '');
+        const content = String(args?.content || '');
+        if (!filename || filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
+          return { content: [{ type: 'text', text: 'Invalid filename — no path separators or .. allowed' }], isError: true };
+        }
+        if (content.length > 10240) {
+          return { content: [{ type: 'text', text: `Content too large: ${content.length} bytes (max 10KB)` }], isError: true };
+        }
+        const scratchDir = path.join(process.env.HOME || '/tmp', 'mission-control', 'scratchpad');
+        if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
+        fs.writeFileSync(path.join(scratchDir, filename), content, 'utf-8');
+        return { content: [{ type: 'text', text: `Written ${content.length} bytes to scratchpad/${filename}` }] };
       }
 
       default:

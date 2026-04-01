@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ComponentType } from 'react';
+import { useState, useEffect, type ComponentType } from 'react';
 import { IconButton, Box, Flex } from '@radix-ui/themes';
 import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
@@ -12,6 +12,7 @@ import { FocusModeSelector, useFocusMode } from './FocusMode';
 import { ViewRegistry } from '../core/ViewRegistry';
 import { useVisibilityPolling } from '../hooks/useVisibilityPolling';
 import { useEventBus } from '../lib/useEventBus';
+import { useInboxCount, setInboxCountExternal } from '../hooks/useInboxCount';
 import AgentActivityBar from './AgentActivityBar';
 
 // Static icon map for built-in panels — renders nav instantly before ViewRegistry populates.
@@ -52,6 +53,7 @@ interface SidebarProps {
 export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange, onOpenSearch, onOpenShortcuts }: SidebarProps) {
   // Load persisted sidebar state from localStorage
   const [expanded, setExpanded] = useState(() => {
+    if (typeof window === 'undefined') return true;
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? saved === 'true' : true; // Default: open
   });
@@ -68,7 +70,6 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     window.addEventListener('sidebarStateChange', handler);
     return () => window.removeEventListener('sidebarStateChange', handler);
   }, []);
-  const [inboxCount, setInboxCount] = useState(0);
   // Computed selectors — only re-render when the derived value changes
   const activeTasks = useStore(s =>
     s.tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length
@@ -100,26 +101,17 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     localStorage.setItem('sidebarExpanded', String(expanded));
   }, [expanded]);
 
-  // Load pending inbox item count — only shown on the Inbox badge
-  const loadInboxCount = useCallback(async () => {
-    try {
-      const res = await fetch('/api/inbox?status=pending');
-      if (!res.ok) return;
-      const data = await res.json();
-      const count = Array.isArray(data) ? data.length : (data?.items?.length || 0);
-      setInboxCount(count);
-    } catch {
-      // Failed to load inbox count
-    }
-  }, []);
+  // Shared inbox count hook — deduplicates with DashInboxCard and other consumers
+  const { count: inboxCount, refresh: refreshInboxCount } = useInboxCount();
 
-  useVisibilityPolling(loadInboxCount, 60_000);
+  // Periodic refresh of inbox count (visibility-aware)
+  useVisibilityPolling(refreshInboxCount, 60_000);
 
   // Subscribe to SSE inbox.count events — updates badge immediately when approvals are resolved
   useEventBus('inbox.count', (data) => {
     const d = data as { count: number };
     if (typeof d?.count === 'number') {
-      setInboxCount(d.count);
+      setInboxCountExternal(d.count);
     }
   });
 

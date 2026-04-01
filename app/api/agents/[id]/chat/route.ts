@@ -232,6 +232,49 @@ const MCP_MEMORY_TOOLS = [
   'mcp__memory__memory_search', 'mcp__memory__memory_recall',
   'mcp__memory__memory_write', 'mcp__memory__memory_read',
 ];
+const MCP_GOOGLE_TOOLS = [
+  'mcp__google-workspace__auth_clear', 'mcp__google-workspace__auth_refreshToken',
+  'mcp__google-workspace__calendar_createEvent', 'mcp__google-workspace__calendar_deleteEvent',
+  'mcp__google-workspace__calendar_findFreeTime', 'mcp__google-workspace__calendar_getEvent',
+  'mcp__google-workspace__calendar_list', 'mcp__google-workspace__calendar_listEvents',
+  'mcp__google-workspace__calendar_respondToEvent', 'mcp__google-workspace__calendar_updateEvent',
+  'mcp__google-workspace__chat_findDmByEmail', 'mcp__google-workspace__chat_findSpaceByName',
+  'mcp__google-workspace__chat_getMessages', 'mcp__google-workspace__chat_listSpaces',
+  'mcp__google-workspace__chat_listThreads', 'mcp__google-workspace__chat_sendDm',
+  'mcp__google-workspace__chat_sendMessage', 'mcp__google-workspace__chat_setUpSpace',
+  'mcp__google-workspace__docs_appendText', 'mcp__google-workspace__docs_create',
+  'mcp__google-workspace__docs_extractIdFromUrl', 'mcp__google-workspace__docs_find',
+  'mcp__google-workspace__docs_getText', 'mcp__google-workspace__docs_insertText',
+  'mcp__google-workspace__docs_move', 'mcp__google-workspace__docs_replaceText',
+  'mcp__google-workspace__drive_downloadFile', 'mcp__google-workspace__drive_findFolder',
+  'mcp__google-workspace__drive_search',
+  'mcp__google-workspace__gmail_createDraft', 'mcp__google-workspace__gmail_downloadAttachment',
+  'mcp__google-workspace__gmail_get', 'mcp__google-workspace__gmail_listLabels',
+  'mcp__google-workspace__gmail_modify', 'mcp__google-workspace__gmail_search',
+  'mcp__google-workspace__gmail_send', 'mcp__google-workspace__gmail_sendDraft',
+  'mcp__google-workspace__people_getMe', 'mcp__google-workspace__people_getUserProfile',
+  'mcp__google-workspace__sheets_find', 'mcp__google-workspace__sheets_getMetadata',
+  'mcp__google-workspace__sheets_getRange', 'mcp__google-workspace__sheets_getText',
+  'mcp__google-workspace__slides_find', 'mcp__google-workspace__slides_getMetadata',
+  'mcp__google-workspace__slides_getText',
+  'mcp__google-workspace__time_getCurrentDate', 'mcp__google-workspace__time_getCurrentTime',
+  'mcp__google-workspace__time_getTimeZone',
+];
+const MCP_MIXPANEL_TOOLS = [
+  'mcp__mixpanel__Get-Projects', 'mcp__mixpanel__Get-Events',
+  'mcp__mixpanel__Edit-Event', 'mcp__mixpanel__Get-Event-Details',
+  'mcp__mixpanel__Get-Property-Names', 'mcp__mixpanel__Get-Property-Values',
+  'mcp__mixpanel__Edit-Property', 'mcp__mixpanel__Get-Property',
+  'mcp__mixpanel__Create-Tag', 'mcp__mixpanel__Get-Issues',
+  'mcp__mixpanel__Dismiss-Issues', 'mcp__mixpanel__Rename-Tag',
+  'mcp__mixpanel__Delete-Tag', 'mcp__mixpanel__Get-Lexicon-URL',
+  'mcp__mixpanel__Get-User-Replays-Data', 'mcp__mixpanel__Get-Query-Schema',
+  'mcp__mixpanel__Get-Report', 'mcp__mixpanel__Run-Query',
+  'mcp__mixpanel__Create-Dashboard', 'mcp__mixpanel__List-Dashboards',
+  'mcp__mixpanel__Get-Dashboard', 'mcp__mixpanel__Update-Dashboard',
+  'mcp__mixpanel__Duplicate-Dashboard', 'mcp__mixpanel__Delete-Dashboard',
+  'mcp__mixpanel__Search-Entities',
+];
 const BASH_SAFE_TOOLS = [
   'Bash(npm run *)', 'Bash(npm test *)', 'Bash(npx vitest *)',
   'Bash(git status)', 'Bash(git diff *)', 'Bash(git add *)', 'Bash(git commit *)',
@@ -243,9 +286,9 @@ const BASH_SAFE_TOOLS = [
 const CHAT_TIER_TOOLS: Record<string, string[]> = {
   restricted:  ['Read', 'Glob', 'Grep', ...MCP_DB_TOOLS.filter(t => !t.endsWith('task_create')), 'mcp__memory__memory_search', 'mcp__memory__memory_recall', 'mcp__memory__memory_read'],
   apprentice:  ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS],
-  worker:      ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS],
-  trusted:     ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS],
-  admin:       ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS],
+  worker:      ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
+  trusted:     ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
+  admin:       ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
 };
 const CHAT_DEFAULT_DISALLOWED = [
   'Bash(rm -rf *)', 'Bash(sudo *)', 'Bash(curl *)', 'Bash(wget *)',
@@ -256,7 +299,7 @@ const CHAT_DEFAULT_DISALLOWED = [
 // Reverse map: short tool name → full MCP tool ID (for modal Tools tab integration)
 const SHORT_TO_FULL_MCP: Map<string, string> = (() => {
   const m = new Map<string, string>();
-  for (const full of [...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS]) {
+  for (const full of [...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS]) {
     const parts = full.split('__');
     if (parts.length >= 3) m.set(parts.slice(2).join('__'), full);
   }
@@ -421,7 +464,15 @@ SUMMARY:`;
             }
           });
 
-          await new Promise<void>(resolve => compactProc.on('close', resolve));
+          await Promise.race([
+            new Promise<void>(resolve => compactProc.on('close', resolve)),
+            new Promise<void>((_, reject) => setTimeout(() => {
+              try { compactProc.kill('SIGTERM'); } catch { /* already exited */ }
+              reject(new Error('Compact timed out after 120s'));
+            }, 120_000)),
+          ]).catch((err) => {
+            enc2({ type: 'text_delta', text: `\n\n[Compact failed: ${err instanceof Error ? err.message : String(err)}]` });
+          });
 
           // Evict session — next message starts fresh with summary injected as context
           sessions.delete(sessionKey);
@@ -698,8 +749,8 @@ SUMMARY:`;
           proc.kill();
           if (!streamCancelled) {
             const msg = hitHardCap
-              ? 'Response timed out after 30 minutes'
-              : 'Response timed out — no activity for 5 minutes';
+              ? 'Response timed out after 60 minutes'
+              : 'Response timed out — no activity for 15 minutes';
             enc({ type: 'error', error: msg });
             try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch { /* closed */ }
             try { controller.close(); } catch { /* already closed */ }
@@ -733,9 +784,12 @@ SUMMARY:`;
           enc({ type: 'heartbeat', text: msg, subtle: true });
         }, 45_000);
 
-        // Clear heartbeat if the request is aborted (e.g. user navigates away)
+        // Clear heartbeat and release lock if the request is aborted (e.g. user navigates away)
         request.signal.addEventListener('abort', () => {
           clearInterval(heartbeat);
+          streamCancelled = true;
+          agentLocks.delete(agentId);
+          try { proc.kill(); } catch { /* already exited */ }
         });
 
         const finishStream = (code: number | null) => {
@@ -830,7 +884,7 @@ SUMMARY:`;
               if (idleMs < IDLE_TIMEOUT_MS && totalMs < MAX_TOTAL_TIMEOUT_MS) return;
               clearInterval(freshTimeout);
               fresh.kill();
-              enc({ type: 'error', error: totalMs >= MAX_TOTAL_TIMEOUT_MS ? 'Response timed out after 30 minutes' : 'Response timed out — no activity for 5 minutes' });
+              enc({ type: 'error', error: totalMs >= MAX_TOTAL_TIMEOUT_MS ? 'Response timed out after 60 minutes' : 'Response timed out — no activity for 15 minutes' });
               finishStream(null);
             }, 30_000);
             fresh.on('close', (c) => { clearInterval(freshTimeout); finishStream(c); });

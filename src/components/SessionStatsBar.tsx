@@ -57,8 +57,8 @@ export default function SessionStatsBar({
   if (!stats) return null;
 
   const contextPct = Math.round((stats.tokenEstimate / 32000) * 100);
-  const dotColor = contextPct > 80 ? 'bg-[var(--color-error)]' : contextPct > 50 ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-success)]';
-  const barColor = contextPct > 80 ? 'bg-[var(--color-error)]' : contextPct > 50 ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-success)]';
+  const dotColor = contextPct > 80 ? 'bg-error' : contextPct > 50 ? 'bg-warning' : 'bg-success';
+  const barColor = contextPct > 80 ? 'bg-error' : contextPct > 50 ? 'bg-warning' : 'bg-success';
 
   return (
     <div className={`flex-shrink-0 px-3 py-2 ${className}`}>

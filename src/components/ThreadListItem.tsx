@@ -103,7 +103,7 @@ const ThreadListItem = memo(function ThreadListItem({
               {thread.sender_name || participantsDisplay || 'Unknown'}
             </span>
             {thread.unreplied_count > 0 && (
-              <span className="flex-shrink-0 text-[var(--color-warning)]" title={`${thread.unreplied_count} awaiting reply`}>
+              <span className="flex-shrink-0 text-warning" title={`${thread.unreplied_count} awaiting reply`}>
                 <Reply size={10} />
               </span>
             )}
@@ -146,7 +146,7 @@ const ThreadListItem = memo(function ThreadListItem({
             onClick={handleStarClick}
             title={thread.has_starred ? 'Unstar' : 'Star'}
             aria-label={thread.has_starred ? 'Unstar' : 'Star'}
-            className={`inline-flex items-center justify-center w-6 h-6 rounded-md hover:bg-mission-control-border/40 transition-colors ${thread.has_starred ? 'text-[var(--color-warning)] opacity-100' : 'text-mission-control-text-dim'}`}
+            className={`inline-flex items-center justify-center w-6 h-6 rounded-md hover:bg-mission-control-border/40 transition-colors ${thread.has_starred ? 'text-warning opacity-100' : 'text-mission-control-text-dim'}`}
           >
             <Star size={12} fill={thread.has_starred ? 'currentColor' : 'none'} />
           </button>

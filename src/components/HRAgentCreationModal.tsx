@@ -350,7 +350,7 @@ ${toolsSection}
 2. Post activity updates on meaningful decisions using the task_activity_create MCP tool.
 3. Check in with the team before taking external actions (emails, deploys, posts).
 4. Trust tier \`${researchedTier}\` — ${researchedTier === 'worker' ? 'you have full autonomy to act within your domain.' : 'check in before major decisions or irreversible actions.'}
-5. Use the task pipeline: todo → internal-review → in-progress → agent-review → done. Never move a task to done yourself — that is Clara's job.
+5. Use the task pipeline: todo → internal-review → in-progress → review → done. Never move a task to done yourself — that is Clara's job.
 6. When blocked, set status to human-review and explain why.
 
 ## Communication Style
@@ -437,7 +437,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
         body: JSON.stringify({
           title: `${cfg.emoji} ${cfg.name} — First Day Onboarding`,
           description: `Welcome to the team, ${cfg.name}! Your first day orientation task. Work through each subtask in order to get up to speed.\n\n**Role:** ${cfg.role}\n**Personality:** ${cfg.personality}\n**Model:** ${researchedModel} · **Trust tier:** ${researchedTier}`,
-          planningNotes: `## Onboarding Plan\n\n1. Read identity files (SOUL.md + CLAUDE.md)\n2. Introduce yourself in the mission-control chat\n3. Review your assigned skills and tools\n4. Complete your first assignment\n\n## Skills to leverage\n${skillsList}${specsList}\n\n## Notes\n- Trust tier: ${researchedTier} — ${researchedTier === 'worker' ? 'you have full autonomy' : 'check in before major decisions'}\n- Model: ${researchedModel}\n- All tasks must follow the pipeline: todo → internal-review → in-progress → agent-review → done`,
+          planningNotes: `## Onboarding Plan\n\n1. Read identity files (SOUL.md + CLAUDE.md)\n2. Introduce yourself in the mission-control chat\n3. Review your assigned skills and tools\n4. Complete your first assignment\n\n## Skills to leverage\n${skillsList}${specsList}\n\n## Notes\n- Trust tier: ${researchedTier} — ${researchedTier === 'worker' ? 'you have full autonomy' : 'check in before major decisions'}\n- Model: ${researchedModel}\n- All tasks must follow the pipeline: todo → internal-review → in-progress → review → done`,
           assignedTo: cfg.id,
           priority: 'p2',
           status: 'todo',
@@ -550,7 +550,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                 </Flex>
                 <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-colors duration-500 ${creationError ? 'bg-[var(--color-error)]' : 'bg-mission-control-accent'}`}
+                    className={`h-full rounded-full transition-colors duration-500 ${creationError ? 'bg-error' : 'bg-mission-control-accent'}`}
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -562,22 +562,22 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
               {creationSteps.map((step) => (
                 <div key={step.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-colors duration-300 ${
                   step.status === 'running'  ? 'bg-mission-control-accent/5 border-mission-control-accent/30' :
-                  step.status === 'done'     ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30' :
+                  step.status === 'done'     ? 'bg-success/10 border-success/30' :
                   step.status === 'skipped'  ? 'bg-mission-control-surface/30 border-mission-control-border opacity-60' :
-                  step.status === 'error'    ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30' :
+                  step.status === 'error'    ? 'bg-error/10 border-error/30' :
                   'bg-mission-control-surface/50 border-mission-control-border'
                 }`}>
                   <div className="flex-shrink-0 mt-0.5">
                     {step.status === 'running'  && <Loader2 size={16} className="text-mission-control-accent animate-spin" />}
-                    {step.status === 'done'     && <CheckCircle size={16} className="text-[var(--color-success)]" />}
+                    {step.status === 'done'     && <CheckCircle size={16} className="text-success" />}
                     {step.status === 'skipped'  && <Circle size={16} className="text-mission-control-text-dim" />}
-                    {step.status === 'error'    && <XCircle size={16} className="text-[var(--color-error)]" />}
+                    {step.status === 'error'    && <XCircle size={16} className="text-error" />}
                     {step.status === 'pending'  && <Circle size={16} className="text-mission-control-border" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium ${
-                      step.status === 'done'    ? 'text-[var(--color-success)]' :
-                      step.status === 'error'   ? 'text-[var(--color-error)]' :
+                      step.status === 'done'    ? 'text-success' :
+                      step.status === 'error'   ? 'text-error' :
                       step.status === 'running' ? 'text-mission-control-accent' :
                       step.status === 'skipped' ? 'text-mission-control-text-dim' :
                       'text-mission-control-text-dim'
@@ -607,8 +607,8 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
 
             {/* Error banner */}
             {creationError && (
-              <div className="mt-4 p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
-                <div className="text-sm text-[var(--color-error)] font-medium">Onboarding failed</div>
+              <div className="mt-4 p-3 bg-error/10 border border-error/30 rounded-lg">
+                <div className="text-sm text-error font-medium">Onboarding failed</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">{creationError}</div>
               </div>
             )}
@@ -628,7 +628,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                 )}
                 <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
                   msg.role === 'user'
-                    ? 'bg-[var(--color-info)]/10 text-[var(--color-info)] rounded-br-md'
+                    ? 'bg-info/10 text-info rounded-br-md'
                     : 'bg-mission-control-surface text-mission-control-text rounded-bl-md'
                 }`}>
                   {msg.content.split(/(\*\*[^*]+\*\*)/).map((part, j) =>

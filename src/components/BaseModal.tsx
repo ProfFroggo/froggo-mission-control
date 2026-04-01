@@ -178,16 +178,16 @@ export default function BaseModal({
     return () => window.removeEventListener('keydown', handleEscape, { capture: true });
   }, [isOpen, preventEscClose]);
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll when modal is open — ref-counted so nested modals don't clobber each other
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    
+    if (!isOpen) return;
+    const count = ((window as any).__modalScrollLockCount ?? 0) + 1;
+    (window as any).__modalScrollLockCount = count;
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = '';
+      const next = Math.max(0, ((window as any).__modalScrollLockCount ?? 1) - 1);
+      (window as any).__modalScrollLockCount = next;
+      if (next === 0) document.body.style.overflow = '';
     };
   }, [isOpen]);
 

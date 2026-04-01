@@ -127,7 +127,7 @@ function StatusRow({ label, value, ok }: { label: string; value: string; ok?: bo
   return (
     <Flex align="center" justify="between" className="py-1">
       <span className="text-mission-control-text-dim">{label}</span>
-      <span className={`font-mono text-xs ${ok === false ? 'text-[var(--color-error)]' : ok === true ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim'}`}>
+      <span className={`font-mono text-xs ${ok === false ? 'text-error' : ok === true ? 'text-success' : 'text-mission-control-text-dim'}`}>
         {value}
       </span>
     </Flex>
@@ -283,10 +283,10 @@ function PlatformUpdateTab() {
           {versionInfo && !checking && (
             <Flex align="center" gap="2" className={`px-3 py-2 rounded-lg text-sm mt-1 ${
               versionInfo.error
-                ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/20'
+                ? 'bg-warning/10 text-warning border border-warning/20'
                 : versionInfo.updateAvailable
-                  ? 'bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20'
-                  : 'bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20'
+                  ? 'bg-info/10 text-info border border-info/20'
+                  : 'bg-success/10 text-success border border-success/20'
             }`}>
               {versionInfo.error ? (
                 <><AlertCircle size={14} /> Registry unavailable — {versionInfo.error}</>
@@ -304,7 +304,7 @@ function PlatformUpdateTab() {
       {versionInfo?.updateAvailable && versionInfo.releaseNotes && (
         <section>
           <h3 className="text-sm font-medium text-mission-control-text mb-2 flex items-center gap-2">
-            <ArrowUpCircle size={14} className="text-[var(--color-info)]" />
+            <ArrowUpCircle size={14} className="text-info" />
             What's in v{versionInfo.latest}
           </h3>
           <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 max-h-48 overflow-y-auto">
@@ -342,7 +342,7 @@ function PlatformUpdateTab() {
           </Flex>
           <div
             ref={logRef}
-            className="bg-mission-control-bg rounded-lg border border-mission-control-border p-3 h-48 overflow-y-auto font-mono text-xs text-[var(--color-success)] space-y-0.5"
+            className="bg-mission-control-bg rounded-lg border border-mission-control-border p-3 h-48 overflow-y-auto font-mono text-xs text-success space-y-0.5"
           >
             {log.map((line, i) => (
               <div key={i} className="leading-5">{line || '\u00a0'}</div>
@@ -361,8 +361,8 @@ function PlatformUpdateTab() {
       {updateDone && (
         <Flex align="start" gap="3" className={`px-4 py-3 rounded-lg border text-sm ${
           updateDone.success
-            ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/20 text-[var(--color-success)]'
-            : 'bg-[var(--color-error)]/10 border-[var(--color-error)]/20 text-[var(--color-error)]'
+            ? 'bg-success/10 border-success/20 text-success'
+            : 'bg-error/10 border-error/20 text-error'
         }`}>
           {updateDone.success
             ? <Check size={16} className="mt-0.5 shrink-0" />
@@ -941,9 +941,9 @@ export default function SettingsPanel() {
                   <span className="flex items-center gap-2">
                     External Actions
                     {settings.externalActionsEnabled ? (
-                      <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded">LIVE</span>
+                      <span className="text-xs px-2 py-0.5 bg-success/10 text-success rounded">LIVE</span>
                     ) : (
-                      <span className="text-xs px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded">BLOCKED</span>
+                      <span className="text-xs px-2 py-0.5 bg-error/10 text-error rounded">BLOCKED</span>
                     )}
                   </span>
                 }
@@ -958,7 +958,7 @@ export default function SettingsPanel() {
                 />
               </SettingRow>
               <div className="px-4 py-3 border-t border-mission-control-border/40">
-                <div className="p-3 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg text-sm text-[var(--color-info)] space-y-2">
+                <div className="p-3 bg-info/10 border border-info/30 rounded-lg text-sm text-info space-y-2">
                   <Flex align="center" gap="2" className="font-medium">
                     <Shield size={14} /> Approval Gate
                   </Flex>

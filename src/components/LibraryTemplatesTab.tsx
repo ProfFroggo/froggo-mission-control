@@ -27,8 +27,8 @@ interface Template {
 
 const typeConfig: Record<string, { icon: any; color: string; label: string }> = {
   tweet: { icon: XIcon, color: 'text-white', label: 'Post' },
-  email: { icon: Mail, color: 'text-[var(--color-error)]', label: 'Email' },
-  message: { icon: MessageSquare, color: 'text-[var(--color-success)]', label: 'Message' },
+  email: { icon: Mail, color: 'text-error', label: 'Email' },
+  message: { icon: MessageSquare, color: 'text-success', label: 'Message' },
   generic: { icon: FileText, color: 'text-mission-control-text-dim', label: 'Generic' },
 };
 
@@ -255,7 +255,7 @@ export default function LibraryTemplatesTab() {
                       title={template.starred ? 'Unstar' : 'Star'}
                     >
                       {template.starred ? (
-                        <Star size={14} className="text-[var(--color-warning)] fill-yellow-400" />
+                        <Star size={14} className="text-warning fill-current" />
                       ) : (
                         <StarOff size={14} className="text-mission-control-text-dim" />
                       )}
@@ -331,7 +331,7 @@ export default function LibraryTemplatesTab() {
                           </button>
                           <button
                             onClick={() => handleDelete(template.id)}
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-error hover:bg-mission-control-surface transition-colors"
                             title="Delete"
                           >
                             <Trash2 size={14} />

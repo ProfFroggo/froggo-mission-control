@@ -62,13 +62,13 @@ const ToolPermissionCard = memo(function ToolPermissionCard({ request, onResolve
       <Flex align="center" gap="2" className="px-3 py-2 rounded-xl border border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim">
         {resolved === 'rejected' ? (
           <>
-            <Lock size={13} className="text-[var(--color-error)] shrink-0" />
+            <Lock size={13} className="text-error shrink-0" />
             <span className="font-mono opacity-70">{name}</span>
             <span>— access denied</span>
           </>
         ) : (
           <>
-            <Check size={13} className="text-[var(--color-success)] shrink-0" />
+            <Check size={13} className="text-success shrink-0" />
             <span className="font-mono opacity-70">{name}</span>
             <span>— {resolved === 'granted' ? 'permanently granted' : 'granted for this session'}</span>
             <span className="ml-auto opacity-60">Resend your message to continue</span>
@@ -79,15 +79,15 @@ const ToolPermissionCard = memo(function ToolPermissionCard({ request, onResolve
   }
 
   return (
-    <div className="rounded-xl border border-[var(--color-info)]/30 bg-mission-control-surface p-3 space-y-2.5 text-sm hover:border-mission-control-accent/20 transition-colors">
+    <div className="rounded-xl border border-info/30 bg-mission-control-surface p-3 space-y-2.5 text-sm hover:border-mission-control-accent/20 transition-colors">
       {/* Header */}
       <div className="flex items-start gap-2.5">
-        <ShieldQuestion size={16} className="text-[var(--color-info)] mt-0.5 shrink-0" />
+        <ShieldQuestion size={16} className="text-info mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-mission-control-text">Tool Permission Required</span>
             {server && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 font-mono">{server}</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-info/10 text-info border border-info/30 font-mono">{server}</span>
             )}
           </div>
           <p className="text-xs text-mission-control-text-dim mt-0.5">

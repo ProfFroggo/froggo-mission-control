@@ -566,10 +566,10 @@ export default function EpicCalendar({
       <div className="flex-1 overflow-auto">
         {/* Partial error banner - shows above calendar when some calendars fail */}
         {partialError && (
-          <Flex align="center" justify="between" px="4" py="2" className="bg-[var(--color-warning)]/10 border-b border-[var(--color-warning)]/30">
+          <Flex align="center" justify="between" px="4" py="2" className="bg-warning/10 border-b border-warning/30">
             <Flex align="center" gap="2">
-              <AlertCircle size={14} className="text-[var(--color-warning)]" />
-              <span className="text-sm text-[var(--color-warning)]">{partialError}</span>
+              <AlertCircle size={14} className="text-warning" />
+              <span className="text-sm text-warning">{partialError}</span>
             </Flex>
             <button
               type="button"
@@ -591,8 +591,8 @@ export default function EpicCalendar({
         ) : error && events.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <Calendar size={32} className="mx-auto mb-4 text-[var(--color-error)]" />
-              <p className="text-[var(--color-error)]">{error}</p>
+              <Calendar size={32} className="mx-auto mb-4 text-error" />
+              <p className="text-error">{error}</p>
               <Button
                 onClick={fetchEvents}
                 size="2"
@@ -710,7 +710,7 @@ function EventCard({
   const { start, end, isAllDay } = getEventTime(event);
   const meetLink = event.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
   const primaryEmail = useUserSettings.getState().email;
-  const accountColor = event.account === primaryEmail ? 'bg-[var(--color-info)]' : 'bg-[var(--color-review)]';
+  const accountColor = event.account === primaryEmail ? 'bg-info' : 'bg-review';
   const resolvedColor = eventColorResolver?.(event);
   const displayColor = resolvedColor || accountColor;
 
@@ -1387,7 +1387,7 @@ function EventDetailPopover({
         {/* Title + Date */}
         <div className="px-5 pb-3 pt-1">
           <Flex align="start" gap="3">
-            <div className="w-3 h-3 rounded-sm bg-[var(--color-info)] mt-1.5 flex-shrink-0" />
+            <div className="w-3 h-3 rounded-sm bg-info mt-1.5 flex-shrink-0" />
             <div>
               <h2 className="text-lg font-semibold leading-tight">{event.summary}</h2>
               <p className="text-sm text-mission-control-text-dim mt-0.5">{dateStr}</p>
@@ -1409,7 +1409,7 @@ function EventDetailPopover({
                 href={meetLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/20 text-[var(--color-info)] rounded-lg hover:bg-[var(--color-info)]/20 transition-colors font-medium text-sm"
+                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-info/10 border border-info/20 text-info rounded-lg hover:bg-info/20 transition-colors font-medium text-sm"
               >
                 <Video size={16} />
                 Join with Google Meet
@@ -1470,8 +1470,8 @@ function EventDetailPopover({
                             <p className="text-[10px] text-mission-control-text-dim">Organizer</p>
                           )}
                         </div>
-                        {a.responseStatus === 'accepted' && <Check size={13} className="text-[var(--color-success)] flex-shrink-0" />}
-                        {a.responseStatus === 'declined' && <X size={13} className="text-[var(--color-error)] flex-shrink-0" />}
+                        {a.responseStatus === 'accepted' && <Check size={13} className="text-success flex-shrink-0" />}
+                        {a.responseStatus === 'declined' && <X size={13} className="text-error flex-shrink-0" />}
                       </Flex>
                     );
                   })}
@@ -1651,7 +1651,7 @@ function EventModal({
           {/* Title */}
           <div>
             <label htmlFor="event-title" className="block text-sm font-medium mb-2">
-              Title <span className="text-[var(--color-error)]">*</span>
+              Title <span className="text-error">*</span>
             </label>
             <TextField.Root
               id="event-title"
@@ -1661,7 +1661,7 @@ function EventModal({
               size="2"
             />
             {errors.summary && (
-              <p className="text-sm text-[var(--color-error)] mt-1 flex items-center gap-1">
+              <p className="text-sm text-error mt-1 flex items-center gap-1">
                 <AlertCircle size={14} />
                 {errors.summary}
               </p>
@@ -1671,7 +1671,7 @@ function EventModal({
           {/* Account Selection */}
           <div>
             <label htmlFor="calendar-account" className="block text-sm font-medium mb-2">
-              Calendar Account <span className="text-[var(--color-error)]">*</span>
+              Calendar Account <span className="text-error">*</span>
             </label>
             <Select.Root
               value={formData.account}
@@ -1706,7 +1706,7 @@ function EventModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">
-                Start {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-[var(--color-error)]">*</span>
+                Start {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-error">*</span>
               </label>
               <TextField.Root
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
@@ -1717,7 +1717,7 @@ function EventModal({
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">
-                End {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-[var(--color-error)]">*</span>
+                End {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-error">*</span>
               </label>
               <TextField.Root
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
@@ -1726,7 +1726,7 @@ function EventModal({
                 size="2"
               />
               {errors.end && (
-                <p className="text-sm text-[var(--color-error)] mt-1 flex items-center gap-1">
+                <p className="text-sm text-error mt-1 flex items-center gap-1">
                   <AlertCircle size={14} />
                   {errors.end}
                 </p>
@@ -1826,8 +1826,8 @@ function DeleteConfirmDialog({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
       <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border max-w-md w-full p-6 shadow-2xl">
         <Flex align="start" gap="4" mb="4">
-          <div className="p-3 bg-[var(--color-error)]/10 rounded-full">
-            <Trash2 size={24} className="text-[var(--color-error)]" />
+          <div className="p-3 bg-error/10 rounded-full">
+            <Trash2 size={24} className="text-error" />
           </div>
           <div>
             <h3 className="text-lg font-semibold mb-2">Delete Event</h3>

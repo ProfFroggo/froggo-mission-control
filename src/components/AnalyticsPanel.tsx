@@ -64,7 +64,7 @@ export default function AnalyticsPanel() {
     try {
       const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
 
-      const [trends, agents, heatmap, projects, vel, subtasks] = await Promise.all([
+      const [trends, agents, heatmap, projects, vel, subtasks] = await Promise.allSettled([
         getTaskCompletionTrends(days),
         getAgentUtilization(),
         getProductivityHeatmap(days),
@@ -73,12 +73,12 @@ export default function AnalyticsPanel() {
         getSubtaskStats(),
       ]);
 
-      setCompletionTrends(trends);
-      setAgentUtilization(agents);
-      setHeatmapData(heatmap);
-      setProjectStats(projects);
-      setVelocity(vel);
-      setSubtaskStats(subtasks);
+      if (trends.status === 'fulfilled') setCompletionTrends(trends.value);
+      if (agents.status === 'fulfilled') setAgentUtilization(agents.value);
+      if (heatmap.status === 'fulfilled') setHeatmapData(heatmap.value);
+      if (projects.status === 'fulfilled') setProjectStats(projects.value);
+      if (vel.status === 'fulfilled') setVelocity(vel.value);
+      if (subtasks.status === 'fulfilled') setSubtaskStats(subtasks.value);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to load analytics'));
     } finally {
@@ -216,22 +216,22 @@ export default function AnalyticsPanel() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
                 <Flex align="center" justify="between" className="mb-2">
-                  <Target size={18} className="text-[var(--color-info)]" />
-                  <TrendingUp size={14} className="text-[var(--color-success)]" />
+                  <Target size={18} className="text-info" />
+                  <TrendingUp size={14} className="text-success" />
                 </Flex>
                 <div className="text-2xl font-bold tabular-nums text-mission-control-text mb-0.5">
                   {totalCompleted}
                 </div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mt-0.5">Tasks Completed</div>
                 <div className="mt-1.5 text-xs text-mission-control-text-dim tabular-nums">
-                  {totalCreated} created • <span className="text-[var(--color-success)]">{avgCompletionRate}%</span> rate
+                  {totalCreated} created • <span className="text-success">{avgCompletionRate}%</span> rate
                 </div>
               </div>
 
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
                 <Flex align="center" justify="between" className="mb-2">
-                  <Users size={18} className="text-[var(--color-review)]" />
-                  <Zap size={14} className="text-[var(--color-warning)]" />
+                  <Users size={18} className="text-review" />
+                  <Zap size={14} className="text-warning" />
                 </Flex>
                 <div className="text-2xl font-bold tabular-nums text-mission-control-text mb-0.5">
                   {agentUtilization.length}
@@ -244,8 +244,8 @@ export default function AnalyticsPanel() {
 
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
                 <Flex align="center" justify="between" className="mb-2">
-                  <Clock size={18} className="text-[var(--color-warning)]" />
-                  <Activity size={14} className="text-[var(--color-success)]" />
+                  <Clock size={18} className="text-warning" />
+                  <Activity size={14} className="text-success" />
                 </Flex>
                 <div className="text-2xl font-bold tabular-nums text-mission-control-text mb-0.5">
                   {totalHours.toFixed(0)}h
@@ -258,8 +258,8 @@ export default function AnalyticsPanel() {
 
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
                 <Flex align="center" justify="between" className="mb-2">
-                  <TrendingUp size={18} className="text-[var(--color-success)]" />
-                  <Zap size={14} className="text-[var(--color-info)]" />
+                  <TrendingUp size={18} className="text-success" />
+                  <Zap size={14} className="text-info" />
                 </Flex>
                 <div className="text-2xl font-bold tabular-nums text-mission-control-text mb-0.5">
                   {avgVelocity > 0 ? '+' : ''}{avgVelocity}
@@ -364,19 +364,19 @@ export default function AnalyticsPanel() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-mission-control-text-dim">In Progress</div>
-                        <div className="font-medium text-[var(--color-info)]">
+                        <div className="font-medium text-info">
                           {project.inProgressTasks}
                         </div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Avg Time</div>
-                        <div className="font-medium text-[var(--color-warning)]">
+                        <div className="font-medium text-warning">
                           {project.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Total Time</div>
-                        <div className="font-medium text-[var(--color-review)]">
+                        <div className="font-medium text-review">
                           {project.totalTimeSpent.toFixed(1)}h
                         </div>
                       </div>

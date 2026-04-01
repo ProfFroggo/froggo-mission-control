@@ -36,14 +36,14 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     let rows: Record<string, unknown>[];
     if (status) {
-      rows = db.prepare('SELECT * FROM automations WHERE status = ? ORDER BY created_at DESC').all(status) as Record<string, unknown>[];
+      rows = db.prepare('SELECT * FROM automations WHERE status = ? ORDER BY created_at DESC LIMIT 200').all(status) as Record<string, unknown>[];
     } else {
-      rows = db.prepare('SELECT * FROM automations ORDER BY created_at DESC').all() as Record<string, unknown>[];
+      rows = db.prepare('SELECT * FROM automations ORDER BY created_at DESC LIMIT 200').all() as Record<string, unknown>[];
     }
     return NextResponse.json(rows.map(parseAutomation));
   } catch (err) {
     console.error('[automations GET]', err);
-    return NextResponse.json([], { status: 200 }); // return empty array if table not ready
+    return NextResponse.json({ error: 'Failed to load automations' }, { status: 500 });
   }
 }
 

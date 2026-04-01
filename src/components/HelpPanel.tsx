@@ -133,6 +133,7 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
             </div>
           </Flex>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close help"
             className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
@@ -274,6 +275,7 @@ function NavButton({ icon, label, active, onClick }: {
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={[
         'flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
@@ -363,7 +365,7 @@ function BrowseView({
       {contextArticles.length > 0 && (
         <div>
           <Flex align="center" gap="2" className="mb-3">
-            <Star size={14} className="text-[var(--color-warning)]" />
+            <Star size={14} className="text-warning" />
             <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               Relevant to Current Panel
             </h3>
@@ -397,6 +399,7 @@ function BrowseView({
 function ArticleCard({ article, onClick }: { article: HelpArticle; onClick: () => void }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className="flex items-start gap-3 w-full p-4 bg-mission-control-surface border border-mission-control-border rounded-xl hover:border-[var(--mission-control-accent)]/30 transition-colors cursor-pointer text-left"
     >
@@ -427,6 +430,7 @@ function ArticleView({ article, onBack }: { article: HelpArticle; onBack: () => 
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 text-[11px] text-mission-control-text-dim/70 mb-4">
         <button
+          type="button"
           onClick={onBack}
           className="hover:text-mission-control-text transition-colors"
         >
@@ -510,6 +514,7 @@ function FAQView({
 function FAQCard({ faq, expanded, onToggle }: { faq: FAQItem; expanded: boolean; onToggle: () => void }) {
   return (
     <button
+      type="button"
       onClick={onToggle}
       className="flex items-start gap-3 w-full p-4 bg-mission-control-surface border border-mission-control-border rounded-xl hover:border-[var(--mission-control-accent)]/30 transition-colors cursor-pointer text-left"
     >
@@ -564,7 +569,7 @@ function ShortcutsView() {
 
   return (
     <div className="space-y-4">
-      <div className="p-3 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg">
+      <div className="p-3 bg-info/10 border border-info/30 rounded-lg">
         <p className="text-xs text-mission-control-text/70">
           Press{' '}
           <kbd className="px-1.5 py-0.5 bg-mission-control-bg border border-mission-control-border rounded font-mono text-[10px]">⌘?</kbd>

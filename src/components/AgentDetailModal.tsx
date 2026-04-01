@@ -140,11 +140,11 @@ const MCP_SERVERS = [
 ];
 
 const TRUST_TIERS = [
-  { id: 'restricted', label: 'Restricted', desc: 'Read-only. No writes, no approvals granted.', color: 'text-[var(--color-error)]' },
-  { id: 'apprentice',  label: 'Apprentice',  desc: 'Tier 1 auto-approved. Tier 2+ queued for review.', color: 'text-[var(--color-warning)]' },
-  { id: 'worker',      label: 'Worker',      desc: 'Tier 1-2 auto-approved. Tier 3 queued.', color: 'text-[var(--color-info)]' },
-  { id: 'trusted',     label: 'Trusted',     desc: 'All tiers auto-approved except Tier 3 external actions.', color: 'text-[var(--color-success)]' },
-  { id: 'admin',       label: 'Admin',       desc: 'Full autonomy. All tiers auto-approved.', color: 'text-[var(--color-review)]' },
+  { id: 'restricted', label: 'Restricted', desc: 'Read-only. No writes, no approvals granted.', color: 'text-error' },
+  { id: 'apprentice',  label: 'Apprentice',  desc: 'Tier 1 auto-approved. Tier 2+ queued for review.', color: 'text-warning' },
+  { id: 'worker',      label: 'Worker',      desc: 'Tier 1-2 auto-approved. Tier 3 queued.', color: 'text-info' },
+  { id: 'trusted',     label: 'Trusted',     desc: 'All tiers auto-approved except Tier 3 external actions.', color: 'text-success' },
+  { id: 'admin',       label: 'Admin',       desc: 'Full autonomy. All tiers auto-approved.', color: 'text-review' },
 ];
 
 const PERMISSION_GROUPS = [
@@ -217,7 +217,7 @@ const TIER_PRESETS: Record<string, Record<string, boolean>> = {
   },
 };
 
-const TIER_COLORS = ['text-[var(--color-success)]', 'text-[var(--color-info)]', 'text-[var(--color-warning)]', 'text-[var(--color-error)]'];
+const TIER_COLORS = ['text-success', 'text-info', 'text-warning', 'text-error'];
 
 const API_PRESETS = [
   { label: 'Custom',                service: '',               placeholder: 'Your API key or secret' },
@@ -310,10 +310,10 @@ interface AgentStats {
 }
 
 const AGENT_STATUSES = [
-  { value: 'active',      label: 'Online',      color: 'text-[var(--color-success)]' },
-  { value: 'busy',        label: 'Busy',         color: 'text-[var(--color-warning)]' },
+  { value: 'active',      label: 'Online',      color: 'text-success' },
+  { value: 'busy',        label: 'Busy',         color: 'text-warning' },
   { value: 'idle',        label: 'Offline',      color: 'text-mission-control-text-dim' },
-  { value: 'disabled',    label: 'Maintenance',  color: 'text-[var(--color-error)]' },
+  { value: 'disabled',    label: 'Maintenance',  color: 'text-error' },
 ] as const;
 
 function formatDuration(ms: number): string {
@@ -1084,7 +1084,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
               {/* Status dot */}
               <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-mission-control-surface flex-shrink-0 ${
                 agent.status === 'busy' || agent.status === 'active'
-                  ? 'bg-[var(--color-success)] agent-dot-pulse'
+                  ? 'bg-success agent-dot-pulse'
                   : 'bg-mission-control-border'
               }`} />
             </div>
@@ -1093,7 +1093,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                 <h2 className="text-base font-semibold text-mission-control-text">{agent.name}</h2>
                 {/* Status badge */}
                 {(agent.status === 'active' || agent.status === 'busy') ? (
-                  <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20">
+                  <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success border border-success/20">
                     online
                   </span>
                 ) : (
@@ -1123,7 +1123,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveDesc(); } if (e.key === 'Escape') cancelEditDesc(); }}
                   />
                   <div className="flex flex-col gap-1 flex-shrink-0">
-                    <button onClick={saveDesc} disabled={descSaving} title="Save" className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40">
+                    <button type="button" onClick={saveDesc} disabled={descSaving} title="Save" className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40">
                       {descSaving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
                     </button>
                     <button type="button" onClick={cancelEditDesc} title="Cancel" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
@@ -1133,6 +1133,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={startEditDesc}
                   title="Click to edit description"
                   className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
@@ -1147,10 +1148,10 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             </div>
           </Flex>
           <Flex align="center" gap="2">
-            <button onClick={buildDetailsFromRealData} title="Refresh (⌘R)" className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+            <button type="button" onClick={buildDetailsFromRealData} title="Refresh (⌘R)" className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </button>
-            <button onClick={handleClose} aria-label="Close modal" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+            <button type="button" onClick={handleClose} aria-label="Close modal" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={16} />
             </button>
           </Flex>
@@ -1203,14 +1204,14 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     const currentTask = details.recentTasks.find(t => t.status === 'in-progress');
                     if (!currentTask) return null;
                     return (
-                      <div className="rounded-xl border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10 p-4">
+                      <div className="rounded-xl border border-warning/30 bg-warning/10 p-4">
                         <Flex align="center" gap="2" className="mb-1">
-                          <Activity size={14} className="text-[var(--color-warning)] flex-shrink-0" />
-                          <span className="text-[10px] font-bold text-[var(--color-warning)] uppercase tracking-wider">Currently working on</span>
+                          <Activity size={14} className="text-warning flex-shrink-0" />
+                          <span className="text-[10px] font-bold text-warning uppercase tracking-wider">Currently working on</span>
                         </Flex>
                         <p className="text-sm font-medium text-mission-control-text">{currentTask.title}</p>
-                        <div className="mt-2 h-1.5 bg-[var(--color-warning)]/20 rounded-full overflow-hidden">
-                          <div className="h-full bg-[var(--color-warning)] rounded-full animate-pulse w-2/3" />
+                        <div className="mt-2 h-1.5 bg-warning/20 rounded-full overflow-hidden">
+                          <div className="h-full bg-warning rounded-full animate-pulse w-2/3" />
                         </div>
                       </div>
                     );
@@ -1247,7 +1248,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   {/* Performance summary from /stats endpoint */}
                   <div className="rounded-xl border border-mission-control-border p-4">
                     <Flex align="center" gap="2" className="mb-3">
-                      <BarChart2 size={15} className="text-[var(--color-info)] flex-shrink-0" />
+                      <BarChart2 size={15} className="text-info flex-shrink-0" />
                       <h3 className="text-sm font-semibold text-mission-control-text">Performance Summary</h3>
                       {statsLoading && <RefreshCw size={12} className="animate-spin text-mission-control-text-dim ml-auto" />}
                     </Flex>
@@ -1281,7 +1282,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   <div className="rounded-xl border border-mission-control-border p-4">
                     <Flex align="center" justify="between" className="mb-3">
                       <Flex align="center" gap="2">
-                        <Power size={15} className="text-[var(--color-warning)] flex-shrink-0" />
+                        <Power size={15} className="text-warning flex-shrink-0" />
                         <h3 className="text-sm font-semibold text-mission-control-text">Force Status</h3>
                       </Flex>
                       <button
@@ -1295,17 +1296,17 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <Flex align="center" gap="2" className="mb-2">
                       <span className="text-xs text-mission-control-text-dim">Current:</span>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                        agent.status === 'active' || agent.status === 'busy' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-                        agent.status === 'disabled' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+                        agent.status === 'active' || agent.status === 'busy' ? 'bg-success/10 text-success' :
+                        agent.status === 'disabled' ? 'bg-error/10 text-error' :
                         'bg-mission-control-border text-mission-control-text-dim'
                       }`}>{agent.status}</span>
                     </Flex>
 
                     {showStatusOverride && (
                       <div className="space-y-3 pt-2 border-t border-mission-control-border">
-                        <Flex align="start" gap="2" className="p-2 rounded-xl bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30">
-                          <AlertTriangle size={13} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
-                          <p className="text-xs text-[var(--color-warning)]">
+                        <Flex align="start" gap="2" className="p-2 rounded-xl bg-warning/10 border border-warning/30">
+                          <AlertTriangle size={13} className="text-warning flex-shrink-0 mt-0.5" />
+                          <p className="text-xs text-warning">
                             Manual override. The agent&apos;s next task dispatch will reset this status automatically.
                           </p>
                         </Flex>
@@ -1322,9 +1323,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                               }`}
                             >
                               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                s.value === 'active' ? 'bg-[var(--color-success)]' :
-                                s.value === 'busy' ? 'bg-[var(--color-warning)]' :
-                                s.value === 'disabled' ? 'bg-[var(--color-error)]' : 'bg-mission-control-text-dim'
+                                s.value === 'active' ? 'bg-success' :
+                                s.value === 'busy' ? 'bg-warning' :
+                                s.value === 'disabled' ? 'bg-error' : 'bg-mission-control-text-dim'
                               }`} />
                               <span>{s.label}</span>
                             </button>
@@ -1350,9 +1351,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Task Breakdown</h3>
                     <div className="space-y-3">
                       {[
-                        { label: 'Completed', count: details.successfulTasks, color: 'bg-[var(--color-success)]', pct: details.totalTasks > 0 ? (details.successfulTasks / details.totalTasks) * 100 : 0 },
-                        { label: 'In Progress', count: details.inProgressTasks, color: 'bg-[var(--color-warning)]', pct: details.totalTasks > 0 ? (details.inProgressTasks / details.totalTasks) * 100 : 0 },
-                        { label: 'Failed/Blocked', count: details.failedTasks, color: 'bg-[var(--color-error)]', pct: details.totalTasks > 0 ? (details.failedTasks / details.totalTasks) * 100 : 0 },
+                        { label: 'Completed', count: details.successfulTasks, color: 'bg-success', pct: details.totalTasks > 0 ? (details.successfulTasks / details.totalTasks) * 100 : 0 },
+                        { label: 'In Progress', count: details.inProgressTasks, color: 'bg-warning', pct: details.totalTasks > 0 ? (details.inProgressTasks / details.totalTasks) * 100 : 0 },
+                        { label: 'Failed/Blocked', count: details.failedTasks, color: 'bg-error', pct: details.totalTasks > 0 ? (details.failedTasks / details.totalTasks) * 100 : 0 },
                       ].map((item) => (
                         <div key={item.label}>
                           <Flex align="center" justify="between" className="text-sm mb-1">
@@ -1377,9 +1378,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             <span className="text-sm text-mission-control-text flex-1 min-w-0 truncate">{task.title}</span>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                task.status === 'done' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-                                task.status === 'in-progress' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' :
-                                task.status === 'failed' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+                                task.status === 'done' ? 'bg-success/10 text-success' :
+                                task.status === 'in-progress' ? 'bg-info/10 text-info' :
+                                task.status === 'failed' ? 'bg-error/10 text-error' :
                                 'bg-mission-control-border text-mission-control-text-dim'
                               }`}>
                                 {task.status}
@@ -1390,9 +1391,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                 </span>
                               )}
                               {task.outcome === 'success' ? (
-                                <CheckCircle size={13} className="text-[var(--color-success)]" />
+                                <CheckCircle size={13} className="text-success" />
                               ) : task.outcome === 'failed' ? (
-                                <XCircle size={13} className="text-[var(--color-error)]" />
+                                <XCircle size={13} className="text-error" />
                               ) : (
                                 <Clock size={13} className="text-mission-control-text-dim" />
                               )}
@@ -1411,7 +1412,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   {/* Editable capability tags */}
                   <div className="rounded-xl border border-mission-control-border p-4">
                     <Flex align="center" gap="2" className="mb-3">
-                      <Tag size={15} className="text-[var(--color-info)] flex-shrink-0" />
+                      <Tag size={15} className="text-info flex-shrink-0" />
                       <h3 className="text-sm font-semibold text-mission-control-text">Capabilities</h3>
                     </Flex>
 
@@ -1421,7 +1422,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         <span className="text-xs text-mission-control-text-dim italic">No capabilities defined</span>
                       )}
                       {capTags.map(tag => (
-                        <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30">
+                        <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-info/10 text-info border border-info/30">
                           {tag}
                           <button type="button" onClick={() => removeCapTag(tag)} title={`Remove ${tag}`} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                             <X size={10} />
@@ -1440,7 +1441,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         size="2"
                         className="flex-1"
                       />
-                      <button onClick={addCapTag} disabled={!capInput.trim()} title="Add capability" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                      <button type="button" onClick={addCapTag} disabled={!capInput.trim()} title="Add capability" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                         <Plus size={14} />
                       </button>
                       {capDirty && (
@@ -1454,10 +1455,10 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
 
                   {/* Skill gap indicator */}
                   {skillGaps.length > 0 && (
-                    <div className="rounded-xl border border-[var(--color-info)]/30 bg-[var(--color-info)]/10 p-4">
+                    <div className="rounded-xl border border-info/30 bg-info/10 p-4">
                       <Flex align="center" gap="2" className="mb-2">
-                        <Lightbulb size={15} className="text-[var(--color-info)] flex-shrink-0" />
-                        <h3 className="text-sm font-semibold text-[var(--color-info)]">Consider adding</h3>
+                        <Lightbulb size={15} className="text-info flex-shrink-0" />
+                        <h3 className="text-sm font-semibold text-info">Consider adding</h3>
                       </Flex>
                       <p className="text-xs text-mission-control-text-dim mb-3">
                         These skills appear in {agent.name}&apos;s recent tasks but are not listed in capabilities:
@@ -1482,7 +1483,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   <div className="rounded-xl border border-mission-control-border p-4">
                     <Flex align="center" justify="between" className="mb-3">
                       <Flex align="center" gap="2">
-                        <Award size={15} className="text-[var(--color-warning)] flex-shrink-0" />
+                        <Award size={15} className="text-warning flex-shrink-0" />
                         <h3 className="text-sm font-semibold text-mission-control-text">
                           Skill Library
                           <span className="ml-2 text-xs font-normal text-mission-control-accent">{activeSkills.length}/{allSkills.length} active</span>
@@ -1516,7 +1517,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                           <button type="button" onClick={() => setAddSkillMode('text')} className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${addSkillMode === 'text' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}>
                             <FileText size={10} /> Write / Paste
                           </button>
-                          <button onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                          <button type="button" onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                             <Upload size={10} /> Upload .md
                           </button>
                           <input ref={fileInputRef} type="file" accept=".md,text/markdown,text/plain" className="hidden" onChange={handleFileUpload} />
@@ -1541,10 +1542,10 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         {allSkills.map(skill => {
                           const on = activeSkills.includes(skill.slug);
                           return (
-                            <button key={skill.id} type="button" onClick={() => toggleSkill(skill.slug)}
-                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-colors ${on ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30' : 'border-mission-control-border hover:border-mission-control-accent/30 hover:bg-mission-control-accent/5'}`}>
+                            <button type="button" key={skill.id} onClick={() => toggleSkill(skill.slug)}
+                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-colors ${on ? 'bg-success/10 border-success/30' : 'border-mission-control-border hover:border-mission-control-accent/30 hover:bg-mission-control-accent/5'}`}>
                               {on
-                                ? <CheckCircle2 size={16} className="flex-shrink-0 text-[var(--color-success)]" />
+                                ? <CheckCircle2 size={16} className="flex-shrink-0 text-success" />
                                 : <Circle size={16} className="flex-shrink-0 text-mission-control-border" />
                               }
                               <span className="flex-1 text-sm text-mission-control-text">{skill.name}</span>
@@ -1572,7 +1573,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                           <div key={skill.name} className="bg-mission-control-bg rounded-xl p-4 hover:bg-mission-control-border/50 transition-colors">
                             <Flex align="center" justify="between" className="mb-2">
                               <Flex align="center" gap="2">
-                                <Award size={16} className="text-[var(--color-warning)]" />
+                                <Award size={16} className="text-warning" />
                                 <span className="font-medium">{skill.name}</span>
                               </Flex>
                               <span className="text-xs text-mission-control-text-dim">{skill.lastUsed}</span>
@@ -1620,16 +1621,16 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                               <div className="font-medium mb-1">{task.title}</div>
                               <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
                                 <span className={`px-2 py-0.5 rounded ${
-                                  task.status === 'done' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-                                  task.status === 'in-progress' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' :
-                                  task.status === 'failed' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
-                                  task.status === 'human-review' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+                                  task.status === 'done' ? 'bg-success/10 text-success' :
+                                  task.status === 'in-progress' ? 'bg-info/10 text-info' :
+                                  task.status === 'failed' ? 'bg-error/10 text-error' :
+                                  task.status === 'human-review' ? 'bg-warning/10 text-warning' :
                                   'bg-mission-control-border/30 text-mission-control-text-dim'
                                 }`}>
                                   {task.status}
                                 </span>
                                 {task.project && (
-                                  <span className="px-2 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded">
+                                  <span className="px-2 py-0.5 bg-info/10 text-info rounded">
                                     {task.project}
                                   </span>
                                 )}
@@ -1639,9 +1640,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                               </Flex>
                             </div>
                             {task.outcome === 'success' ? (
-                              <CheckCircle size={16} className="text-[var(--color-success)] flex-shrink-0" />
+                              <CheckCircle size={16} className="text-success flex-shrink-0" />
                             ) : task.outcome === 'failed' ? (
-                              <XCircle size={16} className="text-[var(--color-error)] flex-shrink-0" />
+                              <XCircle size={16} className="text-error flex-shrink-0" />
                             ) : (
                               <Clock size={16} className="text-mission-control-text-dim flex-shrink-0" />
                             )}
@@ -1667,12 +1668,12 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <div className="space-y-2">
                       {details.activeSessions.map((session) => (
                         <div key={session.key} className={`bg-mission-control-bg rounded-xl p-4 border ${
-                          session.isActive ? 'border-[var(--color-success)]/30' : 'border-mission-control-border'
+                          session.isActive ? 'border-success/30' : 'border-mission-control-border'
                         }`}>
                           <Flex align="center" justify="between" className="mb-2">
                             <Flex align="center" gap="2">
                               {session.isActive ? (
-                                <Wifi size={16} className="text-[var(--color-success)]" />
+                                <Wifi size={16} className="text-success" />
                               ) : (
                                 <WifiOff size={16} className="text-mission-control-text-dim" />
                               )}
@@ -1680,7 +1681,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                 {session.label || session.key.slice(0, 40)}
                               </span>
                               {session.isActive && (
-                                <span className="px-1.5 py-0.5 text-xs bg-[var(--color-success)]/10 text-[var(--color-success)] rounded">Active</span>
+                                <span className="px-1.5 py-0.5 text-xs bg-success/10 text-success rounded">Active</span>
                               )}
                             </Flex>
                           </Flex>
@@ -1731,13 +1732,13 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   {/* Model selection */}
                   <div className="rounded-xl border border-mission-control-border p-4">
                     <Flex align="center" gap="2" className="mb-3">
-                      <Cpu size={15} className="text-[var(--color-info)] flex-shrink-0" />
+                      <Cpu size={15} className="text-info flex-shrink-0" />
                       <h4 className="text-sm font-semibold text-mission-control-text">Model</h4>
                     </Flex>
                     <p className="text-xs text-mission-control-text-dim mb-3">Select the Claude model tier for this agent.</p>
                     <div className="space-y-2">
                       {CLAUDE_MODELS.map(m => (
-                        <button key={m.id} type="button" onClick={() => { setModel(m.id); setModelDirty(true); }}
+                        <button type="button" key={m.id} onClick={() => { setModel(m.id); setModelDirty(true); }}
                           className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl border text-left transition-colors ${
                             model === m.id
                               ? 'bg-mission-control-accent/10 border-mission-control-accent/30'
@@ -1781,7 +1782,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <Flex align="center" justify="between" className="mb-2">
                       <h4 className="text-[10px] font-bold text-mission-control-text-dim uppercase">AGENTS.md</h4>
                       {!rulesEditing && (
-                        <button onClick={() => { setRulesDraft(details.agentRules || ''); setRulesEditing(true); }} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                        <button type="button" onClick={() => { setRulesDraft(details.agentRules || ''); setRulesEditing(true); }} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                           <Edit size={11} /> Edit
                         </button>
                       )}
@@ -1831,10 +1832,10 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     </p>
                   </div>
                   {showRestartBanner && (
-                    <Flex align="center" gap="2" className="px-3 py-2 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-xl text-[var(--color-warning)] text-xs">
+                    <Flex align="center" gap="2" className="px-3 py-2 bg-warning/10 border border-warning/30 rounded-xl text-warning text-xs">
                       <AlertTriangle size={12} />
                       Restart {agent.name} for changes to take effect.
-                      <button onClick={() => setShowRestartBanner(false)} className="ml-auto inline-flex items-center justify-center w-5 h-5 rounded-md text-[var(--color-warning)]/70 hover:text-[var(--color-warning)] hover:bg-[var(--color-warning)]/10 transition-colors"><X size={12} /></button>
+                      <button type="button" onClick={() => setShowRestartBanner(false)} className="ml-auto inline-flex items-center justify-center w-5 h-5 rounded-md text-warning/70 hover:text-warning hover:bg-warning/10 transition-colors"><X size={12} /></button>
                     </Flex>
                   )}
                   <TextArea
@@ -1879,7 +1880,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             <Server size={11} /> {server.label}
                           </span>
                           <span className="flex items-center gap-2">
-                            <span className={`text-xs ${allOn ? 'text-[var(--color-success)]' : someOn ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim'}`}>
+                            <span className={`text-xs ${allOn ? 'text-success' : someOn ? 'text-warning' : 'text-mission-control-text-dim'}`}>
                               {enabledCount}/{server.tools.length}
                             </span>
                             <span
@@ -1889,7 +1890,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleServer(server.tools, !allOn); } }}
                               className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors cursor-pointer ${
                                 allOn
-                                  ? 'bg-[var(--color-success)]/10 text-[var(--color-success)] hover:bg-[var(--color-success)]/20'
+                                  ? 'bg-success/10 text-success hover:bg-success/20'
                                   : 'bg-mission-control-border/50 text-mission-control-text-dim hover:text-mission-control-text'
                               }`}
                             >
@@ -1903,7 +1904,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             {server.tools.map(tool => {
                               const on = activeTools.includes(tool);
                               return (
-                                <button key={tool} type="button" onClick={() => toggleTool(tool)}
+                                <button type="button" key={tool} onClick={() => toggleTool(tool)}
                                   className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${on ? 'bg-mission-control-accent/5' : 'hover:bg-mission-control-accent/5'}`}>
                                   <div className={`flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${on ? 'bg-mission-control-accent border-mission-control-accent' : 'border-mission-control-border'}`}>
                                     {on && <Check size={9} className="text-white" />}
@@ -2002,7 +2003,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Trust Tier</div>
                     <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
                       {TRUST_TIERS.map(tier => (
-                        <button key={tier.id} type="button"
+                        <button type="button" key={tier.id}
                           onClick={() => {
                             if (tier.id !== trustTier) setPrevTrustTier(trustTier);
                             setTrustTier(tier.id);
@@ -2041,8 +2042,8 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                           <div className="font-medium text-mission-control-text-dim">
                             Tier change: {TRUST_TIERS.find(t => t.id === prevTrustTier)?.label} → {TRUST_TIERS.find(t => t.id === trustTier)?.label}
                           </div>
-                          {gained.length > 0 && <div className="text-[var(--color-success)]">+ Granting: {gained.join(', ')}</div>}
-                          {lost.length > 0 && <div className="text-[var(--color-error)]">- Removing: {lost.join(', ')}</div>}
+                          {gained.length > 0 && <div className="text-success">+ Granting: {gained.join(', ')}</div>}
+                          {lost.length > 0 && <div className="text-error">- Removing: {lost.join(', ')}</div>}
                         </div>
                       );
                     })()}
@@ -2084,11 +2085,11 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                         )}
                                         <button type="button"
                                           onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
-                                          className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === true ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]' : 'border-mission-control-border text-mission-control-text-dim hover:border-[var(--color-success)]/30 hover:text-[var(--color-success)]'}`}
+                                          className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === true ? 'bg-success/10 border-success/30 text-success' : 'border-mission-control-border text-mission-control-text-dim hover:border-success/30 hover:text-success'}`}
                                         >Allow</button>
                                         <button type="button"
                                           onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
-                                          className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === false ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 text-[var(--color-error)]' : 'border-mission-control-border text-mission-control-text-dim hover:border-[var(--color-error)]/30 hover:text-[var(--color-error)]'}`}
+                                          className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === false ? 'bg-error/10 border-error/30 text-error' : 'border-mission-control-border text-mission-control-text-dim hover:border-error/30 hover:text-error'}`}
                                         >Deny</button>
                                       </div>
                                     </Flex>
@@ -2186,7 +2187,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             <div className="text-center py-12 text-mission-control-text-dim">
               <XCircle size={32} className="mx-auto mb-2 opacity-50" />
               <p>Failed to load agent details</p>
-              <button onClick={buildDetailsFromRealData} className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+              <button type="button" onClick={buildDetailsFromRealData} className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                 Retry
               </button>
             </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Activity,
   TrendingUp,
@@ -39,12 +39,15 @@ export default function RealTimeAnalytics() {
   useEffect(() => {
     if (!isLive) return;
 
+    const controller = new AbortController();
+
     const updateMetrics = async () => {
       try {
         // Fetch from analytics and task REST APIs
+        const opts = { signal: controller.signal };
         const [taskStats, agentActivity] = await Promise.all([
-          fetch('/api/analytics/task-stats').then(r => r.ok ? r.json() : null).catch(() => null),
-          fetch('/api/analytics/agent-activity').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/analytics/task-stats', opts).then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/analytics/agent-activity', opts).then(r => r.ok ? r.json() : null).catch(() => null),
         ]);
 
         const generateSparkline = (current: number) => {
@@ -61,7 +64,7 @@ export default function RealTimeAnalytics() {
             value: 0,
             unit: 'msg',
             icon: MessageCircle,
-            color: 'text-[var(--color-info)]',
+            color: 'text-info',
             sparkline: generateSparkline(0),
           },
           {
@@ -69,7 +72,7 @@ export default function RealTimeAnalytics() {
             value: activeTasks,
             unit: 'tasks',
             icon: Activity,
-            color: 'text-[var(--color-review)]',
+            color: 'text-review',
             sparkline: generateSparkline(activeTasks),
           },
           {
@@ -77,7 +80,7 @@ export default function RealTimeAnalytics() {
             value: completions,
             unit: 'done',
             icon: CheckCircle,
-            color: 'text-[var(--color-success)]',
+            color: 'text-success',
             sparkline: generateSparkline(completions),
           },
           {
@@ -85,7 +88,7 @@ export default function RealTimeAnalytics() {
             value: sessions,
             unit: 'sessions',
             icon: Zap,
-            color: 'text-[var(--color-warning)]',
+            color: 'text-warning',
             sparkline: generateSparkline(sessions),
           },
         ]);
@@ -102,7 +105,7 @@ export default function RealTimeAnalytics() {
     // Then update every 10 seconds
     const interval = setInterval(updateMetrics, 10000);
 
-    return () => clearInterval(interval);
+    return () => { controller.abort(); clearInterval(interval); };
   }, [isLive]);
 
   useEffect(() => {
@@ -116,28 +119,28 @@ export default function RealTimeAnalytics() {
           title: 'Task Completed',
           description: 'Fix authentication bug',
           icon: CheckCircle,
-          color: 'text-[var(--color-success)]',
+          color: 'text-success',
         },
         {
           type: 'message' as const,
           title: 'New Message',
           description: 'Kevin sent a message in WhatsApp',
           icon: MessageCircle,
-          color: 'text-[var(--color-info)]',
+          color: 'text-info',
         },
         {
           type: 'approval' as const,
           title: 'Approval Needed',
           description: 'Tweet requires review',
           icon: AlertCircle,
-          color: 'text-[var(--color-warning)]',
+          color: 'text-warning',
         },
         {
           type: 'agent' as const,
           title: 'Agent Started',
           description: 'Coder agent started task execution',
           icon: Zap,
-          color: 'text-[var(--color-review)]',
+          color: 'text-review',
         },
       ];
 
@@ -153,18 +156,26 @@ export default function RealTimeAnalytics() {
       ]);
     };
 
-    // Add event every 5-15 seconds
+    // Add event every 5-15 seconds — use ref to track timeout for clean teardown
+    const timeoutRef = { current: null as ReturnType<typeof setTimeout> | null };
+    let cancelled = false;
+
     const scheduleNext = () => {
+      if (cancelled) return;
       const delay = 5000 + Math.random() * 10000;
-      return setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
+        if (cancelled) return;
         addEvent();
         scheduleNext();
       }, delay);
     };
 
-    const timeout = scheduleNext();
+    scheduleNext();
 
-    return () => clearTimeout(timeout);
+    return () => {
+      cancelled = true;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, [isLive]);
 
   const formatTimestamp = (timestamp: number) => {
@@ -201,12 +212,12 @@ export default function RealTimeAnalytics() {
             onClick={() => setIsLive(!isLive)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               isLive
-                ? 'bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/30'
+                ? 'bg-success/10 text-success border border-success/30'
                 : 'bg-mission-control-surface border border-mission-control-border'
             }`}
           >
             <div
-              className={`w-2 h-2 rounded-full ${isLive ? 'bg-[var(--color-success)] animate-pulse' : 'bg-mission-control-text-dim'}`}
+              className={`w-2 h-2 rounded-full ${isLive ? 'bg-success animate-pulse' : 'bg-mission-control-text-dim'}`}
             />
             {isLive ? 'Live' : 'Paused'}
           </button>
@@ -227,7 +238,7 @@ export default function RealTimeAnalytics() {
               <Flex align="center" justify="between" mb="3">
                 <Icon size={16} className={metric.color} />
                 {isLive && (
-                  <div className="w-2 h-2 rounded-full bg-[var(--color-success)] animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
                 )}
               </Flex>
 
@@ -312,9 +323,9 @@ export default function RealTimeAnalytics() {
           <Flex align="center" justify="between">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">System Status</div>
-              <div className="text-sm font-semibold text-[var(--color-success)]">Operational</div>
+              <div className="text-sm font-semibold text-success">Operational</div>
             </div>
-            <CheckCircle size={24} className="text-[var(--color-success)]" />
+            <CheckCircle size={24} className="text-success" />
           </Flex>
         </Box>
 
@@ -324,7 +335,7 @@ export default function RealTimeAnalytics() {
               <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Uptime</div>
               <div className="text-sm font-semibold tabular-nums text-mission-control-text">99.9%</div>
             </div>
-            <TrendingUp size={24} className="text-[var(--color-info)]" />
+            <TrendingUp size={24} className="text-info" />
           </Flex>
         </Box>
 
@@ -334,7 +345,7 @@ export default function RealTimeAnalytics() {
               <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Avg Response</div>
               <div className="text-sm font-semibold tabular-nums text-mission-control-text">0.8s</div>
             </div>
-            <Clock size={24} className="text-[var(--color-review)]" />
+            <Clock size={24} className="text-review" />
           </Flex>
         </Box>
       </div>

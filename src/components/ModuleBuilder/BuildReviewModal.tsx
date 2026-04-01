@@ -14,11 +14,11 @@ interface Props {
 }
 
 const agentColors: Record<string, string> = {
-  coder: 'bg-[var(--color-info)]/20 text-[var(--color-info)]',
-  'senior-coder': 'bg-[var(--color-review)]/20 text-[var(--color-review)]',
+  coder: 'bg-info/20 text-info',
+  'senior-coder': 'bg-review/20 text-review',
   designer: 'bg-pink-500/20 text-pink-400',
-  writer: 'bg-[var(--color-success)]/10 text-[var(--color-success)]',
-  clara: 'bg-[var(--color-review)]-subtle text-[var(--color-review)]',
+  writer: 'bg-success/10 text-success',
+  clara: 'bg-review-subtle text-review',
 };
 
 export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm, onCancel }: Props) {

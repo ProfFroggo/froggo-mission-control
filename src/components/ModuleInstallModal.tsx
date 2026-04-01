@@ -49,18 +49,18 @@ function buildSteps(module: CatalogModule): InstallStep[] {
 
 function StepDot({ status }: { status: StepStatus }) {
   if (status === 'running') return (
-    <div className="w-7 h-7 rounded-full bg-[var(--color-info)]/15 border border-[var(--color-info)]/30 flex items-center justify-center flex-shrink-0">
-      <Loader2 size={13} className="text-[var(--color-info)] animate-spin" />
+    <div className="w-7 h-7 rounded-full bg-info/15 border border-info/30 flex items-center justify-center flex-shrink-0">
+      <Loader2 size={13} className="text-info animate-spin" />
     </div>
   );
   if (status === 'done') return (
-    <div className="w-7 h-7 rounded-full bg-[var(--color-success)]/15 border border-[var(--color-success)]/30 flex items-center justify-center flex-shrink-0">
-      <CheckCircle size={13} className="text-[var(--color-success)]" />
+    <div className="w-7 h-7 rounded-full bg-success/15 border border-success/30 flex items-center justify-center flex-shrink-0">
+      <CheckCircle size={13} className="text-success" />
     </div>
   );
   if (status === 'error') return (
-    <div className="w-7 h-7 rounded-full bg-[var(--color-error)]/15 border border-[var(--color-error)]/30 flex items-center justify-center flex-shrink-0">
-      <XCircle size={13} className="text-[var(--color-error)]" />
+    <div className="w-7 h-7 rounded-full bg-error/15 border border-error/30 flex items-center justify-center flex-shrink-0">
+      <XCircle size={13} className="text-error" />
     </div>
   );
   if (status === 'skipped') return (
@@ -118,7 +118,7 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
 
   return (
     <Flex align="center" justify="center" p="4" className="fixed inset-0 z-50">
-      <button className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default border-0 outline-none" onClick={onClose} type="button" aria-label="Close" />
+      <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default border-0 outline-none" onClick={onClose} aria-label="Close" />
       <Flex direction="column" className="relative w-full max-w-md bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl max-h-[80vh]">
 
         {/* Progress bar at top */}
@@ -140,7 +140,7 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
               <p className="text-xs text-mission-control-text-dim/70 truncate">{module.description}</p>
             </Box>
           </div>
-          <button onClick={onClose} aria-label="Close install modal" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+          <button type="button" onClick={onClose} aria-label="Close install modal" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -150,15 +150,15 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
 
           {/* Dependencies overview */}
           {(module.requiredApis.length > 0 || module.requiredAgents.length > 0 || module.requiredNpm.length > 0) && (
-            <div className="rounded-xl border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/8 p-3 space-y-1.5 text-xs">
+            <div className="rounded-xl border border-warning/30 bg-warning/8 p-3 space-y-1.5 text-xs">
               {module.requiredApis.length > 0 && (
-                <Flex align="center" gap="2" className="text-[var(--color-warning)]">
+                <Flex align="center" gap="2" className="text-warning">
                   <Key size={11} className="flex-shrink-0" />
                   <span>API keys required: {module.requiredApis.join(', ')}</span>
                 </Flex>
               )}
               {module.requiredAgents.length > 0 && (
-                <Flex align="center" gap="2" className="text-[var(--color-info)]">
+                <Flex align="center" gap="2" className="text-info">
                   <Bot size={11} className="flex-shrink-0" />
                   <span>Agents needed: {module.requiredAgents.join(', ')}</span>
                 </Flex>
@@ -189,7 +189,7 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
               <Flex key={step.id} align="start" gap="3" p="3" className="rounded-xl bg-mission-control-bg border border-mission-control-border">
                 <StepDot status={step.status} />
                 <Box className="flex-1 min-w-0">
-                  <div className={`text-sm font-medium ${step.status === 'error' ? 'text-[var(--color-error)]' : 'text-mission-control-text'}`}>
+                  <div className={`text-sm font-medium ${step.status === 'error' ? 'text-error' : 'text-mission-control-text'}`}>
                     {step.label}
                   </div>
                   <div className="text-xs text-mission-control-text-dim/70 truncate mt-0.5">
@@ -202,7 +202,7 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
 
           {/* Done message */}
           {done && (
-            <Flex align="center" gap="2" p="3" className="text-[var(--color-success)] text-sm rounded-lg border border-[var(--color-success)]/30 bg-[var(--color-success)]/10">
+            <Flex align="center" gap="2" p="3" className="text-success text-sm rounded-lg border border-success/30 bg-success/10">
               <CheckCircle size={16} className="flex-shrink-0" />
               <span>{module.name} installed successfully! Reload the app to activate.</span>
             </Flex>
@@ -210,7 +210,7 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
 
           {/* Failed message */}
           {failed && (
-            <Flex align="center" gap="2" p="3" className="text-[var(--color-error)] text-sm rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10">
+            <Flex align="center" gap="2" p="3" className="text-error text-sm rounded-lg border border-error/30 bg-error/10">
               <XCircle size={16} className="flex-shrink-0" />
               <span>Installation failed. Check the step details above.</span>
             </Flex>

@@ -72,15 +72,15 @@ function CostSparkline({ byDay }: { byDay: DayUsage[] }) {
     >
       <defs>
         <linearGradient id="cost-spark-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-warning, #f59e0b)" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="var(--color-warning, #f59e0b)" stopOpacity="0.02" />
+          <stop offset="0%" stopColor="var(--color-warning)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="var(--color-warning)" stopOpacity="0.02" />
         </linearGradient>
       </defs>
       <polygon points={fillPoints} fill="url(#cost-spark-fill)" />
       <polyline
         points={polylinePoints}
         fill="none"
-        stroke="var(--color-warning, #f59e0b)"
+        stroke="var(--color-warning)"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -90,7 +90,7 @@ function CostSparkline({ byDay }: { byDay: DayUsage[] }) {
           cx={points[points.length - 1].x}
           cy={points[points.length - 1].y}
           r={3}
-          fill="var(--color-warning, #f59e0b)"
+          fill="var(--color-warning)"
         />
       )}
     </svg>
@@ -131,7 +131,7 @@ function AgentBar({
         </button>
         <Flex align="center" gap="2" className="text-mission-control-text-dim shrink-0 tabular-nums">
           <span>{tokLabel}</span>
-          <span className="text-[var(--color-warning)]">${agent.cost.toFixed(4)}</span>
+          <span className="text-warning">${agent.cost.toFixed(4)}</span>
         </Flex>
       </Flex>
       <Box className="h-1.5 bg-mission-control-bg rounded-full overflow-hidden">
@@ -160,8 +160,8 @@ function BudgetBanner({ totalCost, budgetUsd }: { totalCost: number; budgetUsd: 
       py="2"
       className={`rounded-lg text-xs font-medium ${
         isOver
-          ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)]'
-          : 'bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-[var(--color-warning)]'
+          ? 'bg-error/10 border border-error/30 text-error'
+          : 'bg-warning/10 border border-warning/30 text-warning'
       }`}
     >
       <AlertTriangle size={14} className="shrink-0" />
@@ -258,7 +258,7 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
       <Box className="grid grid-cols-2 gap-3">
         <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
           <Flex align="center" gap="1" mb="1" className="text-xs text-mission-control-text-dim">
-            <Zap size={13} className="text-[var(--color-warning)]" />
+            <Zap size={13} className="text-warning" />
             Total Tokens
           </Flex>
           <Box className="text-2xl font-bold tabular-nums">{totalLabel}</Box>
@@ -267,10 +267,10 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
 
         <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
           <Flex align="center" gap="1" mb="1" className="text-xs text-mission-control-text-dim">
-            <Coins size={13} className="text-[var(--color-success)]" />
+            <Coins size={13} className="text-success" />
             Est. Cost
           </Flex>
-          <Box className="text-2xl font-bold text-[var(--color-success)] tabular-nums">${data.totalCost.toFixed(4)}</Box>
+          <Box className="text-2xl font-bold text-success tabular-nums">${data.totalCost.toFixed(4)}</Box>
           <Box className="text-xs text-mission-control-text-dim mt-0.5 tabular-nums">
             {budgetUsd > 0 ? `of $${budgetUsd.toFixed(2)} budget` : 'no budget set'}
           </Box>

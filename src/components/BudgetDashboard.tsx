@@ -61,7 +61,7 @@ function CircularProgress({
       ? 'var(--error, #ef4444)'
       : status === 'warning'
       ? 'var(--warning, #f59e0b)'
-      : 'var(--mission-control-accent, #22c55e)';
+      : 'var(--mission-control-accent)';
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
@@ -70,7 +70,7 @@ function CircularProgress({
         cy={cy}
         r={r}
         fill="none"
-        stroke="var(--mission-control-border, #262626)"
+        stroke="var(--mission-control-border)"
         strokeWidth={6}
       />
       <circle
@@ -141,7 +141,7 @@ function SpendBarChart({ budgetId }: { budgetId: string }) {
             width={barW}
             height={h}
             rx={2}
-            fill="var(--mission-control-accent, #22c55e)"
+            fill="var(--mission-control-accent)"
             opacity={0.75}
           >
             <title>${day.cost.toFixed(4)} on {day.date}</title>
@@ -170,9 +170,9 @@ function BudgetCard({
       : 'This month';
 
   const statusClasses: Record<BudgetStatus, string> = {
-    ok: 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]',
-    warning: 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30 text-[var(--color-warning)]',
-    exceeded: 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 text-[var(--color-error)]',
+    ok: 'bg-success/10 border-success/30 text-success',
+    warning: 'bg-warning/10 border-warning/30 text-warning',
+    exceeded: 'bg-error/10 border-error/30 text-error',
   };
 
   const statusLabel: Record<BudgetStatus, string> = {
@@ -320,7 +320,7 @@ function AddBudgetForm({
       </Flex>
 
       {error && (
-        <Flex align="center" gap="2" className="text-xs text-[var(--color-error)] bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg px-3 py-2">
+        <Flex align="center" gap="2" className="text-xs text-error bg-error/10 border border-error/30 rounded-lg px-3 py-2">
           <AlertTriangle size={12} />
           {error}
         </Flex>
@@ -486,11 +486,11 @@ export default function BudgetDashboard() {
       {/* Total spend this month */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 flex items-center gap-3">
         <div className="p-2 bg-mission-control-bg rounded-lg">
-          <DollarSign size={18} className="text-[var(--color-success)]" />
+          <DollarSign size={18} className="text-success" />
         </div>
         <div>
           <div className="text-xs text-mission-control-text-dim mt-0.5">Total spend this month</div>
-          <div className="text-2xl font-bold text-[var(--color-success)] tabular-nums font-mono">
+          <div className="text-2xl font-bold text-success tabular-nums font-mono">
             ${monthlyTotal.toFixed(4)}
           </div>
         </div>
@@ -510,8 +510,8 @@ export default function BudgetDashboard() {
               gap="2"
               className={`px-3 py-2 rounded-lg text-xs font-medium border ${
                 b.status === 'exceeded'
-                  ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 text-[var(--color-error)]'
-                  : 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30 text-[var(--color-warning)]'
+                  ? 'bg-error/10 border-error/30 text-error'
+                  : 'bg-warning/10 border-warning/30 text-warning'
               }`}
             >
               <AlertTriangle size={13} className="shrink-0" />

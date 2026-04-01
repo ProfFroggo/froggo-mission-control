@@ -128,7 +128,7 @@ export default function DraggableVideoWindow({
         aria-label="Expand video window"
       >
         <Flex align="center" gap="2" className="px-3 py-2">
-          {videoMode === 'camera' ? <Video size={16} className="text-[var(--color-review)]" /> : <Monitor size={16} className="text-[var(--color-info)]" />}
+          {videoMode === 'camera' ? <Video size={16} className="text-review" /> : <Monitor size={16} className="text-info" />}
           <span className="text-xs font-medium text-mission-control-text">
             {videoMode === 'camera' ? 'Camera' : 'Screen'}
           </span>
@@ -191,6 +191,7 @@ export default function DraggableVideoWindow({
             </Button>
           )}
           <button
+            type="button"
             onClick={minimize}
             title="Minimize"
             className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/10 transition-colors"
@@ -198,6 +199,7 @@ export default function DraggableVideoWindow({
             <Minimize2 size={14} />
           </button>
           <button
+            type="button"
             onClick={toggleViewMode}
             title={viewMode === 'fullwidth' ? 'Exit full width' : 'Full width'}
             className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/10 transition-colors"
@@ -205,6 +207,7 @@ export default function DraggableVideoWindow({
             <Maximize2 size={14} />
           </button>
           <button
+            type="button"
             onClick={onClose}
             title="Close"
             className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/10 transition-colors"

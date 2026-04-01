@@ -103,7 +103,7 @@ export default function SkillModal({ isOpen, onClose }: SkillModalProps) {
         setChatMessages([{
           id: `msg-${Date.now()}`,
           role: 'assistant',
-          content: "Hey! 🐸 Let's design a new skill together. What kind of capability do you want to add? I'll help you structure it properly.",
+          content: "Hey! Let's design a new skill together. What kind of capability do you want to add? I'll help you structure it properly.",
           timestamp: Date.now(),
         }]);
       }
@@ -276,7 +276,7 @@ Return ONLY a JSON array of suggestions:
 
     try {
       const conversationHistory = chatMessages.map(m => `${m.role}: ${m.content}`).join('\n');
-      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control 🐸, helping design a new skill for the agent system. Have a natural conversation to gather:
+      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control, helping design a new skill for the agent system. Have a natural conversation to gather:
 
 - Skill name (clear, action-oriented, e.g., "GitHub PR Review", "Market Research")
 - Category (automation/development/research/content/integration/analysis)
@@ -474,7 +474,7 @@ ${skillData.instructions}
 ## Notes
 
 - Created: ${new Date().toISOString().split('T')[0]}
-- Status: 🟡 Not yet implemented
+- Status: Not yet implemented
 - Proficiency: 0.1 (initial)
 
 ## Related Skills
@@ -628,9 +628,9 @@ ${skillData.instructions}
                       <Flex align="start" justify="between">
                         <div className="flex-1">
                           <Flex align="center" gap="2" className="mb-2">
-                            {suggestion.skillType === 'code' && <Code size={16} className="text-[var(--color-info)]" />}
-                            {suggestion.skillType === 'research' && <Search size={16} className="text-[var(--color-review)]" />}
-                            {suggestion.skillType === 'content' && <Edit3 size={16} className="text-[var(--color-success)]" />}
+                            {suggestion.skillType === 'code' && <Code size={16} className="text-info" />}
+                            {suggestion.skillType === 'research' && <Search size={16} className="text-review" />}
+                            {suggestion.skillType === 'content' && <Edit3 size={16} className="text-success" />}
                             <h4 className="font-semibold">{suggestion.name}</h4>
                             <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border text-mission-control-text-dim">
                               {suggestion.category}

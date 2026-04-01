@@ -24,10 +24,10 @@ function ROIRing({ roi }: { roi: number }) {
 
   const color =
     roi >= 100
-      ? 'var(--color-success, #22c55e)'
+      ? 'var(--color-success)'
       : roi >= 50
-      ? 'var(--color-warning, #eab308)'
-      : 'var(--color-error, #ef4444)';
+      ? 'var(--color-warning)'
+      : 'var(--color-error)';
 
   const label = roi >= 100 ? 'Strong' : roi >= 50 ? 'Moderate' : 'Weak';
 
@@ -40,7 +40,7 @@ function ROIRing({ roi }: { roi: number }) {
           style={{ transform: 'rotate(-90deg)' }}
         >
           <circle
-            stroke="var(--mission-control-border, #2a2a2a)"
+            stroke="var(--mission-control-border)"
             fill="transparent"
             strokeWidth={STROKE}
             r={normalizedRadius}
@@ -164,7 +164,7 @@ function ComparisonBar({
         <div className="flex-1 h-2 rounded-full bg-mission-control-border overflow-hidden">
           <div
             className="h-full rounded-full transition-colors duration-500"
-            style={{ width: `${currentPct}%`, backgroundColor: 'var(--mission-control-accent, #6366f1)' }}
+            style={{ width: `${currentPct}%`, backgroundColor: 'var(--mission-control-accent)' }}
           />
         </div>
         <span className="text-xs font-medium text-mission-control-text w-16 flex-shrink-0">
@@ -176,7 +176,7 @@ function ComparisonBar({
         <div className="flex-1 h-2 rounded-full bg-mission-control-border overflow-hidden">
           <div
             className="h-full rounded-full transition-colors duration-500"
-            style={{ width: `${previousPct}%`, backgroundColor: 'var(--mission-control-text-dim, #888)' }}
+            style={{ width: `${previousPct}%`, backgroundColor: 'var(--mission-control-text-dim)' }}
           />
         </div>
         <span className="text-xs font-medium text-mission-control-text-dim w-16 flex-shrink-0">
@@ -238,17 +238,17 @@ export default function CampaignROIDashboard({ campaign, previousCampaign }: Cam
     {
       label: 'Social',
       pct: metrics.attributionSocial ?? 40,
-      color: 'var(--mission-control-accent, #6366f1)',
+      color: 'var(--mission-control-accent)',
     },
     {
       label: 'Email',
       pct: metrics.attributionEmail ?? 30,
-      color: 'var(--color-success, #22c55e)',
+      color: 'var(--color-success)',
     },
     {
       label: 'Organic',
       pct: metrics.attributionOrganic ?? 30,
-      color: 'var(--color-warning, #eab308)',
+      color: 'var(--color-warning)',
     },
   ];
 

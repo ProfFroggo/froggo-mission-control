@@ -30,11 +30,12 @@ const DEFAULT_PANELS: PanelConfig[] = [
   { id: 'knowledge',     label: 'Knowledge',         visible: true,  order: 9  },
   { id: 'agents',        label: 'Agents',            visible: true,  order: 10 },
   { id: 'workflow-studio', label: 'Workflow Studio',   visible: true,  order: 11 },
-  { id: 'automations',   label: 'Automations',       visible: true,  order: 12 },
-  { id: 'modules',       label: 'Modules',           visible: true,  order: 13 },
-  { id: 'settings',      label: 'Settings',          visible: true,  order: 14 },
-  { id: 'toolbar',       label: 'Floating Toolbar',  visible: true,  order: 15 },
-  { id: 'notifications', label: 'Notifications',     visible: false, order: 16 },
+  { id: 'notes',         label: 'Notes',              visible: true,  order: 12 },
+  { id: 'automations',   label: 'Automations',       visible: true,  order: 13 },
+  { id: 'modules',       label: 'Modules',           visible: true,  order: 14 },
+  { id: 'settings',      label: 'Settings',          visible: true,  order: 15 },
+  { id: 'toolbar',       label: 'Floating Toolbar',  visible: true,  order: 16 },
+  { id: 'notifications', label: 'Notifications',     visible: false, order: 17 },
 ];
 
 function loadFromStorage(): PanelConfig[] {

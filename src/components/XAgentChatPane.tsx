@@ -435,9 +435,9 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
               New session
             </Button>
             <Flex align="center" gap="1" className={`px-2 py-1 text-xs rounded-full ${
-              isConnected ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-error)]/10 text-[var(--color-error)]'
+              isConnected ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
             }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-[var(--color-success)]' : 'bg-[var(--color-error)]'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-success' : 'bg-error'}`} />
               {isConnected ? 'Connected' : 'Disconnected'}
             </Flex>
           </Flex>
@@ -466,7 +466,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
               {sessionStats.kbArticleCount > 0 ? `${sessionStats.kbArticleCount} KB articles` : 'No KB'}
             </span>
             {sessionStats.compacted && (
-              <span className="flex items-center gap-1 text-[10px] text-[var(--color-info)]">
+              <span className="flex items-center gap-1 text-[10px] text-info">
                 <Archive className="w-3 h-3" />
                 Compacted
               </span>
@@ -478,10 +478,10 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                 <div
                   className={`h-full rounded-full transition-colors ${
                     (sessionStats.tokenEstimate / 32000) > 0.8
-                      ? 'bg-[var(--color-error)]'
+                      ? 'bg-error'
                       : (sessionStats.tokenEstimate / 32000) > 0.5
-                      ? 'bg-[var(--color-warning)]'
-                      : 'bg-[var(--color-success)]'
+                      ? 'bg-warning'
+                      : 'bg-success'
                   }`}
                   style={{ width: `${Math.min(100, (sessionStats.tokenEstimate / 32000) * 100)}%` }}
                 />
@@ -491,7 +491,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           </div>
         )}
         {error && (
-          <div className="mt-2 p-2 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg flex items-center gap-2 text-xs text-[var(--color-error)]">
+          <div className="mt-2 p-2 bg-error/10 border border-error/30 rounded-lg flex items-center gap-2 text-xs text-error">
             <AlertCircle className="w-4 h-4" />
             <span>{error}</span>
           </div>
@@ -535,7 +535,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                   )}
                   <div className={`max-w-[80%] flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                     {isNewSpeaker && msg.role === 'agent' && msg.agentName && (
-                      <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">{msg.agentName}</span>
+                      <span className="text-xs font-medium text-success mb-1 px-1">{msg.agentName}</span>
                     )}
                     {isNewSpeaker && msg.role === 'user' && (
                       <span className="text-xs font-medium text-mission-control-accent mb-1 px-1">You</span>
@@ -548,7 +548,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                         <div className="whitespace-pre-wrap break-words">{msg.content}</div>
                       </div>
                     ) : msg.error ? (
-                      <div className="text-sm px-4 py-2.5 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)] rounded-xl">
+                      <div className="text-sm px-4 py-2.5 bg-error/10 border border-error/30 text-error rounded-xl">
                         <div className="whitespace-pre-wrap break-words">{msg.content}</div>
                       </div>
                     ) : (

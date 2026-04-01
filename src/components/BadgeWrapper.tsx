@@ -37,9 +37,9 @@ const BadgeWrapper = React.memo(function BadgeWrapper({
   const variantClasses = {
     'primary': 'bg-mission-control-accent text-white',
     'secondary': 'bg-mission-control-border text-mission-control-text',
-    'danger': 'bg-[var(--color-error)] text-[var(--color-error)]',
-    'warning': 'bg-[var(--color-warning)] text-[var(--color-warning)]',
-    'success': 'bg-[var(--color-success)] text-[var(--color-success)]',
+    'danger': 'bg-error text-error',
+    'warning': 'bg-warning text-warning',
+    'success': 'bg-success text-success',
   };
 
   // Size classes - increased min-width to properly accommodate "99+"
@@ -128,9 +128,9 @@ export function DotBadge({
   const variantClasses = {
     'primary': 'bg-mission-control-accent',
     'secondary': 'bg-mission-control-border',
-    'danger': 'bg-[var(--color-error)]',
-    'warning': 'bg-[var(--color-warning)]',
-    'success': 'bg-[var(--color-success)]',
+    'danger': 'bg-error',
+    'warning': 'bg-warning',
+    'success': 'bg-success',
   };
 
   const positionClasses = {

@@ -306,11 +306,19 @@ export const ChartSchema = z.object({
   subtitle: z.string().optional(),
   data: z.array(z.record(z.string(), z.unknown())).min(1).max(200),
   series: z.array(ChartSeriesSchema).min(1).optional(),
+  // yKeys is an agent-friendly alias for series — converted at parse time
+  yKeys: z.array(z.string()).optional(),
   xKey: z.string().optional(),
   xLabel: z.string().optional(),
   yLabel: z.string().optional(),
   height: z.number().optional(),
   stacked: z.boolean().optional(),
+}).transform((d) => {
+  // Normalise yKeys → series so the renderer only needs to check `series`
+  if (!d.series && d.yKeys?.length) {
+    return { ...d, series: d.yKeys.map((k) => ({ key: k, label: undefined, color: undefined })), yKeys: undefined };
+  }
+  return d;
 });
 export type SerializableChart = z.infer<typeof ChartSchema>;
 export function safeParseChart(data: unknown) {

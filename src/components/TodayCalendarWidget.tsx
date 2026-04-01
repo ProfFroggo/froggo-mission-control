@@ -88,7 +88,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
       {/* Header */}
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="2">
-          <Calendar size={16} className="text-[var(--color-info)]" />
+          <Calendar size={16} className="text-info" />
           <div>
             <Heading size="3" weight="medium">Today&apos;s Schedule</Heading>
             <p className="text-xs text-mission-control-text-dim">{dateStr}</p>
@@ -120,9 +120,9 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
             <p className="text-sm text-mission-control-text-dim">Loading events...</p>
           </div>
         ) : error ? (
-          <div className="p-6 text-center text-[var(--color-error)]">
+          <div className="p-6 text-center text-error">
             <p className="text-sm">{error}</p>
-            <button onClick={loadTodayEvents} className="mt-2 text-xs text-mission-control-accent hover:underline">
+            <button type="button" onClick={loadTodayEvents} className="mt-2 text-xs text-mission-control-accent hover:underline">
               Retry
             </button>
           </div>
@@ -145,13 +145,13 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                 <div
                   key={event.id}
                   className={`flex items-center gap-3 px-4 py-2.5 border-b border-mission-control-border/40 last:border-0 hover:bg-mission-control-border/10 transition-colors ${
-                    happening ? 'bg-[var(--color-info)]/10' : ''
+                    happening ? 'bg-info/10' : ''
                   }`}
                 >
                   {/* Status dot */}
                   <span
                     className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      happening ? 'bg-[var(--color-info)]' : upcoming ? 'bg-[var(--color-warning)]' : 'bg-mission-control-border'
+                      happening ? 'bg-info' : upcoming ? 'bg-warning' : 'bg-mission-control-border'
                     }`}
                   />
 
@@ -173,12 +173,12 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                         {event.summary}
                       </p>
                       {happening && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 flex-shrink-0">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info border border-info/30 flex-shrink-0">
                           Now
                         </span>
                       )}
                       {upcoming && !happening && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/30 flex-shrink-0">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/30 flex-shrink-0">
                           Soon
                         </span>
                       )}
@@ -210,7 +210,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
 
             {events.length > 5 && (
               <div className="px-4 py-2.5">
-                <button onClick={() => onNavigate?.('schedule')} className="text-xs text-mission-control-accent hover:underline">
+                <button type="button" onClick={() => onNavigate?.('schedule')} className="text-xs text-mission-control-accent hover:underline">
                   +{events.length - 5} more event{events.length - 5 > 1 ? 's' : ''}
                 </button>
               </div>

@@ -22,6 +22,9 @@ import { showToast } from './Toast';
 import { getUserFriendlyError } from '../utils/errorMessages';
 import { createLogger } from '../utils/logger';
 import { copyToClipboard } from '../utils/clipboard';
+import { speak as globalSpeak, stopSpeaking } from '../lib/globalTts';
+import { GeminiStt } from '../lib/globalStt';
+import MicSelector from './MicSelector';
 import EmptyState from './EmptyState';
 import SessionStatsBar from './SessionStatsBar';
 import ArtifactPanel from './ArtifactPanel';
@@ -239,7 +242,8 @@ export default function ChatPanel() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const sttRef = useRef<GeminiStt | null>(null);
+  const [micDeviceId, setMicDeviceId] = useState('');
   const currentResponseRef = useRef<string>('');
   const currentContentRef = useRef<string | ContentBlock[]>(''); // Full structured content
   const currentMsgIdRef = useRef<string>('');
@@ -255,6 +259,12 @@ export default function ChatPanel() {
   // Agent switching handler
   const handleAgentSwitch = useCallback(async (agent: ChatAgent) => {
     if (!selectedAgent || agent.id === selectedAgent.id) return;
+
+    // Abort any in-flight stream before switching
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    sdkAbortControllerRef.current?.abort();
+    sdkAbortControllerRef.current = null;
 
     // Save current messages to cache
     messageCacheRef.current.set(selectedAgent.id, messages);
@@ -300,6 +310,16 @@ export default function ChatPanel() {
         });
         setMessages(parsedMessages);
         messageCacheRef.current.set(agent.id, parsedMessages);
+      } else if (result?.compactSummary) {
+        const summaryMsg = {
+          id: `compact-summary-${Date.now()}`,
+          role: 'assistant' as const,
+          content: result.compactSummary,
+          timestamp: Date.now(),
+          streaming: false,
+        };
+        setMessages([summaryMsg]);
+        messageCacheRef.current.set(agent.id, [summaryMsg]);
       }
     } catch (_err) {
       // DB load failed — start with empty messages
@@ -356,6 +376,17 @@ export default function ChatPanel() {
           });
           setMessages(deduped);
           messageCacheRef.current.set(selectedAgent.id, deduped);
+        } else if (result?.compactSummary) {
+          // Session was compacted — show the summary as a system message
+          const summaryMsg: StructuredChatMessage = {
+            id: `compact-summary-${Date.now()}`,
+            role: 'assistant',
+            content: result.compactSummary,
+            timestamp: Date.now(),
+            streaming: false,
+          };
+          setMessages([summaryMsg]);
+          messageCacheRef.current.set(selectedAgent.id, [summaryMsg]);
         }
       } catch (_err) {
         // DB load failed — start with empty messages
@@ -390,7 +421,7 @@ export default function ChatPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: '/compact', model: 'claude-sonnet-4-6', sessionKey: selectedAgent.dbSessionKey }),
       });
-      if (!res.body) return;
+      if (!res.ok || !res.body) { setLoading(false); return; }
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let buf = '';
@@ -648,16 +679,16 @@ export default function ChatPanel() {
     }
   }, [connected, historyLoaded, loadHistory]);
 
-  // Speak function for text-to-speech (moved outside useEffect for proper scope)
+  // Speak function for text-to-speech — uses Gemini Chirp 3 via globalTts
   const speak = useCallback((text: string) => {
     if (!text) return;
-    
+
     // Skip short filler acks - annoying when spoken
-    const skipPhrases = /^(on it|got it|sure|ok|okay|yes|yep|done|noted|ack|👍|✅|🐸)\s*[.!]?\s*$/i;
+    const skipPhrases = /^(on it|got it|sure|ok|okay|yes|yep|done|noted|ack)\s*[.!]?\s*$/i;
     if (skipPhrases.test(text.trim())) {
       return;
     }
-    
+
     // Strip markdown for cleaner speech
     const clean = text
       .replace(/```[\s\S]*?```/g, 'code block')
@@ -667,15 +698,10 @@ export default function ChatPanel() {
       .replace(/#+\s*/g, '')
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
       .slice(0, 500);
-    
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(clean);
-    utterance.rate = 1.05;
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find(v => v.name.includes('Samantha') || v.lang === 'en-US');
-    if (voice) utterance.voice = voice;
-    window.speechSynthesis.speak(utterance);
-  }, []);
+
+    const agentId = selectedAgent?.id || 'main';
+    globalSpeak(clean, agentId);
+  }, [selectedAgent?.id]);
 
   // Setup streaming listeners
   useEffect(() => {
@@ -906,37 +932,29 @@ export default function ChatPanel() {
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
   }, [loading, selectedAgent?.dbSessionKey, speakResponses, selectedAgent, speak]);
 
-  // Setup voice recognition
+  // Cleanup STT on unmount
   useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((r: any) => r[0].transcript)
-          .join('');
-        setInput(transcript);
-      };
-
-      recognition.onend = () => setListening(false);
-      recognition.onerror = () => setListening(false);
-
-      recognitionRef.current = recognition;
-    }
+    return () => { sttRef.current?.stop(); };
   }, []);
 
   const toggleVoice = () => {
-    if (!recognitionRef.current) return;
-    if (listening) {
-      recognitionRef.current.stop();
-    } else {
-      recognitionRef.current.start();
-      setListening(true);
+    if (listening && sttRef.current) {
+      sttRef.current.stop();
+      setListening(false);
+      return;
     }
+
+    const stt = new GeminiStt({
+      deviceId: micDeviceId || undefined,
+      continuous: false,
+      chunkDurationMs: 10000,
+      onTranscript: (text) => { setInput(prev => prev ? `${prev} ${text}` : text); },
+      onError: (err) => { console.warn('[ChatPanel STT]', err); },
+      onEnd: () => { setListening(false); },
+    });
+    sttRef.current = stt;
+    stt.start();
+    setListening(true);
   };
 
   const generateSuggestions = useCallback(async (autoTriggered = false) => {
@@ -1320,7 +1338,7 @@ export default function ChatPanel() {
     if (!selectedAgent) return;
     setMessages([]);
     messageCacheRef.current.delete(selectedAgent.id);
-    window.speechSynthesis.cancel();
+    stopSpeaking();
     try {
       // Delete chat message history from messages table
       await chatApi.deleteSession(selectedAgent.dbSessionKey);
@@ -1347,10 +1365,10 @@ export default function ChatPanel() {
 
   const getStatusColor = () => {
     switch (connectionState) {
-      case 'connected': return 'bg-[var(--color-success)]';
+      case 'connected': return 'bg-success';
       case 'connecting':
-      case 'authenticating': return 'bg-[var(--color-warning)] animate-pulse';
-      case 'disconnected': return 'bg-[var(--color-error)]';
+      case 'authenticating': return 'bg-warning animate-pulse';
+      case 'disconnected': return 'bg-error';
     }
   };
 
@@ -1368,20 +1386,175 @@ export default function ChatPanel() {
     showToast('Team Meeting started! All agents are here.', 'success');
   };
 
-  // If viewing a room, render the room view
+  // If viewing a room, render sidebar + room view side-by-side
   if (activeRoomId) {
     return (
-      <>
+      <div className="relative flex h-full overflow-hidden" role="region" aria-label="Chat panel">
+        {/* ─── Left sidebar: agent list + rooms ─── */}
+        <div className="w-64 shrink-0 flex flex-col border-r border-mission-control-border bg-mission-control-surface overflow-hidden">
+          {/* Sidebar header */}
+          <div className="px-4 pt-3 pb-0 flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Conversations</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={startTeamMeeting}
+                title="Start Team Meeting"
+                aria-label="Start team meeting"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+              >
+                <UsersRound size={14} />
+              </button>
+              {sidebarTab === 'rooms' && (
+                <button
+                  type="button"
+                  onClick={() => setShowCreateRoom(true)}
+                  title="New chat room"
+                  aria-label="Create new chat room"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+                >
+                  <MessageSquarePlus size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* AGENTS | ROOMS tab toggle */}
+          <div className="flex border-b border-mission-control-border">
+            <button
+              type="button"
+              onClick={() => setSidebarTab('agents')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium border-b-2 transition-colors -mb-px ${
+                sidebarTab === 'agents'
+                  ? 'border-b-mission-control-accent text-mission-control-accent'
+                  : 'border-b-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
+              aria-pressed={sidebarTab === 'agents'}
+            >
+              Agents
+            </button>
+            <button
+              type="button"
+              onClick={() => setSidebarTab('rooms')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium border-b-2 transition-colors -mb-px ${
+                sidebarTab === 'rooms'
+                  ? 'border-b-mission-control-accent text-mission-control-accent'
+                  : 'border-b-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
+              aria-pressed={sidebarTab === 'rooms'}
+            >
+              Rooms
+              {rooms.length > 0 && (
+                <span className={`text-[10px] px-1 rounded tabular-nums ${sidebarTab === 'rooms' ? 'bg-mission-control-accent/15 text-mission-control-accent' : 'bg-mission-control-border text-mission-control-text-dim'}`}>
+                  {rooms.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Agent list — direct 1:1 threads */}
+          <div className={`flex-1 overflow-y-auto py-2 ${sidebarTab !== 'agents' ? 'hidden' : ''}`}>
+            {chatAgents.map((agent) => {
+              const agentMessages = messageCacheRef.current.get(agent.id);
+              const lastMsg = agentMessages?.[agentMessages.length - 1];
+              const lastMsgText = lastMsg ? extractTextContent(lastMsg.content) || null : null;
+              const lastMsgTime = lastMsg?.timestamp ? formatTimeAgo(lastMsg.timestamp) : null;
+
+              return (
+                <button
+                  key={agent.id}
+                  type="button"
+                  onClick={() => { setActiveRoom(null); handleAgentSwitch(agent); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 mx-1 rounded-lg transition-colors text-left text-mission-control-text hover:bg-mission-control-bg"
+                  style={{ width: 'calc(100% - 8px)' }}
+                >
+                  <div className="relative shrink-0">
+                    <AgentAvatar agentId={agent.id} agentName={agent.name} size="sm" />
+                    <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-mission-control-surface ${
+                      agent.status === 'active' ? 'bg-success' :
+                      agent.status === 'paused' ? 'bg-warning' :
+                      agent.status === 'error' ? 'bg-error' :
+                      'bg-mission-control-border'
+                    }`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-sm font-medium truncate">{agent.name}</span>
+                      {lastMsgTime && (
+                        <span className="text-[10px] text-mission-control-text-dim shrink-0 tabular-nums">{lastMsgTime}</span>
+                      )}
+                    </div>
+                    {lastMsgText ? (
+                      <p className="text-xs text-mission-control-text-dim truncate mt-0.5 leading-snug">{lastMsgText.slice(0, 60)}</p>
+                    ) : (
+                      <p className="text-xs text-mission-control-text-dim/60 mt-0.5">{agent.role || 'AI Agent'}</p>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Rooms tab */}
+          <div className={`flex-1 overflow-y-auto py-2 ${sidebarTab !== 'rooms' ? 'hidden' : ''}`}>
+            {rooms.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-32 gap-2 px-4 text-center">
+                <MessageSquarePlus size={20} className="text-mission-control-text-dim/40" />
+                <p className="text-xs text-mission-control-text-dim/60">No rooms yet</p>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateRoom(true)}
+                  className="text-xs text-mission-control-accent hover:underline"
+                >
+                  Create a room
+                </button>
+              </div>
+            ) : (
+              rooms.map((room) => {
+                const isActive = activeRoomId === room.id;
+                return (
+                  <button
+                    key={room.id}
+                    type="button"
+                    onClick={() => setActiveRoom(room.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 mx-1 rounded-lg transition-colors text-left ${
+                      isActive
+                        ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                        : 'text-mission-control-text hover:bg-mission-control-bg'
+                    }`}
+                    style={{ width: 'calc(100% - 8px)' }}
+                    aria-current={isActive ? 'true' : undefined}
+                  >
+                    <div className="flex -space-x-2 shrink-0">
+                      {room.agents.slice(0, 2).map(id => (
+                        <AgentAvatar key={id} agentId={id} size="xs" />
+                      ))}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-sm font-medium truncate ${isActive ? 'text-mission-control-accent' : ''}`}>{room.name}</div>
+                      <div className="text-xs text-mission-control-text-dim">
+                        {room.messageCount ?? room.messages.length} messages
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* ─── Room view ─── */}
         <ChatRoomView
           roomId={activeRoomId}
           onBack={() => setActiveRoom(null)}
         />
+
         <CreateRoomModal
           isOpen={showCreateRoom}
           onClose={() => setShowCreateRoom(false)}
           onCreate={handleCreateRoom}
         />
-      </>
+      </div>
     );
   }
 
@@ -1528,9 +1701,9 @@ export default function ChatPanel() {
                   <AgentAvatar agentId={agent.id} agentName={agent.name} size="sm" />
                   {/* Status dot */}
                   <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-mission-control-surface ${
-                    agent.status === 'active' ? 'bg-[var(--color-success)]' :
-                    agent.status === 'paused' ? 'bg-[var(--color-warning)]' :
-                    agent.status === 'error' ? 'bg-[var(--color-error)]' :
+                    agent.status === 'active' ? 'bg-success' :
+                    agent.status === 'paused' ? 'bg-warning' :
+                    agent.status === 'error' ? 'bg-error' :
                     'bg-mission-control-border'
                   }`} />
                 </div>
@@ -1621,8 +1794,8 @@ export default function ChatPanel() {
                 }
                 if (connectionState === 'disconnected') {
                   return (
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/20 select-none flex-shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-warning)] flex-shrink-0" />
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-warning/10 text-warning border border-warning/20 select-none flex-shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-warning flex-shrink-0" />
                       Reconnecting...
                     </span>
                   );
@@ -1630,7 +1803,7 @@ export default function ChatPanel() {
                 if (connectionState === 'connected') {
                   return (
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium text-mission-control-text-dim border border-mission-control-border select-none flex-shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] flex-shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0" />
                       Ready
                     </span>
                   );
@@ -1708,6 +1881,7 @@ export default function ChatPanel() {
               >
                 {speakResponses ? <Volume2 size={15} /> : <VolumeX size={15} />}
               </button>
+              <MicSelector value={micDeviceId} onChange={setMicDeviceId} compact />
               <button
                 type="button"
                 onClick={clearChat}
@@ -1759,6 +1933,7 @@ export default function ChatPanel() {
                 {searchQuery && (
                   <TextField.Slot side="right">
                     <button
+                      type="button"
                       onClick={() => setSearchQuery('')}
                       aria-label="Clear search"
                       className="inline-flex items-center justify-center w-5 h-5 rounded-full text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
@@ -1778,7 +1953,7 @@ export default function ChatPanel() {
 
           {/* Gateway disconnected banner */}
           {connectionState === 'disconnected' && !isVoiceMode && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-[var(--color-warning)]/8 border-b border-[var(--color-warning)]/20 text-xs text-[var(--color-warning)] flex-shrink-0">
+            <div className="flex items-center gap-2 px-4 py-2 bg-warning/8 border-b border-warning/20 text-xs text-warning flex-shrink-0">
               <AlertTriangle size={12} className="flex-shrink-0" />
               <span>Gateway disconnected — messages will send when reconnected</span>
             </div>
@@ -1849,16 +2024,16 @@ export default function ChatPanel() {
                 return (
                   <div
                     key={msg.id}
-                    className="flex items-start gap-3 px-4 py-3 bg-[var(--color-warning)]/8 border border-[var(--color-warning)]/25 rounded-xl"
+                    className="flex items-start gap-3 px-4 py-3 bg-warning/8 border border-warning/25 rounded-xl"
                     role="alert"
                   >
                     <UserCheck
                       size={16}
-                      className="text-[var(--color-warning)] flex-shrink-0 mt-0.5"
+                      className="text-warning flex-shrink-0 mt-0.5"
                       aria-hidden="true"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-bold text-[var(--color-warning)] uppercase tracking-wider mb-1">
+                      <p className="text-[10px] font-bold text-warning uppercase tracking-wider mb-1">
                         Needs your attention
                       </p>
                       <p className="text-sm text-mission-control-text leading-snug line-clamp-3">{text}</p>
@@ -1927,13 +2102,13 @@ export default function ChatPanel() {
 
             {/* Stream error banner */}
             {streamError && (
-              <div className="flex items-start gap-3 px-4 py-3 mb-3 rounded-xl bg-[var(--color-error)]/8 border border-[var(--color-error)]/20 text-[var(--color-error)] text-sm">
+              <div className="flex items-start gap-3 px-4 py-3 mb-3 rounded-xl bg-error/8 border border-error/20 text-error text-sm">
                 <AlertTriangle size={14} className="shrink-0 mt-0.5" />
                 <span className="flex-1 leading-snug">{streamError}</span>
                 <button
                   type="button"
                   onClick={handleRetry}
-                  className="shrink-0 text-xs font-semibold text-[var(--color-error)] hover:underline whitespace-nowrap"
+                  className="shrink-0 text-xs font-semibold text-error hover:underline whitespace-nowrap"
                 >
                   Retry
                 </button>
@@ -2212,7 +2387,7 @@ const MessageItem = memo(function MessageItem({
         {/* Sender name (only on first message in group) */}
         {showAvatar && (
           <div className={`text-xs font-medium mb-1 px-1 ${
-            isUser ? 'text-mission-control-accent' : 'text-[var(--color-success)]'
+            isUser ? 'text-mission-control-accent' : 'text-success'
           }`}>
             {isUser ? 'You' : selectedAgent.name}
           </div>
@@ -2225,6 +2400,7 @@ const MessageItem = memo(function MessageItem({
             <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred || reaction.mine ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-colors duration-100`}>
               {/* Thumbs up */}
               <button
+                type="button"
                 onClick={(e) => handleReaction('up', e)}
                 title="Helpful"
                 aria-label="Mark as helpful"
@@ -2241,6 +2417,7 @@ const MessageItem = memo(function MessageItem({
               </button>
               {/* Thumbs down */}
               <button
+                type="button"
                 onClick={(e) => handleReaction('down', e)}
                 title="Not helpful"
                 aria-label="Mark as not helpful"
@@ -2256,6 +2433,7 @@ const MessageItem = memo(function MessageItem({
                 )}
               </button>
               <button
+                type="button"
                 onClick={(e) => onToggleStar(msg, e)}
                 title={isStarred ? 'Unstar message' : 'Star message'}
                 aria-label={isStarred ? 'Unstar message' : 'Star message'}
@@ -2268,6 +2446,7 @@ const MessageItem = memo(function MessageItem({
                 <Star size={14} className={isStarred ? 'fill-current' : ''} />
               </button>
               <button
+                type="button"
                 onClick={async () => {
                   const textToCopy = Array.isArray(msg.content)
                     ? msg.content
@@ -2356,7 +2535,7 @@ const MessageItem = memo(function MessageItem({
             {time}
           </span>
           {isStarred && (
-            <Star size={10} className="text-[var(--color-warning)] fill-current" />
+            <Star size={10} className="text-warning fill-current" />
           )}
         </div>
       </div>

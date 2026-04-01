@@ -12,7 +12,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Send, MessageCircle, Activity, AlertTriangle } from 'lucide-react';
+import { X, Send, MessageCircle, Activity, AlertTriangle, Hand } from 'lucide-react';
 import { Flex } from '@radix-ui/themes';
 import BaseModal from './BaseModal';
 import MarkdownMessage from './MarkdownMessage';
@@ -104,7 +104,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     setLoading(true);
     setMessages([{
       role: 'system',
-      content: '🫵 Poking for status update...',
+      content: 'Poking for status update...',
       timestamp: Date.now(),
     }]);
 
@@ -122,7 +122,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
 
         const userMsg: PokeMessage = {
           role: 'user',
-          content: `🫵 What's the status of "${taskTitle}"?`,
+          content: `What's the status of "${taskTitle}"?`,
           timestamp: Date.now() - 1000,
         };
         const responseMessages: PokeMessage[] = [userMsg];
@@ -257,7 +257,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
           if (data.state === 'error') {
             setMessages(prev => [...prev, {
               role: 'system',
-              content: `⚠️ ${data.error || 'Error'}`,
+              content: `${data.error || 'Error'}`,
               timestamp: Date.now(),
             }]);
             setStreamingContent('');
@@ -335,7 +335,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     } catch (e: unknown) {
       setMessages(prev => [...prev, {
         role: 'system',
-        content: `⚠️ ${(e as Error).message || 'Failed to send'}`,
+        content: `${(e as Error).message || 'Failed to send'}`,
         timestamp: Date.now(),
       }]);
       setSending(false);
@@ -351,10 +351,10 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
 
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case 'in-progress': return 'text-[var(--color-info)]';
-      case 'review': return 'text-[var(--color-warning)]';
-      case 'human-review': return 'text-[var(--color-error)]';
-      case 'done': return 'text-[var(--color-success)]';
+      case 'in-progress': return 'text-info';
+      case 'review': return 'text-warning';
+      case 'human-review': return 'text-error';
+      case 'done': return 'text-success';
       default: return 'text-mission-control-text-dim';
     }
   };
@@ -364,7 +364,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
       {/* Header with task context */}
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border bg-mission-control-border/20/50">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="text-2xl">🫵</span>
+          <Hand size={24} className="text-mission-control-accent" />
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-mission-control-text truncate">
               Poke: {taskTitle}
@@ -384,7 +384,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                   )}
                   {task.priority && (
                     <span className="flex items-center gap-1">
-                      {task.priority === 'p0' && <AlertTriangle size={12} className="text-[var(--color-error)]" />}
+                      {task.priority === 'p0' && <AlertTriangle size={12} className="text-error" />}
                       {task.priority}
                     </span>
                   )}
@@ -485,7 +485,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
           </button>
         </Flex>
         <p className="text-[10px] text-mission-control-text-dim/70 mt-1.5 text-center">
-          Task-scoped conversation • Responses have personality 🐸
+          Task-scoped conversation
         </p>
       </div>
     </BaseModal>

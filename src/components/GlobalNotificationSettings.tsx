@@ -131,10 +131,10 @@ export default function GlobalNotificationSettings() {
 
       {/* Do Not Disturb */}
       {isDND && (
-        <div className="bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg p-4 flex items-start gap-3">
-          <BellOff size={20} className="text-[var(--color-error)] flex-shrink-0 mt-0.5" />
+        <div className="bg-error/10 border border-error/30 rounded-lg p-4 flex items-start gap-3">
+          <BellOff size={20} className="text-error flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-medium text-[var(--color-error)]">Do Not Disturb Active</p>
+            <p className="font-medium text-error">Do Not Disturb Active</p>
             {dndUntil && (
               <p className="text-sm text-mission-control-text-dim mt-1">
                 Until {new Date(dndUntil).toLocaleString()}

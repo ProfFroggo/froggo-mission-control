@@ -162,6 +162,46 @@ const BUILT_IN_TEMPLATES: AutomationTemplate[] = [
       },
     ],
   },
+  {
+    id: 'tpl-v2-workflow-data-pipeline',
+    name: 'Automated Data Pipeline',
+    description: 'Triggers a Workflow Studio pipeline on schedule to process and transform data, then reports results to the team.',
+    category: 'Workflow',
+    trigger_type: 'schedule',
+    trigger_config: { frequency: 'daily', time: '06:00' },
+    steps: [
+      {
+        type: 'run-workflow',
+        label: 'Run Data Pipeline',
+        config: { workflowId: '', inputs: '' },
+      },
+      {
+        type: 'send-message',
+        label: 'Report Results',
+        config: { to: 'general', message: 'Data pipeline completed' },
+      },
+    ],
+  },
+  {
+    id: 'tpl-v2-workflow-content-gen',
+    name: 'AI Content Generation Workflow',
+    description: 'Runs an AI content generation workflow via Workflow Studio and saves the output to the library.',
+    category: 'AI',
+    trigger_type: 'manual',
+    trigger_config: {},
+    steps: [
+      {
+        type: 'run-workflow',
+        label: 'Generate Content',
+        config: { workflowId: '', inputs: '' },
+      },
+      {
+        type: 'create-task',
+        label: 'Save to Library',
+        config: { title: 'Save generated content to library', priority: 'p3', assignTo: '' },
+      },
+    ],
+  },
 ];
 
 // ─── Constants ───────────────────────────────────────────────────────────────

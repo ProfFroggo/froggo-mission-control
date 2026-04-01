@@ -677,7 +677,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           </div>
 
           {creationError && (
-            <div className="px-3 py-2.5 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg text-[var(--color-error)] text-sm">
+            <div className="px-3 py-2.5 bg-error/10 border border-error/30 rounded-lg text-error text-sm">
               {creationError}
             </div>
           )}
@@ -1023,7 +1023,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             <div>
               <span className="text-base font-semibold text-mission-control-text">Campaign Planner</span>
               <Flex align="center" gap="1" className="mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 <span className="text-xs text-mission-control-text-dim">Active</span>
               </Flex>
             </div>

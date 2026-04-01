@@ -168,7 +168,7 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
         {/* Base track */}
         <div
           className="absolute left-0 right-0 rounded-full"
-          style={{ top: 19, height: 6, backgroundColor: 'var(--mission-control-border, #2a2a2a)' }}
+          style={{ top: 19, height: 6, backgroundColor: 'var(--mission-control-border)' }}
         />
 
         {/* Phase labels below track */}
@@ -190,8 +190,8 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
             className="absolute flex flex-col items-center pointer-events-none"
             style={{ left: `${nowPct}%`, top: 0, transform: 'translateX(-50%)', zIndex: 3 }}
           >
-            <div className="w-0.5 rounded-full" style={{ height: 22, backgroundColor: 'var(--mission-control-accent, #6366f1)' }} />
-            <span className="text-xs font-semibold whitespace-nowrap mt-0.5" style={{ color: 'var(--mission-control-accent, #6366f1)' }}>
+            <div className="w-0.5 rounded-full" style={{ height: 22, backgroundColor: 'var(--mission-control-accent)' }} />
+            <span className="text-xs font-semibold whitespace-nowrap mt-0.5" style={{ color: 'var(--mission-control-accent)' }}>
               Today
             </span>
           </div>

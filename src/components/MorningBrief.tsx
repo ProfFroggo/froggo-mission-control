@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Inbox, Calendar, AlertCircle, CheckCircle, ChevronRight, Sparkles, Cloud, Activity, Bot, Users, AtSign } from 'lucide-react';
+import { Sun, Moon, Inbox, Calendar, AlertCircle, CheckCircle, ChevronRight, Sparkles, Cloud, Activity, Bot, Users, AtSign, MessageSquare, Heart } from 'lucide-react';
 import { Button, Flex, Heading, Spinner } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 
@@ -397,10 +397,10 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
   const getIcon = () => {
     switch (brief?.timeOfDay) {
-      case 'morning': return <Sun className="text-[var(--color-warning)]" size={32} />;
-      case 'afternoon': return <Sun className="text-[var(--color-warning)]" size={32} />;
-      case 'evening': return <Moon className="text-[var(--color-review)]" size={32} />;
-      case 'night': return <Moon className="text-[var(--color-info)]" size={32} />;
+      case 'morning': return <Sun className="text-warning" size={32} />;
+      case 'afternoon': return <Sun className="text-warning" size={32} />;
+      case 'evening': return <Moon className="text-review" size={32} />;
+      case 'night': return <Moon className="text-info" size={32} />;
       default: return <Sparkles className="text-mission-control-accent" size={32} />;
     }
   };
@@ -419,7 +419,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl max-w-lg w-full p-8 text-center overflow-hidden">
-          <Heading size="6" weight="bold" mb="4">Good morning 👋</Heading>
+          <Heading size="6" weight="bold" mb="4">Good morning</Heading>
           <p className="text-mission-control-text-dim mb-6">Couldn&apos;t load your brief data.</p>
           <Button variant="solid" color="violet" size="3" onClick={onDismiss}>
             Continue to Dashboard
@@ -449,7 +449,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         {/* Header */}
         <div className="p-8 text-center border-b border-mission-control-border bg-gradient-to-br from-mission-control-accent/10 to-transparent">
           <div className="mb-4">{getIcon()}</div>
-          <Heading size="7" weight="bold" mb="2">{brief.greeting} 👋</Heading>
+          <Heading size="7" weight="bold" mb="2">{brief.greeting}</Heading>
           <p className="text-mission-control-text-dim">
             {hasItems ? "Here's what needs your attention" : "All clear! Nothing urgent right now."}
           </p>
@@ -459,14 +459,14 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         <div className="p-6 space-y-4">
           {/* Urgent Items */}
           {brief.urgentItems.length > 0 && (
-            <div className="p-4 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
-              <Flex align="center" gap="2" className="text-[var(--color-error)] mb-2">
+            <div className="p-4 bg-error/10 border border-error/30 rounded-lg">
+              <Flex align="center" gap="2" className="text-error mb-2">
                 <AlertCircle size={16} />
                 <span className="font-medium">Needs attention</span>
               </Flex>
               <ul className="space-y-1 text-sm">
                 {brief.urgentItems.map((item, i) => (
-                  <li key={i} className="text-[var(--color-error)]">• {item}</li>
+                  <li key={i} className="text-error">• {item}</li>
                 ))}
               </ul>
             </div>
@@ -521,7 +521,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                 {brief.overnightActivity.agentSessions.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
                     {brief.overnightActivity.agentSessions.map((agent, i) => (
-                      <span key={i} className="px-2 py-1 bg-[var(--color-review)]-subtle text-[var(--color-review)] rounded text-xs">
+                      <span key={i} className="px-2 py-1 bg-review-subtle text-review rounded text-xs">
                         {agent}
                       </span>
                     ))}
@@ -545,7 +545,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                 </Flex>
                 <Flex align="center" justify="between" className="text-sm">
                   <span className="text-mission-control-text-dim">Active (30 min)</span>
-                  <span className="font-semibold text-[var(--color-success)]">{brief.sessionStats.active}</span>
+                  <span className="font-semibold text-success">{brief.sessionStats.active}</span>
                 </Flex>
                 
                 {/* Session Types */}
@@ -574,7 +574,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                     <div className="text-xs text-mission-control-text-dim mb-2">By Channel</div>
                     <div className="flex gap-2 flex-wrap">
                       {brief.sessionStats.channels.slice(0, 4).map((channel, i) => (
-                        <span key={i} className="px-2 py-1 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded text-xs">
+                        <span key={i} className="px-2 py-1 bg-info/10 text-info rounded text-xs">
                           {channel.name} ({channel.count})
                         </span>
                       ))}
@@ -595,7 +595,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
               <div className="space-y-3">
                 <Flex align="center" justify="between" className="text-sm">
                   <span className="text-mission-control-text-dim">Active Agents</span>
-                  <span className="font-semibold text-[var(--color-success)]">{brief.agentStats.activeAgents} / {brief.agentStats.totalAgents}</span>
+                  <span className="font-semibold text-success">{brief.agentStats.activeAgents} / {brief.agentStats.totalAgents}</span>
                 </Flex>
 
                 {/* Busy Agents */}
@@ -604,7 +604,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                     <div className="text-xs text-mission-control-text-dim mb-2">Working On Tasks</div>
                     <div className="flex gap-2 flex-wrap">
                       {brief.agentStats.busyAgents.map((agent, i) => (
-                        <span key={i} className="px-2 py-1 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded text-xs">
+                        <span key={i} className="px-2 py-1 bg-success/10 text-success rounded text-xs">
                           {agent}
                         </span>
                       ))}
@@ -655,7 +655,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
               </div>
               <div className="space-y-3">
                 {brief.mentions.map((mention) => (
-                  <div key={mention.id} className="p-3 bg-mission-control-surface rounded-lg border border-mission-control-border hover:border-[var(--color-info)]/30 transition-colors">
+                  <div key={mention.id} className="p-3 bg-mission-control-surface rounded-lg border border-mission-control-border hover:border-info/30 transition-colors">
                     <Flex align="start" gap="2" className="mb-2">
                       <div className="flex-1 min-w-0">
                         <Flex align="center" gap="2">
@@ -670,8 +670,8 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                     <p className="text-sm text-mission-control-text line-clamp-2">{mention.text}</p>
                     {((mention.likeCount ?? 0) > 0 || (mention.replyCount ?? 0) > 0) && (
                       <Flex gap="3" className="mt-2 text-xs text-mission-control-text-dim">
-                        {(mention.replyCount ?? 0) > 0 && <span>💬 {mention.replyCount}</span>}
-                        {(mention.likeCount ?? 0) > 0 && <span>❤️ {mention.likeCount}</span>}
+                        {(mention.replyCount ?? 0) > 0 && <span className="flex items-center gap-1"><MessageSquare size={12} /> {mention.replyCount}</span>}
+                        {(mention.likeCount ?? 0) > 0 && <span className="flex items-center gap-1"><Heart size={12} /> {mention.likeCount}</span>}
                       </Flex>
                     )}
                   </div>
@@ -683,8 +683,8 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* All Clear */}
           {!hasItems && (
             <div className="p-6 text-center">
-              <CheckCircle size={48} className="text-[var(--color-success)] mx-auto mb-3" />
-              <p className="text-sm font-semibold text-[var(--color-success)]">You&apos;re all caught up!</p>
+              <CheckCircle size={48} className="text-success mx-auto mb-3" />
+              <p className="text-sm font-semibold text-success">You&apos;re all caught up!</p>
               <p className="text-sm text-mission-control-text-dim">No pending items or upcoming events</p>
             </div>
           )}

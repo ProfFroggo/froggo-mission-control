@@ -199,13 +199,13 @@ function ModuleCard({
           <IconComponent size={18} className="text-mission-control-text-dim" />
         </div>
         {installed && !hasUpdate && (
-          <span className="flex items-center gap-1 text-[10px] font-medium text-[var(--color-success)] bg-[var(--color-success)]/10 px-2 py-0.5 rounded-full border border-[var(--color-success)]/20">
+          <span className="flex items-center gap-1 text-[10px] font-medium text-success bg-success/10 px-2 py-0.5 rounded-full border border-success/20">
             <CheckCircle size={10} />
             {builtin ? 'Built-in' : 'Installed'}
           </span>
         )}
         {hasUpdate && (
-          <span className="text-[10px] bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/30 px-2 py-0.5 rounded-full font-medium">
+          <span className="text-[10px] bg-warning/10 text-warning border border-warning/30 px-2 py-0.5 rounded-full font-medium">
             Update available
           </span>
         )}
@@ -224,7 +224,7 @@ function ModuleCard({
               </span>
             )}
             {mod.verified && (
-              <ShieldCheck size={12} className="text-[var(--color-info)] flex-shrink-0" aria-label="Verified" />
+              <ShieldCheck size={12} className="text-info flex-shrink-0" aria-label="Verified" />
             )}
           </div>
           <span className="text-xs text-mission-control-text-dim/70">
@@ -463,7 +463,7 @@ export default function MarketplaceBrowse() {
     <div className="h-full overflow-y-auto p-6 space-y-5">
       {/* Restart banner */}
       {restartBanner && (
-        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-[var(--color-warning)] text-sm">
+        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-warning/10 border border-warning/30 text-warning text-sm">
           <AlertCircle size={15} className="flex-shrink-0" />
           Please restart Mission Control.app to apply changes.
         </Flex>
@@ -471,7 +471,7 @@ export default function MarketplaceBrowse() {
 
       {/* Error banner */}
       {error && (
-        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-[var(--color-error)] border border-[var(--color-error)] text-[var(--color-error)] text-sm">
+        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-error border border-error text-error text-sm">
           <AlertCircle size={15} className="flex-shrink-0" />
           {error}
         </Flex>

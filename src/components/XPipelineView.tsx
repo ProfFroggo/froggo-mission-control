@@ -184,23 +184,23 @@ function matchesListFilter(item: PipelineItem, filter: ListFilter): boolean {
 
 function statusBadgeClass(status: string): string {
   switch (status?.toLowerCase()) {
-    case 'approved': return 'bg-[var(--color-success)]/10 text-[var(--color-success)]';
-    case 'rejected': return 'bg-[var(--color-error)]/10 text-[var(--color-error)]';
-    case 'idea': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
-    case 'scheduled': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+    case 'approved': return 'bg-success/10 text-success';
+    case 'rejected': return 'bg-error/10 text-error';
+    case 'idea': return 'bg-info/10 text-info';
+    case 'scheduled': return 'bg-info/10 text-info';
     case 'published':
-    case 'sent': return 'bg-[var(--color-success)]/10 text-[var(--color-success)]';
-    case 'pending': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+    case 'sent': return 'bg-success/10 text-success';
+    case 'pending': return 'bg-info/10 text-info';
     default: return 'bg-mission-control-border/50 text-mission-control-text-dim';
   }
 }
 
 function typeBadgeClass(type: string): string {
   switch (type?.toLowerCase()) {
-    case 'plan': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
-    case 'thread': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+    case 'plan': return 'bg-info/10 text-info';
+    case 'thread': return 'bg-info/10 text-info';
     case 'campaign': return 'bg-mission-control-accent/10 text-mission-control-accent';
-    case 'idea': return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+    case 'idea': return 'bg-info/10 text-info';
     default: return 'bg-mission-control-border/50 text-mission-control-text-dim';
   }
 }
@@ -211,10 +211,10 @@ function typeBadgeClass(type: string): string {
 
 function eventColorResolver(event: CalendarEvent): string | undefined {
   const colorId = (event as unknown as { colorId?: string }).colorId || '';
-  if (colorId === 'research')  return 'bg-[var(--color-review)]';
-  if (colorId === 'plan')      return 'bg-[var(--color-info)]';
-  if (colorId === 'draft')     return 'bg-[var(--color-warning)]';
-  if (colorId === 'scheduled') return 'bg-[var(--color-success)]';
+  if (colorId === 'research')  return 'bg-review';
+  if (colorId === 'plan')      return 'bg-info';
+  if (colorId === 'draft')     return 'bg-warning';
+  if (colorId === 'scheduled') return 'bg-success';
   return undefined;
 }
 
@@ -375,8 +375,8 @@ function PipelineDetailModal({ item, onClose, onAction }: {
             {mentionType && (
               <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                 mentionType === 'reply'
-                  ? isReplyToUs ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
-                  : mentionType === 'quote' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
+                  ? isReplyToUs ? 'bg-success/10 text-success' : 'bg-info/10 text-info'
+                  : mentionType === 'quote' ? 'bg-warning/10 text-warning'
                   : 'bg-mission-control-border/50 text-mission-control-text-dim'
               }`}>
                 {mentionType === 'reply'
@@ -386,9 +386,9 @@ function PipelineDetailModal({ item, onClose, onAction }: {
             )}
             {confidence != null && (
               <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                confidence >= 0.8 ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]'
-                : confidence >= 0.5 ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
-                : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
+                confidence >= 0.8 ? 'bg-success/10 text-success'
+                : confidence >= 0.5 ? 'bg-info/10 text-info'
+                : 'bg-warning/10 text-warning'
               }`}>{Math.round(confidence * 100)}%</span>
             )}
           </Flex>
@@ -410,7 +410,7 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                 <span className="text-xs text-mission-control-text-dim">{meta.author_followers.toLocaleString()} followers</span>
               )}
               {tweetId && (
-                <a href={`https://twitter.com/${mentionAuthor}/status/${tweetId}`} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-[var(--color-info)] hover:underline">
+                <a href={`https://twitter.com/${mentionAuthor}/status/${tweetId}`} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-info hover:underline">
                   View on X
                 </a>
               )}
@@ -439,7 +439,7 @@ function PipelineDetailModal({ item, onClose, onAction }: {
               <div className="font-medium text-mission-control-text mb-1">AI Assessment</div>
               <div>{aiJudgment.triage_reason}</div>
               {aiJudgment.safety_flags?.length > 0 && (
-                <div className="mt-1 text-[var(--color-error)]">Safety flags: {aiJudgment.safety_flags.join(', ')}</div>
+                <div className="mt-1 text-error">Safety flags: {aiJudgment.safety_flags.join(', ')}</div>
               )}
             </div>
           )}
@@ -456,8 +456,8 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                     onClick={() => setReplyText(reply)}
                     className={`w-full text-left px-4 py-3 text-sm rounded-xl border transition-colors ${
                       isRec
-                        ? 'border-[var(--color-info)] bg-[var(--color-info)]/10/40 hover:bg-[var(--color-info)]/10/60'
-                        : 'border-mission-control-border bg-mission-control-surface hover:border-[var(--color-info)]'
+                        ? 'border-info bg-info/10/40 hover:bg-info/10/60'
+                        : 'border-mission-control-border bg-mission-control-surface hover:border-info'
                     }`}
                     type="button"
                   >
@@ -584,7 +584,7 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
           </span>
         )}
         {!mentionAuthorCard && item.platform && (
-          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded-full">{item.platform}</span>
+          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-info/10 text-info rounded-full">{item.platform}</span>
         )}
       </Flex>
 
@@ -595,7 +595,7 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
             <p className="text-xs text-mission-control-text-dim leading-relaxed line-clamp-2">{preview}</p>
           )}
           {suggestedReply && (
-            <div className="border-l-2 border-[var(--color-info)]/50 pl-2">
+            <div className="border-l-2 border-info/50 pl-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Suggested reply</p>
               <p className="text-sm font-medium text-mission-control-text leading-snug line-clamp-2">{suggestedReply}</p>
             </div>
@@ -619,7 +619,7 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
 
       {/* Pending approval indicator */}
       {hasPendingApproval && (item.column === 'in-review' || item.column === 'approved') && (
-        <div className="mt-1.5 flex items-center gap-1 text-xs text-[var(--color-info)]">
+        <div className="mt-1.5 flex items-center gap-1 text-xs text-info">
           <Clock size={10} />
           Pending approval
         </div>
@@ -771,7 +771,7 @@ function StatsBar({ counts, total }: StatsBarProps) {
         </span>
       ))}
       {needsAction > 0 && (
-        <span className="whitespace-nowrap flex items-center gap-1 text-[var(--color-warning)] font-medium">
+        <span className="whitespace-nowrap flex items-center gap-1 text-warning font-medium">
           <AlertCircle size={11} /> Needs action: {needsAction}
         </span>
       )}
@@ -1260,7 +1260,7 @@ export default function XPipelineView() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-mission-control-bg gap-3">
-        <p className="text-[var(--color-error)] text-sm">{error}</p>
+        <p className="text-error text-sm">{error}</p>
         <Button onClick={load} variant="outline" color="gray" size="2">
           <RefreshCw size={14} /> Retry
         </Button>

@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { zustandSafeStorage } from '../utils/safeStorage';
 import { gateway } from '../lib/gateway';
 import { notifyNewApproval } from '../lib/notifications';
 import { matchTaskToAgent } from '../lib/agents';
@@ -525,7 +526,9 @@ export const useStore = create<Store>()(
           // ?summary=1 excludes planningNotes and subtask descriptions from the bulk response
           // (~396 KB saved → ~311 KB payload) so the dashboard paints faster. TaskDetailPanel
           // lazy-hydrates planningNotes via patchTaskLocal when a task is first opened.
-          const result = await taskApi.getAll({ include: 'subtasks', summary: '1' });
+          // Initial load: fetch the 100 most recently updated tasks (paginated).
+          // Remaining tasks are loaded in a background follow-up to avoid blocking LCP.
+          const result = await taskApi.getAll({ include: 'subtasks', summary: '1', limit: '100' });
           // API returns a plain array; support both plain array and legacy wrapped format
           const taskArray: any[] = Array.isArray(result) ? result : (result?.tasks ?? []);
           // Convert to store format — DB uses camelCase column names.
@@ -559,6 +562,65 @@ export const useStore = create<Store>()(
               totalArchived: taskArray.filter((t: any) => t.status === 'cancelled').length,
             }
           });
+
+          // Background: load remaining tasks if the initial page was capped.
+          // Uses requestIdleCallback (or setTimeout fallback) so it doesn't compete
+          // with the main render cycle and LCP paint.
+          if (taskArray.length >= 100) {
+            const loadRemaining = async () => {
+              try {
+                const remaining = await taskApi.getAll({
+                  include: 'subtasks',
+                  summary: '1',
+                  limit: '500',
+                  offset: '100',
+                });
+                const remainingArray: any[] = Array.isArray(remaining) ? remaining : (remaining?.tasks ?? []);
+                if (remainingArray.length > 0) {
+                  const moreTasks: Task[] = remainingArray.map((t: any) => ({
+                    id: t.id,
+                    title: t.title,
+                    description: t.description || '',
+                    status: t.status as TaskStatus,
+                    priority: t.priority as TaskPriority | undefined,
+                    project: t.project || 'General',
+                    project_id: t.project_id || undefined,
+                    assignedTo: t.assignedTo === 'main' ? 'mission-control' : (t.assignedTo || undefined),
+                    reviewerId: t.reviewerId || undefined,
+                    reviewStatus: t.reviewStatus || undefined,
+                    planningNotes: t.planningNotes || undefined,
+                    dueDate: t.dueDate ? Number(t.dueDate) : undefined,
+                    scheduledAt: t.scheduledAt ? Number(t.scheduledAt) : undefined,
+                    lastAgentUpdate: t.lastAgentUpdate || undefined,
+                    createdAt: t.createdAt || Date.now(),
+                    updatedAt: t.updatedAt || Date.now(),
+                    subtasks: Array.isArray(t.subtasks) ? t.subtasks as Subtask[] : [],
+                    recurrence: t.recurrence ?? null,
+                    recurrenceParentId: t.recurrenceParentId ?? null,
+                  }));
+                  set((s: Store) => {
+                    const existingIds = new Set(s.tasks.map(t => t.id));
+                    const newTasks = moreTasks.filter(t => !existingIds.has(t.id));
+                    const allTasks = [...s.tasks, ...newTasks];
+                    return {
+                      tasks: allTasks,
+                      taskCounts: {
+                        totalDone: allTasks.filter(t => t.status === 'done').length,
+                        totalArchived: allTasks.filter(t => t.status === 'cancelled').length,
+                      }
+                    };
+                  });
+                }
+              } catch (err) {
+                storeLogger.warn('Background task load failed (non-critical):', err);
+              }
+            };
+            if (typeof requestIdleCallback === 'function') {
+              requestIdleCallback(() => { loadRemaining(); });
+            } else {
+              setTimeout(loadRemaining, 2000);
+            }
+          }
         } catch (error) {
           console.error('Failed to load tasks from DB:', error);
         } finally {
@@ -1094,7 +1156,7 @@ Start now.`;
 
       activities: [],
       addActivity: (a: Omit<Activity, 'id'>) => set((s: Store) => ({
-        activities: [{ ...a, id: `act-${Date.now()}` }, ...s.activities].slice(0, 100)
+        activities: [{ ...a, id: `act-${Date.now()}` }, ...s.activities].slice(0, 500)
       })),
       clearActivities: () => set({ activities: [] }),
 
@@ -1260,6 +1322,7 @@ Start now.`;
     }),
     {
       name: 'mission-control-dashboard',
+      storage: zustandSafeStorage as any,
       partialize: (s) => ({
         // activities excluded — loaded from API on mount, too large for localStorage
         // Persist X drafts only (non-posted; posted are removed by markXDraftPosted)

@@ -259,7 +259,7 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
         className="p-4 border-b border-mission-control-border"
       >
         <Flex align="center" gap="2">
-          <BarChart2 size={16} className="text-[var(--color-info)]" />
+          <BarChart2 size={16} className="text-info" />
           <span className="text-sm font-semibold text-mission-control-text">
             Engagement Over Time
           </span>
@@ -289,7 +289,7 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
       {/* Summary stats bar */}
       <div className="grid grid-cols-3 border-b border-mission-control-border">
         <div className="p-3 text-center border-r border-mission-control-border">
-          <div className="text-lg font-bold tabular-nums text-[var(--color-info)]">
+          <div className="text-lg font-bold tabular-nums text-info">
             {formatNum(totalImpressions)}
           </div>
           <div className="text-xs text-mission-control-text-dim">
@@ -297,7 +297,7 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
           </div>
         </div>
         <div className="p-3 text-center border-r border-mission-control-border">
-          <div className="text-lg font-bold tabular-nums text-[var(--color-error)]">
+          <div className="text-lg font-bold tabular-nums text-error">
             {formatNum(avgLikes)}
           </div>
           <div className="text-xs text-mission-control-text-dim">
@@ -305,7 +305,7 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
           </div>
         </div>
         <div className="p-3 text-center">
-          <div className="text-lg font-bold tabular-nums text-[var(--color-success)]">
+          <div className="text-lg font-bold tabular-nums text-success">
             {formatNum(avgRetweets)}
           </div>
           <div className="text-xs text-mission-control-text-dim">

@@ -301,7 +301,7 @@ export default function AnalyticsDashboard() {
                             title="Export and copy"
                           >
                             {copiedExport === `${t}-${fmt}`
-                              ? <Check size={12} className="text-[var(--color-success)]" />
+                              ? <Check size={12} className="text-success" />
                               : <Copy size={12} />}
                           </button>
                         </Flex>

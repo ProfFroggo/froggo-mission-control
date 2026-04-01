@@ -479,16 +479,14 @@ export async function extractAndSaveMemory(sessionKey: string, agentId: string):
   try {
     const db = getDb();
 
-    // Check cooldown: skip if extracted less than 5 minutes ago
-    const session = db.prepare(
-      'SELECT lastMemoryExtractAt FROM sessions WHERE key = ?'
-    ).get(sessionKey) as { lastMemoryExtractAt?: number | null } | undefined;
+    // Atomic cooldown: claim the extraction slot or bail if another already claimed it
+    const now = Date.now();
+    const claimed = db.prepare(
+      `UPDATE sessions SET lastMemoryExtractAt = ? WHERE key = ? AND (lastMemoryExtractAt IS NULL OR lastMemoryExtractAt < ?)`
+    ).run(now, sessionKey, now - MEMORY_EXTRACT_COOLDOWN_MS);
 
-    if (session?.lastMemoryExtractAt) {
-      const elapsed = Date.now() - session.lastMemoryExtractAt;
-      if (elapsed < MEMORY_EXTRACT_COOLDOWN_MS) {
-        return; // too soon
-      }
+    if (claimed.changes === 0) {
+      return; // another extraction already in progress or cooldown not elapsed
     }
 
     // Load last 10 messages

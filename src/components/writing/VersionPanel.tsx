@@ -100,6 +100,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
       <Flex align="center" justify="between" className="px-3 py-2 border-b border-mission-control-border">
         <h3 className="text-[10px] font-bold text-mission-control-text uppercase tracking-wide">Versions</h3>
         <button
+          type="button"
           className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           onClick={onClose}
           title="Close versions panel"
@@ -154,6 +155,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                   </div>
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     <button
+                      type="button"
                       className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
                       onClick={() => handleCompare(v.id)}
                       disabled={diffLoading}
@@ -162,6 +164,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                       <GitCompare size={13} />
                     </button>
                     <button
+                      type="button"
                       className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       onClick={() => {
                         setRestoreTarget({ id: v.id, label: v.label });
@@ -177,6 +180,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                       <RotateCcw size={13} />
                     </button>
                     <button
+                      type="button"
                       className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       onClick={() => {
                         setDeleteTarget({ id: v.id, label: v.label });

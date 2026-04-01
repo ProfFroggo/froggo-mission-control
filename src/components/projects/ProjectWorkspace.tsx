@@ -38,9 +38,9 @@ const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
 ];
 
 const STATUS_CONFIG = {
-  active:    { label: 'Active',    color: 'text-[var(--color-success)]',  bg: 'bg-[var(--color-success)]/10' },
-  paused:    { label: 'Paused',    color: 'text-[var(--color-warning)]',  bg: 'bg-[var(--color-warning)]/10' },
-  completed: { label: 'Completed', color: 'text-[var(--color-info)]',     bg: 'bg-[var(--color-info)]/10' },
+  active:    { label: 'Active',    color: 'text-success',  bg: 'bg-success/10' },
+  paused:    { label: 'Paused',    color: 'text-warning',  bg: 'bg-warning/10' },
+  completed: { label: 'Completed', color: 'text-info',     bg: 'bg-info/10' },
   archived:  { label: 'Archived',  color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface' },
 } as const;
 
@@ -394,7 +394,7 @@ function MilestonesSection({ project }: { project: Project }) {
                     {ms.title}
                   </p>
                   {ms.dueDate && (
-                    <p className={`text-[10px] tabular-nums mt-0.5 flex items-center gap-1 ${overdue ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim'}`}>
+                    <p className={`text-[10px] tabular-nums mt-0.5 flex items-center gap-1 ${overdue ? 'text-warning' : 'text-mission-control-text-dim'}`}>
                       <Calendar size={8} />
                       {new Date(ms.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       {overdue && ' — overdue'}
@@ -701,9 +701,9 @@ function AutomationsTab({ project }: { project: Project }) {
                   </p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  item.status === 'done' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-                  item.status === 'failed' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
-                  'bg-[var(--color-info)]/10 text-[var(--color-info)]'
+                  item.status === 'done' ? 'bg-success/10 text-success' :
+                  item.status === 'failed' ? 'bg-error/10 text-error' :
+                  'bg-info/10 text-info'
                 }`}>
                   {item.status}
                 </span>
@@ -792,9 +792,9 @@ function ApprovalsTab({ project }: { project: Project }) {
         const hasNote = (feedback[a.id] || '').trim().length > 0;
         const taskTitle = tasks.find((t: { id: string; title?: string } & { id: string }) => t.id === (a.metadata?.taskId as string | undefined))?.['title'] as string | undefined;
         return (
-          <div key={a.id} className="px-5 py-4 space-y-3 border-l-2 border-[var(--color-warning)]/40">
+          <div key={a.id} className="px-5 py-4 space-y-3 border-l-2 border-warning/40">
             <Flex align="start" gap="2">
-              <Zap size={13} className="text-[var(--color-warning)] mt-0.5 shrink-0" />
+              <Zap size={13} className="text-warning mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium">{a.title}</div>
                 <Flex align="center" gap="2" className="mt-0.5 text-xs text-mission-control-text-dim">
@@ -1185,7 +1185,7 @@ function FilesTab({ project }: { project: Project }) {
           <div className="flex-1 overflow-y-auto">
             {memoryUnavailable ? (
               <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-                <p className="text-sm text-[var(--color-warning)] font-medium mb-1">Search unavailable</p>
+                <p className="text-sm text-warning font-medium mb-1">Search unavailable</p>
                 <p className="text-xs text-mission-control-text-dim">
                   Install qmd for full-text search, or ensure ripgrep is available.
                 </p>
@@ -1263,7 +1263,7 @@ function ProjectSettings({
         </button>
         <button
           onClick={handleArchive}
-          className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-[var(--color-error)] hover:text-[var(--color-error)]/80 hover:bg-mission-control-surface transition-colors"
+          className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-error hover:text-error/80 hover:bg-mission-control-surface transition-colors"
         >
           <Trash2 size={14} /> Archive project
         </button>

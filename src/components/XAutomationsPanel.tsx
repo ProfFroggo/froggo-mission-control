@@ -131,8 +131,8 @@ export default function XAutomationsPanel() {
       <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
         <Flex align="center" justify="between" className="mb-3">
           <Flex align="center" gap="3">
-            <div className="p-2 bg-[var(--color-review)]-subtle rounded-lg">
-              <Zap size={24} className="text-[var(--color-review)]" />
+            <div className="p-2 bg-review-subtle rounded-lg">
+              <Zap size={24} className="text-review" />
             </div>
             <div>
               <h1 className="text-xl font-semibold">X Automations</h1>
@@ -199,13 +199,13 @@ export default function XAutomationsPanel() {
                         </span>
                         <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                           automation.enabled
-                            ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]'
+                            ? 'bg-success/10 text-success'
                             : 'bg-mission-control-border/50 text-mission-control-text-dim'
                         }`}>
                           {automation.enabled ? 'Active' : 'Paused'}
                         </span>
                         {TriggerIcon && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info">
                             <TriggerIcon size={10} />
                             {automation.trigger_type}
                           </span>
@@ -244,7 +244,7 @@ export default function XAutomationsPanel() {
                         type="button"
                         onClick={() => deleteAutomation(automation.id)}
                         title="Delete"
-                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-[var(--color-danger)] hover:bg-mission-control-border/40 transition-colors"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-danger hover:bg-mission-control-border/40 transition-colors"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -254,7 +254,7 @@ export default function XAutomationsPanel() {
                   {/* Automation Flow */}
                   <div className="flex items-center gap-2 text-xs mb-3 px-3 py-2 bg-mission-control-bg rounded-lg flex-wrap">
                     <span className="text-mission-control-text-dim font-medium">IF</span>
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]">
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info">
                       {automation.trigger_type}
                     </span>
                     {trigger.keywords && (
@@ -266,7 +266,7 @@ export default function XAutomationsPanel() {
                     <span className="text-mission-control-text-dim font-medium">THEN</span>
                     <div className="flex gap-1 flex-wrap">
                       {Array.isArray(actions) && actions.map((action: XAutomationAction, i: number) => (
-                        <span key={i} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)]">
+                        <span key={i} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success">
                           {action.type}
                         </span>
                       ))}
@@ -426,7 +426,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           {/* Trigger Section */}
           <div className="border-t border-mission-control-border pt-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="px-3 py-1 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded-lg text-sm">IF</span>
+              <span className="px-3 py-1 bg-info/10 text-info rounded-lg text-sm">IF</span>
               Trigger
             </h3>
             
@@ -497,7 +497,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           {/* Actions Section */}
           <div className="border-t border-mission-control-border pt-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="px-3 py-1 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-lg text-sm">THEN</span>
+              <span className="px-3 py-1 bg-success/10 text-success rounded-lg text-sm">THEN</span>
               Actions
             </h3>
             

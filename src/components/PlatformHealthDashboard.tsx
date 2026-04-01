@@ -56,15 +56,15 @@ function computeOverall(snap: HealthSnapshot): OverallStatus {
 }
 
 function statusColor(s: OverallStatus): string {
-  if (s === 'ok') return 'text-[var(--color-success)]';
-  if (s === 'degraded') return 'text-[var(--color-warning)]';
-  return 'text-[var(--color-error)]';
+  if (s === 'ok') return 'text-success';
+  if (s === 'degraded') return 'text-warning';
+  return 'text-error';
 }
 
 function statusDotColor(s: OverallStatus): string {
-  if (s === 'ok') return 'bg-[var(--color-success)]';
-  if (s === 'degraded') return 'bg-[var(--color-warning)]';
-  return 'bg-[var(--color-error)]';
+  if (s === 'ok') return 'bg-success';
+  if (s === 'degraded') return 'bg-warning';
+  return 'bg-error';
 }
 
 function componentStatus(ok: boolean, degraded?: boolean): OverallStatus {
@@ -85,7 +85,7 @@ interface SparklineProps {
   currentValue?: string;
 }
 
-function Sparkline({ data, width = 120, height = 36, color = 'var(--color-info, #3b82f6)', label, unit = '', currentValue }: SparklineProps) {
+function Sparkline({ data, width = 120, height = 36, color = 'var(--color-info)', label, unit = '', currentValue }: SparklineProps) {
   if (data.length < 2) {
     return (
       <div className="flex flex-col gap-1">
@@ -152,9 +152,9 @@ function StatusItem({ icon, label, status, detail }: StatusItemProps) {
     AlertCircle;
 
   const iconColor =
-    status === 'ok' ? 'text-[var(--color-success)]' :
-    status === 'degraded' ? 'text-[var(--color-warning)]' :
-    'text-[var(--color-error)]';
+    status === 'ok' ? 'text-success' :
+    status === 'degraded' ? 'text-warning' :
+    'text-error';
 
   return (
     <Flex align="center" gap="2" className="px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border">
@@ -322,10 +322,10 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
         {/* Overall status pill */}
         <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border ${
           overall === 'ok'
-            ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]'
+            ? 'bg-success/10 border-success/30 text-success'
             : overall === 'degraded'
-            ? 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30 text-[var(--color-warning)]'
-            : 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 text-[var(--color-error)]'
+            ? 'bg-warning/10 border-warning/30 text-warning'
+            : 'bg-error/10 border-error/30 text-error'
         }`}>
           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusDotColor(overall)}`} />
           {overall === 'ok' ? 'Healthy' : overall === 'degraded' ? 'Degraded' : 'Error'}
@@ -407,7 +407,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
               data={responseTimeSeries}
               width={SPARKLINE_WIDTH}
               height={SPARKLINE_HEIGHT}
-              color="var(--color-info, #3b82f6)"
+              color="var(--color-info)"
               label="API Response"
               unit="ms"
               currentValue={current ? String(current.api.avgResponseMs) : undefined}
@@ -416,7 +416,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
               data={activeAgentsSeries}
               width={SPARKLINE_WIDTH}
               height={SPARKLINE_HEIGHT}
-              color="var(--color-success, #22c55e)"
+              color="var(--color-success)"
               label="Active Agents"
               currentValue={current ? String(current.agents.active) : undefined}
             />
@@ -424,7 +424,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
               data={completionRateSeries}
               width={SPARKLINE_WIDTH}
               height={SPARKLINE_HEIGHT}
-              color="var(--mission-control-accent, #22c55e)"
+              color="var(--mission-control-accent)"
               label="Task Completion"
               unit="%"
               currentValue={completionRate !== null ? String(completionRate) : '—'}
@@ -433,7 +433,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
               data={memUsageSeries}
               width={SPARKLINE_WIDTH}
               height={SPARKLINE_HEIGHT}
-              color="var(--color-warning, #f59e0b)"
+              color="var(--color-warning)"
               label="Heap Used"
               unit="MB"
               currentValue={current ? String(current.memory.heapUsedMb) : undefined}

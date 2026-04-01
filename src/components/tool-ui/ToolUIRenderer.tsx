@@ -213,7 +213,7 @@ function CopyButton({ text }: { text: string }) {
       className="inline-flex items-center justify-center w-6 h-6 rounded text-[var(--mission-control-text-dim)] hover:text-[var(--mission-control-text)] hover:bg-[var(--mission-control-border)]/40 transition-colors"
       title="Copy"
     >
-      {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
+      {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
     </button>
   );
 }
@@ -348,7 +348,7 @@ function DataTable({ title, columns, rows, footer, caption, searchable }: Serial
     if (value === null || value === undefined) return <span className="text-[var(--mission-control-text-dim)] opacity-40">—</span>;
     const str = String(value);
     if (col.type === 'boolean') {
-      return value ? <CheckCircle2 size={13} className="text-[var(--color-success)]" /> : <XCircle size={13} className="text-[var(--mission-control-text-dim)] opacity-40" />;
+      return value ? <CheckCircle2 size={13} className="text-success" /> : <XCircle size={13} className="text-[var(--mission-control-text-dim)] opacity-40" />;
     }
     if (col.type === 'badge') {
       return <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[var(--mission-control-accent)]/10 text-[var(--mission-control-accent)] border border-[var(--mission-control-accent)]/20">{str}</span>;
@@ -435,22 +435,22 @@ function ApprovalCard({ title, description, action, details, risk, requester, ex
   const [decided, setDecided] = useState<'approved' | 'rejected' | null>(null);
 
   const riskColors: Record<string, string> = {
-    low: 'text-[var(--color-success)] bg-[var(--color-success)]/10 border-[var(--color-success)]/20',
-    medium: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/20',
-    high: 'text-[var(--color-error)] bg-[var(--color-error)]/10 border-[var(--color-error)]/20',
-    critical: 'text-[var(--color-error)] bg-[var(--color-error)]/15 border-[var(--color-error)]/30',
+    low: 'text-success bg-success/10 border-success/20',
+    medium: 'text-warning bg-warning/10 border-warning/20',
+    high: 'text-error bg-error/10 border-error/20',
+    critical: 'text-error bg-error/15 border-error/30',
   };
   const RiskIcon = risk === 'critical' || risk === 'high' ? ShieldAlert : risk === 'medium' ? AlertTriangle : Info;
 
   return (
-    <Card className="border-[var(--color-warning)]/25">
+    <Card className="border-warning/25">
       {/* Top accent */}
       <div className="h-0.5 bg-gradient-to-r from-[var(--color-warning)] to-[var(--color-warning)]/30" />
       <div className="px-4 py-3">
         {/* Header */}
         <div className="flex items-start gap-3 mb-3">
-          <div className="w-8 h-8 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/20 flex items-center justify-center flex-shrink-0">
-            <Zap size={14} className="text-[var(--color-warning)]" />
+          <div className="w-8 h-8 rounded-lg bg-warning/10 border border-warning/20 flex items-center justify-center flex-shrink-0">
+            <Zap size={14} className="text-warning" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -478,7 +478,7 @@ function ApprovalCard({ title, description, action, details, risk, requester, ex
             {details.map((d, i) => (
               <div key={i} className="flex items-start justify-between gap-3 text-xs">
                 <span className="text-[var(--mission-control-text-dim)] flex-shrink-0">{d.label}</span>
-                <span className={`text-right font-medium ${d.critical ? 'text-[var(--color-error)]' : 'text-[var(--mission-control-text)]'}`}>{d.value}</span>
+                <span className={`text-right font-medium ${d.critical ? 'text-error' : 'text-[var(--mission-control-text)]'}`}>{d.value}</span>
               </div>
             ))}
           </div>
@@ -498,7 +498,7 @@ function ApprovalCard({ title, description, action, details, risk, requester, ex
             <button
               type="button"
               onClick={() => setDecided('approved')}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/25 hover:bg-[var(--color-success)]/20 transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium bg-success/10 text-success border border-success/25 hover:bg-success/20 transition-colors"
             >
               <CheckCircle2 size={12} />
               {confirmLabel ?? 'Approve'}
@@ -506,14 +506,14 @@ function ApprovalCard({ title, description, action, details, risk, requester, ex
             <button
               type="button"
               onClick={() => setDecided('rejected')}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/25 hover:bg-[var(--color-error)]/20 transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium bg-error/10 text-error border border-error/25 hover:bg-error/20 transition-colors"
             >
               <XCircle size={12} />
               {cancelLabel ?? 'Reject'}
             </button>
           </div>
         ) : (
-          <div className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium ${decided === 'approved' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-error)]/10 text-[var(--color-error)]'}`}>
+          <div className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium ${decided === 'approved' ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>
             {decided === 'approved' ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
             {decided === 'approved' ? 'Approved' : 'Rejected'}
           </div>
@@ -540,9 +540,9 @@ function TerminalBlock({ title, command, output, exitCode, shell, duration, coll
         <span className="text-xs font-medium text-[var(--mission-control-text)] flex-1 truncate">
           {title ?? command ?? 'Terminal output'}
         </span>
-        <ExitIcon size={11} className={isSuccess ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'} />
+        <ExitIcon size={11} className={isSuccess ? 'text-success' : 'text-error'} />
         {exitCode !== undefined && (
-          <span className={`text-[10px] font-medium ${isSuccess ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
+          <span className={`text-[10px] font-medium ${isSuccess ? 'text-success' : 'text-error'}`}>
             exit {exitCode}
           </span>
         )}
@@ -578,10 +578,10 @@ function TerminalBlock({ title, command, output, exitCode, shell, duration, coll
 function PlanComponent({ title, description, steps, currentStep, estimatedDuration, tags }: SerializablePlan) {
   const statusConfig = {
     'pending':     { icon: Circle,        color: 'text-[var(--mission-control-text-dim)]', bg: 'bg-[var(--mission-control-border)]/30' },
-    'in-progress': { icon: Loader2,       color: 'text-[var(--color-info)]', bg: 'bg-[var(--color-info)]/10', spin: true },
-    'done':        { icon: CheckCircle2,  color: 'text-[var(--color-success)]', bg: 'bg-[var(--color-success)]/10' },
+    'in-progress': { icon: Loader2,       color: 'text-info', bg: 'bg-info/10', spin: true },
+    'done':        { icon: CheckCircle2,  color: 'text-success', bg: 'bg-success/10' },
     'skipped':     { icon: SkipForward,   color: 'text-[var(--mission-control-text-dim)] opacity-50', bg: 'bg-[var(--mission-control-border)]/20' },
-    'blocked':     { icon: XCircle,       color: 'text-[var(--color-error)]', bg: 'bg-[var(--color-error)]/10' },
+    'blocked':     { icon: XCircle,       color: 'text-error', bg: 'bg-error/10' },
   };
 
   const doneCount = steps.filter(s => s.status === 'done').length;
@@ -802,9 +802,9 @@ function ProgressTracker({ title, description, progress, status, phase, steps, s
 
   const stepStatusIcons = {
     pending: <Circle size={11} className="text-[var(--mission-control-text-dim)]" />,
-    running: <Loader2 size={11} className="text-[var(--color-info)] animate-spin" />,
-    done:    <CheckCircle2 size={11} className="text-[var(--color-success)]" />,
-    failed:  <XCircle size={11} className="text-[var(--color-error)]" />,
+    running: <Loader2 size={11} className="text-info animate-spin" />,
+    done:    <CheckCircle2 size={11} className="text-success" />,
+    failed:  <XCircle size={11} className="text-error" />,
     skipped: <SkipForward size={11} className="text-[var(--mission-control-text-dim)] opacity-50" />,
   };
 
@@ -892,7 +892,7 @@ function MessageDraft({ platform, subject, to, cc, body, tone, wordCount, tags }
           </span>
         )}
         <button type="button" onClick={copy} className="inline-flex items-center justify-center w-6 h-6 rounded text-[var(--mission-control-text-dim)] hover:text-[var(--mission-control-text)] transition-colors">
-          {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
+          {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
         </button>
       </div>
 
@@ -957,7 +957,7 @@ function OrderSummary({ title, items, note, cta }: SerializableOrderSummary) {
                   </span>
                   {item.description && <p className="text-[10px] text-[var(--mission-control-text-dim)] mt-0.5">{item.description}</p>}
                 </div>
-                <span className={`text-xs tabular-nums flex-shrink-0 font-medium ${isDiscount ? 'text-[var(--color-success)]' : isTotal ? 'text-[var(--mission-control-accent)] text-sm font-bold' : 'text-[var(--mission-control-text)]'}`}>
+                <span className={`text-xs tabular-nums flex-shrink-0 font-medium ${isDiscount ? 'text-success' : isTotal ? 'text-[var(--mission-control-accent)] text-sm font-bold' : 'text-[var(--mission-control-text)]'}`}>
                   {isDiscount && item.value && !item.value.startsWith('-') ? `-${item.value}` : item.value}
                 </span>
               </div>
@@ -974,7 +974,7 @@ function OrderSummary({ title, items, note, cta }: SerializableOrderSummary) {
             type="button"
             onClick={() => setCtaClicked(true)}
             disabled={ctaClicked}
-            className={`w-full py-2 rounded-lg text-xs font-medium transition-colors ${ctaClicked ? 'bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/25' : 'bg-[var(--mission-control-accent)] text-white hover:opacity-90'}`}
+            className={`w-full py-2 rounded-lg text-xs font-medium transition-colors ${ctaClicked ? 'bg-success/10 text-success border border-success/25' : 'bg-[var(--mission-control-accent)] text-white hover:opacity-90'}`}
           >
             {ctaClicked ? <span className="flex items-center justify-center gap-1"><CheckCircle2 size={12} />Confirmed</span> : cta.label}
           </button>
@@ -1170,8 +1170,8 @@ function CodeDiff({ before, after, language, filename, context = 3 }: Serializab
         <FileText size={12} className="text-[var(--mission-control-accent)]" />
         <span className="text-xs font-medium text-[var(--mission-control-text)] flex-1 truncate">{filename ?? 'diff'}</span>
         {language && <span className="text-[10px] text-[var(--mission-control-text-dim)] px-1.5 py-0.5 rounded bg-[var(--mission-control-border)]/50">{language}</span>}
-        <span className="text-[10px] font-medium text-[var(--color-success)]">+{added}</span>
-        <span className="text-[10px] font-medium text-[var(--color-error)]">-{removed}</span>
+        <span className="text-[10px] font-medium text-success">+{added}</span>
+        <span className="text-[10px] font-medium text-error">-{removed}</span>
         <CopyButton text={after} />
       </div>
       <div className="overflow-auto max-h-[480px]">
@@ -1389,7 +1389,7 @@ function QuestionFlow({ title, description, questions, submitLabel = 'Submit' }:
     return (
       <Card>
         <div className="p-6 text-center">
-          <CheckCircle2 size={32} className="mx-auto mb-3 text-[var(--color-success)]" />
+          <CheckCircle2 size={32} className="mx-auto mb-3 text-success" />
           <p className="text-sm font-semibold text-[var(--mission-control-text)]">Responses submitted</p>
           <p className="text-xs text-[var(--mission-control-text-dim)] mt-1">{questions.length} question{questions.length !== 1 ? 's' : ''} answered</p>
         </div>
@@ -1409,7 +1409,7 @@ function QuestionFlow({ title, description, questions, submitLabel = 'Submit' }:
 
       <div className="px-4 pb-4">
         <p className="text-sm font-semibold text-[var(--mission-control-text)] mb-3">
-          {q.question}{q.required && <span className="text-[var(--color-error)] ml-1">*</span>}
+          {q.question}{q.required && <span className="text-error ml-1">*</span>}
         </p>
 
         {(q.type === 'choice' || q.type === 'yes-no') && (
@@ -1462,7 +1462,7 @@ function QuestionFlow({ title, description, questions, submitLabel = 'Submit' }:
                 onClick={() => setAnswers(prev => ({ ...prev, [q.id]: String(n) }))}
                 className="transition-transform hover:scale-110"
               >
-                <Star size={24} className={Number(answers[q.id]) >= n ? 'text-[var(--color-warning)] fill-current' : 'text-[var(--mission-control-border)]'} />
+                <Star size={24} className={Number(answers[q.id]) >= n ? 'text-warning fill-current' : 'text-[var(--mission-control-border)]'} />
               </button>
             ))}
           </div>
@@ -1987,14 +1987,14 @@ function LinkedInPost({ authorName, authorTitle, authorCompany, avatarUrl, conte
       {/* Header */}
       <div className="flex items-start gap-3 px-4 pt-4 pb-3 border-b border-[var(--mission-control-border)]">
         <div className="w-10 h-10 rounded-full overflow-hidden bg-[var(--mission-control-border)] flex-shrink-0 flex items-center justify-center">
-          {avatarUrl ? <img src={avatarUrl} alt={authorName} className="w-full h-full object-cover" /> : <Linkedin size={18} className="text-[#0077b5]" />}
+          {avatarUrl ? <img src={avatarUrl} alt={authorName} className="w-full h-full object-cover" /> : <Linkedin size={18} className="text-info" />}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-[var(--mission-control-text)]">{authorName}</p>
           {authorTitle && <p className="text-xs text-[var(--mission-control-text-dim)] truncate">{authorTitle}{authorCompany ? ` · ${authorCompany}` : ''}</p>}
           {postedAt && <p className="text-[10px] text-[var(--mission-control-text-dim)] opacity-60 mt-0.5">{postedAt}</p>}
         </div>
-        <Linkedin size={16} className="text-[#0077b5] flex-shrink-0 opacity-70 mt-0.5" />
+        <Linkedin size={16} className="text-info flex-shrink-0 opacity-70 mt-0.5" />
       </div>
 
       {/* Content */}
@@ -2010,7 +2010,7 @@ function LinkedInPost({ authorName, authorTitle, authorCompany, avatarUrl, conte
         {hashtags && hashtags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {hashtags.map(tag => (
-              <span key={tag} className="text-[11px] text-[#0077b5]">#{tag.replace(/^#/, '')}</span>
+              <span key={tag} className="text-[11px] text-info">#{tag.replace(/^#/, '')}</span>
             ))}
           </div>
         )}

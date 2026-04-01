@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useEventBus } from '../lib/useEventBus';
-import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles, ChevronUp, ChevronDown, User, ExternalLink, Film, Code2, Braces, Table2, Image, ZoomIn } from 'lucide-react';
+import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles, ChevronUp, ChevronDown, User, ExternalLink, Film, Code2, Braces, Table2, Image, ZoomIn, Pencil } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 // eslint-disable-next-line import/order
 import { Box, Flex, Button, Checkbox, IconButton, Spinner, TextArea, TextField, Select } from '@radix-ui/themes';
@@ -24,6 +24,7 @@ import TabNav from './TabNav';
 import { isProtectedAgent } from '../lib/agentConfig';
 import { useFocusTrap } from '../hooks/useKeyboardNav';
 import BaseModal, { BaseModalHeader, BaseModalBody, BaseModalFooter } from './BaseModal';
+import MarkdownMessage from './MarkdownMessage';
 
 function parseAcceptanceCriteria(planningNotes: string): string[] {
   const match = planningNotes.match(/## Acceptance Criteria\n([\s\S]*?)(?=\n##|$)/);
@@ -78,6 +79,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [selectedSubtaskIds, setSelectedSubtaskIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [editingDueDateId, setEditingDueDateId] = useState<string | null>(null);
+  const [editingPlanningNotes, setEditingPlanningNotes] = useState(false);
   const newSubtaskInputRef = useRef<HTMLInputElement>(null);
   const [suggestedCriteria, setSuggestedCriteria] = useState<string[]>([]);
   const [isCreatingCriteriaSubtasks, setIsCreatingCriteriaSubtasks] = useState(false);
@@ -142,17 +144,22 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     return () => { document.body.style.overflow = ''; };
   }, [task]);
 
-  // Hydrate planningNotes lazily — the initial bulk load uses ?summary=1 which omits this
-  // large field (~319 KB across all tasks) to keep LCP fast. Fetch the full task once on open.
-  // planningNotes === undefined means "not yet loaded"; '' means "genuinely empty".
+  // Hydrate planningNotes lazily — the bulk load uses ?summary=1 which strips this field.
+  // Use local state so it doesn't depend on store refresh cycles.
+  const [localPlanningNotes, setLocalPlanningNotes] = useState<string | undefined>(undefined);
+  const hydratedTaskId = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!task || task.planningNotes !== undefined) return;
+    if (!task) { setLocalPlanningNotes(undefined); hydratedTaskId.current = null; return; }
+    if (task.planningNotes !== undefined) { setLocalPlanningNotes(task.planningNotes); return; }
+    if (hydratedTaskId.current === task.id) return;
+    hydratedTaskId.current = task.id;
     taskApi.getById(task.id).then((fullTask: any) => {
       if (fullTask && 'planningNotes' in fullTask) {
-        patchTaskLocal(task.id, { planningNotes: fullTask.planningNotes ?? '' });
+        setLocalPlanningNotes(fullTask.planningNotes ?? '');
       }
-    }).catch(() => {}); // Non-critical — panel shows empty textarea which is usable
-  }, [task?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- intentional: re-run per task ID only
+    }).catch(() => {});
+  }, [task?.id, task?.planningNotes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
@@ -793,21 +800,21 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   // Activity icon based on action type
   const getActivityIcon = (action: string) => {
     switch (action) {
-      case 'task_started': return <Play size={14} className="text-[var(--color-success)]" />;
-      case 'task_completed': return <CheckCircle size={14} className="text-[var(--color-success)]" />;
-      case 'subtask_added': return <Plus size={14} className="text-[var(--color-info)]" />;
-      case 'subtask_completed': return <Check size={14} className="text-[var(--color-success)]" />;
-      case 'subtask_uncompleted': return <XCircle size={14} className="text-[var(--color-warning)]" />;
-      case 'subtask_deleted': return <X size={14} className="text-[var(--color-error)]" />;
-      case 'reviewer_assigned': return <Eye size={14} className="text-[var(--color-review)]" />;
-      case 'review_status': return <Eye size={14} className="text-[var(--color-review)]" />;
-      case 'review-approved': return <CheckCircle size={14} className="text-[var(--color-success)]" />;
-      case 'review-rejected': return <XCircle size={14} className="text-[var(--color-error)]" />;
-      case 'pre-review-approved': return <CheckCircle size={14} className="text-[var(--color-info)]" />;
-      case 'pre-review-rejected': return <XCircle size={14} className="text-[var(--color-warning)]" />;
-      case 'pre-review-timeout': return <Activity size={14} className="text-[var(--color-warning)]" />;
+      case 'task_started': return <Play size={14} className="text-success" />;
+      case 'task_completed': return <CheckCircle size={14} className="text-success" />;
+      case 'subtask_added': return <Plus size={14} className="text-info" />;
+      case 'subtask_completed': return <Check size={14} className="text-success" />;
+      case 'subtask_uncompleted': return <XCircle size={14} className="text-warning" />;
+      case 'subtask_deleted': return <X size={14} className="text-error" />;
+      case 'reviewer_assigned': return <Eye size={14} className="text-review" />;
+      case 'review_status': return <Eye size={14} className="text-review" />;
+      case 'review-approved': return <CheckCircle size={14} className="text-success" />;
+      case 'review-rejected': return <XCircle size={14} className="text-error" />;
+      case 'pre-review-approved': return <CheckCircle size={14} className="text-info" />;
+      case 'pre-review-rejected': return <XCircle size={14} className="text-warning" />;
+      case 'pre-review-timeout': return <Activity size={14} className="text-warning" />;
       case 'agent_message': return <Bot size={14} className="text-mission-control-accent" />;
-      case 'progress': return <Activity size={14} className="text-[var(--color-warning)]" />;
+      case 'progress': return <Activity size={14} className="text-warning" />;
       default: return <MessageSquare size={14} className="text-mission-control-text-dim" />;
     }
   };
@@ -833,12 +840,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         <Flex align="center" gap="2" className="mb-1.5">
           <ActiveAgentIndicator taskId={task.id} showLabel size="sm" />
           <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
-            task.status === 'done'            ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-            task.status === 'in-progress'     ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' :
-            task.status === 'review'          ? 'bg-[var(--color-review)]-subtle text-[var(--color-review)]' :
-            task.status === 'human-review'    ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
-            task.status === 'internal-review' ? 'bg-[var(--color-review)]-subtle text-[var(--color-review)]' :
-            task.status === 'failed'          ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+            task.status === 'done'            ? 'bg-success/10 text-success' :
+            task.status === 'in-progress'     ? 'bg-info/10 text-info' :
+            task.status === 'review'          ? 'bg-review-subtle text-review' :
+            task.status === 'human-review'    ? 'bg-warning/10 text-warning' :
+            task.status === 'internal-review' ? 'bg-review-subtle text-review' :
+            task.status === 'failed'          ? 'bg-error/10 text-error' :
             task.status === 'cancelled'       ? 'bg-mission-control-border/40 text-mission-control-text-dim' :
             'bg-mission-control-border/30 text-mission-control-text-dim'
           }`}>
@@ -846,9 +853,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           </span>
           {task.priority && (() => {
             const pCfg = {
-              p0: { label: 'P0', color: 'bg-[var(--color-error)]/10 text-[var(--color-error)]' },
-              p1: { label: 'P1', color: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' },
-              p2: { label: 'P2', color: 'bg-[var(--color-info)]/10 text-[var(--color-info)]' },
+              p0: { label: 'P0', color: 'bg-error/10 text-error' },
+              p1: { label: 'P1', color: 'bg-warning/10 text-warning' },
+              p2: { label: 'P2', color: 'bg-info/10 text-info' },
               p3: { label: 'P3', color: 'bg-mission-control-border/30 text-mission-control-text-dim' },
             }[task.priority];
             if (!pCfg) return null;
@@ -867,9 +874,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           )}
           {dueDateUrgency && (
             <span className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${
-              dueDateUrgency.level === 'overdue' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
-              dueDateUrgency.level === 'soon' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
-              'bg-[var(--color-warning)]/10/50 text-[var(--color-warning)]'
+              dueDateUrgency.level === 'overdue' ? 'bg-error/10 text-error' :
+              dueDateUrgency.level === 'soon' ? 'bg-warning/10 text-warning' :
+              'bg-warning/10/50 text-warning'
             }`}>
               {dueDateUrgency.level === 'overdue'
                 ? <AlertTriangle size={11} />
@@ -880,7 +887,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           {(JSON.parse(task.tags || '[]') as string[]).map((tag: string) => (
             <span key={tag} className="px-1.5 py-0.5 text-xs bg-mission-control-accent/20 text-mission-control-accent rounded-full flex items-center gap-1 flex-shrink-0">
               {tag}
-              <button type="button" onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} aria-label={`Remove tag ${tag}`} className="hover:text-[var(--color-error)] leading-none">×</button>
+              <button type="button" onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} aria-label={`Remove tag ${tag}`} className="hover:text-error leading-none">×</button>
             </span>
           ))}
           <input
@@ -927,7 +934,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               </div>
               <span className="text-xs text-mission-control-text-dim whitespace-nowrap flex-shrink-0">
                 {completedSubtasks}/{subtasks.length} subtasks done
-                {isWorking && <span className="text-[var(--color-warning)] animate-pulse ml-1">· working</span>}
+                {isWorking && <span className="text-warning animate-pulse ml-1">· working</span>}
               </span>
             </>
           ) : typeof task.progress === 'number' && task.progress > 0 ? (
@@ -940,7 +947,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               </div>
               <span className="text-xs text-mission-control-text-dim whitespace-nowrap flex-shrink-0">
                 {task.progress}%
-                {isWorking && <span className="text-[var(--color-warning)] animate-pulse ml-1">· working</span>}
+                {isWorking && <span className="text-warning animate-pulse ml-1">· working</span>}
               </span>
             </>
           ) : null}
@@ -960,16 +967,16 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <Flex align="center" gap="2" className="flex-1 min-w-0">
                 <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="sm" />
                 <span className="text-xs font-medium truncate">{assignedAgent.name}</span>
-                {!isWorking && !['done', 'in-progress', 'internal-review', 'agent-review', 'review'].includes(task.status) && (
+                {!isWorking && !['done', 'in-progress', 'internal-review', 'review'].includes(task.status) && (
                   <IconButton onClick={handleStart} variant="solid" size="1" title="Start Work" aria-label="Start Work">
                     <Play size={11} />
                   </IconButton>
                 )}
-                {(isWorking || task.status === 'in-progress') && <Loader2 size={12} className="animate-spin text-[var(--color-info)] flex-shrink-0" />}
+                {(isWorking || task.status === 'in-progress') && <Loader2 size={12} className="animate-spin text-info flex-shrink-0" />}
               </Flex>
             ) : isRemoteAgent ? (
               <Flex align="center" gap="1" className="min-w-0">
-                <Globe size={12} className="text-[var(--color-review)] flex-shrink-0" />
+                <Globe size={12} className="text-review flex-shrink-0" />
                 <span className="text-xs truncate capitalize">{task.assignedTo}</span>
               </Flex>
             ) : (
@@ -988,9 +995,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 <span className="text-xs font-medium truncate">{reviewer.name}</span>
                 {task.reviewStatus && (
                   <span className={`text-xs px-1 py-0.5 rounded flex-shrink-0 ${
-                    task.reviewStatus === 'approved' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-                    task.reviewStatus === 'needs-changes' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
-                    task.reviewStatus === 'in-review' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+                    task.reviewStatus === 'approved' ? 'bg-success/10 text-success' :
+                    task.reviewStatus === 'needs-changes' ? 'bg-error/10 text-error' :
+                    task.reviewStatus === 'in-review' ? 'bg-warning/10 text-warning' :
                     'bg-muted-subtle text-muted'
                   }`}>{task.reviewStatus}</span>
                 )}
@@ -1015,24 +1022,24 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* Clara review notes callout */}
       {task.reviewNotes && task.reviewStatus && ['needs-changes', 'rejected', 'pre-rejected'].includes(task.reviewStatus) && (
-        <div className="mx-4 mt-3 p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg flex items-start gap-2 flex-shrink-0">
-          <AlertTriangle size={14} className="text-[var(--color-error)] flex-shrink-0 mt-0.5" />
+        <div className="mx-4 mt-3 p-3 bg-error/10 border border-error/30 rounded-lg flex items-start gap-2 flex-shrink-0">
+          <AlertTriangle size={14} className="text-error flex-shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <span className="text-xs font-semibold text-[var(--color-error)] block mb-0.5">
+            <span className="text-xs font-semibold text-error block mb-0.5">
               {task.reviewerId ? (agents.find(a => a.id === task.reviewerId)?.name || 'Reviewer') : 'Reviewer'}&apos;s feedback:
             </span>
-            <p className="text-xs text-[var(--color-error)]/90 whitespace-pre-wrap">{task.reviewNotes}</p>
+            <p className="text-xs text-error/90 whitespace-pre-wrap">{task.reviewNotes}</p>
           </div>
         </div>
       )}
       {task.reviewNotes && task.reviewStatus === 'approved' && (
-        <div className="mx-4 mt-3 p-3 bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-lg flex items-start gap-2 flex-shrink-0">
-          <CheckCircle size={14} className="text-[var(--color-success)] flex-shrink-0 mt-0.5" />
+        <div className="mx-4 mt-3 p-3 bg-success/10 border border-success/30 rounded-lg flex items-start gap-2 flex-shrink-0">
+          <CheckCircle size={14} className="text-success flex-shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <span className="text-xs font-semibold text-[var(--color-success)] block mb-0.5">
+            <span className="text-xs font-semibold text-success block mb-0.5">
               {task.reviewerId ? (agents.find(a => a.id === task.reviewerId)?.name || 'Reviewer') : 'Reviewer'}&apos;s notes:
             </span>
-            <p className="text-xs text-[var(--color-success)]/90 whitespace-pre-wrap">{task.reviewNotes}</p>
+            <p className="text-xs text-success/90 whitespace-pre-wrap">{task.reviewNotes}</p>
           </div>
         </div>
       )}
@@ -1087,12 +1094,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   />
                 </div>
                 {completedSubtasks === subtasks.length && task?.status === 'in-progress' && (
-                  <Flex align="center" gap="3" className="mt-3 p-3 rounded-lg bg-[var(--color-success)]/10 border border-[var(--color-success)]/30">
-                    <CheckCircle size={16} className="text-[var(--color-success)] flex-shrink-0" />
-                    <span className="text-sm text-[var(--color-success)] flex-1">All subtasks complete — ready for review?</span>
+                  <Flex align="center" gap="3" className="mt-3 p-3 rounded-lg bg-success/10 border border-success/30">
+                    <CheckCircle size={16} className="text-success flex-shrink-0" />
+                    <span className="text-sm text-success flex-1">All subtasks complete — ready for review?</span>
                     <Button
                       type="button"
-                      onClick={() => updateTask(task.id, { status: 'agent-review' as any })}
+                      onClick={() => updateTask(task.id, { status: 'review' as any })}
                       size="1"
                       className="flex-shrink-0"
                     >
@@ -1178,7 +1185,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 </Button>
                 {bulkDeleteConfirm ? (
                   <>
-                    <span className="text-xs text-[var(--color-error)]">Delete {selectedSubtaskIds.size}?</span>
+                    <span className="text-xs text-error">Delete {selectedSubtaskIds.size}?</span>
                     <Button
                       onClick={handleBulkDelete}
                       color="red"
@@ -1208,6 +1215,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   </Button>
                 )}
                 <button
+                  type="button"
                   onClick={() => { setSelectedSubtaskIds(new Set()); setBulkDeleteConfirm(false); }}
                   aria-label="Clear selection"
                   className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
@@ -1277,7 +1285,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                         aria-label="Toggle subtask completion"
                         className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] flex items-center justify-center rounded-[4px] border-2 transition-all ${
                           st.completed
-                            ? 'bg-[var(--color-success)] border-[var(--color-success)] text-white'
+                            ? 'bg-success border-success text-white'
                             : 'border-mission-control-border hover:border-mission-control-accent/60'
                         }`}
                       >
@@ -1305,7 +1313,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                             onValueChange={(val) => handleSetSubtaskAssignee(st.id, val === '__unassigned' ? '' : val)}
                           >
                             <Select.Trigger
-                              className="inline-flex items-center gap-1.5 !px-2 !py-1 !rounded-lg !text-[11px] !leading-none !bg-mission-control-bg1/80 !border !border-mission-control-border/50 !text-mission-control-text-dim hover:!text-mission-control-text hover:!border-mission-control-border !transition-colors !h-auto"
+                              className="inline-flex items-center gap-1.5 !px-2 !py-1 !rounded-lg !text-[11px] !leading-none !bg-mission-control-surface/80 !border !border-mission-control-border/50 !text-mission-control-text-dim hover:!text-mission-control-text hover:!border-mission-control-border !transition-colors !h-auto"
                             />
                             <Select.Content>
                               <Select.Item value="__unassigned">Unassigned</Select.Item>
@@ -1327,18 +1335,19 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                                   handleSetDueDate(st.id, (e.target as HTMLInputElement).value);
                                 if (e.key === 'Escape') setEditingDueDateId(null);
                               }}
-                              className="px-2 py-1 text-[11px] leading-none rounded-lg border border-mission-control-accent/40 bg-mission-control-bg1 text-mission-control-text focus:outline-none w-28"
+                              className="px-2 py-1 text-[11px] leading-none rounded-lg border border-mission-control-accent/40 bg-mission-control-surface text-mission-control-text focus:outline-none w-28"
                             />
                           ) : (
                             <button
+                              type="button"
                               onClick={() => setEditingDueDateId(st.id)}
                               title={isOverdue ? 'Overdue — click to change' : 'Set due date'}
                               className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] leading-none border transition-all ${
                                 isOverdue
-                                  ? 'text-[var(--color-error)] bg-[var(--color-error)]/10 border-[var(--color-error)]/30 hover:bg-[var(--color-error)]/20'
+                                  ? 'text-error bg-error/10 border-error/30 hover:bg-error/20'
                                   : dueDateDisplay
-                                    ? 'text-mission-control-text-dim bg-mission-control-bg1/80 border-mission-control-border/50 hover:text-mission-control-text hover:border-mission-control-border'
-                                    : 'text-mission-control-text-dim/50 bg-mission-control-bg1/40 border-mission-control-border/40 hover:text-mission-control-text-dim hover:border-mission-control-border'
+                                    ? 'text-mission-control-text-dim bg-mission-control-surface/80 border-mission-control-border/50 hover:text-mission-control-text hover:border-mission-control-border'
+                                    : 'text-mission-control-text-dim/50 bg-mission-control-surface/40 border-mission-control-border/40 hover:text-mission-control-text-dim hover:border-mission-control-border'
                               }`}
                             >
                               <Calendar size={10} className="flex-shrink-0" />
@@ -1348,7 +1357,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
                           {/* Done badge */}
                           {st.completedAt && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] leading-none bg-[var(--color-success)]/10 text-[var(--color-success)]/80 border border-[var(--color-success)]/20">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] leading-none bg-success/10 text-success/80 border border-success/20">
                               <Check size={9} strokeWidth={3} className="flex-shrink-0" />
                               Done {formatTime(st.completedAt)}
                               {st.completedBy && ` · ${agents.find((a) => a.id === st.completedBy)?.name || st.completedBy}`}
@@ -1360,6 +1369,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                       {/* Actions — reorder + delete, always visible */}
                       <div className="flex items-center gap-0.5 flex-shrink-0 mt-0.5">
                         <button
+                          type="button"
                           onClick={() => handleMoveSubtask(idx, 'up')}
                           disabled={idx === 0}
                           title="Move up"
@@ -1369,6 +1379,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                           <ChevronUp size={13} />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleMoveSubtask(idx, 'down')}
                           disabled={idx === subtasks.length - 1}
                           title="Move down"
@@ -1382,7 +1393,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                           onClick={() => handleDeleteSubtask(st.id)}
                           title="Delete subtask"
                           aria-label="Delete subtask"
-                          className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-colors ml-0.5"
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-mission-control-text-dim hover:text-error hover:bg-error/10 transition-colors ml-0.5"
                         >
                           <X size={13} />
                         </button>
@@ -1398,34 +1409,63 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         {/* Planning Tab - ALWAYS VISIBLE regardless of task status (historical record) */}
         {activeTab === 'planning' && (
           <div className="p-4">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
-              <FileText size={12} className="text-mission-control-text-dim" />
-              Planning &amp; Brainstorming
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <FileText size={12} className="text-mission-control-text-dim" />
+                Planning &amp; Brainstorming
+              </span>
+              <button
+                type="button"
+                onClick={() => setEditingPlanningNotes(!editingPlanningNotes)}
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors hover:bg-mission-control-bg"
+                style={{ color: editingPlanningNotes ? 'var(--mission-control-accent)' : 'var(--mission-control-text-dim)' }}
+              >
+                {editingPlanningNotes ? <><Eye size={11} /> Preview</> : <><Pencil size={11} /> Edit</>}
+              </button>
             </div>
-            
-            <TextArea
-              value={task.planningNotes || ''}
-              onChange={(e) => {
-                updateTask(task.id, { planningNotes: e.target.value });
-                // Auto-save to backend (debounced by typing)
-                clearTimeout((window as any).__planningNotesTimer);
-                (window as any).__planningNotesTimer = setTimeout(() => {
-                  taskApi.update(task.id, {
-                    planningNotes: e.target.value
-                  }).catch((_err: unknown) => { /* silent - planning notes save failed */ });
-                }, 1000);
-              }}
-              placeholder="Planning notes, brainstorming, research..."
-              resize="vertical"
-              size="2"
-              className="w-full font-mono"
-              style={{ minHeight: '16rem' }}
-            />
-            
-            <p className="text-xs text-mission-control-text-dim mt-2">
-              <Lightbulb size={12} className="inline mr-1" />Use this space for planning, brainstorming, research notes, or any thoughts about this task.
-              Changes are auto-saved after 1 second.
-            </p>
+
+            {editingPlanningNotes ? (
+              <TextArea
+                value={localPlanningNotes ?? ''}
+                onChange={(e) => {
+                  setLocalPlanningNotes(e.target.value);
+                  updateTask(task.id, { planningNotes: e.target.value });
+                  clearTimeout((window as any).__planningNotesTimer);
+                  (window as any).__planningNotesTimer = setTimeout(() => {
+                    taskApi.update(task.id, {
+                      planningNotes: e.target.value
+                    }).catch((_err: unknown) => {});
+                  }, 1000);
+                }}
+                placeholder="Planning notes, brainstorming, research..."
+                resize="vertical"
+                size="2"
+                className="w-full font-mono"
+                style={{ minHeight: '16rem' }}
+              />
+            ) : (localPlanningNotes ?? '').trim() ? (
+              <div
+                className="rounded-lg p-3 cursor-pointer hover:bg-mission-control-bg/50 transition-colors"
+                style={{ border: '1px solid var(--mission-control-border)' }}
+                onClick={() => setEditingPlanningNotes(true)}
+              >
+                <MarkdownMessage content={localPlanningNotes ?? ''} />
+              </div>
+            ) : (
+              <div
+                className="rounded-lg p-4 text-center cursor-pointer hover:bg-mission-control-bg/50 transition-colors"
+                style={{ border: '1px dashed var(--mission-control-border)' }}
+                onClick={() => setEditingPlanningNotes(true)}
+              >
+                <p className="text-xs text-mission-control-text-dim">No planning notes yet. Click to add.</p>
+              </div>
+            )}
+
+            {editingPlanningNotes && (
+              <p className="text-xs text-mission-control-text-dim mt-2">
+                <Lightbulb size={12} className="inline mr-1" />Changes are auto-saved after 1 second.
+              </p>
+            )}
 
             {/* Dependencies */}
             <div className="mt-6">
@@ -1441,7 +1481,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                       <Flex key={depId} align="center" gap="2" className="p-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm">
                         <span className="flex-1 truncate">{depTask?.title || depId}</span>
                         {depTask && (
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${depTask.status === 'done' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'}`}>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${depTask.status === 'done' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
                             {depTask.status}
                           </span>
                         )}
@@ -1516,8 +1556,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     {related.map(rt => (
                       <Flex key={rt.id} align="center" gap="2" className="p-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-sm hover:border-mission-control-accent/50 transition-colors">
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                          rt.status === 'in-progress' ? 'bg-[var(--color-info)]' :
-                          rt.status === 'review' ? 'bg-[var(--color-review)]' :
+                          rt.status === 'in-progress' ? 'bg-info' :
+                          rt.status === 'review' ? 'bg-review' :
                           'bg-mission-control-border'
                         }`} />
                         <span className="flex-1 truncate text-xs">{rt.title}</span>
@@ -1544,6 +1584,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <Flex align="center" justify="between" className="mb-4">
               <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Activity Log</div>
               <button
+                type="button"
                 onClick={loadActivity}
                 disabled={loadingActivity}
                 aria-label="Refresh activity"
@@ -1572,9 +1613,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     key={act.id}
                     className={`flex items-start gap-3 p-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors ${
                       act.action === 'review-rejected' || act.action === 'pre-review-rejected'
-                        ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/20'
+                        ? 'bg-error/10 border border-error/20'
                         : act.action === 'review-approved' || act.action === 'pre-review-approved'
-                        ? 'bg-[var(--color-success)]/10 border border-[var(--color-success)]/20'
+                        ? 'bg-success/10 border border-success/20'
                         : ''
                     }`}
                   >
@@ -1744,6 +1785,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                         {/* Actions — always visible, stop propagation to avoid opening preview */}
                         <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                           <button
+                            type="button"
                             onClick={() => handleOpenFile(attachment.filePath)}
                             title="Open in Finder"
                             aria-label="Open file"
@@ -1756,7 +1798,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                             onClick={() => handleDeleteAttachment(attachment.id)}
                             title="Remove attachment"
                             aria-label="Remove attachment"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-colors"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-error hover:bg-error/10 transition-colors"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -1793,7 +1835,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               ];
               const allPass = gates.every(g => g.ok);
               return (
-                <div className={`p-4 rounded-xl border ${allPass ? 'bg-[var(--color-success)]/5 border-[var(--color-success)]/25' : 'bg-[var(--color-warning)]/5 border-[var(--color-warning)]/25'}`}>
+                <div className={`p-4 rounded-xl border ${allPass ? 'bg-success/5 border-success/25' : 'bg-warning/5 border-warning/25'}`}>
                   <div className="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: allPass ? 'var(--color-success)' : 'var(--color-warning)' }}>
                     <Clock size={12} />
                     Clara — Pre-Review Gate &nbsp;·&nbsp; {allPass ? 'All gates pass' : `${gates.filter(g => !g.ok).length} failing`}
@@ -1804,8 +1846,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                         key={label}
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border ${
                           ok
-                            ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/20 text-[var(--color-success)]/80'
-                            : 'bg-[var(--color-error)]/10 border-[var(--color-error)]/20 text-[var(--color-error)]/80'
+                            ? 'bg-success/10 border-success/20 text-success/80'
+                            : 'bg-error/10 border-error/20 text-error/80'
                         }`}
                       >
                         <span className="font-medium">{label}</span>
@@ -1819,10 +1861,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* ── Human action: approve / request changes ────────────────── */}
             {task.status === 'review' && task.reviewStatus !== 'approved' && (
-              <div className="p-4 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-xl">
+              <div className="p-4 bg-warning/10 border border-warning/30 rounded-xl">
                 <Flex align="center" gap="2" className="mb-3">
-                  <AlertCircle size={15} className="text-[var(--color-warning)]" />
-                  <span className="text-sm font-medium text-[var(--color-warning)]">Clara requests your decision</span>
+                  <AlertCircle size={15} className="text-warning" />
+                  <span className="text-sm font-medium text-warning">Clara requests your decision</span>
                 </Flex>
                 <Flex gap="2">
                   <Button
@@ -1856,9 +1898,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             )}
 
             {task.reviewStatus === 'approved' && (
-              <div className="p-3 bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-xl flex items-center gap-2">
-                <CheckCircle size={15} className="text-[var(--color-success)] flex-shrink-0" />
-                <span className="text-sm font-medium text-[var(--color-success)]">Review approved</span>
+              <div className="p-3 bg-success/10 border border-success/30 rounded-xl flex items-center gap-2">
+                <CheckCircle size={15} className="text-success flex-shrink-0" />
+                <span className="text-sm font-medium text-success">Review approved</span>
               </div>
             )}
 
@@ -1873,9 +1915,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     {reviewer.name}
                     {task.reviewStatus && (
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                        task.reviewStatus === 'approved'      ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' :
-                        task.reviewStatus === 'needs-changes' ? 'bg-[var(--color-error)]/15 text-[var(--color-error)]' :
-                        task.reviewStatus === 'in-review'     ? 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]' :
+                        task.reviewStatus === 'approved'      ? 'bg-success/15 text-success' :
+                        task.reviewStatus === 'needs-changes' ? 'bg-error/15 text-error' :
+                        task.reviewStatus === 'in-review'     ? 'bg-warning/15 text-warning' :
                         'bg-mission-control-border/40 text-mission-control-text-dim'
                       }`}>{task.reviewStatus}</span>
                     )}
@@ -1966,7 +2008,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             className="w-full"
           />
           {reopenReason.trim().length === 0 && (
-            <p className="text-xs text-[var(--color-error)] mt-2">
+            <p className="text-xs text-error mt-2">
               Reason is required and cannot be empty
             </p>
           )}
@@ -2009,8 +2051,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             {/* Header */}
             <Flex align="center" justify="between" className="p-6 border-b border-mission-control-border">
               <Flex align="center" gap="3">
-                <div className="p-2 bg-[var(--color-warning)]/10 rounded-lg">
-                  <AlertCircle size={24} className="text-[var(--color-warning)]" />
+                <div className="p-2 bg-warning/10 rounded-lg">
+                  <AlertCircle size={24} className="text-warning" />
                 </div>
                 <h3 id="agent-active-title" className="text-lg font-semibold">Agent Still Active</h3>
               </Flex>
@@ -2029,8 +2071,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Content */}
             <div className="p-6">
-              <div className="bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg p-4 mb-4">
-                <p className="text-sm text-[var(--color-warning)] mb-2">
+              <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-4">
+                <p className="text-sm text-warning mb-2">
                   <AlertTriangle size={14} className="inline mr-1" />An agent is currently working on this task
                 </p>
                 <div className="text-xs text-mission-control-text-dim space-y-1">

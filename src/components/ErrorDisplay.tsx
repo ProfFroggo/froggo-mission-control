@@ -121,22 +121,22 @@ const ErrorDisplay = React.memo(function ErrorDisplay({
   };
 
   const errorBgClass = calloutColor === 'red'
-    ? 'bg-[var(--color-error)]/8 border border-[var(--color-error)]/20'
+    ? 'bg-error/8 border border-error/20'
     : calloutColor === 'orange'
-    ? 'bg-[var(--color-warning)]/8 border border-[var(--color-warning)]/20'
-    : 'bg-[var(--color-info)]/8 border border-[var(--color-info)]/20';
+    ? 'bg-warning/8 border border-warning/20'
+    : 'bg-info/8 border border-info/20';
 
   const iconColorClass = calloutColor === 'red'
-    ? 'text-[var(--color-error)]'
+    ? 'text-error'
     : calloutColor === 'orange'
-    ? 'text-[var(--color-warning)]'
-    : 'text-[var(--color-info)]';
+    ? 'text-warning'
+    : 'text-info';
 
   const iconBgClass = calloutColor === 'red'
-    ? 'bg-[var(--color-error)]/10'
+    ? 'bg-error/10'
     : calloutColor === 'orange'
-    ? 'bg-[var(--color-warning)]/10'
-    : 'bg-[var(--color-info)]/10';
+    ? 'bg-warning/10'
+    : 'bg-info/10';
 
   return (
     <Flex align="center" justify="center" className="min-h-[400px] p-8">
@@ -230,8 +230,8 @@ export function FieldError({ error, touched }: FieldErrorProps) {
 
   return (
     <Flex align="center" gap="1" mt="1">
-      <AlertCircle size={14} className="text-[var(--color-error)]" />
-      <Text size="1" className="text-[var(--color-error)]">{error}</Text>
+      <AlertCircle size={14} className="text-error" />
+      <Text size="1" className="text-error">{error}</Text>
     </Flex>
   );
 }

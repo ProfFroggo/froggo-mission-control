@@ -1,9 +1,11 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Meeting Transcription Service
- * Uses browser Web Speech API for real-time transcription.
+ * Uses Gemini STT for real-time transcription (via MediaRecorder + /api/gemini/transcribe).
  * Uses Gemini REST API (not Live) to summarise + extract action items on meeting end.
  */
+
+import { GeminiStt } from './globalStt';
 
 export interface Meeting {
   id: string;
@@ -36,7 +38,7 @@ export interface MeetingSummary {
 }
 
 export class MeetingTranscriber {
-  private recognition: any = null;
+  private stt: GeminiStt | null = null;
   private onTranscriptCallback: ((segment: TranscriptionSegment) => void) | null = null;
 
   // In-memory storage
@@ -68,86 +70,63 @@ export class MeetingTranscriber {
   }
 
   /**
-   * Start real-time transcription using the browser Web Speech API.
-   * Does NOT use Gemini Live — no WebSocket, no API key required to start.
+   * Start real-time transcription using Gemini STT (MediaRecorder + server-side Gemini API).
+   * Replaces the previous Web Speech API implementation for better accuracy and consistency.
+   *
+   * @param meetingId Active meeting ID
+   * @param _audioStream Unused (kept for API compat) — GeminiStt acquires its own stream
+   * @param deviceId Optional mic device ID for device selection
    */
-  async startTranscription(meetingId: string, _audioStream?: MediaStream): Promise<void> {
+  async startTranscription(meetingId: string, _audioStream?: MediaStream, deviceId?: string): Promise<void> {
     if (!meetingId) throw new Error('No active meeting');
 
-    const SpeechRecognitionCtor =
-      (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognitionCtor) {
-      throw new Error(
-        'Speech recognition is not supported in this browser. Try Chrome or Edge.'
-      );
-    }
-
-    this.recognition = new SpeechRecognitionCtor();
-    this.recognition.continuous = true;
-    this.recognition.interimResults = true;
-    this.recognition.lang = 'en-US';
-
-    let pendingFinalText = '';
-
-    this.recognition.onresult = (event: any) => {
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        const text = result[0].transcript.trim();
-        if (!text) continue;
-
-        if (result.isFinal) {
-          pendingFinalText = text;
-          const segment: TranscriptionSegment = {
+    const stt = new GeminiStt({
+      deviceId: deviceId || undefined,
+      continuous: true,
+      chunkDurationMs: 10000,
+      onTranscript: (text) => {
+        if (!text.trim()) return;
+        const segment: TranscriptionSegment = {
+          speaker: 'You',
+          text,
+          timestamp: Date.now(),
+        };
+        this.saveTranscript(meetingId, segment.speaker, segment.text);
+        if (this.onTranscriptCallback) this.onTranscriptCallback(segment);
+      },
+      onStatus: (status) => {
+        // Emit interim status as a preview
+        if (this.onTranscriptCallback && status !== 'Recording...' && status !== 'Transcribing...') {
+          this.onTranscriptCallback({
             speaker: 'You',
-            text,
+            text: `${status}...`,
             timestamp: Date.now(),
-          };
-          this.saveTranscript(meetingId, segment.speaker, segment.text);
-          if (this.onTranscriptCallback) this.onTranscriptCallback(segment);
-          pendingFinalText = '';
-        } else {
-          // Emit interim as a preview (not saved to store)
-          if (this.onTranscriptCallback) {
-            this.onTranscriptCallback({
-              speaker: 'You',
-              text: `${text}…`,
-              timestamp: Date.now(),
-            });
-          }
+          });
         }
-      }
-      void pendingFinalText; // suppress unused warning
-    };
+      },
+      onError: (err) => {
+        console.error('[MeetingTranscriber] STT error:', err);
+      },
+      onEnd: () => {
+        // Auto-restart if meeting is still active
+        const meeting = this.meetingsStore.find(m => m.id === meetingId);
+        if (meeting?.status === 'active' && this.stt) {
+          this.stt.start();
+        }
+      },
+    });
 
-    this.recognition.onerror = (event: any) => {
-      // 'no-speech' is normal during silences — restart quietly
-      if (event.error === 'no-speech') {
-        this.recognition?.start();
-        return;
-      }
-      console.error('[MeetingTranscriber] SpeechRecognition error:', event.error);
-    };
-
-    this.recognition.onend = () => {
-      // Auto-restart so continuous recording doesn't stop on short pauses
-      const meeting = this.meetingsStore.find(m => m.id === meetingId);
-      if (meeting?.status === 'active' && this.recognition) {
-        try { this.recognition.start(); } catch { /* already started */ }
-      }
-    };
-
-    this.recognition.start();
+    this.stt = stt;
+    await stt.start();
   }
 
   /** End a meeting and stop transcription */
   async endMeeting(meetingId: string): Promise<void> {
     if (!meetingId) throw new Error('No meeting ID provided');
 
-    if (this.recognition) {
-      this.recognition.onend = null; // prevent auto-restart
-      this.recognition.stop();
-      this.recognition = null;
+    if (this.stt) {
+      this.stt.stop();
+      this.stt = null;
     }
 
     const meeting = this.meetingsStore.find(m => m.id === meetingId);
@@ -256,10 +235,9 @@ export class MeetingTranscriber {
   }
 
   cleanup(): void {
-    if (this.recognition) {
-      this.recognition.onend = null;
-      this.recognition.stop();
-      this.recognition = null;
+    if (this.stt) {
+      this.stt.stop();
+      this.stt = null;
     }
   }
 }

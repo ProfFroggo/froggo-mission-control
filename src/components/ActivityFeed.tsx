@@ -7,15 +7,15 @@ import type { LucideIcon } from 'lucide-react';
 
 // Channel icons and colors
 const channelConfig: Record<string, { icon: LucideIcon; color: string; label: string }> = {
-  whatsapp: { icon: MessageCircle, color: 'bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/30', label: 'WhatsApp' },
-  telegram: { icon: Send, color: 'bg-[var(--color-info)]/10 text-[var(--color-info)] border-[var(--color-info)]/30', label: 'Telegram' },
-  discord: { icon: Gamepad2, color: 'bg-[var(--color-info)]/10 text-[var(--color-info)] border-[var(--color-info)]/30', label: 'Discord' },
-  webchat: { icon: Globe, color: 'bg-[var(--color-review)]-subtle text-[var(--color-review)] border-[var(--color-review)]-border', label: 'Webchat' },
-  signal: { icon: Lock, color: 'bg-[var(--color-info)]/10 text-[var(--color-info)] border-[var(--color-info)]/30', label: 'Signal' },
-  imessage: { icon: MessageCircle, color: 'bg-[var(--color-info)]/10 text-[var(--color-info)] border-[var(--color-info)]/30', label: 'iMessage' },
-  slack: { icon: Briefcase, color: 'bg-[var(--color-review)]-subtle text-[var(--color-review)] border-[var(--color-review)]-border', label: 'Slack' },
-  voice: { icon: Mic, color: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border-[var(--color-warning)]/30', label: 'Voice' },
-  cron: { icon: Clock, color: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border-[var(--color-warning)]/30', label: 'Scheduled' },
+  whatsapp: { icon: MessageCircle, color: 'bg-success/10 text-success border-success/30', label: 'WhatsApp' },
+  telegram: { icon: Send, color: 'bg-info/10 text-info border-info/30', label: 'Telegram' },
+  discord: { icon: Gamepad2, color: 'bg-info/10 text-info border-info/30', label: 'Discord' },
+  webchat: { icon: Globe, color: 'bg-review-subtle text-review border-review-border', label: 'Webchat' },
+  signal: { icon: Lock, color: 'bg-info/10 text-info border-info/30', label: 'Signal' },
+  imessage: { icon: MessageCircle, color: 'bg-info/10 text-info border-info/30', label: 'iMessage' },
+  slack: { icon: Briefcase, color: 'bg-review-subtle text-review border-review-border', label: 'Slack' },
+  voice: { icon: Mic, color: 'bg-warning/10 text-warning border-warning/30', label: 'Voice' },
+  cron: { icon: Clock, color: 'bg-warning/10 text-warning border-warning/30', label: 'Scheduled' },
   system: { icon: Settings, color: 'bg-muted-subtle text-muted border-muted-border', label: 'System' },
 };
 
@@ -144,6 +144,7 @@ const ActivityFeed = memo(function ActivityFeed() {
             onClick={fetchSessions}
             disabled={loading || !connected}
             title="Refresh"
+            aria-label="Refresh activity feed"
             className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />

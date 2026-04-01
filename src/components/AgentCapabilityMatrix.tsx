@@ -105,7 +105,7 @@ export default function AgentCapabilityMatrix() {
   if (error) {
     return (
       <div className="p-4 text-center">
-        <p className="text-[var(--color-error)] text-sm mb-3">{error}</p>
+        <p className="text-error text-sm mb-3">{error}</p>
         <button
           type="button"
           onClick={load}

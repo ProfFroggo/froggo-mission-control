@@ -70,6 +70,7 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
         <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <h3 className="text-base font-semibold">Room Settings</h3>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close settings"
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
@@ -143,6 +144,7 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Pinned Message</p>
               <button
+                type="button"
                 onClick={onUnpin}
                 className="w-full inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >

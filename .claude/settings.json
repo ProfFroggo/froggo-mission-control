@@ -64,6 +64,20 @@
       "env": {
         "SCHEDULE_PATH": "/Users/kevin.macarthur/mission-control/data/schedule.json"
       }
+    },
+    "google-workspace": {
+      "type": "stdio",
+      "command": "/usr/local/bin/npx",
+      "args": ["-y", "@presto-ai/google-workspace-mcp"],
+      "env": {
+        "GEMINI_CLI_WORKSPACE_FORCE_FILE_STORAGE": "true",
+        "HOME": "/Users/kevin.macarthur"
+      }
+    },
+    "mixpanel": {
+      "type": "stdio",
+      "command": "/usr/local/bin/npx",
+      "args": ["-y", "mcp-remote@0.1.38", "https://mcp-eu.mixpanel.com/mcp"]
     }
   },
   "hooks": {
@@ -86,6 +100,10 @@
       }
     ],
     "Stop": [
+      {
+        "type": "command",
+        "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/agent-error.js"
+      },
       {
         "type": "command",
         "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/session-sync.js"

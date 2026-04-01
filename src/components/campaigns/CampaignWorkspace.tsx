@@ -109,11 +109,11 @@ function AssetsTab({ campaign }: { campaign: Campaign }) {
 
   function assetBadge(type: string) {
     const map: Record<string, string> = {
-      image: 'text-[var(--color-info)] bg-[var(--color-info)]/10',
-      video: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle',
-      copy: 'text-[var(--color-success)] bg-[var(--color-success)]/10',
-      brief: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',
-      report: 'text-[var(--color-info)] bg-[var(--color-info)]/10',
+      image: 'text-info bg-info/10',
+      video: 'text-review bg-review-subtle',
+      copy: 'text-success bg-success/10',
+      brief: 'text-warning bg-warning/10',
+      report: 'text-info bg-info/10',
     };
     return map[type] ?? 'text-muted bg-muted-subtle';
   }
@@ -121,8 +121,8 @@ function AssetsTab({ campaign }: { campaign: Campaign }) {
   function statusBadge(status: string) {
     const map: Record<string, string> = {
       draft: 'text-muted bg-muted-subtle',
-      approved: 'text-[var(--color-success)] bg-[var(--color-success)]/10',
-      live: 'text-[var(--color-info)] bg-[var(--color-info)]/10',
+      approved: 'text-success bg-success/10',
+      live: 'text-info bg-info/10',
       archived: 'text-mission-control-text-dim bg-mission-control-surface',
     };
     return map[status] ?? 'text-muted bg-muted-subtle';
@@ -310,9 +310,9 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
 
   function TrendIcon({ pct, hasData }: { pct: number; hasData: boolean }) {
     if (!hasData) return <Minus size={13} className="text-mission-control-text-dim/40" />;
-    if (pct >= 100) return <TrendingUp size={13} className="text-[var(--color-success)]" />;
-    if (pct >= 50) return <Minus size={13} className="text-[var(--color-warning)]" />;
-    return <TrendingDown size={13} className="text-[var(--color-error)]" />;
+    if (pct >= 100) return <TrendingUp size={13} className="text-success" />;
+    if (pct >= 50) return <Minus size={13} className="text-warning" />;
+    return <TrendingDown size={13} className="text-error" />;
   }
 
   return (
@@ -369,7 +369,7 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
                       </Flex>
                       <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-colors ${pct >= 100 ? 'bg-[var(--color-success)]' : pct >= 50 ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-error)]'}`}
+                          className={`h-full rounded-full transition-colors ${pct >= 100 ? 'bg-success' : pct >= 50 ? 'bg-warning' : 'bg-error'}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -397,11 +397,11 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
               <div className="text-xs text-mission-control-text-dim">Total</div>
             </div>
             <div>
-              <div className="text-lg font-semibold text-[var(--color-warning)]">${budgetSpent.toLocaleString()}</div>
+              <div className="text-lg font-semibold text-warning">${budgetSpent.toLocaleString()}</div>
               <div className="text-xs text-mission-control-text-dim">Spent</div>
             </div>
             <div>
-              <div className="text-lg font-semibold text-[var(--color-success)]">${budgetRemaining.toLocaleString()}</div>
+              <div className="text-lg font-semibold text-success">${budgetRemaining.toLocaleString()}</div>
               <div className="text-xs text-mission-control-text-dim">Remaining</div>
             </div>
           </div>
@@ -411,7 +411,7 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
             </Flex>
             <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-colors ${spendPct > 90 ? 'bg-[var(--color-error)]' : spendPct > 70 ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-success)]'}`}
+                className={`h-full rounded-full transition-colors ${spendPct > 90 ? 'bg-error' : spendPct > 70 ? 'bg-warning' : 'bg-success'}`}
                 style={{ width: `${spendPct}%` }}
               />
             </div>
@@ -589,7 +589,7 @@ function TimelineTab({ campaign }: { campaign: Campaign }) {
                       <span className="text-[10px] tabular-nums text-mission-control-text-dim">
                         {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </span>
-                      {isPast && <CheckCircle2 size={13} className="text-[var(--color-success)]" />}
+                      {isPast && <CheckCircle2 size={13} className="text-success" />}
                     </div>
                   </div>
                 </div>
@@ -642,13 +642,13 @@ function BudgetTracker({ campaign }: { campaign: Campaign }) {
           <div className="text-xs text-mission-control-text-dim">Total Budget</div>
         </div>
         <div>
-          <div className={`text-base font-semibold ${consumedPct > 90 ? 'text-[var(--color-error)]' : consumedPct > 70 ? 'text-[var(--color-warning)]' : 'text-mission-control-text'}`}>
+          <div className={`text-base font-semibold ${consumedPct > 90 ? 'text-error' : consumedPct > 70 ? 'text-warning' : 'text-mission-control-text'}`}>
             ${Math.round(displaySpend).toLocaleString()}
           </div>
           <div className="text-xs text-mission-control-text-dim">{isEstimated ? 'Est. Spend' : 'Spent'}</div>
         </div>
         <div>
-          <div className="text-base font-semibold text-[var(--color-success)]">${Math.round(remaining).toLocaleString()}</div>
+          <div className="text-base font-semibold text-success">${Math.round(remaining).toLocaleString()}</div>
           <div className="text-xs text-mission-control-text-dim">Remaining</div>
         </div>
       </div>
@@ -659,7 +659,7 @@ function BudgetTracker({ campaign }: { campaign: Campaign }) {
         </Flex>
         <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-colors duration-500 ${consumedPct > 90 ? 'bg-[var(--color-error)]' : consumedPct > 70 ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-success)]'}`}
+            className={`h-full rounded-full transition-colors duration-500 ${consumedPct > 90 ? 'bg-error' : consumedPct > 70 ? 'bg-warning' : 'bg-success'}`}
             style={{ width: `${consumedPct}%` }}
           />
         </div>
@@ -755,7 +755,7 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
           </div>
           {totalTasks > 0 && (
             <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
-              <div className="h-full rounded-full bg-[var(--color-success)]" style={{ width: `${taskProgress}%` }} />
+              <div className="h-full rounded-full bg-success" style={{ width: `${taskProgress}%` }} />
             </div>
           )}
         </div>
@@ -765,7 +765,7 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
           <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
             <CircleDot size={12} /> In Progress
           </Flex>
-          <div className={`text-lg font-semibold leading-none ${inProgressTasks > 0 ? 'text-[var(--color-warning)]' : 'text-mission-control-text'}`}>
+          <div className={`text-lg font-semibold leading-none ${inProgressTasks > 0 ? 'text-warning' : 'text-mission-control-text'}`}>
             {inProgressTasks > 0 ? inProgressTasks : '—'}
           </div>
         </div>
@@ -790,12 +790,12 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
           </Flex>
           {timelinePct !== null ? (
             <>
-              <div className={`text-lg font-semibold leading-none ${isOverdue ? 'text-[var(--color-error)]' : daysRemaining !== null && daysRemaining <= 7 ? 'text-[var(--color-warning)]' : 'text-mission-control-text'}`}>
+              <div className={`text-lg font-semibold leading-none ${isOverdue ? 'text-error' : daysRemaining !== null && daysRemaining <= 7 ? 'text-warning' : 'text-mission-control-text'}`}>
                 {isOverdue ? 'Overdue' : daysRemaining === 0 ? 'Today' : daysRemaining !== null ? `${daysRemaining}d` : `${timelinePct}%`}
               </div>
               <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${isOverdue ? 'bg-[var(--color-error)]' : daysRemaining !== null && daysRemaining <= 7 ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-info)]'}`}
+                  className={`h-full rounded-full ${isOverdue ? 'bg-error' : daysRemaining !== null && daysRemaining <= 7 ? 'bg-warning' : 'bg-info'}`}
                   style={{ width: `${timelinePct}%` }}
                 />
               </div>
@@ -865,7 +865,7 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
             <div>
               <span className="text-xs text-mission-control-text-dim block">Status</span>
               <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border mt-0.5 ${sc.cls}`}>
-                {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />}
+                {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />}
                 {sc.label}
               </span>
             </div>
@@ -1155,9 +1155,9 @@ interface ChecklistItem {
 
 const CATEGORY_CLASSES: Record<string, { text: string; bg: string }> = {
   planning:   { text: 'text-mission-control-accent', bg: 'bg-mission-control-accent' },
-  creative:   { text: 'text-[var(--color-success)]',                bg: 'bg-[var(--color-success)]' },
-  compliance: { text: 'text-[var(--color-error)]',                  bg: 'bg-[var(--color-error)]' },
-  technical:  { text: 'text-[var(--color-warning)]',                bg: 'bg-[var(--color-warning)]' },
+  creative:   { text: 'text-success',                bg: 'bg-success' },
+  compliance: { text: 'text-error',                  bg: 'bg-error' },
+  technical:  { text: 'text-warning',                bg: 'bg-warning' },
   general:    { text: 'text-mission-control-text-dim', bg: 'bg-mission-control-text-dim' },
 };
 
@@ -1238,7 +1238,7 @@ function ChecklistTab({ campaign }: { campaign: Campaign }) {
         </Flex>
         <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-colors duration-500 ${pct === 100 ? 'bg-[var(--color-success)]' : 'bg-mission-control-accent'}`}
+            className={`h-full rounded-full transition-colors duration-500 ${pct === 100 ? 'bg-success' : 'bg-mission-control-accent'}`}
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -1261,12 +1261,12 @@ function ChecklistTab({ campaign }: { campaign: Campaign }) {
                 onClick={() => toggle(item)}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors w-full text-left ${
                   item.checked
-                    ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]'
+                    ? 'bg-success/10 border-success/30 text-success'
                     : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {item.checked ? (
-                  <CheckCircle2 size={16} className="text-[var(--color-success)] flex-shrink-0" />
+                  <CheckCircle2 size={16} className="text-success flex-shrink-0" />
                 ) : (
                   <Square size={16} className="text-mission-control-text-dim flex-shrink-0" />
                 )}
@@ -1389,7 +1389,7 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
             <span className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: campaign.color }} />
             <span className="text-sm font-medium text-mission-control-text truncate">{campaign.name}</span>
             <span className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${sc.cls}`}>
-              {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-pulse inline-block mr-1" />}
+              {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse inline-block mr-1" />}
               {sc.label}
             </span>
             <span className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${tc}`}>{TYPE_LABELS[campaign.type] ?? campaign.type}</span>

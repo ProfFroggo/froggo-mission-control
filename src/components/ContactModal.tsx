@@ -942,8 +942,8 @@ Be thorough but only include real people, not generic references.`;
         {/* Status Message - Positioned absolutely over modal */}
         {saveStatus !== 'idle' && (
           <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-10 ${
-            saveStatus === 'success' ? 'bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 text-[var(--color-success)]' :
-            saveStatus === 'error' ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)]' :
+            saveStatus === 'success' ? 'bg-success/10 border border-success/30 text-success' :
+            saveStatus === 'error' ? 'bg-error/10 border border-error/30 text-error' :
             'bg-mission-control-surface border border-mission-control-border'
           }`}>
             {saveStatus === 'success' ? <CheckCircle size={16} /> :

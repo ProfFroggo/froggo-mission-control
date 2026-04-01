@@ -1,6 +1,5 @@
-// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // src/hooks/useWorkflowStudio.ts
-// React hook that wraps WorkflowStudioClient with connection status polling,
+// React hook wrapping WorkflowStudioClient with connection status,
 // workflow list caching, and execution helpers.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -11,34 +10,21 @@ import {
   type WorkflowSummary,
 } from '@/lib/workflow-studio-client';
 
-/** Health-check polling interval (ms). */
 const HEALTH_POLL_MS = 15_000;
 
 interface UseWorkflowStudioOptions {
-  /** How often to poll the health endpoint (ms). Set to 0 to disable. */
   healthPollInterval?: number;
-  /** Automatically fetch the workflow list when connected. */
   autoFetchWorkflows?: boolean;
-  /** Optional workspace filter for listWorkflows. */
-  workspaceId?: string;
 }
 
 interface UseWorkflowStudioReturn {
-  /** Whether Workflow Studio is reachable. */
   isConnected: boolean;
-  /** Cached list of workflows (empty until first successful fetch). */
   workflows: WorkflowSummary[];
-  /** True while any async operation is in-flight. */
   loading: boolean;
-  /** Last error from any operation, cleared on next success. */
   error: string | null;
-  /** Most recent execution result. */
   lastExecution: ExecutionResult | null;
-  /** Trigger a workflow execution by ID. */
   executeWorkflow: (id: string, inputs?: Record<string, unknown>) => Promise<ExecutionResult | null>;
-  /** Re-fetch the workflow list. */
   refreshWorkflows: () => Promise<void>;
-  /** Manually trigger a health check. */
   checkHealth: () => Promise<boolean>;
 }
 
@@ -48,7 +34,6 @@ export function useWorkflowStudio(
   const {
     healthPollInterval = HEALTH_POLL_MS,
     autoFetchWorkflows = true,
-    workspaceId,
   } = options;
 
   const clientRef = useRef(new WorkflowStudioClient());
@@ -57,15 +42,12 @@ export function useWorkflowStudio(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastExecution, setLastExecution] = useState<ExecutionResult | null>(null);
-
-  // Track whether we've already fetched workflows after first connect
   const hasFetched = useRef(false);
 
-  // ── Health check ──────────────────────────────────────────────────────────
-
+  // Health check — uses listWorkflows as a lightweight ping
   const checkHealth = useCallback(async (): Promise<boolean> => {
     try {
-      await clientRef.current.healthCheck();
+      await clientRef.current.listWorkflows(1, 0);
       setIsConnected(true);
       setError(null);
       return true;
@@ -75,23 +57,19 @@ export function useWorkflowStudio(
     }
   }, []);
 
-  // Poll health on an interval
+  // Poll health
   useEffect(() => {
     if (healthPollInterval <= 0) return;
-
-    // Immediate first check
     checkHealth();
-
     const id = setInterval(checkHealth, healthPollInterval);
     return () => clearInterval(id);
   }, [checkHealth, healthPollInterval]);
 
-  // ── Workflow list ─────────────────────────────────────────────────────────
-
+  // Fetch workflow list
   const refreshWorkflows = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
-      const list = await clientRef.current.listWorkflows(workspaceId);
+      const list = await clientRef.current.listWorkflows();
       setWorkflows(list);
       setError(null);
     } catch (err) {
@@ -100,33 +78,37 @@ export function useWorkflowStudio(
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, []);
 
-  // Auto-fetch workflows once connected
+  // Auto-fetch on connect
   useEffect(() => {
     if (isConnected && autoFetchWorkflows && !hasFetched.current) {
       hasFetched.current = true;
       refreshWorkflows();
     }
-    // Reset hasFetched when we lose connection so it re-fetches on reconnect
     if (!isConnected) {
       hasFetched.current = false;
     }
   }, [isConnected, autoFetchWorkflows, refreshWorkflows]);
 
-  // ── Execute ───────────────────────────────────────────────────────────────
-
+  // Execute
   const executeWorkflow = useCallback(
-    async (
-      id: string,
-      inputs?: Record<string, unknown>,
-    ): Promise<ExecutionResult | null> => {
+    async (id: string, inputs?: Record<string, unknown>): Promise<ExecutionResult | null> => {
       setLoading(true);
       setError(null);
       try {
         const result = await clientRef.current.executeWorkflow(id, inputs);
-        setLastExecution(result);
-        return result;
+        const execResult: ExecutionResult = {
+          id: result.id,
+          workflow_id: result.workflowId,
+          trigger: 'manual',
+          status: result.status,
+          started_at: new Date().toISOString(),
+          completed_at: null,
+          duration_ms: 0,
+        };
+        setLastExecution(execResult);
+        return execResult;
       } catch (err) {
         const msg = err instanceof WorkflowStudioError ? err.message : String(err);
         setError(msg);

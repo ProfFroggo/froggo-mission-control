@@ -119,8 +119,8 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
           <Flex align="center" justify="between" className="mb-2">
-            <MessageSquare size={18} className="text-[var(--color-info)]" />
-            <TrendingUp size={14} className="text-[var(--color-success)]" />
+            <MessageSquare size={18} className="text-info" />
+            <TrendingUp size={14} className="text-success" />
           </Flex>
           <div className="text-2xl font-bold tabular-nums text-mission-control-text mb-0.5">
             {stats.totalMessages.toLocaleString()}
@@ -133,8 +133,8 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
 
         <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
           <Flex align="center" justify="between" className="mb-2">
-            <Users size={18} className="text-[var(--color-review)]" />
-            <MessageCircle size={14} className="text-[var(--color-info)]" />
+            <Users size={18} className="text-review" />
+            <MessageCircle size={14} className="text-info" />
           </Flex>
           <div className="text-2xl font-bold tabular-nums text-mission-control-text mb-0.5">
             {stats.totalConversations}
@@ -147,8 +147,8 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
 
         <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
           <Flex align="center" justify="between" className="mb-2">
-            <Phone size={18} className="text-[var(--color-success)]" />
-            <Activity size={14} className="text-[var(--color-warning)]" />
+            <Phone size={18} className="text-success" />
+            <Activity size={14} className="text-warning" />
           </Flex>
           <div className="text-2xl font-bold text-mission-control-text mb-0.5">
             {topChannel?.channel || 'N/A'}
@@ -161,8 +161,8 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
 
         <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
           <Flex align="center" justify="between" className="mb-2">
-            <Mail size={18} className="text-[var(--color-warning)]" />
-            <TrendingUp size={14} className="text-[var(--color-success)]" />
+            <Mail size={18} className="text-warning" />
+            <TrendingUp size={14} className="text-success" />
           </Flex>
           <div className="text-2xl font-bold tabular-nums text-mission-control-text mb-0.5">
             {stats.avgResponseTime.toFixed(1)}m
@@ -323,8 +323,8 @@ export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
               stats.messagesPerDay[stats.messagesPerDay.length - 1].count >
                 stats.messagesPerDay[0].count ? (
                 <>
-                  <TrendingUp size={16} className="text-[var(--color-success)]" />
-                  <span className="text-[var(--color-success)]">Increasing</span>
+                  <TrendingUp size={16} className="text-success" />
+                  <span className="text-success">Increasing</span>
                 </>
               ) : (
                 <span className="text-mission-control-text-dim">Stable</span>

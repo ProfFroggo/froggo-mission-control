@@ -66,18 +66,18 @@ export default function XDraftListView() {
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-[var(--color-success)]/10 text-[var(--color-success)]';
+        return 'bg-success/10 text-success';
       case 'rejected':
-        return 'bg-[var(--color-error)]/10 text-[var(--color-error)]';
+        return 'bg-error/10 text-error';
       case 'idea':
-        return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+        return 'bg-info/10 text-info';
       case 'scheduled':
-        return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+        return 'bg-info/10 text-info';
       case 'published':
       case 'sent':
-        return 'bg-[var(--color-success)]/10 text-[var(--color-success)]';
+        return 'bg-success/10 text-success';
       case 'failed':
-        return 'bg-[var(--color-error)]/10 text-[var(--color-error)]';
+        return 'bg-error/10 text-error';
       default:
         return 'bg-mission-control-border/50 text-mission-control-text-dim/70';
     }
@@ -168,6 +168,7 @@ export default function XDraftListView() {
       <div className="flex flex-col h-full bg-mission-control-bg">
         <div className="p-4 border-b border-mission-control-border">
           <button
+            type="button"
             onClick={() => { setShowComposer(false); loadDrafts(); }}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
@@ -187,7 +188,7 @@ export default function XDraftListView() {
       {/* Header */}
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="2">
-          <FileText className="w-5 h-5 text-[var(--color-info)]" />
+          <FileText className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Drafts</h3>
           {drafts.length > 0 && (
             <span className="px-2 py-0.5 text-xs bg-mission-control-border/20 text-mission-control-text-dim rounded-full">

@@ -243,7 +243,7 @@ export default function MeetingTranscribe() {
       <div className="p-4 border-b border-mission-control-border">
         <Flex align="center" justify="between">
           <Flex align="center" gap="3">
-            <FileText className="w-5 h-5 text-[var(--color-review)]" />
+            <FileText className="w-5 h-5 text-review" />
             <h2 className="text-lg font-semibold">Meeting Transcription</h2>
             <span className="text-xs text-mission-control-text-dim px-2 py-0.5 bg-mission-control-surface rounded-full border border-mission-control-border">
               Web Speech API
@@ -251,8 +251,8 @@ export default function MeetingTranscribe() {
           </Flex>
           {activeMeeting && (
             <Flex align="center" gap="2">
-              <span className="w-2 h-2 bg-[var(--color-error)] rounded-full animate-pulse" />
-              <span className="text-sm text-[var(--color-error)] font-medium">Recording</span>
+              <span className="w-2 h-2 bg-error rounded-full animate-pulse" />
+              <span className="text-sm text-error font-medium">Recording</span>
             </Flex>
           )}
         </Flex>
@@ -304,7 +304,7 @@ export default function MeetingTranscribe() {
               {isUploading ? <><Loader2 className="w-4 h-4 animate-spin" />Transcribing…</> : <><Upload className="w-4 h-4" />Upload Recording</>}
             </button>
             <p className="text-xs text-mission-control-text-dim mt-1 text-center">Requires Gemini API key · MP3, WAV, WebM, M4A</p>
-            {uploadError && <div className="mt-2 p-2 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-lg text-xs">{uploadError}</div>}
+            {uploadError && <div className="mt-2 p-2 bg-error/10 text-error rounded-lg text-xs">{uploadError}</div>}
           </div>
 
           {/* Meeting List */}
@@ -322,7 +322,7 @@ export default function MeetingTranscribe() {
                   const duration = (meeting.ended_at ?? Date.now()) - meeting.started_at;
                   return (
                     <div key={meeting.id}
-                      className={`rounded-lg border transition-colors ${selectedMeeting?.id === meeting.id ? 'bg-[var(--color-review)]-subtle border-[var(--color-review)]-border' : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-border/80'}`}>
+                      className={`rounded-lg border transition-colors ${selectedMeeting?.id === meeting.id ? 'bg-review-subtle border-review-border' : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-border/80'}`}>
                       <button type="button" onClick={() => viewMeeting(meeting)} className="w-full p-3 text-left">
                         <Flex align="start" justify="between">
                           <div className="flex-1 min-w-0 mr-2">
@@ -339,7 +339,7 @@ export default function MeetingTranscribe() {
                           </button>
                         </Flex>
                         {meeting.status === 'active' && (
-                          <span className="inline-block mt-1 text-xs px-1.5 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full">Live</span>
+                          <span className="inline-block mt-1 text-xs px-1.5 py-0.5 bg-error/10 text-error rounded-full">Live</span>
                         )}
                       </button>
                       {isExpanded && (
@@ -377,7 +377,7 @@ export default function MeetingTranscribe() {
                   </Flex>
                 </div>
                 {selectedMeeting.status === 'active' && (
-                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isRecording ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' : 'bg-mission-control-border text-mission-control-text-dim'}`}>
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isRecording ? 'bg-error/10 text-error' : 'bg-mission-control-border text-mission-control-text-dim'}`}>
                     {isRecording ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
                     {isRecording ? 'Listening' : 'Paused'}
                   </div>
@@ -386,14 +386,14 @@ export default function MeetingTranscribe() {
 
               {/* AI Summary (shown after meeting ends) */}
               {summarising && (
-                <Flex align="center" gap="3" className="mx-4 mt-4 p-4 rounded-lg bg-[var(--color-review)]-subtle border border-[var(--color-review)]-border text-sm text-[var(--color-review)]">
+                <Flex align="center" gap="3" className="mx-4 mt-4 p-4 rounded-lg bg-review-subtle border border-review-border text-sm text-review">
                   <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
                   Generating meeting notes with Gemini…
                 </Flex>
               )}
               {summary && !summarising && (
-                <div className="mx-4 mt-4 p-4 rounded-lg bg-[var(--color-review)]-subtle border border-[var(--color-review)]-border space-y-3">
-                  <Flex align="center" gap="2" className="text-[var(--color-review)] font-semibold text-sm">
+                <div className="mx-4 mt-4 p-4 rounded-lg bg-review-subtle border border-review-border space-y-3">
+                  <Flex align="center" gap="2" className="text-review font-semibold text-sm">
                     <Sparkles className="w-4 h-4" /> Meeting Notes
                   </Flex>
                   <p className="text-sm text-mission-control-text">{summary.summary}</p>
@@ -403,7 +403,7 @@ export default function MeetingTranscribe() {
                       <ul className="space-y-1">
                         {summary.actionItems.map((item, i) => (
                           <li key={i} className="text-sm flex items-start gap-2">
-                            <span className="text-[var(--color-review)] mt-0.5">•</span>{item}
+                            <span className="text-review mt-0.5">•</span>{item}
                           </li>
                         ))}
                       </ul>
@@ -415,7 +415,7 @@ export default function MeetingTranscribe() {
                       <ul className="space-y-1">
                         {summary.decisions.map((d, i) => (
                           <li key={i} className="text-sm flex items-start gap-2">
-                            <CheckCircle size={12} className="text-[var(--color-success)] mt-0.5 shrink-0" />{d}
+                            <CheckCircle size={12} className="text-success mt-0.5 shrink-0" />{d}
                           </li>
                         ))}
                       </ul>
@@ -436,8 +436,8 @@ export default function MeetingTranscribe() {
                   <div className="space-y-3">
                     {transcripts.map((t, idx) => (
                       <Flex key={t.id ?? idx} gap="3">
-                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[var(--color-review)]-subtle flex items-center justify-center">
-                          <Users className="w-3.5 h-3.5 text-[var(--color-review)]" />
+                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-review-subtle flex items-center justify-center">
+                          <Users className="w-3.5 h-3.5 text-review" />
                         </div>
                         <div className="flex-1">
                           <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-1">
@@ -454,8 +454,8 @@ export default function MeetingTranscribe() {
                     {/* Interim typing indicator */}
                     {interimText && (
                       <Flex gap="3" className="opacity-50">
-                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[var(--color-review)]-subtle flex items-center justify-center">
-                          <Mic className="w-3.5 h-3.5 text-[var(--color-review)] animate-pulse" />
+                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-review-subtle flex items-center justify-center">
+                          <Mic className="w-3.5 h-3.5 text-review animate-pulse" />
                         </div>
                         <div className="flex-1">
                           <div className="text-xs text-mission-control-text-dim mb-1">You · now</div>

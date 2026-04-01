@@ -119,19 +119,19 @@ export default function TimeTrackingPanel() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Total Time</div>
-          <div className="text-2xl font-bold text-[var(--color-info)] tabular-nums">
+          <div className="text-2xl font-bold text-info tabular-nums">
             {formatDuration(totalTime)}
           </div>
         </div>
         <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Avg Time / Task</div>
-          <div className="text-2xl font-bold text-[var(--color-success)] tabular-nums">
+          <div className="text-2xl font-bold text-success tabular-nums">
             {formatDuration(avgTime)}
           </div>
         </div>
         <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Active Tasks</div>
-          <div className="text-2xl font-bold text-[var(--color-warning)] tabular-nums">{activeTasksCount}</div>
+          <div className="text-2xl font-bold text-warning tabular-nums">{activeTasksCount}</div>
         </div>
         <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Tracked Tasks</div>

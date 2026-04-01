@@ -51,11 +51,11 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
   const getColor = (value: number) => {
     if (value === 0) return 'bg-mission-control-border/40';
     const intensity = (value / maxActivity) * 100;
-    if (intensity < 20) return 'bg-[var(--color-success)]/15';
-    if (intensity < 40) return 'bg-[var(--color-success)]/30';
-    if (intensity < 60) return 'bg-[var(--color-success)]/50';
-    if (intensity < 80) return 'bg-[var(--color-success)]/70';
-    return 'bg-[var(--color-success)]';
+    if (intensity < 20) return 'bg-success/15';
+    if (intensity < 40) return 'bg-success/30';
+    if (intensity < 60) return 'bg-success/50';
+    if (intensity < 80) return 'bg-success/70';
+    return 'bg-success';
   };
 
   const peakDay = DAYS[
@@ -162,11 +162,11 @@ export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
             <span className="text-xs text-mission-control-text-dim">Less</span>
             <Flex gap="1">
               <div className="w-4 h-4 rounded bg-mission-control-border/40" />
-              <div className="w-4 h-4 rounded bg-[var(--color-success)]/15" />
-              <div className="w-4 h-4 rounded bg-[var(--color-success)]/30" />
-              <div className="w-4 h-4 rounded bg-[var(--color-success)]/50" />
-              <div className="w-4 h-4 rounded bg-[var(--color-success)]/70" />
-              <div className="w-4 h-4 rounded bg-[var(--color-success)]" />
+              <div className="w-4 h-4 rounded bg-success/15" />
+              <div className="w-4 h-4 rounded bg-success/30" />
+              <div className="w-4 h-4 rounded bg-success/50" />
+              <div className="w-4 h-4 rounded bg-success/70" />
+              <div className="w-4 h-4 rounded bg-success" />
             </Flex>
             <span className="text-xs text-mission-control-text-dim">More</span>
           </Flex>

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Mic, AudioLines } from 'lucide-react';
-import { IconButton, Badge, Flex, Text } from '@radix-ui/themes';
+import { Badge, Flex, Text } from '@radix-ui/themes';
+import { GeminiStt } from '../lib/globalStt';
+import MicSelector from './MicSelector';
 
 interface VoiceButtonProps {
   onTranscript: (text: string) => void;
@@ -18,56 +20,27 @@ const COMMAND_SUGGESTIONS = [
 
 export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps) {
   const [listening, setListening] = useState(false);
-  const [supported, setSupported] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
-  const [confidence, setConfidence] = useState<number | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const [micDeviceId, setMicDeviceId] = useState('');
+  const sttRef = useRef<GeminiStt | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number>(0);
 
   useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      setSupported(true);
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event: any) => {
-        const result = event.results[0][0];
-        const transcript = result.transcript;
-        const conf = result.confidence as number;
-        setConfidence(conf);
-        onTranscript(transcript);
-        setListening(false);
-        stopAudioAnalysis();
-        setTimeout(() => setConfidence(null), 3000);
-      };
-
-      recognition.onerror = () => {
-        setListening(false);
-        stopAudioAnalysis();
-      };
-      recognition.onend = () => {
-        setListening(false);
-        stopAudioAnalysis();
-      };
-
-      recognitionRef.current = recognition;
-    }
-
     return () => {
-      recognitionRef.current?.abort();
+      sttRef.current?.stop();
       stopAudioAnalysis();
     };
-  }, [onTranscript]);
+  }, []);
 
   const startAudioAnalysis = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const constraints: MediaStreamConstraints = micDeviceId
+        ? { audio: { deviceId: { exact: micDeviceId } } }
+        : { audio: true };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       micStreamRef.current = stream;
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
@@ -107,29 +80,36 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
   };
 
   const toggleListening = () => {
-    if (!recognitionRef.current) return;
-    if (listening) {
-      recognitionRef.current.abort();
+    if (listening && sttRef.current) {
+      sttRef.current.stop();
       setListening(false);
       stopAudioAnalysis();
-    } else {
-      setConfidence(null);
-      recognitionRef.current.start();
-      setListening(true);
-      startAudioAnalysis();
+      return;
     }
+
+    const stt = new GeminiStt({
+      deviceId: micDeviceId || undefined,
+      continuous: false,
+      chunkDurationMs: 8000,
+      onTranscript: (text) => {
+        onTranscript(text);
+        setListening(false);
+        stopAudioAnalysis();
+      },
+      onError: () => {
+        setListening(false);
+        stopAudioAnalysis();
+      },
+      onEnd: () => {
+        setListening(false);
+        stopAudioAnalysis();
+      },
+    });
+    sttRef.current = stt;
+    stt.start();
+    setListening(true);
+    startAudioAnalysis();
   };
-
-  if (!supported) return null;
-
-  const confidenceColor =
-    confidence === null ? undefined
-    : confidence >= 0.8 ? 'grass'
-    : confidence >= 0.5 ? 'orange'
-    : 'red';
-
-  const confidenceWidth =
-    confidence === null ? '0%' : `${Math.round(confidence * 100)}%`;
 
   return (
     <Flex direction="column" align="center" gap="1">
@@ -146,7 +126,7 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
               return (
                 <div
                   key={`wb-${i}`}
-                  className="rounded-full bg-[var(--color-error)] transition-colors duration-75"
+                  className="rounded-full bg-error transition-colors duration-75"
                   style={{
                     width: 2,
                     height: `${Math.max(15, height * 100)}%`,
@@ -159,6 +139,7 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
         )}
 
         <button
+          type="button"
           onClick={toggleListening}
           disabled={disabled}
           title={listening ? 'Stop listening' : 'Voice input'}
@@ -170,6 +151,8 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
         >
           {listening ? <AudioLines size={16} /> : <Mic size={16} />}
         </button>
+
+        <MicSelector value={micDeviceId} onChange={setMicDeviceId} compact />
       </Flex>
 
       {/* Listening label */}
@@ -179,27 +162,8 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
         </Text>
       )}
 
-      {/* Confidence indicator */}
-      {confidence !== null && !listening && (
-        <Flex direction="column" align="center" gap="1" style={{ width: 64 }}>
-          <div className="w-full h-1 bg-mission-control-border rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-colors duration-300 ${
-                confidenceColor === 'grass' ? 'bg-[var(--color-success)]' :
-                confidenceColor === 'orange' ? 'bg-[var(--color-warning)]' :
-                'bg-[var(--color-error)]'
-              }`}
-              style={{ width: confidenceWidth }}
-            />
-          </div>
-          <Text size="1" color="gray">
-            {Math.round((confidence ?? 0) * 100)}% confidence
-          </Text>
-        </Flex>
-      )}
-
       {/* Command suggestion chips — shown when idle */}
-      {!listening && confidence === null && (
+      {!listening && (
         <Flex wrap="wrap" gap="1" justify="center" style={{ maxWidth: 280 }}>
           {COMMAND_SUGGESTIONS.map(cmd => (
             <Badge
@@ -220,16 +184,9 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
   );
 }
 
-// Text-to-speech function
+// Text-to-speech function — delegates to Gemini Chirp 3 via globalTts
 export function speak(text: string) {
-  if ('speechSynthesis' in window) {
-    speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.1;
-    utterance.pitch = 1;
-    const voices = speechSynthesis.getVoices();
-    const preferred = voices.find(v => v.name.includes('Samantha') || v.name.includes('Karen') || v.lang.startsWith('en'));
-    if (preferred) utterance.voice = preferred;
-    speechSynthesis.speak(utterance);
-  }
+  import('../lib/globalTts').then(({ speak: globalSpeak }) => {
+    globalSpeak(text);
+  }).catch(() => { /* globalTts unavailable */ });
 }

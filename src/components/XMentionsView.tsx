@@ -202,7 +202,7 @@ export const XMentionsView: React.FC = () => {
             href={`https://twitter.com/${mention.author_username}/status/${mention.tweet_id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[var(--color-info)] hover:underline"
+            className="text-info hover:underline"
           >
             View on X →
           </a>
@@ -244,7 +244,7 @@ export const XMentionsView: React.FC = () => {
             <Ban size={12} /> Ignored
           </button>
           {mention.reply_status === 'replied' && (
-            <div className="px-2 py-1 text-xs rounded bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]">
+            <div className="px-2 py-1 text-xs rounded bg-success/10 text-success border border-success">
               <CheckCircle size={12} className="inline" /> Replied
               {mention.replied_at && (
                 <span className="ml-1 text-mission-control-text-dim">

@@ -124,7 +124,7 @@ export function DashActivityTimeline({ range }: DashActivityTimelineProps) {
               <XAxis
                 dataKey="label"
                 tickFormatter={tickFormatter}
-                tick={{ fontSize: 10, fill: 'var(--mission-control-text-dim, #a1a1aa)' }}
+                tick={{ fontSize: 10, fill: 'var(--mission-control-text-dim)' }}
                 axisLine={false}
                 tickLine={false}
                 interval={0}
@@ -141,14 +141,14 @@ export function DashActivityTimeline({ range }: DashActivityTimelineProps) {
               <Bar
                 dataKey="created"
                 stackId="a"
-                fill="#3b82f6"
+                fill="var(--color-info)"
                 radius={[0, 0, 0, 0]}
               />
               {/* completed (green) renders on top */}
               <Bar
                 dataKey="completed"
                 stackId="a"
-                fill="#22c55e"
+                fill="var(--color-success)"
                 radius={[2, 2, 0, 0]}
               />
             </BarChart>

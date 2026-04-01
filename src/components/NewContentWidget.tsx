@@ -105,7 +105,7 @@ export default function NewContentWidget() {
   if (error) {
     return (
       <Box p="6">
-        <Flex align="center" gap="2" mb="2" className="text-[var(--color-error)]">
+        <Flex align="center" gap="2" mb="2" className="text-error">
           <AlertCircle size={20} />
           <span className="text-sm">{error}</span>
         </Flex>
@@ -118,7 +118,7 @@ export default function NewContentWidget() {
       <Flex align="center" justify="between" mb="4">
         <Sparkles
           size={28}
-          className={totalNew > 0 ? 'text-[var(--color-review)]' : 'text-mission-control-text-dim'}
+          className={totalNew > 0 ? 'text-review' : 'text-mission-control-text-dim'}
         />
         {totalNew > 0 && (
           <span className="px-3 py-1 text-white text-sm font-bold rounded-full shadow-lg" style={{ background: 'var(--color-review)' }}>
@@ -135,11 +135,11 @@ export default function NewContentWidget() {
         {/* Files */}
         <Flex align="center" justify="between" p="2" className="rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
           <Flex align="center" gap="2">
-            <FileText size={16} className="text-[var(--color-success)]" />
+            <FileText size={16} className="text-success" />
             <span className="text-sm text-mission-control-text-dim">Files</span>
           </Flex>
           <span className={`text-sm font-bold ${
-            counts.files > 0 ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim'
+            counts.files > 0 ? 'text-success' : 'text-mission-control-text-dim'
           }`}>
             {counts.files}
           </span>
@@ -148,11 +148,11 @@ export default function NewContentWidget() {
         {/* Images */}
         <Flex align="center" justify="between" p="2" className="rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
           <Flex align="center" gap="2">
-            <Image size={16} className="text-[var(--color-review)]" />
+            <Image size={16} className="text-review" />
             <span className="text-sm text-mission-control-text-dim">Images</span>
           </Flex>
           <span className={`text-sm font-bold ${
-            counts.images > 0 ? 'text-[var(--color-review)]' : 'text-mission-control-text-dim'
+            counts.images > 0 ? 'text-review' : 'text-mission-control-text-dim'
           }`}>
             {counts.images}
           </span>
@@ -161,11 +161,11 @@ export default function NewContentWidget() {
         {/* Reports */}
         <Flex align="center" justify="between" p="2" className="rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
           <Flex align="center" gap="2">
-            <FileBarChart size={16} className="text-[var(--color-info)]" />
+            <FileBarChart size={16} className="text-info" />
             <span className="text-sm text-mission-control-text-dim">Reports</span>
           </Flex>
           <span className={`text-sm font-bold ${
-            counts.reports > 0 ? 'text-[var(--color-info)]' : 'text-mission-control-text-dim'
+            counts.reports > 0 ? 'text-info' : 'text-mission-control-text-dim'
           }`}>
             {counts.reports}
           </span>
@@ -179,7 +179,7 @@ export default function NewContentWidget() {
       )}
 
       {totalNew > 0 && (
-        <Box mt="4" className="text-xs text-[var(--color-review)] text-center">
+        <Box mt="4" className="text-xs text-review text-center">
           Last 24 hours
         </Box>
       )}

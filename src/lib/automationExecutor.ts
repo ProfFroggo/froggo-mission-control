@@ -15,7 +15,8 @@ export async function executeAutomation(
   const automation = db.prepare('SELECT * FROM automations WHERE id = ? AND status = ?').get(automationId, 'active') as Record<string, unknown> | undefined;
   if (!automation) return { success: false, message: 'Automation not found or not active', stepsRun: 0 };
 
-  const steps: AutomationStep[] = typeof automation.steps === 'string' ? JSON.parse(automation.steps as string) : (automation.steps as AutomationStep[]) ?? [];
+  let steps: AutomationStep[] = [];
+  try { steps = typeof automation.steps === 'string' ? JSON.parse(automation.steps as string) : (automation.steps as AutomationStep[]) ?? []; } catch { /* malformed JSON in steps */ }
   const log: string[] = [];
   let stepsRun = 0;
 
@@ -76,14 +77,38 @@ async function executeStep(
     }
     case 'create-task': {
       // Full task creation with subtasks and multi-agent assignment
-      const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const now = Date.now();
+
+      // Substitute {date} in title with today's readable date
+      const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      const resolvedTitle = (cfg.title || 'Automated task').replace(/\{date\}/g, dateStr);
+
+      // Dedup: skip if an active task with the same base title pattern already exists for this agent
+      const titlePattern = (cfg.title || '').replace(/\{date\}/g, '%');
+      if (titlePattern && cfg.assignTo) {
+        const existing = db.prepare(
+          `SELECT id FROM tasks WHERE assignedTo = ? AND title LIKE ? AND status IN ('todo', 'internal-review', 'in-progress', 'review', 'human-review') LIMIT 1`
+        ).get(cfg.assignTo, titlePattern) as { id: string } | undefined;
+        if (existing) {
+          log.push(`Skipped "${resolvedTitle}" — active instance already exists (${existing.id})`);
+          break;
+        }
+      }
+
+      const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const planningNotes = cfg.planningNotes || cfg.description || '';
       db.prepare(`INSERT INTO tasks (id, title, description, status, priority, assignedTo, planningNotes, tags, labels, blockedBy, blocks, progress, createdAt, updatedAt) VALUES (?, ?, ?, 'todo', ?, ?, ?, '["automation"]', '[]', '[]', '[]', 0, ?, ?)`)
-        .run(taskId, cfg.title || 'Automated task', cfg.description || null, cfg.priority || 'p2', cfg.assignTo || null, planningNotes, now, now);
+        .run(taskId, resolvedTitle, cfg.description || cfg.planningNotes || null, cfg.priority || 'p2', cfg.assignTo || null, planningNotes, now, now);
 
-      // Create subtasks if defined
-      const subtasks: Array<string | { title: string; assignedTo?: string }> = Array.isArray(cfg.subtasks) ? cfg.subtasks as Array<string | { title: string; assignedTo?: string }> : [];
+      // Create subtasks if defined — handle both array and newline-separated string
+      let subtasks: Array<string | { title: string; assignedTo?: string }>;
+      if (Array.isArray(cfg.subtasks)) {
+        subtasks = cfg.subtasks as Array<string | { title: string; assignedTo?: string }>;
+      } else if (typeof cfg.subtasks === 'string' && cfg.subtasks.trim()) {
+        subtasks = (cfg.subtasks as string).split('\n').map(s => s.trim()).filter(Boolean);
+      } else {
+        subtasks = [];
+      }
       for (let i = 0; i < subtasks.length; i++) {
         const st = subtasks[i];
         const stTitle = typeof st === 'string' ? st : st.title;
@@ -93,7 +118,7 @@ async function executeStep(
           .run(stId, taskId, stTitle, stAssign, i, now);
       }
 
-      log.push(`Created task "${cfg.title}" (${taskId}) with ${subtasks.length} subtask(s)`);
+      log.push(`Created task "${resolvedTitle}" (${taskId}) with ${subtasks.length} subtask(s)`);
       break;
     }
     case 'post-to-chat': {
@@ -127,6 +152,24 @@ async function executeStep(
       });
       if (!res.ok) throw new Error(`Webhook returned ${res.status}`);
       log.push(`Webhook ${cfg.url} → ${res.status}`);
+      break;
+    }
+    case 'run-workflow': {
+      try {
+        const { WorkflowStudioClient } = await import('./workflow-studio-client');
+        const client = new WorkflowStudioClient();
+        const workflowId = cfg.workflowId;
+        if (!workflowId) throw new Error('Workflow ID not configured');
+        const inputs = (step.config.inputs as Record<string, unknown>) || {};
+        // Merge trigger payload into inputs
+        const mergedInputs = { ...inputs, ...payload };
+        const result = await client.executeWorkflow(workflowId, mergedInputs);
+        log.push(`Workflow ${workflowId} execution started: ${result.id} (status: ${result.status})`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log.push(`Workflow step failed: ${msg}`);
+        throw err;
+      }
       break;
     }
     case 'delay':

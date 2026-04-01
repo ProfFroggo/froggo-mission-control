@@ -39,9 +39,9 @@ const SORT_OPTIONS: { id: SortOption; label: string; icon: typeof SortAsc }[] = 
 ];
 
 const MODEL_BADGE: Record<string, { label: string; cls: string }> = {
-  opus:    { label: 'Opus',    cls: 'bg-[var(--color-review)]-subtle text-[var(--color-review)] border border-[var(--color-review)]-border' },
-  sonnet:  { label: 'Sonnet',  cls: 'bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30' },
-  haiku:   { label: 'Haiku',   cls: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/30' },
+  opus:    { label: 'Opus',    cls: 'bg-review-subtle text-review border border-review-border' },
+  sonnet:  { label: 'Sonnet',  cls: 'bg-info/10 text-info border border-info/30' },
+  haiku:   { label: 'Haiku',   cls: 'bg-warning/10 text-warning border border-warning/30' },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -224,7 +224,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
   if (error) {
     return (
       <div className="p-6 text-center">
-        <p className="text-[var(--color-error)] mb-3">{error}</p>
+        <p className="text-error mb-3">{error}</p>
         <button
           type="button"
           onClick={() => load()}
@@ -303,7 +303,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
         <div className="flex-1 min-w-0">
           {/* Stats bar */}
           <Flex align="center" gap="4" className="mb-4 text-sm">
-            <span className="icon-text text-[var(--color-success)]">
+            <span className="icon-text text-success">
               <CheckCircle size={14} className="flex-shrink-0" />
               {hiredCount} hired
             </span>
@@ -392,9 +392,9 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
 
           {/* Compare bar */}
           {compareIds.length > 0 && (
-            <Flex align="center" gap="3" className="mb-4 px-3 py-2.5 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg text-sm">
-              <GitCompare size={14} className="text-[var(--color-info)] flex-shrink-0" />
-              <span className="text-[var(--color-info)] flex-1">
+            <Flex align="center" gap="3" className="mb-4 px-3 py-2.5 bg-info/10 border border-info/30 rounded-lg text-sm">
+              <GitCompare size={14} className="text-info flex-shrink-0" />
+              <span className="text-info flex-1">
                 {compareIds.length === 1
                   ? 'Select 1 more agent to compare'
                   : `${compareIds.length} agents selected`}
@@ -444,9 +444,9 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                     key={agent.id}
                     className={`relative rounded-xl bg-mission-control-surface border p-4 transition-colors duration-200 flex flex-col cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${
                       isInCompare
-                        ? 'border-[var(--color-info)]/40'
+                        ? 'border-info/40'
                         : isInstalled
-                          ? 'border-[var(--color-success)]/30'
+                          ? 'border-success/30'
                           : 'border-mission-control-border hover:border-mission-control-accent/30'
                     }`}
                     onMouseEnter={() => setHoveredCard(agent.id)}
@@ -454,8 +454,8 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                   >
                     {/* Featured badge */}
                     {isFeatured && (
-                      <div className="absolute top-3 right-3 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-[var(--color-warning)] text-xs font-medium">
-                        <Star size={9} className="fill-warning" />
+                      <div className="absolute top-3 right-3 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning/10 border border-warning/30 text-warning text-xs font-medium">
+                        <Star size={9} className="fill-current" />
                         Featured
                       </div>
                     )}
@@ -467,7 +467,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                         <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
                           <span className="font-semibold text-sm leading-tight text-mission-control-text">{agent.name}</span>
                           {isInstalled && (
-                            <CheckCircle size={13} className="text-[var(--color-success)] flex-shrink-0" />
+                            <CheckCircle size={13} className="text-success flex-shrink-0" />
                           )}
                         </div>
                         <p className="text-xs text-mission-control-text-dim line-clamp-2">
@@ -504,7 +504,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
 
                     {/* Required APIs warning */}
                     {agent.requiredApis.length > 0 && !isInstalled && (
-                      <Flex align="center" gap="1" className="text-xs text-[var(--color-warning)] mb-3">
+                      <Flex align="center" gap="1" className="text-xs text-warning mb-3">
                         <Cpu size={11} className="flex-shrink-0" />
                         <span>Requires: {agent.requiredApis.join(', ')}</span>
                       </Flex>
@@ -514,7 +514,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                     <div className="pt-2 border-t border-mission-control-border/40 mt-auto">
                       {isInstalled ? (
                         <Flex align="center" gap="2">
-                          <div className="flex items-center gap-1.5 text-xs text-[var(--color-success)] flex-1">
+                          <div className="flex items-center gap-1.5 text-xs text-success flex-1">
                             <CheckCircle size={13} className="flex-shrink-0" />
                             <span>Hired &amp; active{CORE_AGENT_IDS.includes(agent.id) ? ' · Core' : ''}</span>
                           </div>
@@ -544,7 +544,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                                   await load(false);
                                 } finally { setFiring(null); }
                               }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-border/40 transition-colors disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-error hover:bg-mission-control-border/40 transition-colors disabled:opacity-50"
                             >
                               <Trash2 size={10} /> Fire
                             </button>

@@ -1,5 +1,6 @@
 import { useState, useEffect, ReactNode } from 'react';
 import { Button, Box, Flex, Text, Heading } from '@radix-ui/themes';
+import { AlertCircle } from 'lucide-react';
 
 interface PathCheckResult {
   path: string;
@@ -57,7 +58,7 @@ export function DependencyGate({ children }: Props) {
       {criticalMissing.length > 0 && !dismissed && (
         <Flex align="center" justify="center" p="6" className="fixed inset-0 z-50 bg-mission-control-bg">
           <Flex direction="column" align="center" gap="4" style={{ maxWidth: '28rem', width: '100%' }}>
-            <div className="text-4xl">🐸</div>
+            <AlertCircle size={48} className="text-mission-control-accent" />
             <Heading size="5" as="h1" className="text-mission-control-text">Setup Required</Heading>
             <Text size="2" className="text-mission-control-text-dim" align="center">
               Mission Control cannot start because required files are missing:
@@ -66,7 +67,7 @@ export function DependencyGate({ children }: Props) {
               <Flex direction="column" gap="2">
                 {criticalMissing.map(r => (
                   <Flex key={r.path} direction="column" gap="1">
-                    <Text size="2" weight="medium" className="text-[var(--color-error)]">{r.label}</Text>
+                    <Text size="2" weight="medium" className="text-error">{r.label}</Text>
                     <Text size="1" className="text-mission-control-text-dim font-mono break-all">{r.path}</Text>
                   </Flex>
                 ))}

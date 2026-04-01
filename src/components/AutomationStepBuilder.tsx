@@ -17,7 +17,8 @@ export type StepType =
   | 'notify-agent'
   | 'create-task'
   | 'update-task-status'
-  | 'send-email';
+  | 'send-email'
+  | 'run-workflow';
 
 export interface AutomationStepDef {
   id: string;
@@ -44,6 +45,7 @@ const STEP_TYPES: { value: StepType; label: string }[] = [
   { value: 'create-task',        label: 'Create Task' },
   { value: 'update-task-status', label: 'Update Task Status' },
   { value: 'send-email',         label: 'Send Email' },
+  { value: 'run-workflow',       label: 'Run Workflow' },
 ];
 
 function defaultConfig(type: StepType): Record<string, unknown> {
@@ -57,6 +59,7 @@ function defaultConfig(type: StepType): Record<string, unknown> {
     case 'create-task':        return { title: '', description: '', planningNotes: '', priority: 'p2', assignTo: '', subtasks: [] as Array<{ title: string; assignedTo: string }> };
     case 'update-task-status': return { taskId: '', status: 'in-progress' };
     case 'send-email':         return { to: '', subject: '', body: '' };
+    case 'run-workflow':       return { workflowId: '', inputs: '{}' };
     default:                   return {};
   }
 }
@@ -206,7 +209,7 @@ function ConfigEditor({ step, onChange }: ConfigEditorProps) {
                       type="button"
                       onClick={() => removeSubtask(i)}
                       title="Remove subtask"
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors flex-shrink-0"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-error hover:bg-mission-control-surface transition-colors flex-shrink-0"
                     >
                       <Trash2 size={13} />
                     </button>
@@ -252,6 +255,13 @@ function ConfigEditor({ step, onChange }: ConfigEditorProps) {
           <Field label="To"><TextField.Root value={c.to ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('to', e.target.value)} placeholder="recipient@example.com" /></Field>
           <Field label="Subject"><TextField.Root value={c.subject ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('subject', e.target.value)} placeholder="Email subject" /></Field>
           <Field label="Body"><TextArea variant="soft" value={c.body ?? ''} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('body', e.target.value)} placeholder="Email body..." /></Field>
+        </>
+      );
+    case 'run-workflow':
+      return (
+        <>
+          <Field label="Workflow ID"><TextField.Root value={c.workflowId ?? ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('workflowId', e.target.value)} placeholder="Workflow Studio workflow ID" /></Field>
+          <Field label="Inputs (JSON)"><TextArea variant="soft" value={c.inputs ?? '{}'} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('inputs', e.target.value)} placeholder='{"key": "value"}' rows={4} /></Field>
         </>
       );
     default:
@@ -317,7 +327,7 @@ function StepRow({ step, index, total, onMove, onDelete, onChangeType, onChangeC
           </button>
           <button
             type="button"
-            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-error hover:bg-mission-control-surface transition-colors"
             onClick={e => { e.stopPropagation(); onDelete(step.id); }}
             title="Delete step"
           >
@@ -485,7 +495,7 @@ export default function AutomationStepBuilder({ automationId, initialSteps = [],
           className="px-6 py-4 border-t border-mission-control-border flex flex-col gap-2 sticky bottom-0 bg-mission-control-bg"
         >
           {error && (
-            <p className="text-[13px] text-[var(--color-error)] m-0">{error}</p>
+            <p className="text-[13px] text-error m-0">{error}</p>
           )}
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose} className="flex-1">

@@ -40,7 +40,7 @@ export const DropdownMenuItem = React.forwardRef<
       'relative flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-3 py-2 text-sm outline-none transition-colors',
       'focus:bg-mission-control-border/40',
       destructive
-        ? 'text-[var(--color-error)] focus:bg-[var(--color-error)]/10 focus:text-[var(--color-error)]'
+        ? 'text-error focus:bg-error/10 focus:text-error'
         : 'text-mission-control-text',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
       inset && 'pl-8',

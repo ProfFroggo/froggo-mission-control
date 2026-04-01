@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { randomUUID } from 'crypto';
 import { createNotification } from '@/lib/notificationWriter';
+import { emitSSEEvent } from '@/lib/sseEmitter';
 
 
 function parseApproval(row: Record<string, unknown>) {
@@ -89,6 +90,7 @@ export async function PATCH(request: NextRequest) {
       }
     } catch { /* non-critical */ }
 
+    emitSSEEvent('approval.updated', { ids: validIds, action, status: action === 'approve' ? 'approved' : 'rejected' });
     return NextResponse.json({ updated: validIds.length });
   } catch (error) {
     console.error('PATCH /api/approvals error:', error);
@@ -111,6 +113,7 @@ export async function POST(request: NextRequest) {
     `).run(id, type, title, content, context ?? null, JSON.stringify(metadata), requester ?? null, tier, category, actionRef ?? null, now);
 
     const approval = db.prepare('SELECT * FROM approvals WHERE id = ?').get(id) as Record<string, unknown>;
+    emitSSEEvent('approval.created', { id, type, title, requester, tier });
     return NextResponse.json(parseApproval(approval), { status: 201 });
   } catch (error) {
     console.error('POST /api/approvals error:', error);

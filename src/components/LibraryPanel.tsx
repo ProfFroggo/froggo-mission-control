@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { FolderOpen, FileText, Lightbulb, HardDrive } from 'lucide-react';
-import { Flex } from '@radix-ui/themes';
 import LibraryFilesTab from './LibraryFilesTab';
 import LibraryTemplatesTab from './LibraryTemplatesTab';
 import LibrarySkillsTab from './LibrarySkillsTab';
 import LibraryDriveTab from './LibraryDriveTab';
+import PanelHeader from './PanelHeader';
+import TabNav, { type TabNavItem } from './TabNav';
 
 type LibraryTab = 'files' | 'drive' | 'templates' | 'skills';
 
-const tabs: Array<{ id: LibraryTab; label: string; icon: any }> = [
+const LIBRARY_TABS: TabNavItem[] = [
   { id: 'files', label: 'Files', icon: FolderOpen },
   { id: 'drive', label: 'Google Drive', icon: HardDrive },
   { id: 'templates', label: 'Templates', icon: FileText },
@@ -33,42 +34,18 @@ export default function LibraryPanel() {
     <div className="h-full flex flex-col bg-mission-control-bg">
       {/* Header with Tabs */}
       <div className="border-b border-mission-control-border bg-mission-control-surface">
-        <div className="px-4 py-3">
-          <Flex align="center" gap="3" className="mb-3">
-            <div className="p-2 bg-mission-control-accent/20 rounded-lg">
-              <FolderOpen size={24} className="text-mission-control-accent" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold">Library</h1>
-              <p className="text-sm text-mission-control-text-dim">
-                Skills, templates, files, and resources
-              </p>
-            </div>
-          </Flex>
-        </div>
-
-        {/* Tab Navigation */}
-        <Flex gap="1" className="px-4" role="tablist" aria-label="Library sections">
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <button
-              type="button"
-              key={id}
-              role="tab"
-              aria-selected={activeTab === id}
-              aria-controls={`library-tabpanel-${id}`}
-              id={`library-tab-${id}`}
-              onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 -mb-px transition-colors ${
-                activeTab === id
-                  ? 'border-mission-control-accent text-mission-control-accent'
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
-            >
-              <Icon size={16} />
-              <span className="font-medium">{label}</span>
-            </button>
-          ))}
-        </Flex>
+        <PanelHeader
+          icon={FolderOpen}
+          title="Library"
+          subtitle="Skills, templates, files, and resources"
+          border={false}
+        />
+        <TabNav
+          tabs={LIBRARY_TABS}
+          activeTab={activeTab}
+          onTabChange={(id) => setActiveTab(id as LibraryTab)}
+          border={false}
+        />
       </div>
 
       {/* Tab Content */}

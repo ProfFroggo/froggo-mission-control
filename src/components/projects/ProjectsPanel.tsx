@@ -20,9 +20,9 @@ import ProjectWorkspace from './ProjectWorkspace';
 
 // Status config
 const STATUS_CONFIG = {
-  active:    { label: 'Active',    color: 'text-[var(--color-success)]',  bg: 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30',   icon: CheckCircle2 },
-  paused:    { label: 'Paused',    color: 'text-[var(--color-warning)]',  bg: 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30',   icon: Clock },
-  completed: { label: 'Completed', color: 'text-[var(--color-info)]',     bg: 'bg-[var(--color-info)]/10 border-[var(--color-info)]/30',         icon: CheckCircle2 },
+  active:    { label: 'Active',    color: 'text-success',  bg: 'bg-success/10 border-success/30',   icon: CheckCircle2 },
+  paused:    { label: 'Paused',    color: 'text-warning',  bg: 'bg-warning/10 border-warning/30',   icon: Clock },
+  completed: { label: 'Completed', color: 'text-info',     bg: 'bg-info/10 border-info/30',         icon: CheckCircle2 },
   archived:  { label: 'Archived',  color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface border-mission-control-border', icon: Archive },
 } as const;
 
@@ -34,9 +34,9 @@ function HealthRing({ score, size = 36 }: { score: number; size?: number }) {
   const circ = 2 * Math.PI * r;
   const offset = circ - (score / 100) * circ;
   const color =
-    score >= 80 ? 'var(--color-success, #22c55e)' :
-    score >= 60 ? 'var(--color-warning, #f59e0b)' :
-    'var(--color-error, #ef4444)';
+    score >= 80 ? 'var(--color-success)' :
+    score >= 60 ? 'var(--color-warning)' :
+    'var(--color-error)';
   return (
     <svg
       width={size}
@@ -48,7 +48,7 @@ function HealthRing({ score, size = 36 }: { score: number; size?: number }) {
       <circle
         cx={size / 2} cy={size / 2} r={r}
         fill="none"
-        stroke="var(--color-border, #2d2d3a)"
+        stroke="var(--mission-control-border)"
         strokeWidth={stroke}
       />
       <circle
@@ -66,7 +66,7 @@ function HealthRing({ score, size = 36 }: { score: number; size?: number }) {
 
 // ─── Sparkline ─────────────────────────────────────────────────────────────────
 
-function Sparkline({ points, color = '#6366f1', width = 64, height = 24 }: {
+function Sparkline({ points, color = 'var(--mission-control-accent)', width = 64, height = 24 }: {
   points: number[];
   color?: string;
   width?: number;
@@ -190,10 +190,10 @@ function StatsStrip({ projects }: StatsStripProps) {
 
   const chips = [
     { label: 'Total', value: total, icon: FolderKanban, color: 'text-mission-control-text' },
-    { label: 'Active', value: active, icon: CheckCircle2, color: 'text-[var(--color-success)]' },
-    { label: 'Overdue', value: overdue, icon: AlertCircle, color: overdue > 0 ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim' },
-    { label: 'Done / mo', value: doneThisMonth, icon: TrendingUp, color: 'text-[var(--color-info)]' },
-    { label: 'Avg health', value: `${avgHealth}%`, icon: BarChart3, color: avgHealth >= 70 ? 'text-[var(--color-success)]' : avgHealth >= 40 ? 'text-[var(--color-warning)]' : 'text-[var(--color-error)]' },
+    { label: 'Active', value: active, icon: CheckCircle2, color: 'text-success' },
+    { label: 'Overdue', value: overdue, icon: AlertCircle, color: overdue > 0 ? 'text-error' : 'text-mission-control-text-dim' },
+    { label: 'Done / mo', value: doneThisMonth, icon: TrendingUp, color: 'text-info' },
+    { label: 'Avg health', value: `${avgHealth}%`, icon: BarChart3, color: avgHealth >= 70 ? 'text-success' : avgHealth >= 40 ? 'text-warning' : 'text-error' },
   ];
 
   return (
@@ -242,7 +242,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
   const lastActivity = Number(project.lastTaskActivity) || project.updatedAt;
   const health = computeHealthScore(project);
   const spark = makeSparkline(project);
-  const sparkColor = health >= 80 ? 'var(--color-success, #22c55e)' : health >= 60 ? 'var(--color-warning, #f59e0b)' : 'var(--color-error, #ef4444)';
+  const sparkColor = health >= 80 ? 'var(--color-success)' : health >= 60 ? 'var(--color-warning)' : 'var(--color-error)';
 
   // Cap members at 3 + overflow
   const displayedMembers = (project.members ?? []).slice(0, 3);
@@ -256,6 +256,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
       <div className="absolute top-2 right-2 hidden group-hover:flex items-center gap-1 z-10">
         {!isArchived && onArchive && (
           <button
+            type="button"
             onClick={e => { e.stopPropagation(); onArchive(); }}
             title="Archive project"
             className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
@@ -265,6 +266,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
         )}
         {isArchived && onRestore && (
           <button
+            type="button"
             onClick={e => { e.stopPropagation(); onRestore(); }}
             title="Restore project"
             className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
@@ -273,6 +275,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
           </button>
         )}
         <button
+          type="button"
           onClick={e => { e.stopPropagation(); onClick(); }}
           title="Open project"
           className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
@@ -356,7 +359,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
           {/* Stats */}
           <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
             {inProgressTasks > 0 && (
-              <span className="flex items-center gap-1 text-[var(--color-warning)]">
+              <span className="flex items-center gap-1 text-warning">
                 <Zap size={11} /> {inProgressTasks} active
               </span>
             )}
@@ -499,6 +502,7 @@ export default function ProjectsPanel() {
         </Flex>
         <Flex align="center" gap="2">
           <button
+            type="button"
             onClick={() => load(false)}
             disabled={refreshing}
             title="Refresh"
@@ -620,7 +624,7 @@ export default function ProjectsPanel() {
         )}
 
         {error && !loading && (
-          <Flex align="center" gap="2" className="px-4 py-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg text-[var(--color-error)] text-sm">
+          <Flex align="center" gap="2" className="px-4 py-3 bg-error/10 border border-error/30 rounded-lg text-error text-sm">
             <AlertCircle size={15} />
             {error}
           </Flex>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
-import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File, Search, Settings, Pin, Reply, ChevronDown, MessageCircle } from 'lucide-react';
+import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File, Search, Settings, Pin, Reply, ChevronDown, MessageCircle, PanelRight } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import MentionText from './MentionText';
@@ -12,6 +12,7 @@ import { useStore } from '../store/store';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
 import { useArtifactOpen } from '../hooks/useArtifactOpen';
+import { useArtifactStore } from '../store/artifactStore';
 import ToolPermissionCard, { type ToolPermissionRequest } from './ToolPermissionCard';
 import MessageReactions from './MessageReactions';
 import RoomSettingsPanel, { useRoomNotifSetting } from './RoomSettingsPanel';
@@ -108,6 +109,10 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
 
   // Artifact store — for wiring "Open Preview" cards in messages
   const handleArtifactOpen = useArtifactOpen();
+  const { toggleCollapse, isCollapsed, setFilterBySession } = useArtifactStore();
+
+  // Filter artifacts to this room's session
+  useEffect(() => { setFilterBySession(roomId); return () => setFilterBySession(null); }, [roomId, setFilterBySession]);
 
   // Helper to get agent name from store
   const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
@@ -308,11 +313,11 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
           parts.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
         }
       } else if (att.type.startsWith('image/')) {
-        parts.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nPlease use the image tool or Read tool to analyze this image.`);
+        parts.push(`\n\n[IMAGE ATTACHED: ${att.name}]\nPlease use the image tool or Read tool to analyze this image.`);
       } else if (att.type === 'application/pdf') {
-        parts.push(`\n\n📄 PDF ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)`);
+        parts.push(`\n\n[PDF ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
       } else {
-        parts.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)`);
+        parts.push(`\n\n[FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
       }
     }
     return parts.join('');
@@ -628,7 +633,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     const fileContent = attachments.length > 0 ? await processAttachments() : '';
     const fullContent = text + fileContent;
 
-    const displayContent = text + (attachments.length > 0 ? `\n\n📎 ${attachments.map(a => a.name).join(', ')}` : '');
+    const displayContent = text + (attachments.length > 0 ? `\n\n[Attached: ${attachments.map(a => a.name).join(', ')}]` : '');
 
     const userMsg: RoomMessage = {
       id: `rm-${Date.now()}-user`,
@@ -726,7 +731,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
   if (!room) {
     return (
-      <div className="h-full flex items-center justify-center text-mission-control-text-dim">
+      <div className="h-full flex-1 flex items-center justify-center text-mission-control-text-dim" style={{ minWidth: 0 }}>
         <p>Room not found</p>
       </div>
     );
@@ -764,13 +769,13 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
   const isTeamMeeting = room.agents.length >= totalAgents - 1 || room.name.toLowerCase().includes('team meeting');
 
   return (
-    <Flex height="100%">
+    <Flex height="100%" flexGrow="1" style={{ minWidth: 0 }}>
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         {!hideHeader && <div className={`flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0 gap-3 ${
           isTeamMeeting
-            ? 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30'
+            ? 'bg-warning/10 border-warning/30'
             : 'bg-mission-control-surface'
         }`}>
         <button
@@ -782,7 +787,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         </button>
         <Flex align="center" gap="2">
           {isTeamMeeting ? (
-            <div className="w-10 h-10 rounded-full bg-[var(--color-warning)] flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-full bg-warning flex items-center justify-center shadow-md">
               <UsersRound size={20} className="text-white" />
             </div>
           ) : (
@@ -793,7 +798,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             </div>
           )}
           <div>
-            <h2 className={`font-semibold text-sm ${isTeamMeeting ? 'text-[var(--color-warning)]' : ''}`}>
+            <h2 className={`font-semibold text-sm ${isTeamMeeting ? 'text-warning' : ''}`}>
               {room.name}
             </h2>
             <p className="text-xs text-mission-control-text-dim">
@@ -811,7 +816,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             {room.agents.map(id => (
               <div key={id} className="relative group">
                 <AgentAvatar agentId={id} size="xs" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--color-success)] border border-white/80 dark:border-white" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-success border border-white/80 dark:border-white" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-mission-control-surface text-mission-control-text text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                   {agentName(id)}
                 </div>
@@ -828,7 +833,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 <div
                   key={u.id}
                   title={u.name}
-                  className="w-6 h-6 rounded-full bg-[var(--color-success)] flex items-center justify-center text-white text-xs font-semibold border-2 border-mission-control-surface ring-0"
+                  className="w-6 h-6 rounded-full bg-success flex items-center justify-center text-white text-xs font-semibold border-2 border-mission-control-surface ring-0"
                 >
                   {u.name.charAt(0).toUpperCase()}
                 </div>
@@ -907,6 +912,21 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           >
             <Phone size={16} />
           </button>
+          {/* Artifact panel toggle */}
+          <button
+            type="button"
+            onClick={toggleCollapse}
+            title={isCollapsed ? 'Open artifacts' : 'Close artifacts'}
+            aria-label={isCollapsed ? 'Open artifact panel' : 'Close artifact panel'}
+            aria-pressed={!isCollapsed}
+            className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+              !isCollapsed
+                ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg'
+            }`}
+          >
+            <PanelRight size={15} />
+          </button>
           {!hideDelete && (
           <button
             onClick={() => {
@@ -921,7 +941,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               });
             }}
             title={isTeamMeeting ? 'End meeting' : 'Delete room'}
-            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
           >
             <Trash2 size={16} />
           </button>
@@ -1003,10 +1023,10 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-mission-control-text-dim">
             {isTeamMeeting ? (
               <>
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[var(--color-warning)]/20 flex items-center justify-center">
-                  <UsersRound size={40} className="text-[var(--color-warning)]" />
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
+                  <UsersRound size={40} className="text-warning" />
                 </div>
-                <p className="text-lg font-medium mb-2 text-[var(--color-warning)]">Team Meeting Started</p>
+                <p className="text-lg font-medium mb-2 text-warning">Team Meeting Started</p>
                 <p className="text-sm mb-4">
                   All {room.agents.length} agents are present and ready.
                 </p>
@@ -1015,7 +1035,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     <div key={id} className="flex items-center gap-1.5 px-2.5 py-1 bg-mission-control-surface border border-mission-control-border rounded-full text-xs">
                       <AgentAvatar agentId={id} size="xs" />
                       <span>{agentName(id)}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-success" />
                     </div>
                   ))}
                 </div>
@@ -1106,7 +1126,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     <div className={`mb-1 px-1 text-xs font-medium ${
                       isUser
                         ? 'text-mission-control-accent'
-                        : 'text-[var(--color-success)]'
+                        : 'text-success'
                     }`}>
                       {isUser ? 'Kevin' : (msg.agentId ? agentName(msg.agentId) : 'Agent')}
                     </div>
@@ -1433,7 +1453,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           >
             <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
               <h3 className="font-semibold">Manage Members</h3>
-              <button onClick={() => setShowManageMembers(false)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"><X size={16} /></button>
+              <button type="button" onClick={() => setShowManageMembers(false)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"><X size={16} /></button>
             </div>
             <div className="p-4 overflow-y-auto flex-1 min-h-0 space-y-1">
               {agents.map((agent) => {
@@ -1458,7 +1478,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       <span className={`text-sm font-medium ${inRoom ? theme.text : 'text-mission-control-text-dim'}`}>{agent.name}</span>
                       <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${inRoom ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-mission-control-bg text-mission-control-text-dim'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${inRoom ? 'bg-success/10 text-success' : 'bg-mission-control-bg text-mission-control-text-dim'}`}>
                       {inRoom ? 'In room' : 'Add'}
                     </span>
                   </button>

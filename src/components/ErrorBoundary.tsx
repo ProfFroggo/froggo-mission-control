@@ -96,11 +96,11 @@ Time: ${new Date().toISOString()}
       // Default fallback UI
       return (
         <Flex align="center" justify="center" p="5" height="100%" className="bg-mission-control-bg">
-          <Box className="max-w-md w-full bg-mission-control-surface rounded-2xl border border-[var(--color-error)]/30 shadow-xl" p="5">
+          <Box className="max-w-md w-full bg-mission-control-surface rounded-2xl border border-error/30 shadow-xl" p="5">
             {/* Icon and Title */}
             <Flex align="center" gap="3" mb="4">
-              <Box p="3" className="bg-[var(--color-error)]/10 rounded-lg">
-                <AlertTriangle size={28} className="text-[var(--color-error)]" />
+              <Box p="3" className="bg-error/10 rounded-lg">
+                <AlertTriangle size={28} className="text-error" />
               </Box>
               <Box>
                 <Heading size="4" as="h2" className="text-mission-control-text">
@@ -121,7 +121,7 @@ Time: ${new Date().toISOString()}
               </Text>
               {this.state.error && (
                 <Box p="3" className="bg-mission-control-bg rounded-lg border border-mission-control-border">
-                  <code className="text-xs text-[var(--color-error)] font-mono break-all">
+                  <code className="text-xs text-error font-mono break-all">
                     {this.state.error.message}
                   </code>
                 </Box>

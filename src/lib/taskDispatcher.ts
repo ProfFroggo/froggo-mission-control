@@ -8,15 +8,20 @@ import { getDb } from './database';
 import { calcCostUsd, ENV } from './env';
 import { trackEvent } from './telemetry';
 import { emitSSEEvent } from './sseEmitter';
-import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
+import { periodStartMs as budgetPeriodStartMs } from './budgetAlerts';
+import { existsSync, readFileSync, readdirSync, statSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
-import { spawn } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
 
 const CLAUDE_BIN    = ENV.CLAUDE_BIN;
 const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
 const NODE_BIN      = process.execPath;
 const HOME = homedir();
+const SCRATCHPAD_DIR = join(HOME, 'mission-control', 'scratchpad');
+
+// Ensure scratchpad directory exists on module load
+try { mkdirSync(SCRATCHPAD_DIR, { recursive: true }); } catch { /* ignore */ }
 
 // ── Model resolution ─────────────────────────────────────────────────────────
 
@@ -64,6 +69,10 @@ const TASK_SKILL_MAP: Record<string, string[]> = {
   subtask:      ['task-decomposition'],
   composition:  ['composition-patterns'],
   compound:     ['composition-patterns'],
+  workflow:     ['workflow-automator'],
+  automation:   ['workflow-automator'],
+  pipeline:     ['workflow-automator'],
+  dag:          ['workflow-automator'],
 };
 
 /**
@@ -125,6 +134,34 @@ const MCP_MEMORY = [
   'mcp__memory__memory_write',
   'mcp__memory__memory_read',
   'mcp__memory__memory_list',
+];
+
+const MCP_MIXPANEL = [
+  'mcp__mixpanel__Get-Projects',
+  'mcp__mixpanel__Get-Events',
+  'mcp__mixpanel__Edit-Event',
+  'mcp__mixpanel__Get-Event-Details',
+  'mcp__mixpanel__Get-Property-Names',
+  'mcp__mixpanel__Get-Property-Values',
+  'mcp__mixpanel__Edit-Property',
+  'mcp__mixpanel__Get-Property',
+  'mcp__mixpanel__Create-Tag',
+  'mcp__mixpanel__Get-Issues',
+  'mcp__mixpanel__Dismiss-Issues',
+  'mcp__mixpanel__Rename-Tag',
+  'mcp__mixpanel__Delete-Tag',
+  'mcp__mixpanel__Get-Lexicon-URL',
+  'mcp__mixpanel__Get-User-Replays-Data',
+  'mcp__mixpanel__Get-Query-Schema',
+  'mcp__mixpanel__Get-Report',
+  'mcp__mixpanel__Run-Query',
+  'mcp__mixpanel__Create-Dashboard',
+  'mcp__mixpanel__List-Dashboards',
+  'mcp__mixpanel__Get-Dashboard',
+  'mcp__mixpanel__Update-Dashboard',
+  'mcp__mixpanel__Duplicate-Dashboard',
+  'mcp__mixpanel__Delete-Dashboard',
+  'mcp__mixpanel__Search-Entities',
 ];
 
 const MCP_GOOGLE = [
@@ -222,7 +259,7 @@ export const TIER_TOOLS: Record<string, string[]> = {
     ...MCP_SOCIAL,
     ...MCP_MEMORY,
   ],
-  // worker: + safe bash commands + WebFetch + Agent subagents + Google Workspace
+  // worker: + safe bash commands + WebFetch + Agent subagents + Google Workspace + Mixpanel
   worker: [
     'Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent',
     ...BASH_SAFE,
@@ -230,6 +267,7 @@ export const TIER_TOOLS: Record<string, string[]> = {
     ...MCP_SOCIAL,
     ...MCP_MEMORY,
     ...MCP_GOOGLE,
+    ...MCP_MIXPANEL,
   ],
   // trusted: + notebook editing; same bash as worker (deny list in settings.json still applies)
   trusted: [
@@ -239,6 +277,7 @@ export const TIER_TOOLS: Record<string, string[]> = {
     ...MCP_SOCIAL,
     ...MCP_MEMORY,
     ...MCP_GOOGLE,
+    ...MCP_MIXPANEL,
   ],
   // admin: identical to trusted — destructive ops still blocked by settings.json deny list
   admin: [
@@ -248,6 +287,7 @@ export const TIER_TOOLS: Record<string, string[]> = {
     ...MCP_SOCIAL,
     ...MCP_MEMORY,
     ...MCP_GOOGLE,
+    ...MCP_MIXPANEL,
   ],
 };
 
@@ -341,8 +381,23 @@ Before you set status="review", every one of these must be true:
 - lastAgentUpdate contains: "Completed: [summary]. Output: [file paths or 'no files']. Notes: [caveats]."
 - progress is 100
 
+## CROSS-AGENT SCRATCHPAD
+Before starting, check ~/mission-control/scratchpad/ for notes from other agents working on related tasks.
+When you discover something useful for other agents (API patterns, gotchas, shared config), write it to:
+  ~/mission-control/scratchpad/{project or topic}/your-finding.md
+Keep files short (< 50 lines). Delete your scratchpad files when no longer relevant.
+
+## BUILT-IN SUBAGENTS
+You have access to Claude's built-in Agent tool for spawning subagents. Use them instead of doing everything yourself:
+- **Explore agent** (subagent_type: "Explore"): Use for codebase research, finding files, searching for patterns, understanding architecture. Read-only — cannot edit files. Faster than doing multiple grep/glob calls yourself.
+- **Plan agent** (subagent_type: "Plan"): Use for designing implementation plans, identifying critical files, considering trade-offs. Read-only research + plan output.
+- Launch multiple subagents in parallel when tasks are independent (e.g., research two different parts of the codebase simultaneously).
+- Keep subagent prompts focused and specific — "Find all API routes that handle authentication" not "look around the codebase".
+- After completing code changes, spawn an Explore agent to verify the changes compile and the affected files are consistent.
+
 ## WORKING PROTOCOL
-0. knowledge_search("{task topic}") — check for relevant brand guidelines, tone of voice, or context before starting
+0. notes_list({ since: Date.now() - 86400000 }) — MANDATORY: check human notes from the last 24 hours for relevant instructions, context, or priorities before starting ANY work
+0b. knowledge_search("{task topic}") — check for relevant brand guidelines, tone of voice, or context before starting
 1. task_get({id}) — read planningNotes and incompleteSubtasks carefully. These define what done looks like.
 2. Check prior context: mcp__memory__memory_recall({ topic: "<task title>" })
 3. Work through subtasks ONE BY ONE in order:
@@ -381,7 +436,7 @@ Do not loop silently — move to human-review so the human can help.
 After saving any file: task_add_attachment({ taskId, filePath, fileName, category, uploadedBy })
 
 ## TOOLS AVAILABLE
-task_get, task_update, task_add_activity, task_add_attachment, subtask_create, subtask_update, chat_post, image_generate, image_remove_background, approval_create, mcp__memory__memory_write, mcp__memory__memory_recall, mcp__memory__memory_list, knowledge_search, knowledge_read, knowledge_write, project_phase_list, project_phase_create, project_phase_update
+task_get, task_update, task_add_activity, task_add_attachment, subtask_create, subtask_update, chat_post, image_generate, image_remove_background, approval_create, mcp__memory__memory_write, mcp__memory__memory_recall, mcp__memory__memory_list, knowledge_search, knowledge_read, knowledge_write, project_phase_list, project_phase_create, project_phase_update, notes_list, notes_create, scratchpad_list, scratchpad_read, scratchpad_write
 
 ## PROJECT PLANNING
 For tasks tied to a project, use structured planning:
@@ -476,9 +531,15 @@ function loadRelevantMemory(agentId: string, taskTitle: string, taskDescription?
 
     if (!existsSync(agentDir)) return '';
 
+    const MAX_FILE_SIZE = 2048; // Skip files > 2KB
     const files = readdirSync(agentDir)
       .filter(f => f.endsWith('.md'))
-      .map(f => ({ name: f, path: join(agentDir, f), mtime: statSync(join(agentDir, f)).mtimeMs }))
+      .map(f => {
+        const p = join(agentDir, f);
+        const s = statSync(p);
+        return { name: f, path: p, mtime: s.mtimeMs, size: s.size };
+      })
+      .filter(f => f.size <= MAX_FILE_SIZE) // Skip large files
       .sort((a, b) => b.mtime - a.mtime)
       .slice(0, 20); // Check last 20 notes
 
@@ -500,8 +561,8 @@ function loadRelevantMemory(agentId: string, taskTitle: string, taskDescription?
 
     if (scored.length === 0) return '';
 
-    // Token budget guard: capped at 3000 chars for faster agent processing
-    const TOKEN_BUDGET = 3000; // chars
+    // Token budget guard: capped at 8KB total injection
+    const TOKEN_BUDGET = 8000;
     let totalChars = 0;
     const capped = scored.filter(f => {
       totalChars += f.content.length;
@@ -641,9 +702,9 @@ function loadRelevantKnowledge(taskTitle: string, taskDesc?: string | null): str
     const db = getDb();
     const query = `${taskTitle} ${taskDesc || ''}`.slice(0, 200);
 
-    // Search pinned articles first (always inject)
+    // Search pinned articles first (always inject, max 3)
     const pinned = db.prepare(
-      "SELECT id, title, category, content FROM knowledge_base WHERE pinned = 1 AND scope = 'all' ORDER BY updatedAt DESC LIMIT 2"
+      "SELECT id, title, category, content FROM knowledge_base WHERE pinned = 1 AND scope = 'all' ORDER BY updatedAt DESC LIMIT 3"
     ).all() as Array<{ id: string; title: string; category: string; content: string }>;
 
     // Then search by relevance using LIKE keyword match
@@ -671,7 +732,7 @@ function loadRelevantKnowledge(taskTitle: string, taskDesc?: string | null): str
     if (capped.length === 0) return '';
 
     const lines = capped.map(a =>
-      `### ${a.title} (${a.category})\n${a.content.slice(0, 600)}${a.content.length > 600 ? `\n[...use knowledge_read(${a.id}) for full content]` : ''}`
+      `### ${a.title} (${a.category})\n${a.content.slice(0, 400)}${a.content.length > 400 ? `\n[...use knowledge_read(${a.id}) for full content]` : ''}`
     );
     return `\n\n## Workspace Knowledge Base\nThe following guidelines from your team's knowledge base are relevant to this task:\n\n${lines.join('\n\n---\n\n')}\n\nFor more KB articles: use knowledge_search(query) to find what you need.\n`;
   } catch {
@@ -896,11 +957,12 @@ function buildTaskSystemPrompt(
 // ── Session management ────────────────────────────────────────────────────────
 // Uses agentId + ':task' as key to avoid colliding with chat sessions.
 
-function loadTaskSession(taskId: string): string | null {
+function loadTaskSession(taskId: string, agentId: string): string | null {
   try {
+    const sessionKey = 'task:' + taskId + ':' + agentId;
     const row = getDb().prepare(
       'SELECT sessionId, lastActivity FROM agent_sessions WHERE agentId = ? AND status = ?'
-    ).get('task:' + taskId, 'active') as { sessionId: string; lastActivity: number } | undefined;
+    ).get(sessionKey, 'active') as { sessionId: string; lastActivity: number } | undefined;
     if (!row?.sessionId) return null;
     // Expire sessions older than 24 hours
     if (Date.now() - row.lastActivity > 24 * 60 * 60 * 1000) return null;
@@ -908,14 +970,17 @@ function loadTaskSession(taskId: string): string | null {
   } catch { return null; }
 }
 
-function persistTaskSession(taskId: string, sessionId: string, model: string) {
+function persistTaskSession(taskId: string, agentId: string, sessionId: string, model: string) {
   try {
+    const sessionKey = 'task:' + taskId + ':' + agentId;
     const now = Date.now();
     getDb().prepare(`
       INSERT OR REPLACE INTO agent_sessions (agentId, sessionId, model, createdAt, lastActivity, status)
       VALUES (?, ?, ?, COALESCE((SELECT createdAt FROM agent_sessions WHERE agentId = ?), ?), ?, 'active')
-    `).run('task:' + taskId, sessionId, model, 'task:' + taskId, now, now);
-  } catch { /* non-critical */ }
+    `).run(sessionKey, sessionId, model, sessionKey, now, now);
+  } catch (err) {
+    console.error(`[taskDispatcher] persistTaskSession failed for task=${taskId} agent=${agentId}:`, err instanceof Error ? err.message : String(err));
+  }
 }
 
 // ── Message builder ───────────────────────────────────────────────────────────
@@ -1130,11 +1195,15 @@ const _redispatchTimeouts = new Map<string, NodeJS.Timeout>();
 
 // ── Concurrency semaphore ─────────────────────────────────────────────────────
 // Limits the number of simultaneous Claude CLI process dispatches.
-let activeDispatches = 0;
+const activeDispatchSet = new Set<string>();
 const MAX_CONCURRENT_DISPATCHES = 2;
 
+// ── Active process tracking ──────────────────────────────────────────────────
+// Maps taskId → child process, used for P0 preemption (kill lower-priority work)
+const activeProcesses = new Map<string, ChildProcess>();
+
 /** Export for health API */
-export function getActiveDispatchCount(): number { return activeDispatches; }
+export function getActiveDispatchCount(): number { return activeDispatchSet.size; }
 
 // ── Process timeout ──────────────────────────────────────────────────────────
 // Kills hung Claude CLI processes after 30 minutes.
@@ -1219,12 +1288,160 @@ const lastDispatch: Map<string, number> = (globalThis as DG)._lastDispatch
   ?? ((globalThis as DG)._lastDispatch = new Map());
 const DEBOUNCE_MS = 100;
 
+// ── Smart dispatch routing ───────────────────────────────────────────────────
+
+interface AgentCandidate {
+  id: string;
+  status: string;
+  capabilities: string[];
+  model: string;
+  activeTaskCount: number;
+  score: number;
+}
+
+/**
+ * Select the best available agent for a task based on capability match,
+ * workload, and availability. Returns null if no suitable agent is found.
+ */
+function selectBestAgent(
+  db: ReturnType<typeof getDb>,
+  task: Record<string, unknown>,
+): string | null {
+  try {
+    const agents = db.prepare(
+      `SELECT id, status, capabilities, model FROM agents WHERE status IN ('idle', 'busy')`
+    ).all() as Array<{ id: string; status: string; capabilities: string; model: string }>;
+
+    if (agents.length === 0) return null;
+
+    // Parse task tags/keywords for capability matching
+    const taskTitle = ((task.title as string) ?? '').toLowerCase();
+    const taskDesc = ((task.description as string) ?? '').toLowerCase();
+    const taskText = taskTitle + ' ' + taskDesc;
+
+    const candidates: AgentCandidate[] = agents.map(agent => {
+      let caps: string[] = [];
+      try { caps = JSON.parse(agent.capabilities || '[]'); } catch { caps = []; }
+
+      // Count active tasks for this agent
+      const activeCount = (db.prepare(
+        `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress'`
+      ).get(agent.id) as { cnt: number } | undefined)?.cnt ?? 0;
+
+      // Score: higher is better
+      let score = 0;
+
+      // 1. Status preference: idle agents strongly preferred
+      if (agent.status === 'idle') score += 50;
+
+      // 2. Workload: fewer active tasks = better
+      score -= activeCount * 20;
+
+      // 3. Capability match: each matching capability adds points
+      for (const cap of caps) {
+        if (taskText.includes(cap.toLowerCase())) score += 15;
+      }
+
+      // 4. Circuit breaker: penalize agents with recent failures
+      if (isAgentCircuitOpen(agent.id)) score -= 100;
+
+      return {
+        id: agent.id,
+        status: agent.status,
+        capabilities: caps,
+        model: agent.model,
+        activeTaskCount: activeCount,
+        score,
+      };
+    });
+
+    // Sort by score descending, pick the best non-circuit-broken agent
+    candidates.sort((a, b) => b.score - a.score);
+    const best = candidates.find(c => !isAgentCircuitOpen(c.id));
+
+    return best?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * P0 preemption: when a P0 task arrives and all agents are busy with lower-priority work,
+ * pause the lowest-priority in-progress task and free its agent for the P0 task.
+ * Returns the freed agent ID, or null if preemption isn't possible.
+ */
+function preemptForP0(
+  db: ReturnType<typeof getDb>,
+  p0TaskId: string,
+): string | null {
+  try {
+    // Find in-progress tasks with lower priority (p1-p3), ordered by lowest priority first
+    const preemptable = db.prepare(`
+      SELECT t.id, t.assignedTo, t.priority, t.title
+      FROM tasks t
+      JOIN agents a ON a.id = t.assignedTo
+      WHERE t.status = 'in-progress'
+        AND t.assignedTo IS NOT NULL
+        AND t.id != ?
+        AND t.priority IN ('p1', 'p2', 'p3')
+      ORDER BY
+        CASE t.priority WHEN 'p3' THEN 0 WHEN 'p2' THEN 1 WHEN 'p1' THEN 2 END ASC
+      LIMIT 1
+    `).get(p0TaskId) as { id: string; assignedTo: string; priority: string; title: string } | undefined;
+
+    if (!preemptable) return null;
+
+    const freedAgentId = preemptable.assignedTo;
+
+    // Pause the preempted task — move to todo so it can be re-dispatched later
+    db.prepare(
+      `UPDATE tasks SET status = 'todo', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`
+    ).run(
+      `Preempted by P0 task ${p0TaskId}. Will be re-dispatched when agent becomes available.`,
+      Date.now(), preemptable.id
+    );
+
+    db.prepare(
+      `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+    ).run(preemptable.id, 'system', 'preempted',
+      `Task paused — agent ${freedAgentId} reassigned to P0 task ${p0TaskId}`,
+      Date.now());
+
+    // Kill the running process for the preempted task if it exists
+    const preemptedProc = activeProcesses.get(preemptable.id);
+    if (preemptedProc) {
+      try { preemptedProc.kill('SIGTERM'); } catch { /* may already be dead */ }
+      activeProcesses.delete(preemptable.id);
+      activeDispatchSet.delete(preemptable.id);
+    }
+
+    // Free the agent
+    db.prepare(`UPDATE agents SET status = 'idle' WHERE id = ?`).run(freedAgentId);
+
+    console.log(`[taskDispatcher] P0 preemption: freed ${freedAgentId} from ${preemptable.priority} task "${preemptable.title}" for P0 task ${p0TaskId}`);
+
+    emitSSEEvent('dispatch.preemption', {
+      p0TaskId,
+      preemptedTaskId: preemptable.id,
+      preemptedPriority: preemptable.priority,
+      freedAgentId,
+    });
+
+    return freedAgentId;
+  } catch (err) {
+    console.error('[taskDispatcher] P0 preemption error:', err);
+    return null;
+  }
+}
+
 // ── Dispatcher ────────────────────────────────────────────────────────────────
 
 /**
  * Dispatch a task to its assigned agent.
  * Spawns a detached Claude CLI process with full agent context.
- * Returns true if dispatch succeeded, false if skipped (no assignedTo, etc).
+ * If no agent is assigned, attempts smart routing to find the best available agent.
+ * P0 tasks can preempt lower-priority work when all agents are busy.
+ * Returns true if dispatch succeeded, false if skipped.
  */
 export function dispatchTask(taskId: string): boolean {
   // Warn if Claude binary missing — don't throw, let spawn fail gracefully
@@ -1250,9 +1467,52 @@ export function dispatchTask(taskId: string): boolean {
       return false;
     }
 
-    const agentId = task.assignedTo as string | null;
+    let agentId = task.assignedTo as string | null;
+    const taskPriority = (task.priority as string | null) ?? 'p2';
+
+    // ── Smart routing: auto-assign if no agent specified ──
     if (!agentId) {
-      return false; // No agent assigned — nothing to dispatch
+      const bestAgent = selectBestAgent(db, task);
+      if (bestAgent) {
+        agentId = bestAgent;
+        db.prepare(`UPDATE tasks SET assignedTo = ?, updatedAt = ? WHERE id = ?`).run(agentId, Date.now(), taskId);
+        try {
+          db.prepare(
+            `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+          ).run(taskId, 'system', 'auto_routed',
+            `Smart routing: auto-assigned to ${agentId} (best available agent by capability/workload score)`,
+            Date.now());
+        } catch { /* non-critical */ }
+        console.log(`[taskDispatcher] Smart routing: auto-assigned ${taskId} to ${agentId}`);
+        emitSSEEvent('dispatch.auto_routed', { taskId, agentId });
+      } else {
+        // No suitable agent — if P0, try preemption
+        let preemptionUsed = false;
+        if (taskPriority === 'p0') {
+          const freedAgent = preemptForP0(db, taskId);
+          if (freedAgent) {
+            preemptionUsed = true;
+            agentId = freedAgent;
+            db.prepare(`UPDATE tasks SET assignedTo = ?, updatedAt = ? WHERE id = ?`).run(agentId, Date.now(), taskId);
+            try {
+              db.prepare(
+                `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+              ).run(taskId, 'system', 'p0_preemption',
+                `P0 preemption: reassigned agent ${agentId} from lower-priority work`,
+                Date.now());
+            } catch { /* non-critical */ }
+          }
+        }
+        if (!agentId) return false; // No agent available — nothing to dispatch
+
+        // ── P0 preemption for concurrency: if at limit and P0, preempt (only if not already used) ──
+        if (!preemptionUsed && activeDispatchSet.size >= MAX_CONCURRENT_DISPATCHES && taskPriority === 'p0') {
+          const freedAgent = preemptForP0(db, taskId);
+          if (freedAgent && freedAgent !== agentId) {
+            console.log(`[taskDispatcher] P0 preemption freed a dispatch slot for ${taskId}`);
+          }
+        }
+      }
     }
 
     // Debounce: skip if we dispatched to this agent within 100ms
@@ -1264,12 +1524,54 @@ export function dispatchTask(taskId: string): boolean {
     }
     lastDispatch.set(agentId, now);
 
+    // ── Fleet budget enforcement gate ──
+    // Check agent-specific and global budgets before allowing dispatch.
+    // P0 tasks bypass budget limits — critical work must always proceed.
+    if (taskPriority !== 'p0') {
+      try {
+        const budgets = db.prepare(
+          'SELECT * FROM budgets WHERE agentId = ? OR agentId IS NULL'
+        ).all(agentId) as Array<{
+          name: string; agentId: string | null; period: string;
+          limitUsd: number; alertAt: number;
+        }>;
+
+        for (const budget of budgets) {
+          const periodStart = budgetPeriodStartMs(budget.period as 'daily' | 'weekly' | 'monthly');
+          const agentFilter = budget.agentId ? 'AND agentId = ?' : '';
+          const queryArgs: unknown[] = budget.agentId ? [periodStart, budget.agentId] : [periodStart];
+
+          const row = db.prepare(
+            `SELECT COALESCE(SUM(costUsd), 0) AS spend FROM token_usage WHERE timestamp >= ? ${agentFilter}`
+          ).get(...queryArgs) as { spend: number } | undefined;
+
+          const spent = row?.spend ?? 0;
+          if (spent >= budget.limitUsd) {
+            console.warn(
+              `[taskDispatcher] Budget exceeded for ${budget.agentId ?? 'global'} (${budget.name}): $${spent.toFixed(2)} / $${budget.limitUsd.toFixed(2)} ${budget.period} — blocking dispatch of ${taskId}`
+            );
+            try {
+              db.prepare(
+                `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+              ).run(taskId, 'system', 'budget_blocked',
+                `Dispatch blocked: ${budget.name} budget exceeded ($${spent.toFixed(2)} / $${budget.limitUsd.toFixed(2)} ${budget.period}). Task remains queued.`,
+                Date.now());
+            } catch { /* non-critical */ }
+            emitSSEEvent('budget.dispatch_blocked', {
+              taskId, agentId, budgetName: budget.name,
+              spent, limit: budget.limitUsd, period: budget.period,
+            });
+            return false;
+          }
+        }
+      } catch { /* budget check failure is non-fatal — allow dispatch */ }
+    }
+
     // Get per-agent model and trust tier from DB
     const agentRow = db.prepare('SELECT model, trust_tier FROM agents WHERE id = ?').get(agentId) as
       { model?: string; trust_tier?: string } | undefined;
     // Priority-based model override: P0/P1 tasks use opus for higher reasoning capacity.
     // Per-agent model from DB can still override this if explicitly set to opus/sonnet/haiku.
-    const taskPriority = (task.priority as string | null) ?? 'p2';
     const agentModelPref = agentRow?.model ?? 'sonnet';
     let effectiveModel = agentModelPref;
     if (agentModelPref === 'sonnet' || agentModelPref === 'claude-sonnet-4-6') {
@@ -1290,7 +1592,7 @@ export function dispatchTask(taskId: string): boolean {
     const apiKeyEnv = loadAgentApiKeyEnv(agentId);
 
     // Build args — use --resume if session exists, otherwise --system-prompt with soul file
-    const existingSession = loadTaskSession(taskId);
+    const existingSession = loadTaskSession(taskId, agentId);
     const args = [
       '--print',
       '--output-format', 'stream-json',
@@ -1344,23 +1646,24 @@ export function dispatchTask(taskId: string): boolean {
     }
 
     // Per-agent gate — max 1 in-progress task per agent at a time
+    // Exclude the current task from the count so dispatching the task itself doesn't self-block.
     try {
-      const inProgressCount = (db.prepare(
-        `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress'`
-      ).get(agentId) as { cnt: number } | undefined)?.cnt ?? 0;
+      const otherInProgress = (db.prepare(
+        `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress' AND id != ?`
+      ).get(agentId, taskId) as { cnt: number } | undefined)?.cnt ?? 0;
 
-      if (inProgressCount >= 1) {
-        console.log(`[taskDispatcher] Agent ${agentId} already has ${inProgressCount} in-progress task — skipping ${taskId} until slot opens`);
+      if (otherInProgress >= 1) {
+        console.log(`[taskDispatcher] Agent ${agentId} already has ${otherInProgress} other in-progress task(s) — skipping ${taskId} until slot opens`);
         return false;
       }
     } catch { /* non-critical — never block dispatch */ }
 
     // Concurrency check — skip if at limit
-    if (activeDispatches >= MAX_CONCURRENT_DISPATCHES) {
+    if (activeDispatchSet.size >= MAX_CONCURRENT_DISPATCHES) {
       console.warn(`[taskDispatcher] Concurrency limit reached (${MAX_CONCURRENT_DISPATCHES}). Task ${taskId} skipped.`);
       return false;
     }
-    activeDispatches++;
+    activeDispatchSet.add(taskId);
 
     // Telemetry: dispatch started
     trackEvent('dispatch.start', { taskId, agentId });
@@ -1381,6 +1684,9 @@ export function dispatchTask(taskId: string): boolean {
         stdio: ['pipe', 'pipe', 'pipe'],
       });
 
+      // Track process for P0 preemption
+      activeProcesses.set(taskId, proc);
+
       // Capture stderr for error reporting
       let stderrBuf = '';
       proc.stderr!.on('data', (chunk: Buffer) => {
@@ -1391,40 +1697,92 @@ export function dispatchTask(taskId: string): boolean {
       proc.stdin!.write(message);
       proc.stdin!.end();
 
-      // Parse stdout for session_id (from stream-json "result" event)
+      // Parse stdout stream-json events — live visibility into agent activity
       let outBuf = '';
+      let lastToolName = '';
+      let toolRepeatCount = 0;
+      const LOOP_THRESHOLD = 5; // same tool 5x in a row = likely stuck
+      let lastActivityTs = Date.now();
+
       proc.stdout!.on('data', (data: Buffer) => {
         outBuf += data.toString();
         const lines = outBuf.split('\n');
         outBuf = lines.pop() ?? '';
         for (const line of lines) {
           try {
-            const parsed = JSON.parse(line.trim()) as {
-              type?: string; session_id?: string;
-              input_tokens?: number; output_tokens?: number;
-            };
-            if (parsed.type === 'result') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const parsed = JSON.parse(line.trim()) as any;
+            const eventType = parsed.type as string | undefined;
+
+            // ── Result event — session + token tracking (existing logic) ──
+            if (eventType === 'result') {
               if (parsed.session_id) {
-                persistTaskSession(taskId, parsed.session_id, model);
+                persistTaskSession(taskId, agentId, parsed.session_id, model);
               }
-              // Log token usage + check budget alerts
               const inputT  = parsed.input_tokens  ?? 0;
               const outputT = parsed.output_tokens ?? 0;
               if (inputT > 0 || outputT > 0) {
                 try {
                   const costUsd = calcCostUsd(model, inputT, outputT);
-                  const db = getDb();
-                  db.prepare(
+                  const db2 = getDb();
+                  db2.prepare(
                     `INSERT INTO token_usage (agentId, taskId, sessionId, model, inputTokens, outputTokens, costUsd, source, timestamp)
                      VALUES (?, ?, ?, ?, ?, ?, ?, 'dispatch', ?)`
                   ).run(agentId, taskId, parsed.session_id ?? null, model, inputT, outputT, costUsd, Date.now());
-                  // Check all budgets that apply to this agent and emit SSE alerts
                   import('@/lib/budgetAlerts').then(({ checkBudgetAlerts }) => {
-                    checkBudgetAlerts(db, agentId);
+                    checkBudgetAlerts(db2, agentId);
                   }).catch(() => { /* non-critical */ });
                 } catch { /* non-critical */ }
               }
             }
+
+            // ── Assistant event — agent is thinking/responding ──
+            else if (eventType === 'assistant') {
+              lastActivityTs = Date.now();
+              // Check for tool_use blocks in the message
+              const toolUses = parsed.message?.content?.filter?.(
+                (b: { type?: string }) => b.type === 'tool_use'
+              ) ?? [];
+              for (const tu of toolUses) {
+                const toolName = tu.name as string ?? 'unknown';
+                // Emit live tool-use event for dashboard
+                emitSSEEvent('agent.tool_use', {
+                  taskId, agentId, tool: toolName, timestamp: Date.now(),
+                });
+
+                // Loop detection: same tool called repeatedly
+                if (toolName === lastToolName) {
+                  toolRepeatCount++;
+                  if (toolRepeatCount >= LOOP_THRESHOLD) {
+                    console.warn(`[taskDispatcher] Loop detected: ${agentId} called ${toolName} ${toolRepeatCount}x in a row on task ${taskId}`);
+                    try {
+                      getDb().prepare(
+                        `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+                      ).run(taskId, 'system', 'loop_detected',
+                        `Agent may be stuck: called ${toolName} ${toolRepeatCount} times consecutively`, Date.now());
+                    } catch { /* non-critical */ }
+                    emitSSEEvent('agent.loop_detected', {
+                      taskId, agentId, tool: toolName, count: toolRepeatCount,
+                    });
+                    // Reset so we don't spam — will fire again at 2x threshold
+                    toolRepeatCount = 0;
+                  }
+                } else {
+                  lastToolName = toolName;
+                  toolRepeatCount = 1;
+                }
+              }
+            }
+
+            // ── System event — errors, compaction ──
+            else if (eventType === 'system') {
+              lastActivityTs = Date.now();
+              const sysMsg = parsed.message ?? parsed.error ?? '';
+              if (typeof sysMsg === 'string' && sysMsg.length > 0) {
+                emitSSEEvent('agent.system', { taskId, agentId, message: sysMsg.slice(0, 200) });
+              }
+            }
+
           } catch { /* not JSON, ignore */ }
         }
       });
@@ -1446,7 +1804,7 @@ export function dispatchTask(taskId: string): boolean {
           setTimeout(() => spawnAttempt(attemptNumber + 1), delay);
         } else {
           // All attempts exhausted — move back to todo for retry (not human-review)
-          activeDispatches = Math.max(0, activeDispatches - 1);
+          activeDispatchSet.delete(taskId);
           console.error(`[taskDispatcher] Dispatch failed after ${MAX_DISPATCH_ATTEMPTS} attempts for task ${taskId}: ${errorMsg}`);
           try {
             db.prepare(
@@ -1472,13 +1830,15 @@ export function dispatchTask(taskId: string): boolean {
 
       // Log exit code and update task status on failure
       proc.on('close', (code) => {
+        // Clean up process tracking
+        activeProcesses.delete(taskId);
         // Clear process timeout on any exit
         const pendingTimeout = processTimeouts.get(taskId);
         if (pendingTimeout) { clearTimeout(pendingTimeout); processTimeouts.delete(taskId); }
 
         if (code === 0) {
-          // Success path — decrement activeDispatches on final resolution
-          activeDispatches = Math.max(0, activeDispatches - 1);
+          // Success path — remove from active dispatch set
+          activeDispatchSet.delete(taskId);
           recordAgentSuccess(agentId);
           trackEvent('dispatch.complete', { taskId, agentId, exitCode: code });
 
@@ -1539,36 +1899,161 @@ export function dispatchTask(taskId: string): boolean {
             }
           } catch { /* non-critical */ }
         } else {
-          // Non-zero exit — attempt retry
+          // ── Non-zero exit — classify error and apply category-specific recovery ──
           const stderrSnippet = stderrBuf.slice(0, 500);
-          // Also capture stdout for debugging (error might be on stdout)
           const stdoutSnippet = outBuf.slice(0, 500);
+          const combined = (stderrSnippet + ' ' + stdoutSnippet).toLowerCase();
+
           console.error(`[taskDispatcher] Agent ${agentId} task ${taskId} attempt ${attemptNumber} failed (exit ${code})`);
           if (stderrSnippet) console.error(`[taskDispatcher]   stderr: ${stderrSnippet}`);
           if (stdoutSnippet) console.error(`[taskDispatcher]   stdout: ${stdoutSnippet}`);
+
+          // Classify the failure into a category for targeted recovery
+          type ErrorCategory = 'stale_session' | 'rate_limit' | 'context_overflow' | 'oom_killed' | 'auth_error' | 'generic';
+          let category: ErrorCategory = 'generic';
+
           if (!stderrSnippet && !stdoutSnippet) {
-            console.error(`[taskDispatcher]   (no output — likely stale --resume session)`);
-            // If we were trying to resume, clear the stale session and let retry use fresh dispatch
-            if (useResume) {
-              console.log(`[taskDispatcher] Clearing stale session for ${taskId} — next attempt will use fresh dispatch`);
-              try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId); } catch { /* */ }
-              // Remove --resume from args so next attempt uses --system-prompt
-              const resumeIdx = args.indexOf('--resume');
-              if (resumeIdx !== -1) args.splice(resumeIdx, 2); // remove --resume and session ID
-              useResume = false;
-              // Add system prompt for next attempt
-              const freshPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv, task);
-              if (freshPrompt) args.push('--system-prompt', freshPrompt);
+            // No output at all — almost always a stale --resume session
+            category = 'stale_session';
+          } else if (code === 137 || code === 9) {
+            // SIGKILL (137 = 128+9) or raw signal 9 — OOM killer or system kill
+            category = 'oom_killed';
+          } else if (combined.includes('rate limit') || combined.includes('rate_limit') || combined.includes('429') || combined.includes('too many requests') || combined.includes('overloaded')) {
+            category = 'rate_limit';
+          } else if (combined.includes('context') && (combined.includes('overflow') || combined.includes('too long') || combined.includes('maximum') || combined.includes('exceeded') || combined.includes('too large'))) {
+            category = 'context_overflow';
+          } else if (combined.includes('unauthorized') || combined.includes('invalid api key') || combined.includes('authentication') || combined.includes('forbidden') || combined.includes('invalid_api_key') || combined.includes('permission denied')) {
+            category = 'auth_error';
+          } else if (code === 1 && (!stderrSnippet && !stdoutSnippet)) {
+            category = 'stale_session';
+          }
+
+          // Emit SSE event with classification for dashboard visibility
+          emitSSEEvent('agent.exit_error', {
+            taskId, agentId, exitCode: code, category,
+            stderr: stderrSnippet.slice(0, 200),
+            attempt: attemptNumber,
+          });
+
+          // Log activity with category
+          try {
+            getDb().prepare(
+              `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+            ).run(taskId, 'system', 'dispatch_error_classified',
+              `Exit ${code} [${category}] attempt ${attemptNumber}: ${(stderrSnippet || stdoutSnippet || '(no output)').slice(0, 300)}`,
+              Date.now());
+          } catch { /* non-critical */ }
+
+          // Apply category-specific recovery
+          switch (category) {
+            case 'stale_session': {
+              // Clear stale session and retry with fresh dispatch immediately
+              console.log(`[taskDispatcher] [stale_session] Clearing session for ${taskId} — fresh dispatch on retry`);
+              try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch { /* */ }
+              if (useResume) {
+                const resumeIdx = args.indexOf('--resume');
+                if (resumeIdx !== -1) args.splice(resumeIdx, 2);
+                useResume = false;
+                const freshPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv, task);
+                if (freshPrompt) args.push('--system-prompt', freshPrompt);
+              }
+              handleFailure(`[stale_session] exit ${code}: session expired, retrying fresh`);
+              break;
+            }
+
+            case 'rate_limit': {
+              // Rate limited — use longer exponential backoff before retry
+              const rateLimitDelay = Math.min(30000 * Math.pow(2, attemptNumber - 1), 120000); // 30s, 60s, 120s
+              console.warn(`[taskDispatcher] [rate_limit] Backing off ${rateLimitDelay}ms before retry for ${taskId}`);
+              if (attemptNumber < MAX_DISPATCH_ATTEMPTS) {
+                try {
+                  db.prepare(
+                    `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+                  ).run(taskId, 'system', 'dispatch_retry',
+                    `Rate limited — backing off ${rateLimitDelay / 1000}s before attempt ${attemptNumber + 1}`,
+                    Date.now());
+                } catch { /* */ }
+                setTimeout(() => spawnAttempt(attemptNumber + 1), rateLimitDelay);
+              } else {
+                // All attempts exhausted with rate limits — return to todo with longer cooldown
+                activeDispatchSet.delete(taskId);
+                try {
+                  db.prepare(`UPDATE tasks SET status = 'todo', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`)
+                    .run('Rate limited after all retry attempts. Returned to queue — will retry on next dispatch cycle.', Date.now(), taskId);
+                  db.prepare(`UPDATE agents SET status = 'idle' WHERE id = ?`).run(agentId);
+                } catch { /* */ }
+                recordAgentFailure(agentId);
+                trackEvent('dispatch.rate_limited', { taskId, agentId, attempts: MAX_DISPATCH_ATTEMPTS }, agentId);
+              }
+              break;
+            }
+
+            case 'context_overflow': {
+              // Context too large — clear session, add instruction to work in smaller chunks
+              console.warn(`[taskDispatcher] [context_overflow] Clearing session and adding scope reduction note for ${taskId}`);
+              try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch { /* */ }
+              if (useResume) {
+                const resumeIdx = args.indexOf('--resume');
+                if (resumeIdx !== -1) args.splice(resumeIdx, 2);
+                useResume = false;
+                const freshPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv, task);
+                if (freshPrompt) args.push('--system-prompt', freshPrompt);
+              }
+              // Append a note to task so the next dispatch knows to work smaller
+              try {
+                db.prepare(
+                  `UPDATE tasks SET planningNotes = COALESCE(planningNotes, '') || ? WHERE id = ?`
+                ).run('\n\n[SYSTEM] Previous attempt hit context overflow. Work in smaller chunks — use subagents for large file reads and break work into focused steps.', taskId);
+              } catch { /* */ }
+              handleFailure(`[context_overflow] exit ${code}: context exceeded, retrying with scope reduction`);
+              break;
+            }
+
+            case 'oom_killed': {
+              // OOM/SIGKILL — the process was killed by the OS. Clear everything and retry fresh
+              console.error(`[taskDispatcher] [oom_killed] Process killed by system (exit ${code}) for ${taskId}`);
+              try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch { /* */ }
+              if (useResume) {
+                const resumeIdx = args.indexOf('--resume');
+                if (resumeIdx !== -1) args.splice(resumeIdx, 2);
+                useResume = false;
+                const freshPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv, task);
+                if (freshPrompt) args.push('--system-prompt', freshPrompt);
+              }
+              // Append scope-reduction note — OOM often means too-large files or too many concurrent reads
+              try {
+                db.prepare(
+                  `UPDATE tasks SET planningNotes = COALESCE(planningNotes, '') || ? WHERE id = ?`
+                ).run('\n\n[SYSTEM] Previous attempt was killed by OS (likely OOM). Use subagents for large file operations and avoid reading entire large files at once.', taskId);
+              } catch { /* */ }
+              handleFailure(`[oom_killed] exit ${code}: process killed by system, retrying fresh with scope notes`);
+              break;
+            }
+
+            case 'auth_error': {
+              // Auth failure — do NOT retry, escalate immediately. Retrying with bad credentials is pointless
+              console.error(`[taskDispatcher] [auth_error] Authentication failure for ${taskId} — escalating to human-review`);
+              activeDispatchSet.delete(taskId);
+              try {
+                db.prepare(`UPDATE tasks SET status = 'human-review', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`)
+                  .run(`Authentication error during dispatch: ${stderrSnippet.slice(0, 200)}. API key may be invalid or expired.`, Date.now(), taskId);
+                db.prepare(
+                  `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+                ).run(taskId, 'system', 'dispatch_auth_failed',
+                  `Authentication error — task moved to human-review. Check API key configuration.`, Date.now());
+                db.prepare(`UPDATE agents SET status = 'idle' WHERE id = ?`).run(agentId);
+              } catch { /* */ }
+              recordAgentFailure(agentId);
+              trackEvent('dispatch.auth_error', { taskId, agentId, error: stderrSnippet.slice(0, 200) }, agentId);
+              break;
+            }
+
+            default: {
+              // Generic/unknown error — use standard retry with original delays
+              handleFailure(`exit code ${code}: ${stderrSnippet.slice(0, 200)}`);
+              break;
             }
           }
-          if (stderrBuf || stdoutSnippet) {
-            try {
-              getDb().prepare(
-                `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
-              ).run(taskId, 'system', 'dispatch_stderr', `Dispatch attempt ${attemptNumber} failed (exit ${code}): ${stderrSnippet.slice(0, 400)}`, Date.now());
-            } catch { /* non-critical */ }
-          }
-          handleFailure(`exit code ${code}: ${stderrSnippet.slice(0, 200)}`);
         }
       });
 
@@ -1586,7 +2071,7 @@ export function dispatchTask(taskId: string): boolean {
         }, 5000); // Force kill 5s after SIGTERM
 
         processTimeouts.delete(taskId);
-        activeDispatches = Math.max(0, activeDispatches - 1);
+        activeDispatchSet.delete(taskId);
 
         console.error(`[taskDispatcher] Process timeout: killed hung dispatch for task ${taskId} after 30 minutes`);
 
@@ -1684,15 +2169,31 @@ export function recoverStuckInProgressTasks(): void {
     if (stuck.length === 0) return;
 
     console.log(`[taskDispatcher] Recovering ${stuck.length} task(s) stuck in in-progress from previous session`);
+    const MAX_STARTUP_REDISPATCHES = 5;
     let staggerIndex = 0;
     for (const task of stuck) {
       // Skip if already queued for re-dispatch (prevents double-dispatch on concurrent callers)
       if (_redispatchTimeouts.has(task.id)) continue;
 
+      // Cap total auto_redispatch attempts — escalate to human-review if exhausted
+      const priorAttempts = (db.prepare(
+        `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action = 'auto_redispatch'`
+      ).get(task.id) as { cnt: number } | undefined)?.cnt ?? 0;
+
+      if (priorAttempts >= MAX_STARTUP_REDISPATCHES) {
+        console.warn(`[taskDispatcher] Task ${task.id} has ${priorAttempts} prior auto_redispatch attempts — escalating to human-review`);
+        db.prepare(`UPDATE tasks SET status = 'human-review', updatedAt = ? WHERE id = ?`).run(Date.now(), task.id);
+        db.prepare(
+          `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+        ).run(task.id, 'system', 'auto_redispatch_exhausted',
+          `Escalated to human-review: ${priorAttempts} startup re-dispatch attempts with no progress.`, Date.now());
+        continue;
+      }
+
       db.prepare(
         `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
       ).run(task.id, 'system', 'auto_redispatch',
-        'Task was in-progress at server startup — re-dispatching to resume work (attempt 1/3)', Date.now());
+        `Task was in-progress at server startup — re-dispatching to resume work (attempt ${priorAttempts + 1}/${MAX_STARTUP_REDISPATCHES})`, Date.now());
 
       // Exponential backoff stagger: 5s, 15s, 30s, 60s, then 60s for any beyond 4
       const backoffMs = [5_000, 15_000, 30_000, 60_000];

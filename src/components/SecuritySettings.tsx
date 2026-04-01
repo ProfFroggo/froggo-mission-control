@@ -309,10 +309,10 @@ export default function SecuritySettings() {
                 key={alert.id}
                 className={`p-4 rounded-lg border flex items-start gap-3 ${
                   alert.severity === 'critical' || alert.severity === 'high'
-                    ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30'
+                    ? 'bg-error/10 border-error/30'
                     : alert.severity === 'medium'
-                    ? 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30'
-                    : 'bg-[var(--color-info)]/10 border-[var(--color-info)]/30'
+                    ? 'bg-warning/10 border-warning/30'
+                    : 'bg-info/10 border-info/30'
                 }`}
               >
                 <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
@@ -442,7 +442,7 @@ export default function SecuritySettings() {
                 </div>
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/5 transition-colors"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-error hover:bg-error/5 transition-colors"
                   onClick={() => handleDeleteKey(key.id)}
                   title="Delete key"
                   aria-label="Delete API key"

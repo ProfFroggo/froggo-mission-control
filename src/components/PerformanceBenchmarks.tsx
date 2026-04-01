@@ -180,13 +180,13 @@ export default function PerformanceBenchmarks() {
       return (
         <ArrowUp
           size={16}
-          className={positive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}
+          className={positive ? 'text-success' : 'text-error'}
         />
       );
     return (
       <ArrowDown
         size={16}
-        className={positive ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'}
+        className={positive ? 'text-error' : 'text-success'}
       />
     );
   };
@@ -255,9 +255,9 @@ export default function PerformanceBenchmarks() {
         {metrics.map((metric) => {
           const deltaColor =
             metric.trend === 'up'
-              ? metric.positive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'
+              ? metric.positive ? 'text-success' : 'text-error'
               : metric.trend === 'down'
-              ? metric.positive ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'
+              ? metric.positive ? 'text-error' : 'text-success'
               : 'text-mission-control-text-dim';
           const deltaSign = metric.changePercent > 0 ? '+' : '';
           return (
@@ -429,9 +429,9 @@ export default function PerformanceBenchmarks() {
                 key={metric.label}
                 className={`p-3 rounded-lg ${
                   isPositive
-                    ? 'bg-[var(--color-success)]/10 border border-[var(--color-success)]/30'
+                    ? 'bg-success/10 border border-success/30'
                     : isNegative
-                    ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30'
+                    ? 'bg-error/10 border border-error/30'
                     : 'bg-mission-control-bg border border-mission-control-border'
                 }`}
               >
@@ -442,9 +442,9 @@ export default function PerformanceBenchmarks() {
                     <span
                       className={
                         isPositive
-                          ? 'text-[var(--color-success)]'
+                          ? 'text-success'
                           : isNegative
-                          ? 'text-[var(--color-error)]'
+                          ? 'text-error'
                           : 'text-mission-control-text-dim'
                       }
                     >

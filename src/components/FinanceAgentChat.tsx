@@ -306,7 +306,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
                   )}
                   <div className={`max-w-[80%] flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                     {isNewSpeaker && msg.role === 'agent' && (
-                      <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">Finance Manager</span>
+                      <span className="text-xs font-medium text-success mb-1 px-1">Finance Manager</span>
                     )}
                     {isNewSpeaker && msg.role === 'user' && (
                       <span className="text-xs font-medium text-mission-control-accent mb-1 px-1">You</span>
@@ -336,7 +336,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
                   <MessageSquare className="w-4 h-4 text-mission-control-text-dim" />
                 </div>
                 <div className="flex flex-col items-start">
-                  <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">Finance Manager</span>
+                  <span className="text-xs font-medium text-success mb-1 px-1">Finance Manager</span>
                   <div className="text-sm text-mission-control-text">
                     <Flex gap="1" align="center" className="py-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -355,10 +355,10 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
 
       {/* Error message */}
       {error && (
-        <Flex align="start" gap="2" className="mx-4 mb-2 p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
-          <AlertCircle className="w-4 h-4 text-[var(--color-error)] mt-0.5 flex-shrink-0" />
+        <Flex align="start" gap="2" className="mx-4 mb-2 p-3 bg-error/10 border border-error/30 rounded-lg">
+          <AlertCircle className="w-4 h-4 text-error mt-0.5 flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-sm text-[var(--color-error)]">{error}</p>
+            <p className="text-sm text-error">{error}</p>
             <button
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors mt-1"
               onClick={() => setError(null)}

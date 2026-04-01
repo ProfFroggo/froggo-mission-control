@@ -93,11 +93,11 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
   const isCritical = charCount >= Math.floor(TWEET_CHAR_LIMIT * 0.95) && charCount <= TWEET_CHAR_LIMIT;
 
   const charCountClass = isOverLimit
-    ? 'text-[var(--color-error)] font-semibold'
+    ? 'text-error font-semibold'
     : isCritical
-    ? 'text-[var(--color-error)]'
+    ? 'text-error'
     : isWarning
-    ? 'text-[var(--color-warning)]'
+    ? 'text-warning'
     : 'text-mission-control-text-dim';
 
   // Auto-resize textarea
@@ -530,9 +530,9 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
   // Rate limit banner color
   const rateLimitBannerClass = () => {
     if (!rateLimit) return '';
-    if (rateLimit.remaining === 0) return 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)]';
-    if (rateLimit.remaining <= 5) return 'bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-[var(--color-warning)]';
-    return 'bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 text-[var(--color-success)]';
+    if (rateLimit.remaining === 0) return 'bg-error/10 border border-error/30 text-error';
+    if (rateLimit.remaining <= 5) return 'bg-warning/10 border border-warning/30 text-warning';
+    return 'bg-success/10 border border-success/30 text-success';
   };
 
   const postButtonLabel = () => {
@@ -581,10 +581,10 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {/* Failed posts notification banner */}
         {failedPosts.length > 0 && (
-          <div className="p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)] rounded-lg">
+          <div className="p-3 bg-error/10 border border-error rounded-lg">
             <Flex align="center" gap="2" className="mb-1">
-              <AlertCircle className="w-4 h-4 text-[var(--color-error)]" />
-              <span className="text-sm font-medium text-[var(--color-error)]">
+              <AlertCircle className="w-4 h-4 text-error" />
+              <span className="text-sm font-medium text-error">
                 {failedPosts.length} scheduled post{failedPosts.length > 1 ? 's' : ''} failed to publish
               </span>
             </Flex>
@@ -671,10 +671,10 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                   </div>
                 )}
                 {!uploadingMedia && mediaId && (
-                  <p className="mt-1 text-xs text-[var(--color-success)] font-medium">Media ready</p>
+                  <p className="mt-1 text-xs text-success font-medium">Media ready</p>
                 )}
                 {!uploadingMedia && mediaError && (
-                  <p className="mt-1 text-xs text-[var(--color-error)]">{mediaError}</p>
+                  <p className="mt-1 text-xs text-error">{mediaError}</p>
                 )}
               </div>
               <button
@@ -724,7 +724,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
             <label className="block text-sm font-medium text-mission-control-text">
               Schedule for
               {editingScheduledId && (
-                <span className="text-xs text-[var(--color-warning)] ml-2">(editing scheduled post)</span>
+                <span className="text-xs text-warning ml-2">(editing scheduled post)</span>
               )}
             </label>
             <input
@@ -734,7 +734,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
               onChange={(e) => setScheduledAt(e.target.value)}
             />
             {scheduleResult && !scheduleResult.success && (
-              <Flex align="center" gap="2" className="text-sm text-[var(--color-error)]">
+              <Flex align="center" gap="2" className="text-sm text-error">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {scheduleResult.error}
               </Flex>
@@ -766,7 +766,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
 
         {/* Schedule success banner */}
         {scheduleResult?.success && (
-          <Flex align="center" gap="2" className="px-4 py-3 rounded-lg text-sm bg-[var(--color-success)]/10 border border-[var(--color-success)] text-[var(--color-success)]">
+          <Flex align="center" gap="2" className="px-4 py-3 rounded-lg text-sm bg-success/10 border border-success text-success">
             <CheckCircle className="w-4 h-4 flex-shrink-0" />
             {scheduleResult.message}
           </Flex>
@@ -774,8 +774,8 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
 
         {/* Post confirmation inline bar */}
         {showConfirm && (
-          <Flex align="center" gap="3" className="px-4 py-3 bg-[var(--color-warning)]/10 border border-[var(--color-warning)] rounded-lg">
-            <AlertCircle className="w-5 h-5 text-[var(--color-warning)] flex-shrink-0" />
+          <Flex align="center" gap="3" className="px-4 py-3 bg-warning/10 border border-warning rounded-lg">
+            <AlertCircle className="w-5 h-5 text-warning flex-shrink-0" />
             <span className="text-sm text-mission-control-text flex-1">
               {mode === 'single' ? 'Post this tweet to X?' : `Post this ${tweets.filter(t => t.trim()).length}-tweet thread to X?`}
               {' '}This cannot be undone.
@@ -804,8 +804,8 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
             align="start" gap="3"
             className={`px-4 py-3 rounded-lg text-sm ${
               result.success
-                ? 'bg-[var(--color-success)]/10 border border-[var(--color-success)] text-[var(--color-success)]'
-                : 'bg-[var(--color-error)]/10 border border-[var(--color-error)] text-[var(--color-error)]'
+                ? 'bg-success/10 border border-success text-success'
+                : 'bg-error/10 border border-error text-error'
             }`}
           >
             {result.success ? (
@@ -868,7 +868,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                     align="start" gap="3"
                     className={`p-3 bg-mission-control-surface border rounded-lg ${
                       editingScheduledId === post.id
-                        ? 'border-[var(--color-warning)] bg-[var(--color-warning)]/10/30'
+                        ? 'border-warning bg-warning/10/30'
                         : 'border-mission-control-border'
                     }`}
                   >

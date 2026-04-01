@@ -47,17 +47,17 @@ export default function ConfirmDialog({
   const config = {
     danger: {
       icon: Trash2,
-      iconWrapperClass: 'bg-[var(--color-error)]/10 text-[var(--color-error)]',
+      iconWrapperClass: 'bg-error/10 text-error',
       isDanger: true,
     },
     warning: {
       icon: AlertTriangle,
-      iconWrapperClass: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]',
+      iconWrapperClass: 'bg-warning/10 text-warning',
       isDanger: false,
     },
     info: {
       icon: Info,
-      iconWrapperClass: 'bg-[var(--color-info)]/10 text-[var(--color-info)]',
+      iconWrapperClass: 'bg-info/10 text-info',
       isDanger: false,
     },
   };
@@ -132,7 +132,7 @@ export default function ConfirmDialog({
               disabled={isProcessing}
             />
             {inputValue && inputValue !== requireInput.expectedValue && (
-              <p className="text-xs text-[var(--color-error)]">
+              <p className="text-xs text-error">
                 Please type exactly: <code className="font-mono">{requireInput.expectedValue}</code>
               </p>
             )}
@@ -141,7 +141,7 @@ export default function ConfirmDialog({
 
         {/* Action error */}
         {actionError && (
-          <p className="text-sm text-[var(--color-error)] mt-3 text-center">{actionError}</p>
+          <p className="text-sm text-error mt-3 text-center">{actionError}</p>
         )}
 
         {/* Footer */}

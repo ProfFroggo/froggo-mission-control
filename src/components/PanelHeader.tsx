@@ -140,7 +140,7 @@ export default function PanelHeader({
 
       {/* Right: actions */}
       {((actions && actions.length > 0) || children) && (
-        <Flex align="center" gap="1" ml="4" className="flex-shrink-0">
+        <Flex align="center" gap="2" ml="4" className="flex-shrink-0">
           {renderActions(actions)}
           {children}
         </Flex>

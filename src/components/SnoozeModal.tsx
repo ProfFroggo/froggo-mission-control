@@ -222,14 +222,14 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
             {currentSnooze && (
               <div className={`mb-4 p-3 rounded-lg border-2 ${
                 isExpired 
-                  ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30' 
-                  : 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30'
+                  ? 'bg-error/10 border-error/30' 
+                  : 'bg-warning/10 border-warning/30'
               }`}>
                 <Flex align="start" gap="2">
-                  <AlertCircle size={16} className={isExpired ? 'text-[var(--color-error)] mt-0.5' : 'text-[var(--color-warning)] mt-0.5'} />
+                  <AlertCircle size={16} className={isExpired ? 'text-error mt-0.5' : 'text-warning mt-0.5'} />
                   <div className="flex-1">
-                    <p className={`font-medium ${isExpired ? 'text-[var(--color-error)]' : 'text-[var(--color-warning)]'}`}>
-                      {isExpired ? '⏰ Reminder!' : 'Currently Snoozed'}
+                    <p className={`font-medium ${isExpired ? 'text-error' : 'text-warning'}`}>
+                      {isExpired ? 'Reminder!' : 'Currently Snoozed'}
                     </p>
                     <p className="text-sm text-mission-control-text-dim mt-1">
                       {isExpired ? 'Expired ' : 'Until '}{formatSnoozeTime(currentSnooze.snooze_until)}
@@ -337,8 +337,8 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
 
             {/* Error Message */}
             {error && (
-              <div className="mb-4 p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
-                <p className="text-sm text-[var(--color-error)]">{error}</p>
+              <div className="mb-4 p-3 bg-error/10 border border-error/30 rounded-lg">
+                <p className="text-sm text-error">{error}</p>
               </div>
             )}
           </>

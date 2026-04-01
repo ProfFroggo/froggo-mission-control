@@ -97,8 +97,8 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
       </Flex>
 
       {/* Info */}
-      <div className="p-4 bg-[var(--color-info)]/10 border-b border-mission-control-border">
-        <p className="text-sm text-[var(--color-info)]">
+      <div className="p-4 bg-info/10 border-b border-mission-control-border">
+        <p className="text-sm text-info">
           Assigning {sessionKeys.length} conversation{sessionKeys.length !== 1 ? 's' : ''} to selected folders
         </p>
       </div>

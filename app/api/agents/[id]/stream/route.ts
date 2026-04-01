@@ -335,6 +335,21 @@ const MCP_MEMORY_TOOLS = [
   'mcp__memory__memory_search', 'mcp__memory__memory_recall',
   'mcp__memory__memory_write', 'mcp__memory__memory_read',
 ];
+const MCP_MIXPANEL_TOOLS = [
+  'mcp__mixpanel__Get-Projects', 'mcp__mixpanel__Get-Events',
+  'mcp__mixpanel__Edit-Event', 'mcp__mixpanel__Get-Event-Details',
+  'mcp__mixpanel__Get-Property-Names', 'mcp__mixpanel__Get-Property-Values',
+  'mcp__mixpanel__Edit-Property', 'mcp__mixpanel__Get-Property',
+  'mcp__mixpanel__Create-Tag', 'mcp__mixpanel__Get-Issues',
+  'mcp__mixpanel__Dismiss-Issues', 'mcp__mixpanel__Rename-Tag',
+  'mcp__mixpanel__Delete-Tag', 'mcp__mixpanel__Get-Lexicon-URL',
+  'mcp__mixpanel__Get-User-Replays-Data', 'mcp__mixpanel__Get-Query-Schema',
+  'mcp__mixpanel__Get-Report', 'mcp__mixpanel__Run-Query',
+  'mcp__mixpanel__Create-Dashboard', 'mcp__mixpanel__List-Dashboards',
+  'mcp__mixpanel__Get-Dashboard', 'mcp__mixpanel__Update-Dashboard',
+  'mcp__mixpanel__Duplicate-Dashboard', 'mcp__mixpanel__Delete-Dashboard',
+  'mcp__mixpanel__Search-Entities',
+];
 const MCP_GOOGLE_TOOLS = [
   'mcp__google-workspace__auth_clear', 'mcp__google-workspace__auth_refreshToken',
   'mcp__google-workspace__calendar_createEvent', 'mcp__google-workspace__calendar_deleteEvent',
@@ -376,16 +391,16 @@ const BASH_SAFE_TOOLS = [
 const CHAT_TIER_TOOLS: Record<string, string[]> = {
   restricted: ['Read', 'Glob', 'Grep', ...MCP_DB_TOOLS.filter(t => t !== 'mcp__mission-control_db__task_create'), 'mcp__memory__memory_search', 'mcp__memory__memory_recall', 'mcp__memory__memory_read'],
   apprentice:  ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS],
-  worker:      ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS],
-  trusted:     ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS],
-  admin:       ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS],
+  worker:      ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
+  trusted:     ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
+  admin:       ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
 };
 // Reverse map: short tool name → full MCP tool ID
 // Built from all known tool lists so modal Tool tab toggles feed into --allowedTools.
 // Modal saves short names (e.g. "image_generate"); stream needs full IDs.
 const SHORT_TO_FULL_MCP: Map<string, string> = (() => {
   const m = new Map<string, string>();
-  const allFull = [...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS];
+  const allFull = [...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS];
   for (const full of allFull) {
     const parts = full.split('__');
     if (parts.length >= 3) m.set(parts.slice(2).join('__'), full);
@@ -759,7 +774,7 @@ export async function POST(
           clearInterval(timeout);
           proc.kill();
           if (!streamCancelled) {
-            enc({ type: 'timeout', text: totalMs >= MAX_TOTAL_TIMEOUT_MS ? 'Response timed out after 30 minutes' : 'Response timed out — no activity for 5 minutes' });
+            enc({ type: 'timeout', text: totalMs >= MAX_TOTAL_TIMEOUT_MS ? 'Response timed out after 60 minutes' : 'Response timed out — no activity for 15 minutes' });
             try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch { /* closed */ }
             try { controller.close(); } catch { /* already closed */ }
           }
@@ -880,7 +895,7 @@ export async function POST(
               if (idleMs < IDLE_TIMEOUT_MS && totalMs < MAX_TOTAL_TIMEOUT_MS) return;
               clearInterval(freshTimeout);
               fresh.kill();
-              enc({ type: 'timeout', text: totalMs >= MAX_TOTAL_TIMEOUT_MS ? 'Response timed out after 30 minutes' : 'Response timed out — no activity for 5 minutes' });
+              enc({ type: 'timeout', text: totalMs >= MAX_TOTAL_TIMEOUT_MS ? 'Response timed out after 60 minutes' : 'Response timed out — no activity for 15 minutes' });
               finishStream(null);
             }, 30_000);
             fresh.on('close', (c) => { clearInterval(freshTimeout); finishStream(c); });

@@ -15,9 +15,9 @@ import BaseModal, { BaseModalBody } from './BaseModal';
 import AgentAvatar from './AgentAvatar';
 
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
-  { id: 'p0', label: 'Urgent', color: 'text-[var(--color-error)]', bg: 'bg-[var(--color-error)]/10', icon: <AlertTriangle size={14} /> },
-  { id: 'p1', label: 'High', color: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10', icon: <ArrowUp size={14} /> },
-  { id: 'p2', label: 'Medium', color: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10', icon: <Circle size={14} /> },
+  { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-error/10', icon: <AlertTriangle size={14} /> },
+  { id: 'p1', label: 'High', color: 'text-warning', bg: 'bg-warning/10', icon: <ArrowUp size={14} /> },
+  { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-warning/10', icon: <Circle size={14} /> },
   { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface/20', icon: <ArrowDown size={14} /> },
 ];
 
@@ -165,7 +165,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
         setChatMessages([{
           id: `msg-${Date.now()}`,
           role: 'assistant',
-          content: "Hey! 🐸 Tell me what you need done and I'll help you create a well-structured task. What's on your mind?",
+          content: "Hey! Tell me what you need done and I'll help you create a well-structured task. What's on your mind?",
           timestamp: Date.now(),
         }]);
       }
@@ -297,7 +297,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     try {
       // Construct context-aware prompt
       const conversationHistory = chatMessages.map(m => `${m.role}: ${m.content}`).join('\n');
-      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control 🐸, helping create a task in the Kanban system. Have a natural conversation to gather:\n- Task title (clear, actionable)\n- Description (context, details)\n- Project (Dashboard/X/Discord/Telegram/Dev/etc)\n- Priority (p0=urgent, p1=high, p2=medium, p3=low)\n- Due date (if time-sensitive)\n- Agent assignment (Coder/Researcher/Writer/Chief/Main)\n\nAfter gathering enough info, output the task in this JSON format:\n\`\`\`json\n{"task": {"title": "...", "description": "...", "project": "...", "priority": "p1", "dueDate": "2024-01-30", "assignedTo": "coder"}, "complete": true}\n\`\`\`\n\nBe conversational, friendly, and efficient. Ask clarifying questions if needed.`;
+      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control, helping create a task in the Kanban system. Have a natural conversation to gather:\n- Task title (clear, actionable)\n- Description (context, details)\n- Project (Dashboard/X/Discord/Telegram/Dev/etc)\n- Priority (p0=urgent, p1=high, p2=medium, p3=low)\n- Due date (if time-sensitive)\n- Agent assignment (Coder/Researcher/Writer/Chief/Main)\n\nAfter gathering enough info, output the task in this JSON format:\n\`\`\`json\n{"task": {"title": "...", "description": "...", "project": "...", "priority": "p1", "dueDate": "2024-01-30", "assignedTo": "coder"}, "complete": true}\n\`\`\`\n\nBe conversational, friendly, and efficient. Ask clarifying questions if needed.`;
 
       // Setup streaming listener
       const unsubscribe = gateway.on('chat', (data: any) => {
@@ -629,9 +629,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               <div>
                 <Flex align="center" justify="between" className="mb-1">
                   <label htmlFor="task-title" className="text-sm text-mission-control-text-dim">
-                    Title <span className="text-[var(--color-error)] text-xs ml-0.5" aria-hidden="true">*</span>
+                    Title <span className="text-error text-xs ml-0.5" aria-hidden="true">*</span>
                   </label>
-                  <span className={`text-xs ${title.length > 120 ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim'}`}>{title.length}/140</span>
+                  <span className={`text-xs ${title.length > 120 ? 'text-warning' : 'text-mission-control-text-dim'}`}>{title.length}/140</span>
                 </Flex>
                 <TextField.Root
                   id="task-title"
@@ -643,7 +643,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   size="2"
                 />
                 {titleError && (
-                  <p className="text-[var(--color-error)] text-xs mt-1" role="alert">{titleError}</p>
+                  <p className="text-error text-xs mt-1" role="alert">{titleError}</p>
                 )}
               </div>
 
@@ -669,7 +669,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   <label htmlFor="task-planning-notes" className="flex items-center gap-1.5 text-sm text-mission-control-text-dim">
                     <FileText size={14} />
                     Planning Notes
-                    <span className="text-[var(--color-error)] text-xs ml-0.5" aria-hidden="true">*</span>
+                    <span className="text-error text-xs ml-0.5" aria-hidden="true">*</span>
                   </label>
                   <Flex align="center" gap="2">
                     <span className="text-xs text-mission-control-text-dim">{planningNotes.length} chars</span>
@@ -863,13 +863,13 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                           </Flex>
                           <Flex align="center" gap="1" className="text-[10px] text-mission-control-text-dim">
                             <span>{activeTaskCount} task{activeTaskCount !== 1 ? 's' : ''}</span>
-                            {isBusy && <span className="text-[var(--color-warning)]">(busy)</span>}
-                            {isDisabled && <span className="text-[var(--color-error)]">(offline)</span>}
+                            {isBusy && <span className="text-warning">(busy)</span>}
+                            {isDisabled && <span className="text-error">(offline)</span>}
                           </Flex>
                           {activeTaskCount > 0 && (
                             <div className="h-1 bg-mission-control-border rounded-full overflow-hidden w-full">
                               <div
-                                className={`h-full rounded-full ${isBusy ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-success)]'}`}
+                                className={`h-full rounded-full ${isBusy ? 'bg-warning' : 'bg-success'}`}
                                 style={{ width: `${Math.min(100, (activeTaskCount / 8) * 100)}%` }}
                               />
                             </div>
@@ -879,7 +879,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     })}
                 </div>
                 {assignedTo && agents.find(a => a.id === assignedTo)?.status === 'disabled' && (
-                  <Flex align="center" gap="2" className="mt-2 p-2 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-[var(--color-warning)] text-xs">
+                  <Flex align="center" gap="2" className="mt-2 p-2 rounded-lg bg-warning/10 border border-warning/30 text-warning text-xs">
                     <AlertTriangle size={12} className="flex-shrink-0" />
                     This agent is disabled. Task will queue but won&apos;t execute until re-enabled.
                   </Flex>
@@ -967,7 +967,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                             type="button"
                             onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
                             aria-label={`Remove file ${file.name}`}
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-error hover:bg-mission-control-surface transition-colors"
                           >
                             <X size={14} />
                           </button>
@@ -1045,7 +1045,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         size="2"
                       />
                       <p className="text-xs text-mission-control-text-dim mt-1">
-                        💡 If set, a new task with this title will be automatically created when this task is marked done
+                        If set, a new task with this title will be automatically created when this task is marked done
                       </p>
                     </div>
                   </div>

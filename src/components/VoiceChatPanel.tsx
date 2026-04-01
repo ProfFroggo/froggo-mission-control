@@ -363,7 +363,15 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   }, [selectedAgent.id]);
   
   // Cleanup on unmount
-  useEffect(() => { return () => { if (geminiLive.connected) geminiLive.disconnect(); }; }, []);
+  useEffect(() => {
+    return () => {
+      if (geminiLive.connected) geminiLive.disconnect();
+      // Clear debounce timers stored on window to prevent post-unmount state updates
+      const w = window as any;
+      if (w._userTranscriptTimer) { clearTimeout(w._userTranscriptTimer); w._userTranscriptTimer = null; }
+      if (w._modelTranscriptTimer) { clearTimeout(w._modelTranscriptTimer); w._modelTranscriptTimer = null; }
+    };
+  }, []);
   
   // ── Helpers ──
   const addSystemMessage = (content: string) => {
@@ -572,9 +580,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* API Key Warning */}
       {!apiKey.current && (
-        <div className="bg-[var(--color-error)]/10 border-b border-[var(--color-error)]/20 px-4 py-3 text-center">
-          <p className="text-[var(--color-error)] text-sm font-medium">Gemini API key not configured</p>
-          <p className="text-[var(--color-error)]/80 text-xs mt-1">Add it in Settings &rarr; API Keys</p>
+        <div className="bg-error/10 border-b border-error/20 px-4 py-3 text-center">
+          <p className="text-error text-sm font-medium">Gemini API key not configured</p>
+          <p className="text-error/80 text-xs mt-1">Add it in Settings &rarr; API Keys</p>
         </div>
       )}
       
@@ -585,7 +593,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             <Flex align="center" gap="3">
               <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0 relative">
                 <AgentAvatar agentId={selectedAgent.id} size="sm" />
-                {speaking && <div className="absolute inset-0 rounded-full border-2 border-[var(--color-success)] animate-ping opacity-40" />}
+                {speaking && <div className="absolute inset-0 rounded-full border-2 border-success animate-ping opacity-40" />}
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-mission-control-text">{selectedAgent.name}</h1>
@@ -606,8 +614,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
 
           {callActive && (
             <Flex align="center" gap="2" className="ml-2">
-              <div className="w-2 h-2 rounded-full bg-[var(--color-success)] animate-pulse" />
-              <span className="text-xs text-[var(--color-success)]">Gemini Live</span>
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span className="text-xs text-success">Gemini Live</span>
               {agentContext && agentContext.tasks.length > 0 && (
                 <span className="inline-flex items-center gap-1 text-xs tabular-nums text-mission-control-text-dim bg-mission-control-border/50 px-1.5 py-0.5 rounded-full" title={`${agentContext.tasks.length} tasks`}>
                   <Brain size={10} aria-hidden="true" />
@@ -644,12 +652,13 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           </button>
 
           <button
+            type="button"
             onClick={() => setMuted(!muted)}
             title={muted ? 'Unmute' : 'Mute'}
             aria-label={muted ? 'Unmute' : 'Mute'}
             className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
               muted
-                ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)]'
+                ? 'bg-error/10 border border-error/30 text-error'
                 : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
@@ -766,14 +775,14 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                   <div className="relative">
                     <AgentAvatar agentId={selectedAgent.id} size="xs" />
                     {speaking && msg.id === messages.filter(m => m.role === 'assistant').pop()?.id && (
-                      <div className="absolute -inset-1 rounded-full border-2 border-[var(--color-success)] animate-pulse" />
+                      <div className="absolute -inset-1 rounded-full border-2 border-success animate-pulse" />
                     )}
                   </div>
                 </div>
               )}
               <div className={`max-w-[80%] flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                 {isNewSpeaker && msg.role === 'assistant' && (
-                  <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">{selectedAgent.name}</span>
+                  <span className="text-xs font-medium text-success mb-1 px-1">{selectedAgent.name}</span>
                 )}
                 {isNewSpeaker && msg.role === 'user' && (
                   <span className="text-xs font-medium text-mission-control-accent mb-1 px-1">You</span>
@@ -803,7 +812,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       
       {/* Enable Audio button - shown when AudioContext is suspended */}
       {callActive && audioState === 'suspended' && (
-        <div className="px-4 py-2 border-t border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10">
+        <div className="px-4 py-2 border-t border-warning/30 bg-warning/10">
           <Button
             variant="solid"
             color="amber"
@@ -814,7 +823,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             <Volume2 size={18} />
             Enable Audio
           </Button>
-          <p className="text-center text-xs text-[var(--color-warning)]/70 mt-1">Browser requires a click to play audio</p>
+          <p className="text-center text-xs text-warning/70 mt-1">Browser requires a click to play audio</p>
         </div>
       )}
       
@@ -825,8 +834,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {listening && !speaking && (
               <Flex align="center" gap="3">
                 {/* Listening pill badge */}
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-error)]/10 text-[var(--color-error)] text-xs font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-error)] animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error/10 text-error text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-error animate-pulse" />
                   Listening
                 </span>
                 <Waveform level={micLevel} color="var(--color-info)" bars={12} height={40} />
@@ -835,7 +844,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {speaking && (
               <Flex align="center" gap="3">
                 {/* Speaking pill badge */}
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)] text-xs font-medium">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
                   <Volume1 size={12} aria-hidden="true" />
                   {selectedAgent.name} speaking
                 </span>
@@ -843,7 +852,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               </Flex>
             )}
             {connecting && !listening && !speaking && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] text-xs font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/10 text-warning text-xs font-medium">
                 <Loader2 size={12} className="animate-spin" aria-hidden="true" />
                 Processing
               </span>
@@ -866,6 +875,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-[14px] px-4 py-3 text-sm text-mission-control-text placeholder:text-mission-control-text-dim outline-none focus:border-[var(--mission-control-accent)] focus:ring-2 focus:ring-[var(--mission-control-accent)]/20 transition-colors"
             />
             <button
+              type="button"
               onClick={handleSendText}
               disabled={!textInput.trim()}
               title="Send text"
@@ -883,6 +893,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         <Flex align="center" justify="center" gap="4">
           {callActive && (
             <button
+              type="button"
               data-voice-meeting
               onClick={toggleMic}
               disabled={speaking}
@@ -890,7 +901,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               aria-label={listening ? 'Pause mic' : 'Resume mic'}
               className={`inline-flex items-center justify-center w-14 h-14 rounded-full p-4 transition-colors ${
                 listening
-                  ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)] ring-2 ring-[var(--color-error)]/50 ring-offset-2 ring-offset-mission-control-bg animate-pulse'
+                  ? 'bg-error/10 border border-error/30 text-error ring-2 ring-[var(--color-error)]/50 ring-offset-2 ring-offset-mission-control-bg animate-pulse'
                   : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
               }`}
             >
@@ -907,8 +918,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             aria-label={callActive ? 'End call' : 'Start call'}
             className={`rounded-full p-5 flex items-center justify-center transition-colors ${
               callActive
-                ? 'bg-[var(--color-error)] hover:bg-[var(--color-error)]/90 text-white'
-                : 'bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white'
+                ? 'bg-error hover:bg-error/90 text-white'
+                : 'bg-success hover:bg-success/90 text-white'
             } disabled:opacity-50`}
           >
             {connecting ? <Loader2 size={26} className="animate-spin" /> : callActive ? <PhoneOff size={26} /> : <Phone size={26} />}
@@ -917,6 +928,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           {callActive && (
             <>
               <button
+                type="button"
                 onClick={toggleScreenShare}
                 title="Screen share"
                 aria-label="Screen share"
@@ -929,6 +941,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                 {videoActive && geminiLive.videoMode === 'screen' ? <MonitorOff size={22} /> : <Monitor size={22} />}
               </button>
               <button
+                type="button"
                 onClick={toggleVideo}
                 title="Camera"
                 aria-label="Camera"

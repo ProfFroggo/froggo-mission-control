@@ -101,7 +101,7 @@ function ThreadMessage({
             {formatMessageTime(message.timestamp)}
           </span>
           {message.is_starred && (
-            <Star size={10} className="text-[var(--color-warning)] fill-warning" />
+            <Star size={10} className="text-warning fill-current" />
           )}
         </div>
 

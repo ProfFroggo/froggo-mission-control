@@ -52,11 +52,11 @@ interface MiniChatMessage {
 }
 
 const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
-  code:      { icon: Code,      color: 'text-[var(--color-success)] bg-[var(--color-success)]/10',    label: 'Code' },
-  design:    { icon: Palette,   color: 'text-[var(--color-info)] bg-[var(--color-info)]/10',          label: 'Design' },
+  code:      { icon: Code,      color: 'text-success bg-success/10',    label: 'Code' },
+  design:    { icon: Palette,   color: 'text-info bg-info/10',          label: 'Design' },
   docs:      { icon: BookOpen,  color: 'text-cyan-400 bg-cyan-500/10',                                label: 'Docs' },
   campaigns: { icon: Megaphone, color: 'text-pink-400 bg-pink-500/10',                                label: 'Campaigns' },
-  projects:  { icon: FolderOpen,color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',    label: 'Projects' },
+  projects:  { icon: FolderOpen,color: 'text-warning bg-warning/10',    label: 'Projects' },
   other:     { icon: File,      color: 'text-mission-control-text-dim bg-mission-control-border/30',  label: 'Other' },
 };
 
@@ -1164,7 +1164,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                           title={isStarred ? 'Unstar' : 'Star'}
                           className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
-                          <Star size={11} className={isStarred ? 'text-[var(--color-warning)] fill-[var(--color-warning)]' : ''} />
+                          <Star size={11} className={isStarred ? 'text-warning fill-current text-warning' : ''} />
                         </button>
                         <button
                           onClick={() => handleLinkToTask(file)}
@@ -1209,7 +1209,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                         className={`absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100 transition-opacity ${isStarred ? 'opacity-100' : ''}`}
                         title={isStarred ? 'Unstar' : 'Star'}
                       >
-                        <Star size={12} className={isStarred ? 'text-[var(--color-warning)] fill-[var(--color-warning)]' : ''} />
+                        <Star size={12} className={isStarred ? 'text-warning fill-current text-warning' : ''} />
                       </button>
                       <Flex align="center" justify="center" className={`p-2.5 rounded-lg ${catConf.color} mb-2`}>
                         <FileIcon size={20} />

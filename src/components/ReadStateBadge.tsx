@@ -39,7 +39,7 @@ export function ReadStateBadge({
       {(hasUnread || showZero) && (
         <div className={`
           inline-flex items-center justify-center rounded-full flex-shrink-0
-          ${hasUnread ? 'bg-[var(--color-info)]/10 text-[var(--color-info)] font-semibold' : 'bg-mission-control-border text-mission-control-text-dim'}
+          ${hasUnread ? 'bg-info/10 text-info font-semibold' : 'bg-mission-control-border text-mission-control-text-dim'}
           ${sizeClasses[size]}
         `}>
           <Mail size={iconSizes[size]} className="flex-shrink-0" />
@@ -51,7 +51,7 @@ export function ReadStateBadge({
       {(hasUnreplied || showZero) && (
         <div className={`
           inline-flex items-center justify-center rounded-full flex-shrink-0
-          ${hasUnreplied ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] font-semibold' : 'bg-mission-control-border text-mission-control-text-dim'}
+          ${hasUnreplied ? 'bg-warning/10 text-warning font-semibold' : 'bg-mission-control-border text-mission-control-text-dim'}
           ${sizeClasses[size]}
         `}>
           <MessageCircle size={iconSizes[size]} className="flex-shrink-0" />
@@ -79,7 +79,7 @@ export function UnreadDot({ show, size = 'md', pulse = false }: UnreadDotProps) 
 
   return (
     <div className={`
-      rounded-full bg-[var(--color-info)] flex-shrink-0
+      rounded-full bg-info flex-shrink-0
       ${sizeClasses[size]}
       ${pulse ? 'animate-pulse' : ''}
     `} />
@@ -97,12 +97,12 @@ export function UnrepliedIndicator({ show, count, compact = false }: UnrepliedIn
 
   if (compact) {
     return (
-      <div className="w-2 h-2 rounded-full bg-[var(--color-warning)] animate-pulse flex-shrink-0" />
+      <div className="w-2 h-2 rounded-full bg-warning animate-pulse flex-shrink-0" />
     );
   }
 
   return (
-    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] text-xs font-medium flex-shrink-0 whitespace-nowrap">
+    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-warning/10 text-warning text-xs font-medium flex-shrink-0 whitespace-nowrap">
       <MessageCircle size={14} className="flex-shrink-0" />
       {count !== undefined && <span className="flex-shrink-0">Awaiting reply</span>}
     </div>

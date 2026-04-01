@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, ArrowRight, ArrowLeft, Check, Loader2, Mail, Calendar, HardDrive, Users, CheckCircle, AlertTriangle } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, Check, Loader2, Mail, Calendar, HardDrive, Users, CheckCircle, AlertTriangle, Globe, Cloud, Monitor, Apple } from 'lucide-react';
 import { Button, TextField, Flex } from '@radix-ui/themes';
 import { AccountProvider, DataType, AddAccountRequest } from '../types/accounts';
 import { useUserSettings } from '../store/userSettings';
@@ -12,10 +12,16 @@ interface Props {
 
 type Step = 'provider' | 'email' | 'dataTypes' | 'auth' | 'connecting' | 'success';
 
-const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string; description: string; supportedTypes: DataType[]; authMethods: readonly string[]; comingSoon?: boolean }> = {
+const PROVIDER_ICONS: Record<string, React.ElementType> = {
+  google: Globe,
+  icloud: Cloud,
+  microsoft: Monitor,
+  apple: Apple,
+};
+
+const PROVIDER_INFO: Record<string, { name: string; color: string; description: string; supportedTypes: DataType[]; authMethods: readonly string[]; comingSoon?: boolean }> = {
   google: {
     name: 'Google',
-    logo: '🔵',
     color: 'var(--mission-control-info)',
     description: 'Gmail, Calendar, Drive, Contacts',
     supportedTypes: ['email', 'calendar', 'drive', 'contacts'] as DataType[],
@@ -23,7 +29,6 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   },
   icloud: {
     name: 'iCloud',
-    logo: '☁️',
     color: 'var(--mission-control-info)',
     description: 'Mail, Calendar, Contacts',
     supportedTypes: ['email', 'calendar', 'contacts'] as DataType[],
@@ -32,7 +37,6 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   },
   microsoft: {
     name: 'Microsoft',
-    logo: '🔷',
     color: 'var(--mission-control-info)',
     description: 'Outlook, Calendar, OneDrive, Contacts',
     supportedTypes: ['email', 'calendar', 'drive', 'contacts', 'tasks'] as DataType[],
@@ -40,7 +44,6 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   },
   apple: {
     name: 'Apple',
-    logo: '',
     color: 'var(--mission-control-text)',
     description: 'iCloud Mail, Calendar, Contacts',
     supportedTypes: ['email', 'calendar', 'contacts'] as DataType[],
@@ -234,16 +237,16 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   >
                     <Flex align="center" gap="4">
                       <div
-                        className="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
+                        className="w-16 h-16 rounded-full flex items-center justify-center"
                         style={{ backgroundColor: `${info.color}20` }}
                       >
-                        {info.logo}
+                        {(() => { const PIco = PROVIDER_ICONS[p] ?? Globe; return <PIco size={28} style={{ color: info.color }} />; })()}
                       </div>
                       <div className="flex-1">
                         <Flex align="center" gap="2" className="font-semibold text-lg mb-1">
                           {info.name}
                           {info.comingSoon && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)]">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-warning/10 text-warning">
                               Coming Soon
                             </span>
                           )}
@@ -264,7 +267,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           {step === 'email' && currentProviderInfo && (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="text-5xl mb-4">{currentProviderInfo.logo}</div>
+                <div className="mb-4 flex items-center justify-center">{(() => { const PIco = PROVIDER_ICONS[provider!] ?? Globe; return <PIco size={48} style={{ color: currentProviderInfo.color }} />; })()}</div>
                 <h3 className="text-lg font-semibold mb-2">{currentProviderInfo.name} Account</h3>
                 <p className="text-sm text-mission-control-text-dim">
                   Enter the email address for your {currentProviderInfo.name} account
@@ -346,10 +349,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 })}
               </div>
 
-              <div className="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg">
+              <div className="p-4 bg-info/10 border border-info/30 rounded-lg">
                 <Flex align="start" gap="2" className="text-sm">
-                  <AlertTriangle size={16} className="text-[var(--color-info)] mt-0.5 flex-shrink-0" />
-                  <div className="text-[var(--color-info)]">
+                  <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
+                  <div className="text-info">
                     You can always add or remove services later from account settings
                   </div>
                 </Flex>
@@ -398,10 +401,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     </ul>
                   </div>
 
-                  <div className="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg">
+                  <div className="p-4 bg-info/10 border border-info/30 rounded-lg">
                     <Flex align="start" gap="2" className="text-sm">
-                      <AlertTriangle size={16} className="text-[var(--color-info)] mt-0.5 flex-shrink-0" />
-                      <div className="text-[var(--color-info)]">
+                      <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
+                      <div className="text-info">
                         <strong>Permissions requested:</strong>
                         <ul className="mt-2 space-y-1">
                           {selectedDataTypes.map(type => (
@@ -414,10 +417,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-4 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg">
+                  <div className="p-4 bg-warning/10 border border-warning/30 rounded-lg">
                     <Flex align="start" gap="2">
-                      <AlertTriangle size={16} className="text-[var(--color-warning)] mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-[var(--color-warning)]">
+                      <AlertTriangle size={16} className="text-warning mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-warning">
                         <strong>App-Specific Password Required</strong>
                         <p className="mt-2">
                           {provider === 'icloud' &&
@@ -475,8 +478,8 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           {/* Step 6: Success */}
           {step === 'success' && (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 rounded-full bg-[var(--color-success)]/10 flex items-center justify-center mb-4">
-                <Check size={32} className="text-[var(--color-success)]" />
+              <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
+                <Check size={32} className="text-success" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Account Connected!</h3>
               <p className="text-sm text-mission-control-text-dim text-center">
@@ -487,10 +490,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
           {/* Error Display */}
           {error && step !== 'connecting' && step !== 'success' && (
-            <div className="mt-6 p-4 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
+            <div className="mt-6 p-4 bg-error/10 border border-error/30 rounded-lg">
               <Flex align="start" gap="2">
-                <AlertTriangle size={16} className="text-[var(--color-error)] mt-0.5" />
-                <div className="text-sm text-[var(--color-error)]">{error}</div>
+                <AlertTriangle size={16} className="text-error mt-0.5" />
+                <div className="text-sm text-error">{error}</div>
               </Flex>
             </div>
           )}

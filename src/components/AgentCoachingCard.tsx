@@ -316,9 +316,9 @@ const AgentCoachingCard = memo(function AgentCoachingCard({ agentId, agentName }
   const TrendIcon = data?.trend === 'improving' ? TrendingUp
     : data?.trend === 'declining' ? TrendingDown
     : Minus;
-  const trendColor = data?.trend === 'improving' ? 'text-[var(--color-success)]'
-    : data?.trend === 'declining' ? 'text-[var(--color-error)]'
-    : 'text-[var(--color-warning)]';
+  const trendColor = data?.trend === 'improving' ? 'text-success'
+    : data?.trend === 'declining' ? 'text-error'
+    : 'text-warning';
 
   return (
     <div className="space-y-5">
@@ -368,7 +368,7 @@ const AgentCoachingCard = memo(function AgentCoachingCard({ agentId, agentName }
       {loading && !data && <CoachingCardSkeleton />}
 
       {error && !loading && (
-        <Flex align="center" gap="2" className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 p-4 text-sm text-[var(--color-error)]">
+        <Flex align="center" gap="2" className="rounded-lg border border-error/30 bg-error/10 p-4 text-sm text-error">
           <AlertTriangle size={14} className="flex-shrink-0" />
           {error}
         </Flex>
@@ -387,23 +387,23 @@ const AgentCoachingCard = memo(function AgentCoachingCard({ agentId, agentName }
               </Flex>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <div className="text-lg font-bold tabular-nums text-[var(--color-success)]">{data.metrics.tasksCompleted}</div>
+                  <div className="text-lg font-bold tabular-nums text-success">{data.metrics.tasksCompleted}</div>
                   <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Done</div>
                 </div>
                 <div>
-                  <div className="text-lg font-bold tabular-nums text-[var(--color-warning)]">{data.metrics.successRate}%</div>
+                  <div className="text-lg font-bold tabular-nums text-warning">{data.metrics.successRate}%</div>
                   <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Success</div>
                 </div>
                 <div>
-                  <div className="text-lg font-bold tabular-nums text-[var(--color-info)]">{formatDuration(data.metrics.avgDurationMs)}</div>
+                  <div className="text-lg font-bold tabular-nums text-info">{formatDuration(data.metrics.avgDurationMs)}</div>
                   <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Avg time</div>
                 </div>
               </div>
               <Flex align="center" gap="2" className="text-[11px] text-mission-control-text-dim pt-1">
-                <Zap size={11} className="text-[var(--color-warning)] flex-shrink-0" />
+                <Zap size={11} className="text-warning flex-shrink-0" />
                 <span>{formatTokens(data.metrics.totalTokens)} tokens</span>
                 <span className="text-mission-control-border mx-0.5">/</span>
-                <span className="text-[var(--color-warning)]">${data.metrics.totalCostUsd.toFixed(4)}</span>
+                <span className="text-warning">${data.metrics.totalCostUsd.toFixed(4)}</span>
               </Flex>
             </div>
           </Flex>
@@ -433,12 +433,12 @@ const AgentCoachingCard = memo(function AgentCoachingCard({ agentId, agentName }
 
           {/* Strengths */}
           {data.strengths.length > 0 && (
-            <div className="rounded-xl border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 p-4">
-              <h4 className="text-[10px] font-bold text-[var(--color-success)] uppercase tracking-wider mb-3">Strengths</h4>
+            <div className="rounded-xl border border-success/30 bg-success/10 p-4">
+              <h4 className="text-[10px] font-bold text-success uppercase tracking-wider mb-3">Strengths</h4>
               <ul className="space-y-1.5">
                 {data.strengths.map((s, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
-                    <CheckCircle2 size={14} className="text-[var(--color-success)] flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 size={14} className="text-success flex-shrink-0 mt-0.5" />
                     <span>{s}</span>
                   </li>
                 ))}
@@ -448,12 +448,12 @@ const AgentCoachingCard = memo(function AgentCoachingCard({ agentId, agentName }
 
           {/* Areas for improvement */}
           {data.improvements.length > 0 && (
-            <div className="rounded-xl border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10 p-4">
-              <h4 className="text-[10px] font-bold text-[var(--color-warning)] uppercase tracking-wider mb-3">Areas for Improvement</h4>
+            <div className="rounded-xl border border-warning/30 bg-warning/10 p-4">
+              <h4 className="text-[10px] font-bold text-warning uppercase tracking-wider mb-3">Areas for Improvement</h4>
               <ul className="space-y-1.5">
                 {data.improvements.map((s, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
-                    <AlertTriangle size={14} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
+                    <AlertTriangle size={14} className="text-warning flex-shrink-0 mt-0.5" />
                     <span>{s}</span>
                   </li>
                 ))}
@@ -463,12 +463,12 @@ const AgentCoachingCard = memo(function AgentCoachingCard({ agentId, agentName }
 
           {/* Recommendations */}
           {data.recommendations.length > 0 && (
-            <div className="rounded-xl border border-[var(--color-info)]/30 bg-[var(--color-info)]/10 p-4">
-              <h4 className="text-[10px] font-bold text-[var(--color-info)] uppercase tracking-wider mb-3">Recommendations</h4>
+            <div className="rounded-xl border border-info/30 bg-info/10 p-4">
+              <h4 className="text-[10px] font-bold text-info uppercase tracking-wider mb-3">Recommendations</h4>
               <ul className="space-y-1.5">
                 {data.recommendations.map((s, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
-                    <Lightbulb size={14} className="text-[var(--color-info)] flex-shrink-0 mt-0.5" />
+                    <Lightbulb size={14} className="text-info flex-shrink-0 mt-0.5" />
                     <span>{s}</span>
                   </li>
                 ))}
@@ -489,11 +489,11 @@ const AgentCoachingCard = memo(function AgentCoachingCard({ agentId, agentName }
                   {data.skillGaps.map((gap) => (
                     <span
                       key={gap.pattern}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/30"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-error/10 text-error border border-error/30"
                     >
                       <AlertTriangle size={11} />
                       {gap.pattern}
-                      <span className="ml-0.5 px-1 py-0.5 rounded-full bg-[var(--color-error)]/20 text-[10px] font-bold">{gap.count}x</span>
+                      <span className="ml-0.5 px-1 py-0.5 rounded-full bg-error/20 text-[10px] font-bold">{gap.count}x</span>
                     </span>
                   ))}
                 </div>

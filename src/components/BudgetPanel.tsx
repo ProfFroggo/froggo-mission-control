@@ -52,9 +52,9 @@ const PALETTE = [
 ];
 
 const STATUS_CFG = {
-  pending:   { label: 'Pending',   icon: Clock,       cls: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30' },
-  paid:      { label: 'Paid',      icon: CheckCircle, cls: 'text-[var(--color-success)] bg-[var(--color-success)]/10 border-[var(--color-success)]/30' },
-  cancelled: { label: 'Cancelled', icon: Ban,         cls: 'text-[var(--color-error)]   bg-[var(--color-error)]/10   border-[var(--color-error)]/30'   },
+  pending:   { label: 'Pending',   icon: Clock,       cls: 'text-warning bg-warning/10 border-warning/30' },
+  paid:      { label: 'Paid',      icon: CheckCircle, cls: 'text-success bg-success/10 border-success/30' },
+  cancelled: { label: 'Cancelled', icon: Ban,         cls: 'text-error   bg-error/10   border-error/30'   },
 };
 
 const CHAINS = [
@@ -90,9 +90,9 @@ function pct(actual: number, planned: number) {
   return Math.round((actual / planned) * 100);
 }
 function progressColor(p: number) {
-  if (p >= 100) return 'var(--color-error, #ef4444)';
-  if (p >= 80) return 'var(--color-warning, #f59e0b)';
-  return 'var(--color-success, #10b981)';
+  if (p >= 100) return 'var(--color-error)';
+  if (p >= 80) return 'var(--color-warning)';
+  return 'var(--color-success)';
 }
 function getExplorerUrl(txHash: string, chain: string) {
   const c = CHAINS.find(x => x.id === chain.toLowerCase());
@@ -193,7 +193,7 @@ function FileDropZone({ invoiceId, onUpload, onExtracted, existingFile, onRemove
   if (existingFile) {
     return (
       <Flex align="center" gap="2" className="p-2.5 rounded-lg border border-mission-control-border bg-mission-control-bg">
-        <FileText size={14} className="text-[var(--color-info)] shrink-0" />
+        <FileText size={14} className="text-info shrink-0" />
         <span className="flex-1 text-xs truncate text-mission-control-text">{existingFile}</span>
         {onRemove && <button type="button" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={onRemove}><X size={13} /></button>}
       </Flex>
@@ -219,12 +219,12 @@ function FileDropZone({ invoiceId, onUpload, onExtracted, existingFile, onRemove
         {extracting || uploading ? (
           <><Loader2 size={13} className="animate-spin text-mission-control-accent" /><span className="text-mission-control-accent">{extracting ? 'AI analyzing…' : 'Uploading…'}</span></>
         ) : (
-          <><Upload size={13} className="text-mission-control-text-dim" /><Sparkles size={11} className="text-[var(--color-warning)]" /><span className="text-mission-control-text-dim">Drop PDF/image or click — AI auto-fills fields</span></>
+          <><Upload size={13} className="text-mission-control-text-dim" /><Sparkles size={11} className="text-warning" /><span className="text-mission-control-text-dim">Drop PDF/image or click — AI auto-fills fields</span></>
         )}
       </Flex>
       {status && (
         <div className={`mt-1 text-[10px] px-2 py-1 rounded ${
-          status.type === 'success' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : status.type === 'error' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' : 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
+          status.type === 'success' ? 'bg-success/10 text-success' : status.type === 'error' ? 'bg-error/10 text-error' : 'bg-info/10 text-info'
         }`}>{status.msg}</div>
       )}
       <input ref={inputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp"
@@ -245,7 +245,7 @@ function PdfPreviewModal({ invoice, onClose }: { invoice: Invoice; onClose: () =
       <div className="relative bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl flex flex-col w-full max-w-4xl max-h-[90vh]">
         <Flex align="center" justify="between" className="px-5 py-3 border-b border-mission-control-border shrink-0">
           <Flex align="center" gap="2">
-            <FileText size={14} className="text-[var(--color-info)]" />
+            <FileText size={14} className="text-info" />
             <span className="text-sm font-medium text-mission-control-text">{invoice.file_name || invoice.title}</span>
           </Flex>
           <Flex align="center" gap="2">
@@ -656,7 +656,7 @@ function InvoiceModal({ data, quarterId, currency, categories, allInvoices, onSa
         </Field>
 
         {dupWarning && (
-          <Flex align="center" gap="2" className="text-xs text-[var(--color-warning)] bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/20 rounded-lg px-3 py-2">
+          <Flex align="center" gap="2" className="text-xs text-warning bg-warning/10 border border-warning/20 rounded-lg px-3 py-2">
             <AlertTriangle size={11} /> {dupWarning}
           </Flex>
         )}
@@ -1301,7 +1301,7 @@ export default function BudgetPanel() {
                     </button>
                     <Flex align="center" gap="2">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                        drillQuarter.status === 'active' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : drillQuarter.status === 'closed' ? 'bg-mission-control-border/40 text-mission-control-text-dim' : 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
+                        drillQuarter.status === 'active' ? 'bg-success/10 text-success' : drillQuarter.status === 'closed' ? 'bg-mission-control-border/40 text-mission-control-text-dim' : 'bg-info/10 text-info'
                       }`}>{drillQuarter.status}</span>
                       <button type="button" onClick={() => setQuarterModal({ mode: 'edit', data: drillQuarter })} title="Edit quarter" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                         <Pencil size={12} />
@@ -1331,10 +1331,10 @@ export default function BudgetPanel() {
                     <>
                       {/* Stat cards */}
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                        <StatCard label="Planned Budget" value={fmt(dPlanned, dCur)} sub={`Q${drillQuarter.quarter} ${drillQuarter.year}`} icon={Target} accent="var(--mission-control-accent, #6366f1)" />
+                        <StatCard label="Planned Budget" value={fmt(dPlanned, dCur)} sub={`Q${drillQuarter.quarter} ${drillQuarter.year}`} icon={Target} accent="var(--mission-control-accent)" />
                         <StatCard label="Spent to Date" value={fmt(dActual, dCur)} sub={`${dUsedPct}% of budget`} icon={DollarSign} accent={progressColor(dUsedPct)} />
-                        <StatCard label="Remaining" value={fmt(Math.max(dRemaining, 0), dCur)} sub={dRemaining < 0 ? 'Over budget!' : `${100 - dUsedPct}% left`} icon={dRemaining >= 0 ? TrendingDown : AlertTriangle} accent={dRemaining < 0 ? 'var(--color-error, #ef4444)' : 'var(--color-info, #3b82f6)'} />
-                        <StatCard label="Pending" value={fmt(dPending, dCur)} sub={`${drillInvoices.filter(i => i.status === 'pending').length} invoices`} icon={Clock} accent="var(--color-warning, #f59e0b)" />
+                        <StatCard label="Remaining" value={fmt(Math.max(dRemaining, 0), dCur)} sub={dRemaining < 0 ? 'Over budget!' : `${100 - dUsedPct}% left`} icon={dRemaining >= 0 ? TrendingDown : AlertTriangle} accent={dRemaining < 0 ? 'var(--color-error)' : 'var(--color-info)'} />
+                        <StatCard label="Pending" value={fmt(dPending, dCur)} sub={`${drillInvoices.filter(i => i.status === 'pending').length} invoices`} icon={Clock} accent="var(--color-warning)" />
                       </div>
 
                       {/* Burn rate */}
@@ -1484,8 +1484,8 @@ export default function BudgetPanel() {
                 {/* ── Lifetime stat row ── */}
                 {overallStats && (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <StatCard label="Total Quarters" value={String(overallStats.quarter_count || 0)} sub="all time" icon={Layers} accent="var(--mission-control-accent, #6366f1)" />
-                    <StatCard label="Total Planned" value={fmt(overallStats.total_planned || 0, 'USD')} sub="across all quarters" icon={Target} accent="var(--color-info, #3b82f6)" />
+                    <StatCard label="Total Quarters" value={String(overallStats.quarter_count || 0)} sub="all time" icon={Layers} accent="var(--mission-control-accent)" />
+                    <StatCard label="Total Planned" value={fmt(overallStats.total_planned || 0, 'USD')} sub="across all quarters" icon={Target} accent="var(--color-info)" />
                     <StatCard
                       label="Total Spent"
                       value={fmt(overallStats.total_actual || 0, 'USD')}
@@ -1498,7 +1498,7 @@ export default function BudgetPanel() {
                       value={fmt(Math.max((overallStats.total_planned || 0) - (overallStats.total_actual || 0), 0), 'USD')}
                       sub={`${overallStats.invoice_count || 0} total invoices`}
                       icon={TrendingDown}
-                      accent="var(--color-info, #3b82f6)"
+                      accent="var(--color-info)"
                     />
                   </div>
                 )}
@@ -1548,9 +1548,9 @@ export default function BudgetPanel() {
                                 <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-mission-control-accent/15 text-mission-control-accent rounded-full">Current</span>
                               )}
                               <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                                q.status === 'active' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
+                                q.status === 'active' ? 'bg-success/10 text-success' :
                                 q.status === 'closed' ? 'bg-mission-control-border/40 text-mission-control-text-dim' :
-                                'bg-[var(--color-info)]/10 text-[var(--color-info)]'
+                                'bg-info/10 text-info'
                               }`}>{q.status}</span>
                             </div>
                             <p className="text-[10px] text-mission-control-text-dim mt-0.5">
@@ -1581,7 +1581,7 @@ export default function BudgetPanel() {
                           </div>
                           <div>
                             <div className="text-[10px] text-mission-control-text-dim">Remaining</div>
-                            <div className={`text-xs font-semibold ${qRemaining < 0 ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'}`}>
+                            <div className={`text-xs font-semibold ${qRemaining < 0 ? 'text-error' : 'text-success'}`}>
                               {fmt(Math.abs(qRemaining), q.currency)}{qRemaining < 0 ? ' over' : ''}
                             </div>
                           </div>
@@ -1629,7 +1629,7 @@ export default function BudgetPanel() {
             {globalDragging && (
               <div className="absolute inset-0 z-20 flex items-center justify-center bg-mission-control-bg/90 border-2 border-dashed border-mission-control-accent rounded-xl m-2">
                 <div className="text-center">
-                  <Sparkles size={32} className="text-[var(--color-warning)] mx-auto mb-2" />
+                  <Sparkles size={32} className="text-warning mx-auto mb-2" />
                   <div className="text-lg font-semibold text-mission-control-accent">Drop invoices here</div>
                   <div className="text-sm text-mission-control-text-dim">Gemini AI will auto-extract all fields</div>
                 </div>
@@ -1814,7 +1814,7 @@ export default function BudgetPanel() {
             <Flex align="center" gap="4" className="shrink-0 px-4 py-2 border-t border-mission-control-border/50 bg-mission-control-surface text-[10px] text-mission-control-text-dim">
               <span>{displayInvoices.length} invoices</span>
               <span>Total: <strong className="text-mission-control-text">{fmt(displayInvoices.filter(i => i.status !== 'cancelled').reduce((s, i) => s + i.amount, 0), currency)}</strong></span>
-              <span>Paid: <strong className="text-[var(--color-success)]">{fmt(displayInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0), currency)}</strong></span>
+              <span>Paid: <strong className="text-success">{fmt(displayInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0), currency)}</strong></span>
               <span className="ml-auto">Drop PDF/images to bulk-import with AI extraction</span>
             </Flex>
           </div>
@@ -1906,7 +1906,7 @@ export default function BudgetPanel() {
                         </div>
                         <div>
                           <div className="text-[10px] text-mission-control-text-dim">Remaining</div>
-                          <div className={`text-xs font-semibold ${remaining < 0 ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'}`}>{fmt(Math.abs(remaining), currency)}{remaining < 0 ? ' over' : ''}</div>
+                          <div className={`text-xs font-semibold ${remaining < 0 ? 'text-error' : 'text-success'}`}>{fmt(Math.abs(remaining), currency)}{remaining < 0 ? ' over' : ''}</div>
                         </div>
                       </div>
 
@@ -1914,8 +1914,8 @@ export default function BudgetPanel() {
                       <div>
                         <Flex justify="between" className="text-[10px] mb-1">
                           <span className="text-mission-control-text-dim">{usedP}% used</span>
-                          {usedP >= 100 && <span className="text-[var(--color-error)] font-medium">Over budget!</span>}
-                          {usedP >= 80 && usedP < 100 && <span className="text-[var(--color-warning)] font-medium">Caution</span>}
+                          {usedP >= 100 && <span className="text-error font-medium">Over budget!</span>}
+                          {usedP >= 80 && usedP < 100 && <span className="text-warning font-medium">Caution</span>}
                         </Flex>
                         <ProgressBar value={usedP} color={progressColor(usedP)} />
                       </div>
@@ -1923,8 +1923,8 @@ export default function BudgetPanel() {
                       {/* Paid / Pending split */}
                       {(paidAmt > 0 || pendingAmt > 0) && (
                         <Flex gap="3" className="text-[10px]">
-                          <span className="flex items-center gap-1 text-[var(--color-success)]"><CheckCircle size={9} /> {fmt(paidAmt, currency)} paid</span>
-                          <span className="flex items-center gap-1 text-[var(--color-warning)]"><Clock size={9} /> {fmt(pendingAmt, currency)} pending</span>
+                          <span className="flex items-center gap-1 text-success"><CheckCircle size={9} /> {fmt(paidAmt, currency)} paid</span>
+                          <span className="flex items-center gap-1 text-warning"><Clock size={9} /> {fmt(pendingAmt, currency)} pending</span>
                         </Flex>
                       )}
 
@@ -2057,14 +2057,14 @@ export default function BudgetPanel() {
                     <><Loader2 size={24} className="animate-spin text-mission-control-accent" /><span className="text-sm text-mission-control-accent">{importStatus}</span></>
                   ) : (
                     <>
-                      <Flex align="center" gap="2"><Upload size={20} className="text-mission-control-text-dim" /><Sparkles size={16} className="text-[var(--color-warning)]" /></Flex>
+                      <Flex align="center" gap="2"><Upload size={20} className="text-mission-control-text-dim" /><Sparkles size={16} className="text-warning" /></Flex>
                       <div className="text-sm text-mission-control-text">Drop Excel file or click to browse</div>
                       <div className="text-xs text-mission-control-text-dim">Supports .xlsx, .xls, .csv — AI auto-extracts budget structure</div>
                     </>
                   )}
                 </div>
                 {importStatus && !isImporting && (
-                  <p className="text-xs text-[var(--color-error)] text-center">{importStatus}</p>
+                  <p className="text-xs text-error text-center">{importStatus}</p>
                 )}
                 <input ref={importFileRef} type="file" className="hidden" accept=".xlsx,.xls,.csv"
                   onChange={handleImportFile} />
@@ -2131,8 +2131,8 @@ export default function BudgetPanel() {
       {confirmDelete && (
         <ModalWrap title={`Delete ${confirmDelete.type}?`} onClose={() => setConfirmDelete(null)}>
           <div className="space-y-4">
-            <Flex align="start" gap="3" className="p-3 bg-[var(--color-error)]/5 border border-[var(--color-error)]/20 rounded-lg">
-              <AlertTriangle size={16} className="text-[var(--color-error)] shrink-0 mt-0.5" />
+            <Flex align="start" gap="3" className="p-3 bg-error/5 border border-error/20 rounded-lg">
+              <AlertTriangle size={16} className="text-error shrink-0 mt-0.5" />
               <div className="text-sm text-mission-control-text">
                 <strong>{confirmDelete.label}</strong> will be permanently deleted.
                 {confirmDelete.type === 'quarter' && ' This will also delete all categories and invoices in this quarter.'}

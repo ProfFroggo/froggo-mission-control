@@ -143,6 +143,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
           </div>
           <div className="flex items-center gap-2">
             <button
+              type="button"
               disabled={loading}
               title="Refresh"
               onClick={loadFiles}
@@ -156,7 +157,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
                 Download
               </Button>
             )}
-            <button onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+            <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={16} />
             </button>
           </div>

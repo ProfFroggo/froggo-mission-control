@@ -65,6 +65,7 @@ function CommentRow({
         <Flex align="center" gap="3" mt="2">
           {!isReply && (
             <button
+              type="button"
               onClick={() => onReply(comment.id)}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
@@ -72,8 +73,9 @@ function CommentRow({
             </button>
           )}
           <button
+            type="button"
             onClick={() => onDelete(comment.id)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-error hover:bg-mission-control-surface transition-colors"
           >
             <Trash2 size={10} />
             Delete

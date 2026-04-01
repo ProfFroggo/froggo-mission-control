@@ -223,7 +223,8 @@ function initSchema(db: Database.Database) {
       lastActivity INTEGER,
       trust_tier TEXT DEFAULT 'apprentice',
       model TEXT DEFAULT 'sonnet',
-      created_at INTEGER DEFAULT (unixepoch())
+      -- All timestamps in milliseconds (Date.now() compatible)
+      created_at INTEGER DEFAULT (unixepoch() * 1000)
     );
 
     -- ══════════════════════════════════════════
@@ -788,6 +789,10 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_task_activity_task_created ON task_activity(taskId, timestamp DESC);
     CREATE INDEX IF NOT EXISTS idx_inbox_status_created ON inbox(status, createdAt DESC);
 
+    -- Phase 88.3: composite indexes for performance
+    CREATE INDEX IF NOT EXISTS idx_token_usage_agent_ts ON token_usage(agentId, timestamp);
+    CREATE INDEX IF NOT EXISTS idx_tasks_assigned_status_updated ON tasks(assignedTo, status, updatedAt DESC);
+
     -- ══════════════════════════════════════════
     -- NOTIFICATIONS
     -- ══════════════════════════════════════════
@@ -1051,12 +1056,14 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_automation_runs_automationId ON automation_runs(automationId);
     -- TOKEN BUDGETS
     CREATE TABLE IF NOT EXISTS budgets (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
       name TEXT NOT NULL,
       agentId TEXT,
       period TEXT NOT NULL DEFAULT 'monthly',
       limitUsd REAL NOT NULL,
       alertAt REAL NOT NULL DEFAULT 80,
-      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      UNIQUE(agentId, period, name)
     );
     CREATE INDEX IF NOT EXISTS idx_budgets_agentId ON budgets(agentId);
     -- CHAT ROOM MESSAGE REACTIONS (v2)
@@ -1125,7 +1132,7 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE agents ADD COLUMN emoji TEXT DEFAULT '🤖'`,
     `ALTER TABLE agents ADD COLUMN color TEXT DEFAULT '#00BCD4'`,
     `ALTER TABLE agents ADD COLUMN personality TEXT DEFAULT ''`,
-    `ALTER TABLE agents ADD COLUMN created_at INTEGER DEFAULT (unixepoch())`,
+    `ALTER TABLE agents ADD COLUMN created_at INTEGER DEFAULT (unixepoch() * 1000)`,
     // Pending actions: category + executor back-ref on approvals
     `ALTER TABLE approvals ADD COLUMN category TEXT DEFAULT 'agent_approval'`,
     `ALTER TABLE approvals ADD COLUMN actionRef TEXT`,
@@ -1229,6 +1236,13 @@ function initSchema(db: Database.Database) {
   try {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_moduleId ON tasks(moduleId) WHERE moduleId IS NOT NULL`);
   } catch { /* non-critical */ }
+
+  // Performance indexes for common query patterns
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_automations_trigger_status_next ON automations(trigger_type, status, next_run)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_task_activity_taskId_action ON task_activity(taskId, action, timestamp DESC)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_cleanup ON sessions(createdAt, lastActivity)`);
+  } catch { /* non-critical — indexes may already exist */ }
 
   // Knowledge Base: FTS virtual table + triggers
   try {
@@ -1405,6 +1419,18 @@ function initSchema(db: Database.Database) {
 
   try {
     db.exec(`ALTER TABLE campaigns ADD COLUMN contextNotes TEXT`);
+  } catch { /* already exists */ }
+
+  // Notes / thoughts pinboard
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS notes (
+      id TEXT PRIMARY KEY,
+      content TEXT NOT NULL,
+      color TEXT DEFAULT 'default',
+      pinned INTEGER DEFAULT 0,
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL
+    )`);
   } catch { /* already exists */ }
 
   syncCatalogAgents(db);

@@ -511,8 +511,8 @@ export default function AutomationBuilderModal({
                 />
                 {nlError && (
                   <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg bg-[color-mix(in_srgb,var(--color-warning)_12%,transparent)] border border-[color-mix(in_srgb,var(--color-warning)_30%,transparent)]">
-                    <AlertCircle size={14} className="text-[var(--color-warning)] flex-shrink-0" />
-                    <span className="text-[13px] text-[var(--color-warning)]">{nlError}</span>
+                    <AlertCircle size={14} className="text-warning flex-shrink-0" />
+                    <span className="text-[13px] text-warning">{nlError}</span>
                   </div>
                 )}
               </div>

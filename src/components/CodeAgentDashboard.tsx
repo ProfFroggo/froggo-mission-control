@@ -135,23 +135,23 @@ export default function CodeAgentDashboard() {
   };
 
   const statusColors = {
-    running: 'bg-[var(--color-warning)]',
-    idle: 'bg-[var(--color-success)]',
-    completed: 'bg-[var(--color-success)]',
-    failed: 'bg-[var(--color-error)]',
+    running: 'bg-warning',
+    idle: 'bg-success',
+    completed: 'bg-success',
+    failed: 'bg-error',
   };
 
   const taskStatusColors = {
     pending: 'bg-mission-control-surface',
-    'in-progress': 'bg-[var(--color-info)]',
-    review: 'bg-[var(--color-review)]',
-    done: 'bg-[var(--color-success)]',
+    'in-progress': 'bg-info',
+    review: 'bg-review',
+    done: 'bg-success',
   };
 
   return (
     <Flex direction="column" height="100%">
       {/* Read-only notice */}
-      <Flex align="center" gap="2" className="px-4 py-2 bg-[var(--color-info)]/10 border-b border-mission-control-border text-[var(--color-info)] text-xs">
+      <Flex align="center" gap="2" className="px-4 py-2 bg-info/10 border-b border-mission-control-border text-info text-xs">
         <Info size={13} />
         <span>Dev module — read-only diagnostics. The Cron Jobs tab manages scheduled jobs; all other panels are display-only.</span>
       </Flex>
@@ -159,8 +159,8 @@ export default function CodeAgentDashboard() {
       <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
         <Flex align="center" justify="between" className="mb-3">
           <Flex align="center" gap="3">
-            <div className="p-2 bg-[var(--color-info)]/10 rounded-lg">
-              <Code size={24} className="text-[var(--color-info)]" />
+            <div className="p-2 bg-info/10 rounded-lg">
+              <Code size={24} className="text-info" />
             </div>
             <div>
               <h1 className="text-xl font-semibold">Code Agent Dashboard</h1>

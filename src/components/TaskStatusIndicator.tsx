@@ -36,23 +36,23 @@ const STATUS_CONFIG: Record<AgentStatus, {
   animate: boolean;
 }> = {
   active: {
-    color: 'bg-[var(--color-success)]',
-    bgColor: 'bg-[var(--color-success)]/10',
-    pulseColor: 'bg-[var(--color-success)]/10',
+    color: 'bg-success',
+    bgColor: 'bg-success/10',
+    pulseColor: 'bg-success/10',
     label: 'Working',
     animate: true,
   },
   paused: {
-    color: 'bg-[var(--color-warning)]',
-    bgColor: 'bg-[var(--color-warning)]/10',
-    pulseColor: 'bg-[var(--color-warning)]/10',
+    color: 'bg-warning',
+    bgColor: 'bg-warning/10',
+    pulseColor: 'bg-warning/10',
     label: 'Paused',
     animate: false,
   },
   stuck: {
-    color: 'bg-[var(--color-error)]',
-    bgColor: 'bg-[var(--color-error)]/10',
-    pulseColor: 'bg-[var(--color-error)]/10',
+    color: 'bg-error',
+    bgColor: 'bg-error/10',
+    pulseColor: 'bg-error/10',
     label: 'Stuck',
     animate: true,
   },
@@ -225,9 +225,9 @@ const TaskStatusIndicator = memo(function TaskStatusIndicator({
       
       {showLabel && (
         <span className={`text-xs font-medium ${
-          statusInfo.status === 'active' ? 'text-[var(--color-success)]' :
-          statusInfo.status === 'paused' ? 'text-[var(--color-warning)]' :
-          statusInfo.status === 'stuck' ? 'text-[var(--color-error)]' :
+          statusInfo.status === 'active' ? 'text-success' :
+          statusInfo.status === 'paused' ? 'text-warning' :
+          statusInfo.status === 'stuck' ? 'text-error' :
           'text-mission-control-text-dim'
         }`}>
           {config.label}

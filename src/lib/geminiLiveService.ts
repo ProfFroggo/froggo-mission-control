@@ -163,6 +163,7 @@ export class GeminiLiveService {
   // Playback state
   private playbackCtx: AudioContext | null = null;
   private playbackQueue: ArrayBuffer[] = [];
+  private static readonly MAX_PLAYBACK_QUEUE = 300; // ~5 min of audio at 1s chunks
   private isPlaying = false;
   private playbackGain: GainNode | null = null;
   private scheduledTime = 0;
@@ -568,6 +569,10 @@ export class GeminiLiveService {
   private async preWarmAudioWorklet(): Promise<void> {
     if (this.audioContext) return; // already warmed
     this.audioContext = new AudioContext({ sampleRate: SEND_SAMPLE_RATE });
+    if (!this.audioContext.audioWorklet) {
+      logger.warn('[GeminiLive] AudioWorklet not supported in this browser');
+      return;
+    }
     try {
       await this.audioContext.audioWorklet.addModule('/audio-processor.js');
       this.workletLoaded = true;
@@ -597,6 +602,9 @@ export class GeminiLiveService {
         this.audioContext = new AudioContext({ sampleRate: SEND_SAMPLE_RATE });
       }
       if (!this.workletLoaded) {
+        if (!this.audioContext.audioWorklet) {
+          throw new Error('AudioWorklet not supported in this browser');
+        }
         logger.debug('[GeminiLive] Loading audio processor from static file');
         await this.audioContext.audioWorklet.addModule('/audio-processor.js');
         this.workletLoaded = true;
@@ -690,6 +698,7 @@ export class GeminiLiveService {
       this.audioContext = null;
       this.workletLoaded = false; // Must re-register worklet on new AudioContext
     }
+    this.micAnalyser?.disconnect();
     this.micAnalyser = null;
     this.emit('listening-end');
     this.emit('audio-level', { level: 0 });
@@ -711,6 +720,10 @@ export class GeminiLiveService {
   // ── Audio Output (Playback) ──
 
   private async enqueueAudio(pcmData: ArrayBuffer) {
+    // Prevent unbounded memory growth on long calls or poor playback
+    if (this.playbackQueue.length >= GeminiLiveService.MAX_PLAYBACK_QUEUE) {
+      this.playbackQueue.shift(); // drop oldest chunk
+    }
     this.playbackQueue.push(pcmData);
     if (!this.isPlaying) {
       this.isPlaying = true;
@@ -771,7 +784,13 @@ export class GeminiLiveService {
     // Wait for last scheduled audio to finish, then check for more
     const remaining = this.scheduledTime - (this.playbackCtx?.currentTime ?? 0);
     if (remaining > 0) {
+      const ctx = this.playbackCtx; // capture ref before timeout
       setTimeout(() => {
+        // Guard: if playback was cleared while waiting, bail out
+        if (!ctx || ctx.state === 'closed' || this.playbackCtx !== ctx) {
+          this.isPlaying = false;
+          return;
+        }
         if (this.playbackQueue.length > 0) {
           this.drainPlaybackQueue();
         } else {
@@ -829,7 +848,8 @@ export class GeminiLiveService {
       this.videoCanvas = document.createElement('canvas');
       this.videoCtx = this.videoCanvas.getContext('2d');
 
-      // Send frames every 1 second
+      // Send frames every 1 second (clear any stale interval first)
+      if (this.videoInterval) clearInterval(this.videoInterval);
       this.videoInterval = setInterval(() => this.captureAndSendFrame(), 1000);
 
     } catch (err: any) {
@@ -1019,6 +1039,10 @@ export class GeminiLiveService {
 
   destroy() {
     this.disconnect();
+    this.stopToolCallKeepalive();
+    if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
+    if (this.videoInterval) { clearInterval(this.videoInterval); this.videoInterval = null; }
+    this.clearPlayback();
     this.listeners.clear();
   }
 }

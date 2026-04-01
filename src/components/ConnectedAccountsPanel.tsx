@@ -97,8 +97,8 @@ export default function ConnectedAccountsPanel() {
 
           {/* Status badge */}
           {status?.authenticated ? (
-            <span className="flex items-center gap-1.5 text-xs text-[var(--color-success)] px-2.5 py-1 bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-full font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] flex-shrink-0" />
+            <span className="flex items-center gap-1.5 text-xs text-success px-2.5 py-1 bg-success/10 border border-success/30 rounded-full font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0" />
               Connected
             </span>
           ) : (
@@ -111,7 +111,7 @@ export default function ConnectedAccountsPanel() {
 
         {/* Error / setup message */}
         {status?.error && (
-          <div className="mt-4 p-3 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg text-sm text-[var(--color-warning)]">
+          <div className="mt-4 p-3 bg-warning/10 border border-warning/30 rounded-lg text-sm text-warning">
             {status.error}
           </div>
         )}
@@ -158,8 +158,8 @@ export default function ConnectedAccountsPanel() {
         <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Services enabled</h3>
         <div className="grid grid-cols-2 gap-3">
           {GOOGLE_SERVICES.map(({ icon: Icon, label, description }) => (
-            <Flex key={label} align="start" gap="3" className={`p-3 rounded-xl border ${status?.authenticated ? 'border-[var(--color-success)]/30 bg-[var(--color-success)]/5' : 'border-mission-control-border opacity-50'}`}>
-              <Icon size={16} className={`${status?.authenticated ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim'} mt-0.5 flex-shrink-0`} />
+            <Flex key={label} align="start" gap="3" className={`p-3 rounded-xl border ${status?.authenticated ? 'border-success/30 bg-success/5' : 'border-mission-control-border opacity-50'}`}>
+              <Icon size={16} className={`${status?.authenticated ? 'text-success' : 'text-mission-control-text-dim'} mt-0.5 flex-shrink-0`} />
               <div>
                 <div className="text-sm font-medium">{label}</div>
                 <div className="text-xs text-mission-control-text-dim">{description}</div>

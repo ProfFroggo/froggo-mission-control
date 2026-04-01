@@ -113,11 +113,11 @@ export default function FinanceInsightsPanel() {
   const getSeverityStyles = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 text-[var(--color-error)]';
+        return 'bg-error/10 border-error/30 text-error';
       case 'warning':
-        return 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30 text-[var(--color-warning)]';
+        return 'bg-warning/10 border-warning/30 text-warning';
       default:
-        return 'bg-[var(--color-info)]/10 border-[var(--color-info)]/30 text-[var(--color-info)]';
+        return 'bg-info/10 border-info/30 text-info';
     }
   };
 
@@ -150,12 +150,13 @@ export default function FinanceInsightsPanel() {
 
   if (error) {
     return (
-      <div className="bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg p-4">
-        <Flex align="center" gap="2" className="text-[var(--color-error)]">
+      <div className="bg-error/10 border border-error/30 rounded-lg p-4">
+        <Flex align="center" gap="2" className="text-error">
           <AlertTriangle className="w-5 h-5" />
           <span>Failed to load insights: {error}</span>
         </Flex>
         <button
+          type="button"
           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mt-2"
           onClick={loadInsights}
         >
@@ -179,13 +180,13 @@ export default function FinanceInsightsPanel() {
     <Box className="space-y-3">
       <Flex align="center" justify="between" className="mb-4">
         <h3 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
-          <Lightbulb className="w-5 h-5 text-[var(--color-warning)]" />
+          <Lightbulb className="w-5 h-5 text-warning" />
           AI Insights
-          <span className="px-2 py-0.5 text-xs bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full">
+          <span className="px-2 py-0.5 text-xs bg-warning/10 text-warning rounded-full">
             {insights.length}
           </span>
           {insights.filter((i) => i.type === 'anomaly').length > 0 && (
-            <span className="px-2 py-0.5 text-xs bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full flex items-center gap-1">
+            <span className="px-2 py-0.5 text-xs bg-error/10 text-error rounded-full flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
               {insights.filter((i) => i.type === 'anomaly').length} anomal{insights.filter((i) => i.type === 'anomaly').length === 1 ? 'y' : 'ies'}
             </span>
@@ -237,6 +238,7 @@ export default function FinanceInsightsPanel() {
               </div>
             </div>
             <button
+              type="button"
               className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={() => dismissInsight(insight.id)}
               title="Dismiss insight"

@@ -842,7 +842,7 @@ export default function XAutomationsTab() {
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
                             automation.enabled
-                              ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]'
+                              ? 'bg-success/10 text-success'
                               : 'bg-mission-control-border text-mission-control-text-dim'
                           }`}
                         >
@@ -862,7 +862,7 @@ export default function XAutomationsTab() {
                         title={automation.enabled ? 'Disable' : 'Enable'}
                         className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border text-xs font-medium transition-colors ${
                           automation.enabled
-                            ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]'
+                            ? 'bg-success/10 border-success/30 text-success'
                             : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                         }`}
                       >
@@ -1008,7 +1008,7 @@ export default function XAutomationsTab() {
                                 {actionsTaken.map((a: any) => a.type).join(', ') || 'no actions'}
                               </span>
                               <span className={`ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                                entry.status === 'executed' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-error)]/10 text-[var(--color-error)]'
+                                entry.status === 'executed' ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
                               }`}>
                                 {entry.status}
                               </span>
@@ -1034,7 +1034,7 @@ export default function XAutomationsTab() {
                                   </div>
                                 )}
                                 {entry.error && (
-                                  <div className="text-xs text-[var(--color-error)] bg-[var(--color-error)]/10 rounded px-2 py-1">
+                                  <div className="text-xs text-error bg-error/10 rounded px-2 py-1">
                                     {entry.error}
                                   </div>
                                 )}

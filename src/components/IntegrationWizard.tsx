@@ -85,7 +85,7 @@ function StepIndicator({ total, current }: { total: number; current: number }) {
               i === current
                 ? 'bg-mission-control-accent text-white'
                 : i < current
-                  ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] border border-[var(--color-success)]/30'
+                  ? 'bg-success/15 text-success border border-success/30'
                   : 'bg-mission-control-border/30 text-mission-control-text-dim border border-mission-control-border'
             }`}
           >
@@ -94,7 +94,7 @@ function StepIndicator({ total, current }: { total: number; current: number }) {
           {i < total - 1 && (
             <div
               className={`flex-1 h-px mx-1 transition-colors ${
-                i < current ? 'bg-[var(--color-success)]' : 'bg-mission-control-border'
+                i < current ? 'bg-success' : 'bg-mission-control-border'
               }`}
             />
           )}
@@ -283,13 +283,13 @@ function ReviewStep({
         {!testing && testResult && (
           <div className="space-y-2">
             {testResult.success ? (
-              <Flex align="center" gap="2" className="text-[var(--color-success)] text-sm">
+              <Flex align="center" gap="2" className="text-success text-sm">
                 <CheckCircle size={16} />
                 <span>Connection successful!</span>
               </Flex>
             ) : (
               <div className="space-y-2">
-                <Flex align="start" gap="2" className="text-[var(--color-error)] text-sm">
+                <Flex align="start" gap="2" className="text-error text-sm">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                   <span>{testResult.error || 'Connection failed'}</span>
                 </Flex>

@@ -217,11 +217,11 @@ export default function DashMixpanelCard({ range, onNavigate }: DashMixpanelCard
                 <AreaChart data={spark} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                   <defs>
                     <linearGradient id="mpGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <Area type="monotone" dataKey="v" stroke="#22c55e" strokeWidth={1.5}
+                  <Area type="monotone" dataKey="v" stroke="var(--color-success)" strokeWidth={1.5}
                     fill="url(#mpGrad)" dot={false} isAnimationActive={false} />
                   <Tooltip content={<SparkTooltip />} />
                 </AreaChart>

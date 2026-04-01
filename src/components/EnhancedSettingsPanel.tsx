@@ -134,7 +134,7 @@ const defaultSettings: AppSettings = {
   voiceSpeed: 1.0,
   notificationsEnabled: true,
   theme: 'dark',
-  accentColor: '#22c55e',
+  accentColor: 'var(--color-success)',
   fontFamily: 'system',
   fontSize: 16,
   autoRefresh: true,
@@ -246,12 +246,12 @@ interface SectionProps {
 function CollapsibleSection({ title, icon, children, defaultOpen = true, description, danger = false }: SectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  const borderClass = danger ? 'border-[var(--color-error)]/20' : 'border-mission-control-border';
+  const borderClass = danger ? 'border-error/20' : 'border-mission-control-border';
   const headerBgClass = danger
-    ? 'bg-[var(--color-error)]/5'
+    ? 'bg-error/5'
     : 'bg-mission-control-bg/50 hover:bg-mission-control-bg/80';
   const titleClass = danger
-    ? 'text-[10px] font-bold uppercase tracking-wider text-[var(--color-error)]'
+    ? 'text-[10px] font-bold uppercase tracking-wider text-error'
     : 'text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim group-hover:text-mission-control-text transition-colors';
 
   return (
@@ -293,6 +293,7 @@ function Tooltip({ text }: { text: string }) {
   return (
     <div className="relative inline-block">
       <button
+        type="button"
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
         className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
@@ -389,6 +390,7 @@ function PlatformUpdateTab() {
             <div className="text-xs text-mission-control-text-dim">froggo-mission-control</div>
           </div>
           <button
+            type="button"
             onClick={() => checkVersion(true)}
             disabled={checking}
             title="Check for updates"
@@ -413,9 +415,9 @@ function PlatformUpdateTab() {
             <Flex align="center" justify="between" className="text-sm">
               <span className="text-mission-control-text-dim">Status</span>
               {versionInfo.updateAvailable ? (
-                <span className="px-2 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full text-xs font-medium">Update available</span>
+                <span className="px-2 py-0.5 bg-warning/10 text-warning rounded-full text-xs font-medium">Update available</span>
               ) : (
-                <span className="px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full text-xs font-medium">Up to date</span>
+                <span className="px-2 py-0.5 bg-success/10 text-success rounded-full text-xs font-medium">Up to date</span>
               )}
             </Flex>
           </div>
@@ -458,7 +460,7 @@ function PlatformUpdateTab() {
             <span>Install log</span>
           </Flex>
           {updateLog.filter(Boolean).map((line, i) => (
-            <div key={i} className="text-[var(--color-success)]/90">{line}</div>
+            <div key={i} className="text-success/90">{line}</div>
           ))}
           <div ref={logEndRef} />
         </div>
@@ -466,8 +468,8 @@ function PlatformUpdateTab() {
 
       {/* Result banner */}
       {updateResult && (
-        <div className={`p-4 rounded-lg border ${updateResult.success ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30' : 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30'}`}>
-          <div className={`font-medium text-sm ${updateResult.success ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
+        <div className={`p-4 rounded-lg border ${updateResult.success ? 'bg-success/10 border-success/30' : 'bg-error/10 border-error/30'}`}>
+          <div className={`font-medium text-sm ${updateResult.success ? 'text-success' : 'text-error'}`}>
             {updateResult.success ? 'Update complete' : 'Update failed'}
           </div>
           <div className="text-xs text-mission-control-text-dim mt-1">{updateResult.message}</div>
@@ -684,7 +686,7 @@ function SessionsManagementSection() {
                     <Flex align="center" gap="2">
                       <span className="text-sm font-medium text-mission-control-text truncate">{s.agentName}</span>
                       {s.compacted && (
-                        <span className="px-1.5 py-0.5 text-xs bg-[var(--color-info)]/10 text-[var(--color-info)] rounded">compacted</span>
+                        <span className="px-1.5 py-0.5 text-xs bg-info/10 text-info rounded">compacted</span>
                       )}
                     </Flex>
                     <div className="text-xs text-mission-control-text-dim truncate">
@@ -698,6 +700,7 @@ function SessionsManagementSection() {
                   </Box>
                   <Flex align="center" gap="2" className="ml-2 flex-shrink-0">
                     <button
+                      type="button"
                       onClick={() => handleExport(s.key)}
                       disabled={exportingKey === s.key}
                       title="Export as markdown"
@@ -1022,7 +1025,7 @@ function TokenBudgetSection() {
           <div className="space-y-2">
             <Flex align="center" justify="between" className="text-sm">
               <span className="text-mission-control-text-dim">This month (30d)</span>
-              <span className={`tabular-nums ${isOver ? 'text-[var(--color-error)] font-semibold' : isWarn ? 'text-[var(--color-warning)] font-semibold' : 'text-mission-control-text'}`}>
+              <span className={`tabular-nums ${isOver ? 'text-error font-semibold' : isWarn ? 'text-warning font-semibold' : 'text-mission-control-text'}`}>
                 ${currentCost.toFixed(4)}{budget > 0 ? ` / $${budget.toFixed(2)}` : ''}
               </span>
             </Flex>
@@ -1038,7 +1041,7 @@ function TokenBudgetSection() {
               </div>
             )}
             {(isWarn || isOver) && (
-              <Flex align="center" gap="2" className={`text-xs px-3 py-2 rounded-lg ${isOver ? 'bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/30' : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/30'}`}>
+              <Flex align="center" gap="2" className={`text-xs px-3 py-2 rounded-lg ${isOver ? 'bg-error/10 text-error border border-error/30' : 'bg-warning/10 text-warning border border-warning/30'}`}>
                 <AlertTriangle size={13} />
                 {isOver
                   ? `Budget exceeded (${pct.toFixed(0)}% used)`
@@ -1162,7 +1165,7 @@ function ApiKeysSection() {
       <div className="space-y-6">
         <Flex align="center" justify="between">
           <span className="text-xs text-mission-control-text-dim">{Object.keys(values).filter(k => values[k]).length} configured</span>
-          <button onClick={() => setShowKeys(!showKeys)} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+          <button type="button" onClick={() => setShowKeys(!showKeys)} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
             {showKeys ? <EyeOff size={12} /> : <Eye size={12} />} {showKeys ? 'Hide all' : 'Show all'}
           </button>
         </Flex>
@@ -1188,7 +1191,7 @@ function ApiKeysSection() {
                           size="2"
                           className="w-full font-mono"
                         />
-                        {hasValue && <CheckCircle size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-success)]" />}
+                        {hasValue && <CheckCircle size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-success" />}
                       </Box>
                       <Button
                         onClick={() => doSave(p.id)}
@@ -1711,7 +1714,7 @@ export default function EnhancedSettingsPanel() {
                     <Flex justify="between"><span>Vault</span><span className="text-mission-control-text-dim">~/mission-control/memory/</span></Flex>
                   </div>
                   <Flex align="center" gap="2" p="3" className="bg-mission-control-bg rounded-lg border border-mission-control-border">
-                    <span className={`w-3 h-3 rounded-full ${connected ? 'bg-[var(--color-success)] animate-pulse' : 'bg-[var(--color-error)]'}`} />
+                    <span className={`w-3 h-3 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
                     <span className="text-sm font-medium">{connected ? 'Connected' : 'Disconnected'}</span>
                     {connected && <span className="text-xs text-mission-control-text-dim ml-auto">Active</span>}
                   </Flex>
@@ -2040,6 +2043,7 @@ export default function EnhancedSettingsPanel() {
                   <Flex align="center" justify="between" mb="4">
                     <span className="text-sm text-mission-control-text-dim">Click any shortcut to edit</span>
                     <button
+                      type="button"
                       onClick={resetShortcuts}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     >
@@ -2371,9 +2375,9 @@ export default function EnhancedSettingsPanel() {
                 description="Advanced settings for developers"
               >
                 <div className="space-y-4">
-                  <Flex align="start" gap="2" className="p-3 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg">
-                    <AlertTriangle size={16} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-[var(--color-warning)]">
+                  <Flex align="start" gap="2" className="p-3 bg-warning/10 border border-warning/30 rounded-lg">
+                    <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-warning">
                       These settings are for advanced users. Changing them may affect app stability.
                     </p>
                   </Flex>
@@ -2455,9 +2459,9 @@ export default function EnhancedSettingsPanel() {
                 description="Control automated external actions"
               >
                 <div className="space-y-4">
-                  <Flex align="start" gap="2" className="p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
-                    <AlertTriangle size={16} className="text-[var(--color-error)] flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-[var(--color-error)]">
+                  <Flex align="start" gap="2" className="p-3 bg-error/10 border border-error/30 rounded-lg">
+                    <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-error">
                       These settings control real external actions (tweets, emails, etc.). Use with caution.
                     </p>
                   </Flex>
@@ -2467,9 +2471,9 @@ export default function EnhancedSettingsPanel() {
                       <Flex align="center" gap="2" className="text-sm font-medium text-mission-control-text">
                         Kill Switch
                         {settings.externalActionsEnabled ? (
-                          <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded font-bold">LIVE</span>
+                          <span className="text-xs px-2 py-0.5 bg-success/10 text-success rounded font-bold">LIVE</span>
                         ) : (
-                          <span className="text-xs px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded font-bold">BLOCKED</span>
+                          <span className="text-xs px-2 py-0.5 bg-error/10 text-error rounded font-bold">BLOCKED</span>
                         )}
                       </Flex>
                       <div className="text-xs text-mission-control-text-dim mt-0.5">
@@ -2525,12 +2529,12 @@ export default function EnhancedSettingsPanel() {
                         />
                       </div>
 
-                      <Box p="4" className="bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg">
+                      <Box p="4" className="bg-info/10 border border-info/30 rounded-lg">
                         <Flex align="start" gap="2">
-                          <Bot size={20} className="text-[var(--color-info)] flex-shrink-0" />
+                          <Bot size={20} className="text-info flex-shrink-0" />
                           <Box className="flex-1">
-                            <div className="font-medium text-[var(--color-info)] mb-2">Smart Account Selection</div>
-                            <div className="text-sm text-[var(--color-info)] space-y-2">
+                            <div className="font-medium text-info mb-2">Smart Account Selection</div>
+                            <div className="text-sm text-info space-y-2">
                               <p>Mission Control intelligently chooses accounts based on context:</p>
                               <ul className="list-disc list-inside space-y-1 ml-2 text-xs">
                                 <li>Reply-to matching for email threads</li>

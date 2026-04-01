@@ -237,7 +237,7 @@ export default function CampaignsPanel() {
         )}
 
         {error && !loading && (
-          <Flex align="center" gap="2" px="4" py="3" className="bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg text-[var(--color-error)] text-sm">
+          <Flex align="center" gap="2" px="4" py="3" className="bg-error/10 border border-error/30 rounded-lg text-error text-sm">
             <AlertCircle size={15} />
             {error}
           </Flex>

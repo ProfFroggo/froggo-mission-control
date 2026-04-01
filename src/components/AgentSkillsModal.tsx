@@ -16,10 +16,10 @@ interface AgentSkill {
 
 // Proficiency color coding
 function profColor(p: number): string {
-  if (p >= 8) return 'text-[var(--color-success)] bg-[var(--color-success)]/10 border-[var(--color-success)]/30';
-  if (p >= 6) return 'text-[var(--color-info)] bg-[var(--color-info)]/10 border-[var(--color-info)]/30';
-  if (p >= 4) return 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30';
-  return 'text-[var(--color-error)] bg-[var(--color-error)]/10 border-[var(--color-error)]/30';
+  if (p >= 8) return 'text-success bg-success/10 border-success/30';
+  if (p >= 6) return 'text-info bg-info/10 border-info/30';
+  if (p >= 4) return 'text-warning bg-warning/10 border-warning/30';
+  return 'text-error bg-error/10 border-error/30';
 }
 
 function profLabel(p: number): string {
@@ -155,8 +155,8 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
                         <span>{profLabel(skill.proficiency)}</span>
                         {(skill.success_count > 0 || skill.failure_count > 0) && (
                           <span className="flex items-center gap-2">
-                            <span className="text-[var(--color-success)]">{skill.success_count} ok</span>
-                            <span className="text-[var(--color-error)]">{skill.failure_count} fail</span>
+                            <span className="text-success">{skill.success_count} ok</span>
+                            <span className="text-error">{skill.failure_count} fail</span>
                           </span>
                         )}
                       </Flex>

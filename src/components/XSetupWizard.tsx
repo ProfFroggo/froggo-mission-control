@@ -162,7 +162,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
         {/* Header */}
         <div className="text-center">
           <div className="w-16 h-16 rounded-2xl bg-mission-control-accent/20 flex items-center justify-center mx-auto mb-4">
-            <XIcon size={32} className="text-[var(--color-info)]" />
+            <XIcon size={32} className="text-info" />
           </div>
           <h1 className="text-2xl font-bold text-mission-control-text mb-2">Connect X / Twitter</h1>
           <p className="text-sm text-mission-control-text-dim">
@@ -180,7 +180,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
               {i > 0 && <div className={`w-6 h-px ${i <= stepIdx ? 'bg-mission-control-accent' : 'bg-mission-control-border'}`} />}
               <Flex align="center" gap="1" className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                 i === stepIdx ? 'bg-mission-control-accent/20 text-mission-control-accent' :
-                i < stepIdx ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
+                i < stepIdx ? 'bg-success/10 text-success' :
                 'bg-mission-control-border text-mission-control-text-dim'
               }`}>
                 {i < stepIdx && <CheckCircle size={10} />}
@@ -200,7 +200,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-5 space-y-3">
               <Flex align="center" justify="between">
                 <h3 className="text-sm font-medium text-mission-control-text flex items-center gap-2"><Key size={14} /> API Credentials</h3>
-                <button onClick={() => setShowKeys(!showKeys)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                <button type="button" onClick={() => setShowKeys(!showKeys)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                   {showKeys ? <EyeOff size={12} /> : <Eye size={12} />} {showKeys ? 'Hide' : 'Show'}
                 </button>
               </Flex>
@@ -208,7 +208,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
               {TWITTER_KEYS.filter(k => ['twitter_api_key', 'twitter_api_secret', 'twitter_bearer_token'].includes(k.id)).map(k => (
                 <div key={k.id}>
                   <label className="block text-xs text-mission-control-text-dim mb-1">
-                    {k.label} <span className="text-[var(--color-error)]">*</span>
+                    {k.label} <span className="text-error">*</span>
                   </label>
                   <TextField.Root
                     type={showKeys ? 'text' : 'password'}
@@ -306,13 +306,13 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                     {verifyResult.user?.profile_image_url ? (
                       <img src={verifyResult.user.profile_image_url} alt="" className="w-14 h-14 rounded-full" />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-[var(--color-info)]/10 flex items-center justify-center"><User size={24} className="text-[var(--color-info)]" /></div>
+                      <div className="w-14 h-14 rounded-full bg-info/10 flex items-center justify-center"><User size={24} className="text-info" /></div>
                     )}
                     <div>
                       <p className="font-semibold text-mission-control-text">{verifyResult.user?.name}</p>
                       <p className="text-sm text-mission-control-accent">@{verifyResult.user?.username}</p>
                     </div>
-                    <CheckCircle size={24} className="text-[var(--color-success)] ml-auto" />
+                    <CheckCircle size={24} className="text-success ml-auto" />
                   </Flex>
                   {verifyResult.user?.public_metrics && (
                     <div className="grid grid-cols-3 gap-3 pt-3 border-t border-mission-control-border">
@@ -333,13 +333,13 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 </div>
               ) : verifyResult ? (
                 <div className="text-center py-4 space-y-3">
-                  <XCircle size={32} className="mx-auto text-[var(--color-error)]" />
-                  <p className="text-sm font-medium text-[var(--color-error)]">Verification Failed</p>
+                  <XCircle size={32} className="mx-auto text-error" />
+                  <p className="text-sm font-medium text-error">Verification Failed</p>
                   <p className="text-xs text-mission-control-text-dim">{verifyResult.error}</p>
                   {verifyResult.checks && (
                     <div className="flex flex-wrap justify-center gap-2 pt-2">
                       {Object.entries(verifyResult.checks).map(([k, v]) => (
-                        <span key={k} className={`text-xs px-2 py-0.5 rounded-full ${v ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-error)]/10 text-[var(--color-error)]'}`}>
+                        <span key={k} className={`text-xs px-2 py-0.5 rounded-full ${v ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>
                           {v ? <CheckCircle size={10} className="inline mr-1" /> : <XCircle size={10} className="inline mr-1" />}
                           {k.replace(/_/g, ' ')}
                         </span>
@@ -381,21 +381,21 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 {agentWiring ? (
                   <Spinner size="1" className="ml-auto" />
                 ) : agentWired ? (
-                  <CheckCircle size={16} className="text-[var(--color-success)] ml-auto" />
+                  <CheckCircle size={16} className="text-success ml-auto" />
                 ) : null}
               </Flex>
 
               <div className="space-y-2 text-xs">
                 <Flex align="center" gap="2">
-                  <CheckCircle size={12} className="text-[var(--color-success)]" />
+                  <CheckCircle size={12} className="text-success" />
                   <span className="text-mission-control-text">API credentials saved</span>
                 </Flex>
                 <Flex align="center" gap="2">
-                  <CheckCircle size={12} className="text-[var(--color-success)]" />
+                  <CheckCircle size={12} className="text-success" />
                   <span className="text-mission-control-text">X API connection verified</span>
                 </Flex>
                 <Flex align="center" gap="2">
-                  {agentWired ? <CheckCircle size={12} className="text-[var(--color-success)]" /> : <Spinner size="1" />}
+                  {agentWired ? <CheckCircle size={12} className="text-success" /> : <Spinner size="1" />}
                   <span className="text-mission-control-text">{agentWired ? 'Agent tools configured' : 'Configuring agent tools...'}</span>
                 </Flex>
               </div>
@@ -416,8 +416,8 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
         {/* Step 4: Done */}
         {step === 'done' && (
           <div className="space-y-4">
-            <div className="bg-mission-control-surface border border-[var(--color-success)]/30 rounded-lg p-6 text-center space-y-3">
-              <CheckCircle size={48} className="mx-auto text-[var(--color-success)]" />
+            <div className="bg-mission-control-surface border border-success/30 rounded-lg p-6 text-center space-y-3">
+              <CheckCircle size={48} className="mx-auto text-success" />
               <h2 className="text-lg font-semibold text-mission-control-text">X / Twitter Connected</h2>
               <p className="text-sm text-mission-control-text-dim">
                 Your account is verified, credentials are saved, and the social agent is configured.

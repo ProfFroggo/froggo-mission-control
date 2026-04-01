@@ -135,6 +135,7 @@ function ExportButtons({
   return (
     <Flex align="center" gap="2">
       <button
+        type="button"
         onClick={() => handleExport('csv')}
         disabled={!!busy}
         title={`Export ${type} as CSV`}
@@ -144,6 +145,7 @@ function ExportButtons({
         {busy === 'csv' ? 'Exporting…' : 'CSV'}
       </button>
       <button
+        type="button"
         onClick={() => handleExport('json')}
         disabled={!!busy}
         title={`Export ${type} as JSON`}
@@ -222,6 +224,7 @@ function ExecutiveSummaryCard({
           </span>
         </Flex>
         <button
+          type="button"
           onClick={load}
           title="Refresh summary"
           className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
@@ -239,7 +242,7 @@ function ExecutiveSummaryCard({
           </Flex>
           <div className="text-2xl font-bold tabular-nums text-mission-control-text">{summary.tasks.completed}</div>
           <div className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
-            <span className="text-[var(--color-success)]">{summary.tasks.velocity}</span>/day velocity
+            <span className="text-success">{summary.tasks.velocity}</span>/day velocity
           </div>
         </div>
         <div className="p-4 bg-mission-control-border/10 rounded-lg">
@@ -249,7 +252,7 @@ function ExecutiveSummaryCard({
           </Flex>
           <div className="text-2xl font-bold tabular-nums text-mission-control-text">{summary.agents.active}</div>
           <div className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
-            <span className="text-[var(--color-info)]">{summary.agents.avgSuccessRate}%</span> avg success
+            <span className="text-info">{summary.agents.avgSuccessRate}%</span> avg success
           </div>
         </div>
         <div className="p-4 bg-mission-control-border/10 rounded-lg">
@@ -259,7 +262,7 @@ function ExecutiveSummaryCard({
           </Flex>
           <div className="text-2xl font-bold tabular-nums text-mission-control-text">{summary.approvals.total}</div>
           <div className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
-            <span className="text-[var(--color-success)]">{summary.approvals.approved}</span> approved
+            <span className="text-success">{summary.approvals.approved}</span> approved
           </div>
         </div>
         <div className="p-4 bg-mission-control-border/10 rounded-lg">
@@ -563,10 +566,10 @@ export default function ReportsPanel() {
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard label="Tasks Created" value={weeklyReport.tasksCreated} color="text-[var(--color-info)]" />
-              <StatCard label="Tasks Completed" value={weeklyReport.tasksCompleted} color="text-[var(--color-success)]" />
-              <StatCard label="Completion Rate" value={`${weeklyReport.completionRate}%`} color="text-[var(--color-review)]" />
-              <StatCard label="Total Hours" value={`${weeklyReport.totalHours.toFixed(1)}h`} color="text-[var(--color-warning)]" />
+              <StatCard label="Tasks Created" value={weeklyReport.tasksCreated} color="text-info" />
+              <StatCard label="Tasks Completed" value={weeklyReport.tasksCompleted} color="text-success" />
+              <StatCard label="Completion Rate" value={`${weeklyReport.completionRate}%`} color="text-review" />
+              <StatCard label="Total Hours" value={`${weeklyReport.totalHours.toFixed(1)}h`} color="text-warning" />
             </div>
 
             <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
@@ -577,11 +580,11 @@ export default function ReportsPanel() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-mission-control-border/10 rounded-lg">
                   <div className="text-sm text-mission-control-text-dim mb-2">Top Performer</div>
-                  <div className="text-xl font-bold text-[var(--color-warning)]">{weeklyReport.topAgent}</div>
+                  <div className="text-xl font-bold text-warning">{weeklyReport.topAgent}</div>
                 </div>
                 <div className="p-4 bg-mission-control-border/10 rounded-lg">
                   <div className="text-sm text-mission-control-text-dim mb-2">Most Active Project</div>
-                  <div className="text-xl font-bold text-[var(--color-info)]">{weeklyReport.topProject}</div>
+                  <div className="text-xl font-bold text-info">{weeklyReport.topProject}</div>
                 </div>
               </div>
             </div>
@@ -615,10 +618,10 @@ export default function ReportsPanel() {
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard label="Tasks Created" value={monthlyReport.tasksCreated} color="text-[var(--color-info)]" />
-              <StatCard label="Tasks Completed" value={monthlyReport.tasksCompleted} color="text-[var(--color-success)]" />
-              <StatCard label="Completion Rate" value={`${monthlyReport.completionRate}%`} color="text-[var(--color-review)]" />
-              <StatCard label="Total Hours" value={`${monthlyReport.totalHours.toFixed(1)}h`} color="text-[var(--color-warning)]" />
+              <StatCard label="Tasks Created" value={monthlyReport.tasksCreated} color="text-info" />
+              <StatCard label="Tasks Completed" value={monthlyReport.tasksCompleted} color="text-success" />
+              <StatCard label="Completion Rate" value={`${monthlyReport.completionRate}%`} color="text-review" />
+              <StatCard label="Total Hours" value={`${monthlyReport.totalHours.toFixed(1)}h`} color="text-warning" />
             </div>
 
             <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
@@ -638,17 +641,17 @@ export default function ReportsPanel() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-mission-control-text-dim">Completion Rate</div>
-                        <div className="font-medium text-[var(--color-success)]">{agent.completionRate}%</div>
+                        <div className="font-medium text-success">{agent.completionRate}%</div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Avg Time</div>
-                        <div className="font-medium text-[var(--color-info)]">
+                        <div className="font-medium text-info">
                           {agent.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Total Time</div>
-                        <div className="font-medium text-[var(--color-warning)]">
+                        <div className="font-medium text-warning">
                           {agent.totalTimeSpent.toFixed(1)}h
                         </div>
                       </div>
@@ -675,17 +678,17 @@ export default function ReportsPanel() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-mission-control-text-dim">Completed</div>
-                        <div className="font-medium text-[var(--color-success)]">{project.completedTasks}</div>
+                        <div className="font-medium text-success">{project.completedTasks}</div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Avg Time</div>
-                        <div className="font-medium text-[var(--color-info)]">
+                        <div className="font-medium text-info">
                           {project.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
                       <div>
                         <div className="text-mission-control-text-dim">Total Time</div>
-                        <div className="font-medium text-[var(--color-warning)]">
+                        <div className="font-medium text-warning">
                           {project.totalTimeSpent.toFixed(1)}h
                         </div>
                       </div>

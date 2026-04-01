@@ -37,7 +37,7 @@ function ProgressRing({
     <svg width={radius * 2} height={radius * 2} style={{ transform: 'rotate(-90deg)' }}>
       {/* Track */}
       <circle
-        stroke="var(--mission-control-border, #2a2a2a)"
+        stroke="var(--mission-control-border)"
         fill="transparent"
         strokeWidth={strokeWidth}
         r={normalizedRadius}
@@ -64,17 +64,17 @@ function ProgressRing({
 function varianceColor(planned: number, actual: number): string {
   if (actual === 0) return 'var(--mission-control-text-dim)';
   const ratio = actual / planned;
-  if (ratio > 1.05) return 'var(--color-error, #ef4444)';
-  if (ratio > 0.9) return 'var(--color-warning, #eab308)';
-  return 'var(--color-success, #22c55e)';
+  if (ratio > 1.05) return 'var(--color-error)';
+  if (ratio > 0.9) return 'var(--color-warning)';
+  return 'var(--color-success)';
 }
 
 function VarianceIcon({ planned, actual }: { planned: number; actual: number }) {
   if (actual === 0) return <Minus size={12} className="text-mission-control-text-dim" />;
   const ratio = actual / planned;
-  if (ratio > 1.05) return <TrendingUp size={12} className="text-[var(--color-error)]" />;
-  if (ratio > 0.9) return <Minus size={12} className="text-[var(--color-warning)]" />;
-  return <TrendingDown size={12} className="text-[var(--color-success)]" />;
+  if (ratio > 1.05) return <TrendingUp size={12} className="text-error" />;
+  if (ratio > 0.9) return <Minus size={12} className="text-warning" />;
+  return <TrendingDown size={12} className="text-success" />;
 }
 
 export default function CampaignBudgetTracker({
@@ -90,10 +90,10 @@ export default function CampaignBudgetTracker({
   const isOverBudget = spent > budget;
 
   const ringColor = isOverBudget
-    ? 'var(--color-error, #ef4444)'
+    ? 'var(--color-error)'
     : consumedPct > 70
-      ? 'var(--color-warning, #eab308)'
-      : 'var(--color-success, #22c55e)';
+      ? 'var(--color-warning)'
+      : 'var(--color-success)';
 
   const fmt = (n: number) =>
     n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -129,17 +129,17 @@ export default function CampaignBudgetTracker({
           <Flex align="center" justify="between">
             <span className="text-xs text-mission-control-text-dim">Spent</span>
             <span
-              className={`text-sm font-semibold tabular-nums ${isOverBudget ? 'text-[var(--color-error)]' : 'text-mission-control-text'}`}
+              className={`text-sm font-semibold tabular-nums ${isOverBudget ? 'text-error' : 'text-mission-control-text'}`}
             >
               {currency} {fmt(spent)}
               {isOverBudget && (
-                <span className="text-xs font-normal ml-1 text-[var(--color-error)]">(over budget)</span>
+                <span className="text-xs font-normal ml-1 text-error">(over budget)</span>
               )}
             </span>
           </Flex>
           <Flex align="center" justify="between">
             <span className="text-xs text-mission-control-text-dim">Remaining</span>
-            <span className="text-sm font-semibold tabular-nums text-[var(--color-success)]">
+            <span className="text-sm font-semibold tabular-nums text-success">
               {currency} {fmt(remaining)}
             </span>
           </Flex>

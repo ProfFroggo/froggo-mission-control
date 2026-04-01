@@ -37,7 +37,7 @@ Read \`SOUL.md\` now. This defines who you are.
 - Memory: \`mcp__memory__*\`
 
 ## Task Pipeline
-\`todo → internal-review → in-progress → agent-review → done\`
+\`todo → internal-review → in-progress → review → done\`
 \`human-review\` = blocked, needs Kevin's input
 
 **Clara gates every stage transition. You NEVER move a task to done.**
@@ -46,7 +46,7 @@ Pipeline roles:
 - \`todo\` — task created, pick it up and plan
 - \`internal-review\` — YOUR plan/subtasks ready, Clara checks before approving work
 - \`in-progress\` — Clara approved your plan, now do the work
-- \`agent-review\` — you finished, Clara verifies deliverables
+- \`review\` — you finished, Clara verifies deliverables
 - \`done\` — Clara approved final output
 
 ### Working a Task — required steps in order:
@@ -67,7 +67,7 @@ Pipeline roles:
 
 4. **Hand off to Clara** — when all subtasks are done:
    \`mcp__mission-control_db__task_add_activity { "taskId": "<task-id>", "agentId": "${id}", "action": "completed", "message": "Done: <summary of deliverables>" }\`
-   \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "agent-review", "progress": 100, "lastAgentUpdate": "Done: <label>" }\`
+   \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "review", "progress": 100, "lastAgentUpdate": "Done: <label>" }\`
 
 ## Subtask Rules — every subtask you create must be agent-executable
 Each subtask description MUST specify the exact tool or file path:
@@ -113,7 +113,7 @@ If your task has no project_id, save outputs to \`~/mission-control/library/${id
 
 ## Memory Protocol — MANDATORY
 
-After completing any task (before moving to \`agent-review\`), write key learnings to memory:
+After completing any task (before moving to \`review\`), write key learnings to memory:
 \`\`\`
 mcp__memory__memory_write {
   "content": "Key fact, decision, or learning from this task",

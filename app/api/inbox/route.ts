@@ -10,6 +10,10 @@ import { TIER_TOOLS, loadDisallowedTools } from '@/lib/taskDispatcher';
 import { ENV } from '@/lib/env';
 import { jsonResponse } from '@/lib/jsonResponse';
 
+const MAX_INBOX_SPAWNS = 2;
+const INBOX_SPAWN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const activeInboxSpawns = new Set<ReturnType<typeof spawn>>();
+
 function parseInboxItem(row: Record<string, unknown>) {
   if (!row) return row;
   const parsed = { ...row };
@@ -81,6 +85,19 @@ export async function POST(request: NextRequest) {
       status, metadata = {}, tags = [], project,
     } = body;
 
+    if (!title || typeof title !== 'string' || title.length > 500) {
+      return NextResponse.json({ error: 'title is required and must be 500 characters or fewer' }, { status: 400 });
+    }
+    if (type && typeof type !== 'string') {
+      return NextResponse.json({ error: 'type must be a string' }, { status: 400 });
+    }
+    if (metadata !== null && typeof metadata !== 'object') {
+      return NextResponse.json({ error: 'metadata must be an object' }, { status: 400 });
+    }
+    if (!Array.isArray(tags)) {
+      return NextResponse.json({ error: 'tags must be an array' }, { status: 400 });
+    }
+
     const now = Date.now();
 
     const result = db.prepare(`
@@ -93,22 +110,38 @@ export async function POST(request: NextRequest) {
     // Notify SSE clients of new inbox item
     emitSSEEvent('inbox.count', { id: result.lastInsertRowid, type, title });
 
-    // Fire-and-forget: wake inbox agent to triage the new item
-    try {
-      const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
-      const inboxCwd = join(homedir(), 'mission-control', 'agents', 'inbox');
-      const triggerMsg = `New inbox item received. Title: "${title}". Type: ${type || 'unknown'}. Channel: ${channel || 'unknown'}. Please triage this item, assign priority, and update its status.`;
-      const proc = spawn(
-        ENV.CLAUDE_BIN,
-        ['--print', '--model', 'claude-haiku-4-5-20251001',
-          '--allowedTools', TIER_TOOLS['worker'].join(','),
-          '--disallowedTools', loadDisallowedTools('inbox').join(','),
-          triggerMsg],
-        { cwd: existsSync(inboxCwd) ? inboxCwd : homedir(), env: { ...cleanEnv } as NodeJS.ProcessEnv, detached: true, stdio: ['ignore', 'ignore', 'ignore'] }
-      );
-      proc.unref();
-    } catch (err) {
-      console.warn('[inbox] Failed to trigger inbox agent:', err instanceof Error ? err.message : String(err));
+    // Fire-and-forget: wake inbox agent to triage the new item (guarded: max 2 concurrent, 5-min timeout)
+    if (activeInboxSpawns.size < MAX_INBOX_SPAWNS) {
+      try {
+        const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
+        const inboxCwd = join(homedir(), 'mission-control', 'agents', 'inbox');
+        const triggerMsg = `New inbox item received. Title: "${title}". Type: ${type || 'unknown'}. Channel: ${channel || 'unknown'}. Please triage this item, assign priority, and update its status.`;
+        const proc = spawn(
+          ENV.CLAUDE_BIN,
+          ['--print', '--model', 'claude-haiku-4-5-20251001',
+            '--allowedTools', TIER_TOOLS['worker'].join(','),
+            '--disallowedTools', loadDisallowedTools('inbox').join(','),
+            triggerMsg],
+          { cwd: existsSync(inboxCwd) ? inboxCwd : homedir(), env: { ...cleanEnv } as NodeJS.ProcessEnv, detached: true, stdio: ['ignore', 'ignore', 'ignore'] }
+        );
+        activeInboxSpawns.add(proc);
+        const cleanup = () => { activeInboxSpawns.delete(proc); };
+        proc.on('exit', cleanup);
+        proc.on('error', cleanup);
+        // Kill runaway processes after 5 minutes
+        const killTimer = setTimeout(() => {
+          try { proc.kill('SIGTERM'); } catch { /* already exited */ }
+          setTimeout(() => {
+            try { proc.kill('SIGKILL'); } catch { /* already exited */ }
+          }, 5000);
+        }, INBOX_SPAWN_TIMEOUT_MS);
+        killTimer.unref();
+        proc.unref();
+      } catch (err) {
+        console.warn('[inbox] Failed to trigger inbox agent:', err instanceof Error ? err.message : String(err));
+      }
+    } else {
+      console.warn(`[inbox] Skipping inbox agent spawn — ${activeInboxSpawns.size} already running`);
     }
 
     return NextResponse.json(parseInboxItem(item), { status: 201 });

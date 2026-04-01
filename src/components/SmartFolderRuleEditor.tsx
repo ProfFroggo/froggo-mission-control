@@ -520,8 +520,8 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
               <div
                 className={`p-3 rounded-lg border ${
                   testResult
-                    ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]'
-                    : 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30 text-[var(--color-warning)]'
+                    ? 'bg-success/10 border-success/30 text-success'
+                    : 'bg-warning/10 border-warning/30 text-warning'
                 }`}
               >
                 <Flex align="center" gap="2" className="text-sm font-medium">
@@ -535,8 +535,8 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
 
         {/* Danger Zone */}
         {rule.id && (
-          <div className="card p-4 border-[var(--color-error)]/30">
-            <h3 className="font-semibold text-[var(--color-error)] mb-2">Danger Zone</h3>
+          <div className="card p-4 border-error/30">
+            <h3 className="font-semibold text-error mb-2">Danger Zone</h3>
             <p className="text-sm text-mission-control-text-dim mb-3">
               Deleting this rule will make the folder manual-only. Existing assignments will remain.
             </p>

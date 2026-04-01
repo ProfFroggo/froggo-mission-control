@@ -8,10 +8,10 @@ import FactForm from './FactForm';
 import ConfirmDialog, { useConfirmDialog } from '../ConfirmDialog';
 
 const statusBadge: Record<string, string> = {
-  verified: 'bg-[var(--color-success)]/10 text-[var(--color-success)]',
-  unverified: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]',
-  disputed: 'bg-[var(--color-error)]/10 text-[var(--color-error)]',
-  'needs-source': 'bg-[var(--color-info)]/10 text-[var(--color-info)]',
+  verified: 'bg-success/10 text-success',
+  unverified: 'bg-warning/10 text-warning',
+  disputed: 'bg-error/10 text-error',
+  'needs-source': 'bg-info/10 text-info',
 };
 
 const statusLabel: Record<string, string> = {

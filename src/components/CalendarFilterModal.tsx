@@ -248,8 +248,8 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-[var(--color-info)]/10 rounded-lg">
-              <Calendar size={20} className="text-[var(--color-info)]" />
+            <div className="p-2 bg-info/10 rounded-lg">
+              <Calendar size={20} className="text-info" />
             </div>
             <div>
               <h3 className="text-base font-semibold">Calendar Sources</h3>
@@ -260,6 +260,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
           </div>
           <Flex align="center" gap="2">
             <button
+              type="button"
               onClick={loadSources}
               disabled={refreshing}
               title="Refresh sources"
@@ -306,6 +307,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
                   <div className="space-y-2">
                     {typeSources.map((source) => (
                       <button
+                        type="button"
                         key={source.id}
                         onClick={() => toggleSource(source.id)}
                         className="inline-flex items-center gap-2 w-full px-2.5 py-2 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"

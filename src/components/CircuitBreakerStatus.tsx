@@ -18,36 +18,38 @@ const STATE_LABEL: Record<CircuitBreakerState['state'], string> = {
 };
 
 const STATE_COLOR: Record<CircuitBreakerState['state'], string> = {
-  open:      'text-[var(--color-error)]',
-  half_open: 'text-[var(--color-warning)]',
-  closed:    'text-[var(--color-success)]',
+  open:      'text-error',
+  half_open: 'text-warning',
+  closed:    'text-success',
 };
 
 const STATE_DOT: Record<CircuitBreakerState['state'], string> = {
-  open:      'bg-[var(--color-error)]',
-  half_open: 'bg-[var(--color-warning)]',
-  closed:    'bg-[var(--color-success)]',
+  open:      'bg-error',
+  half_open: 'bg-warning',
+  closed:    'bg-success',
 };
 
 export const CircuitBreakerStatus: React.FC = () => {
   const [breakers, setBreakers] = useState<Record<string, CircuitBreakerState>>({});
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const checkStatus = async () => {
       try {
-        const res = await fetch('/api/health');
+        const res = await fetch('/api/health', { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
           setBreakers(data?.circuitBreakers || {});
         }
       } catch {
-        // Health check failed — leave breakers as-is
+        // Health check failed or aborted — leave breakers as-is
       }
     };
 
     checkStatus();
-    const interval = setInterval(checkStatus, 120000); // Poll every 120s as fallback
-    return () => clearInterval(interval);
+    const interval = setInterval(checkStatus, 120000);
+    return () => { controller.abort(); clearInterval(interval); };
   }, []);
 
   // Subscribe to circuit.open SSE events for immediate updates
@@ -74,12 +76,12 @@ export const CircuitBreakerStatus: React.FC = () => {
   const TRIP_THRESHOLD = 5; // failures before open
 
   return (
-    <div className="rounded-xl border border-[var(--color-error)]/30 bg-mission-control-surface overflow-hidden">
+    <div className="rounded-xl border border-error/30 bg-mission-control-surface overflow-hidden">
       {/* Header */}
-      <Flex align="center" gap="2" className="px-4 py-2.5 border-b border-[var(--color-error)]/20">
-        <ShieldAlert size={14} className="text-[var(--color-error)] flex-shrink-0" />
-        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-error)]">Circuit Breakers Tripped</span>
-        <span className="ml-auto text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded bg-[var(--color-error)]/10 text-[var(--color-error)]">
+      <Flex align="center" gap="2" className="px-4 py-2.5 border-b border-error/20">
+        <ShieldAlert size={14} className="text-error flex-shrink-0" />
+        <span className="text-[10px] font-bold uppercase tracking-wider text-error">Circuit Breakers Tripped</span>
+        <span className="ml-auto text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded bg-error/10 text-error">
           {tripped.length}
         </span>
       </Flex>
@@ -93,7 +95,7 @@ export const CircuitBreakerStatus: React.FC = () => {
           const labelStyle = STATE_COLOR[state.state];
           const dotStyle   = STATE_DOT[state.state];
           const failurePct = Math.min((state.consecutive_failures / TRIP_THRESHOLD) * 100, 100);
-          const barColor = state.state === 'open' ? 'bg-[var(--color-error)]' : 'bg-[var(--color-warning)]';
+          const barColor = state.state === 'open' ? 'bg-error' : 'bg-warning';
 
           return (
             <div
@@ -110,7 +112,7 @@ export const CircuitBreakerStatus: React.FC = () => {
                 {/* Failure count badge + state label */}
                 <Flex align="center" gap="2" className="flex-shrink-0">
                   {state.consecutive_failures > 0 && (
-                    <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded bg-[var(--color-error)]/10 text-[var(--color-error)]">
+                    <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded bg-error/10 text-error">
                       {state.consecutive_failures} fail{state.consecutive_failures !== 1 ? 's' : ''}
                     </span>
                   )}

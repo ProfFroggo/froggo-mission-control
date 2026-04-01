@@ -216,8 +216,8 @@ function highlightText(text: string, term: string): React.ReactNode {
         part.toLowerCase() === term.toLowerCase() ? (
           <mark
             key={i}
-            className="bg-[var(--color-warning)]/20 text-[var(--color-warning)] rounded-sm"
-            style={{ background: 'var(--color-warning, #f59e0b33)', color: 'var(--color-warning, #f59e0b)' }}
+            className="bg-warning/20 text-warning rounded-sm"
+            style={{ background: 'var(--color-warning)', color: 'var(--color-warning)' }}
           >
             {part}
           </mark>
@@ -428,7 +428,7 @@ function renderInline(text: string, allArticles: KBArticle[], onNavigate: (artic
           href={first.match[3]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[var(--color-info)] hover:underline"
+          className="text-info hover:underline"
         >
           {first.match[2]}
         </a>
@@ -900,7 +900,7 @@ export default function KnowledgeBase() {
               aria-label={isStarred ? 'Unstar article' : 'Star article'}
               className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
-              <Star size={14} fill={isStarred ? 'currentColor' : 'none'} className={isStarred ? 'text-[var(--color-warning)]' : ''} />
+              <Star size={14} fill={isStarred ? 'currentColor' : 'none'} className={isStarred ? 'text-warning' : ''} />
             </button>
             <button
               type="button"
@@ -928,7 +928,7 @@ export default function KnowledgeBase() {
                       href={l.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block text-sm text-[var(--color-info)] hover:underline mb-1"
+                      className="block text-sm text-info hover:underline mb-1"
                     >
                       {l.title || l.url}
                     </a>
@@ -1051,7 +1051,7 @@ export default function KnowledgeBase() {
               </Select.Content>
             </Select.Root>
             <label className="flex items-center gap-2 px-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text cursor-pointer select-none">
-              <Pin size={13} className={editing.pinned ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim'} />
+              <Pin size={13} className={editing.pinned ? 'text-warning' : 'text-mission-control-text-dim'} />
               <Checkbox
                 checked={!!editing.pinned}
                 onCheckedChange={v => setEditing(prev => ({ ...prev, pinned: !!v }))}
@@ -1123,7 +1123,7 @@ export default function KnowledgeBase() {
         <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-mission-control-border rounded-xl px-5 py-4 shadow-xl w-80">
           <Flex align="center" gap="2" mb="3">
             {ingestError ? (
-              <XCircle size={16} className="text-[var(--color-error)] shrink-0" />
+              <XCircle size={16} className="text-error shrink-0" />
             ) : (
               <RefreshCw size={16} className="text-mission-control-accent animate-spin shrink-0" />
             )}
@@ -1131,7 +1131,7 @@ export default function KnowledgeBase() {
           </Flex>
 
           {ingestError ? (
-            <p className="text-xs text-[var(--color-error)]">{ingestError}</p>
+            <p className="text-xs text-error">{ingestError}</p>
           ) : (
             <div className="space-y-2">
               {(['analyzing', 'rewriting', 'saving'] as const).map((step, i) => {
@@ -1144,7 +1144,7 @@ export default function KnowledgeBase() {
                 return (
                   <div key={step} className="flex items-center gap-2.5">
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      isDone ? 'bg-[var(--color-success)]' : isActive ? 'bg-mission-control-accent' : 'bg-mission-control-border'
+                      isDone ? 'bg-success' : isActive ? 'bg-mission-control-accent' : 'bg-mission-control-border'
                     }`}>
                       {isDone ? (
                         <Check size={11} className="text-white" />
@@ -1154,7 +1154,7 @@ export default function KnowledgeBase() {
                         <div className="w-2 h-2 bg-mission-control-text-dim/30 rounded-full" />
                       )}
                     </div>
-                    <span className={`text-xs ${isActive ? 'text-mission-control-text font-medium' : isDone ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim'}`}>
+                    <span className={`text-xs ${isActive ? 'text-mission-control-text font-medium' : isDone ? 'text-success' : 'text-mission-control-text-dim'}`}>
                       {labels[step]}
                     </span>
                   </div>
@@ -1167,9 +1167,9 @@ export default function KnowledgeBase() {
 
       {/* Ingest result toast */}
       {ingestResult && (
-        <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-[var(--color-success)]/30 rounded-lg px-4 py-3 shadow-lg max-w-sm">
+        <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-success/30 rounded-lg px-4 py-3 shadow-lg max-w-sm">
           <Flex align="start" gap="2">
-            <CheckCircle size={16} className="text-[var(--color-success)] mt-0.5 flex-shrink-0" />
+            <CheckCircle size={16} className="text-success mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-mission-control-text">{ingestResult.title}</p>
               <p className="text-xs text-mission-control-text-dim mt-0.5">Added to {ingestResult.category}</p>
@@ -1534,7 +1534,7 @@ function ArticleCard({
     >
       <Flex align="start" justify="between" gap="2" className="mb-2">
         <Flex align="center" gap="2" className="min-w-0">
-          {article.pinned && <Pin size={11} className="text-[var(--color-warning)] shrink-0" />}
+          {article.pinned && <Pin size={11} className="text-warning shrink-0" />}
           <span className="text-sm font-semibold text-mission-control-text truncate">
             {highlightText(article.title, searchTerm)}
           </span>
@@ -1544,7 +1544,7 @@ function ArticleCard({
             type="button"
             onClick={e => { e.stopPropagation(); onToggleStar(); }}
             aria-label={isStarred ? 'Unstar article' : 'Star article'}
-            className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors hover:bg-mission-control-border/40 ${isStarred ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors hover:bg-mission-control-border/40 ${isStarred ? 'text-warning' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
           >
             <Star size={12} fill={isStarred ? 'currentColor' : 'none'} />
           </button>
@@ -1592,7 +1592,7 @@ function ArticleCard({
           {article.category}
         </span>
         {isStarred && (
-          <span className="px-2 py-0.5 rounded-full text-[10px] bg-[var(--color-warning)]/10 text-[var(--color-warning)] flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-warning/10 text-warning flex items-center gap-1">
             <Star size={9} fill="currentColor" />
             Starred
           </span>

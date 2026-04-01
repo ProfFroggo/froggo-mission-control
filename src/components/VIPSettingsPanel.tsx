@@ -27,11 +27,11 @@ interface VipSender {
 }
 
 const CATEGORY_OPTIONS = [
-  { value: 'boss', label: 'Boss', icon: <ShoppingBag size={12} />, color: 'text-[var(--color-review)]' },
-  { value: 'client', label: 'Client', icon: <Briefcase size={12} />, color: 'text-[var(--color-info)]' },
-  { value: 'stakeholder', label: 'Stakeholder', icon: <Target size={12} />, color: 'text-[var(--color-warning)]' },
-  { value: 'team', label: 'Team', icon: <Users size={12} />, color: 'text-[var(--color-success)]' },
-  { value: 'family', label: 'Family', icon: <Heart size={12} />, color: 'text-[var(--color-error)]' },
+  { value: 'boss', label: 'Boss', icon: <ShoppingBag size={12} />, color: 'text-review' },
+  { value: 'client', label: 'Client', icon: <Briefcase size={12} />, color: 'text-info' },
+  { value: 'stakeholder', label: 'Stakeholder', icon: <Target size={12} />, color: 'text-warning' },
+  { value: 'team', label: 'Team', icon: <Users size={12} />, color: 'text-success' },
+  { value: 'family', label: 'Family', icon: <Heart size={12} />, color: 'text-error' },
 ];
 
 const TYPE_OPTIONS = [
@@ -195,7 +195,7 @@ export default function VIPSettingsPanel() {
       <Flex align="center" justify="between" className="px-6 py-4 border-b border-mission-control-border/50">
         <div>
           <h2 className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
-            <Star className="text-[var(--color-warning)]" size={16} />
+            <Star className="text-warning" size={16} />
             VIP Senders
           </h2>
           <p className="text-xs text-mission-control-text-dim mt-0.5">
@@ -342,13 +342,13 @@ export default function VIPSettingsPanel() {
                   <div>
                     <Flex align="start" justify="between" className="mb-2">
                       <Flex align="center" gap="2">
-                        <Star className="text-[var(--color-warning)]" size={20} />
+                        <Star className="text-warning" size={20} />
                         <span className="text-lg font-semibold text-mission-control-text">{vip.label}</span>
                         <span className={`text-sm inline-flex items-center gap-1 ${catInfo.color}`}>
                           {catInfo.icon} {catInfo.label}
                         </span>
                         {vip.auto_detected === 1 && (
-                          <span className="text-xs px-2 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded inline-flex items-center gap-1">
+                          <span className="text-xs px-2 py-0.5 bg-info/10 text-info rounded inline-flex items-center gap-1">
                             <Bot size={10} /> Auto
                           </span>
                         )}
@@ -366,7 +366,7 @@ export default function VIPSettingsPanel() {
                           type="button"
                           onClick={() => handleRemove(vip.id, vip.label)}
                           title="Remove"
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -375,11 +375,11 @@ export default function VIPSettingsPanel() {
 
                     <div className="space-y-1 text-sm">
                       <Flex align="center" gap="2" className="text-mission-control-text-dim">
-                        <span className="font-mono text-[var(--color-info)]">{vip.identifier}</span>
+                        <span className="font-mono text-info">{vip.identifier}</span>
                         <span className="text-mission-control-text-dim">({vip.identifier_type})</span>
                       </Flex>
                       <div className="text-mission-control-text-dim">
-                        Priority boost: <span className="text-[var(--color-warning)] font-semibold">+{vip.priority_boost}</span>
+                        Priority boost: <span className="text-warning font-semibold">+{vip.priority_boost}</span>
                       </div>
                       {vip.notes && (
                         <div className="text-mission-control-text-dim italic">{vip.notes}</div>
@@ -418,7 +418,7 @@ export default function VIPSettingsPanel() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="vip-identifier" className="block text-sm text-mission-control-text-dim mb-1">
-                  Identifier <span className="text-[var(--color-error)]">*</span>
+                  Identifier <span className="text-error">*</span>
                 </label>
                 <TextField.Root
                   id="vip-identifier"
@@ -448,7 +448,7 @@ export default function VIPSettingsPanel() {
 
               <div>
                 <label htmlFor="vip-label-add" className="block text-sm text-mission-control-text-dim mb-1">
-                  Label <span className="text-[var(--color-error)]">*</span>
+                  Label <span className="text-error">*</span>
                 </label>
                 <TextField.Root
                   id="vip-label-add"

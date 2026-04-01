@@ -80,8 +80,8 @@ function buildGraph(modules: CatalogModule[]): { nodes: NodeData[]; edges: EdgeD
 
 function nodeColor(status: NodeData['status']): string {
   if (status === 'installed') return 'var(--color-success)';
-  if (status === 'missing')   return 'var(--color-error, #f87171)';
-  return 'var(--mission-control-text-dim, #6b7280)';
+  if (status === 'missing')   return 'var(--color-error)';
+  return 'var(--mission-control-text-dim)';
 }
 
 function nodeBg(status: NodeData['status']): string {
@@ -134,7 +134,7 @@ export default function ModuleDependencyGraph({ modules }: ModuleDependencyGraph
   return (
     <div
       className="rounded-lg border border-mission-control-border overflow-hidden"
-      style={{ background: 'var(--mission-control-bg, #0f1012)' }}
+      style={{ background: 'var(--mission-control-bg)' }}
     >
       {/* Legend */}
       <Flex align="center" gap="5" className="px-4 py-2.5 border-b border-mission-control-border text-xs text-mission-control-text-dim">

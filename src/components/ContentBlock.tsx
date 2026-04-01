@@ -43,7 +43,7 @@ const ContentBlock = React.memo(function ContentBlock({ block, index: _index, st
             size={14}
             className={`transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
           />
-          <Zap size={14} className="text-[var(--color-info)] flex-shrink-0" />
+          <Zap size={14} className="text-info flex-shrink-0" />
           <span className="text-xs font-medium text-mission-control-text-dim">
             Thinking...
           </span>
@@ -53,7 +53,7 @@ const ContentBlock = React.memo(function ContentBlock({ block, index: _index, st
             </span>
           )}
           {streaming ? (
-            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--color-info)] animate-pulse flex-shrink-0" />
+            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-info animate-pulse flex-shrink-0" />
           ) : (
             <span className="ml-auto text-[10px] text-mission-control-text-dim/60 flex-shrink-0">
               {block.text?.length || 0} chars
@@ -85,8 +85,8 @@ const ContentBlock = React.memo(function ContentBlock({ block, index: _index, st
             size={14}
             className={`transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
           />
-          <Code size={14} className="text-[var(--color-warning)] flex-shrink-0" />
-          <span className="text-xs font-medium text-[var(--color-warning)]">
+          <Code size={14} className="text-warning flex-shrink-0" />
+          <span className="text-xs font-medium text-warning">
             {block.name || 'tool'}
           </span>
           {!isExpanded && inputPreview && (
@@ -95,8 +95,8 @@ const ContentBlock = React.memo(function ContentBlock({ block, index: _index, st
             </span>
           )}
           {streaming ? (
-            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-[var(--color-info)] bg-[var(--color-info)]/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
-              <span className="w-1 h-1 rounded-full bg-[var(--color-info)] animate-pulse flex-shrink-0" />
+            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-info bg-info/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+              <span className="w-1 h-1 rounded-full bg-info animate-pulse flex-shrink-0" />
               Running...
             </span>
           ) : (
@@ -127,7 +127,7 @@ const ContentBlock = React.memo(function ContentBlock({ block, index: _index, st
     const accentClass = isError
       ? 'border-l-[var(--color-error)]'
       : 'border-l-[var(--color-success)]';
-    const iconColorClass = isError ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]';
+    const iconColorClass = isError ? 'text-error' : 'text-success';
     const textPreview = !isExpanded && block.text
       ? block.text.slice(0, PREVIEW_LENGTH)
       : '';

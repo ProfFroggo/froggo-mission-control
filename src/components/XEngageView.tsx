@@ -206,8 +206,8 @@ function isLikelySpam(text: string, username: string, followers?: number): boole
 }
 
 function sentimentBadgeClasses(s: 'positive' | 'negative' | 'neutral'): string {
-  if (s === 'positive') return 'bg-[var(--color-success)]/10 text-[var(--color-success)]';
-  if (s === 'negative') return 'bg-[var(--color-error)]/10 text-[var(--color-error)]';
+  if (s === 'positive') return 'bg-success/10 text-success';
+  if (s === 'negative') return 'bg-error/10 text-error';
   return 'bg-mission-control-border/50 text-mission-control-text-dim';
 }
 
@@ -852,9 +852,9 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
     const judgment = mentionMeta.ai_judgment;
 
     const sentimentDot = mention.sentiment === 'positive'
-      ? 'bg-[var(--color-success)]'
+      ? 'bg-success'
       : mention.sentiment === 'negative'
-      ? 'bg-[var(--color-error)]'
+      ? 'bg-error'
       : 'bg-mission-control-border';
 
     return (
@@ -864,7 +864,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
       >
         {/* Row 1: Author + badges + date */}
         <Flex align="center" gap="2" className="mb-1.5">
-          {isPriority && <Star size={11} className="text-[var(--color-warning)] flex-shrink-0" />}
+          {isPriority && <Star size={11} className="text-warning flex-shrink-0" />}
           {/* Sentiment dot */}
           <span
             title={`Sentiment: ${mention.sentiment}`}
@@ -873,24 +873,24 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           <span className="text-sm font-semibold text-mission-control-text">@{mention.author_username}</span>
           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
             mention.mention_type === 'reply'
-              ? mention.is_reply_to_us ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
-              : mention.mention_type === 'quote' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
+              ? mention.is_reply_to_us ? 'bg-success/10 text-success' : 'bg-info/10 text-info'
+              : mention.mention_type === 'quote' ? 'bg-warning/10 text-warning'
               : 'bg-mission-control-border/50 text-mission-control-text-dim'
           }`}>
             {mention.mention_type === 'reply' ? (mention.is_reply_to_us ? 'Reply' : 'Tagged') : mention.mention_type === 'quote' ? 'Quote' : 'Mention'}
           </span>
           {mention.author_followers != null && <span className="text-xs text-mission-control-text-dim">{mention.author_followers.toLocaleString()}</span>}
           {judgment?.confidence != null && (
-            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${judgment.confidence >= 0.8 ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'}`}>
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${judgment.confidence >= 0.8 ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
               {Math.round(judgment.confidence * 100)}%
             </span>
           )}
-          {judgment?.safety_flags?.length > 0 && <span className="text-xs text-[var(--color-error)]">flagged</span>}
-          {lang && lang !== 'en' && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]">{lang.toUpperCase()}</span>}
+          {judgment?.safety_flags?.length > 0 && <span className="text-xs text-error">flagged</span>}
+          {lang && lang !== 'en' && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info">{lang.toUpperCase()}</span>}
           <span className="ml-auto text-mission-control-text-dim">
             {new Date(mention.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
-          <a href={`https://twitter.com/${mention.author_username}/status/${mention.tweet_id}`} target="_blank" rel="noopener noreferrer" className="text-[var(--color-info)] hover:underline">X</a>
+          <a href={`https://twitter.com/${mention.author_username}/status/${mention.tweet_id}`} target="_blank" rel="noopener noreferrer" className="text-info hover:underline">X</a>
         </Flex>
 
         {/* Parent context (compact) */}
@@ -911,17 +911,17 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           <span className="inline-flex items-center gap-1 text-[10px] text-mission-control-text-dim tabular-nums"><Repeat2 size={10} /> {mention.retweet_count}</span>
           <span className="inline-flex items-center gap-1 text-[10px] text-mission-control-text-dim tabular-nums"><MessageCircle size={10} /> {mention.reply_count}</span>
           {mention.reply_status === 'replied' && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--color-success)]"><CheckCircle size={10} /> Replied</span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success"><CheckCircle size={10} /> Replied</span>
           )}
           {pendingReplies[mention.id] && mention.reply_status !== 'replied' && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--color-info)]"><Clock size={10} /> Reply queued</span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-info"><Clock size={10} /> Reply queued</span>
           )}
         </Flex>
 
         {/* Show sent reply when replied */}
         {(mention.reply_status === 'replied' || pendingReplies[mention.id]?.status === 'sent') && pendingReplies[mention.id] && (
-          <div className="mb-2 px-2.5 py-1.5 text-xs rounded-lg border border-[var(--color-success)] bg-[var(--color-success)]/10/30 text-mission-control-text">
-            <span className="text-[var(--color-success)] font-medium mr-1.5">Your reply:</span>
+          <div className="mb-2 px-2.5 py-1.5 text-xs rounded-lg border border-success bg-success/10/30 text-mission-control-text">
+            <span className="text-success font-medium mr-1.5">Your reply:</span>
             {pendingReplies[mention.id].text}
           </div>
         )}
@@ -947,8 +947,8 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                       onClick={() => { setSelectedMention(mention.id); setReplyText(reply); }}
                       className={`flex items-center w-full rounded-lg border transition-colors cursor-pointer ${
                         isActive
-                          ? 'border-[var(--color-info)] bg-[var(--color-info)]/10/50'
-                          : 'border-mission-control-border bg-mission-control-bg hover:border-[var(--color-info)]/50'
+                          ? 'border-info bg-info/10/50'
+                          : 'border-mission-control-border bg-mission-control-bg hover:border-info/50'
                       }`}
                     >
                       <div className="flex-1 min-w-0">
@@ -964,7 +964,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                           />
                         ) : (
                           <div className="px-2.5 py-1.5 text-xs">
-                            {isRec && !isSelected && <span className="text-xs font-bold px-1 py-0.5 rounded bg-[var(--color-info)] text-[var(--color-info)] mr-1.5">BEST</span>}
+                            {isRec && !isSelected && <span className="text-xs font-bold px-1 py-0.5 rounded bg-info text-info mr-1.5">BEST</span>}
                             <span className="text-mission-control-text">{reply}</span>
                             {replyEng && lang !== 'en' && <span className="block text-xs text-mission-control-text-dim italic mt-0.5">EN: {replyEng}</span>}
                           </div>
@@ -1090,7 +1090,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
       <div className="px-4 py-3 border-b border-mission-control-border flex-shrink-0">
         <Flex align="center" justify="between" className="mb-3">
           <Flex align="center" gap="2">
-            <Inbox size={20} className="text-[var(--color-info)]" />
+            <Inbox size={20} className="text-info" />
             <div className="text-lg font-semibold text-mission-control-text">Engagement Inbox</div>
           </Flex>
           <Flex align="center" gap="2">
@@ -1123,8 +1123,8 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           <Flex align="center" gap="4">
             <span className="whitespace-nowrap">Total: <span className="text-mission-control-text font-medium">{engageStats.total}</span></span>
             <span className="whitespace-nowrap">Pending: <span className="text-mission-control-text font-medium">{engageStats.pendingNoApproval}</span></span>
-            <span className="whitespace-nowrap">Queued: <span className="text-[var(--color-info)] font-medium">{engageStats.queued}</span></span>
-            <span className="whitespace-nowrap">Replied: <span className="text-[var(--color-success)] font-medium">{engageStats.replied}</span></span>
+            <span className="whitespace-nowrap">Queued: <span className="text-info font-medium">{engageStats.queued}</span></span>
+            <span className="whitespace-nowrap">Replied: <span className="text-success font-medium">{engageStats.replied}</span></span>
           </Flex>
           <Flex align="center" gap="2">
             {counts['archive'] > 0 && (
@@ -1293,7 +1293,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
             onClick={() => setShowPriorityPanel(v => !v)}
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
-            <Star size={12} className="text-[var(--color-warning)]" />
+            <Star size={12} className="text-warning" />
             Priority accounts
             {priorityAccounts.length > 0 && (
               <Badge color="amber" variant="soft" radius="full" size="1">
@@ -1331,7 +1331,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                   {priorityAccounts.map(h => (
                     <span
                       key={h}
-                      className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border bg-[var(--color-warning)]/10 text-[var(--color-warning)]"
+                      className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border bg-warning/10 text-warning"
                     >
                       @{h}
                       <button type="button" onClick={() => handleRemovePriority(h)} aria-label={`Remove @${h}`} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
@@ -1352,7 +1352,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
             onClick={() => setShowIgnoredPanel(v => !v)}
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
-            <UserX size={12} className="text-[var(--color-error)]" />
+            <UserX size={12} className="text-error" />
             Ignored accounts
             {ignoredAccounts.length > 0 && (
               <Badge color="red" variant="soft" radius="full" size="1">
@@ -1390,7 +1390,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                   {ignoredAccounts.map(h => (
                     <span
                       key={h}
-                      className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border bg-[var(--color-error)]/10 text-[var(--color-error)]"
+                      className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border bg-error/10 text-error"
                     >
                       @{h}
                       <button type="button" onClick={() => handleRemoveIgnored(h)} aria-label={`Unignore @${h}`} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">

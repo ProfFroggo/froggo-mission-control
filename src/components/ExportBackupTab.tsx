@@ -382,8 +382,8 @@ export default function ExportBackupTab() {
             </Flex>
 
             {autoBackupEnabled && (
-              <div className="bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg p-4">
-                <div className="text-sm text-[var(--color-info)]">
+              <div className="bg-info/10 border border-info/30 rounded-lg p-4">
+                <div className="text-sm text-info">
                   Auto-backup will run daily at 3:00 AM. Backups are created via mission-control cron system.
                 </div>
               </div>
@@ -462,7 +462,7 @@ export default function ExportBackupTab() {
                       <span>{formatDate(backup.created)}</span>
                       <span>{formatBytes(backup.size)}</span>
                       {backup.metadata?.includesAttachments && (
-                        <span className="px-1.5 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded">
+                        <span className="px-1.5 py-0.5 bg-info/10 text-info rounded">
                           + Attachments
                         </span>
                       )}
@@ -470,7 +470,7 @@ export default function ExportBackupTab() {
                   </div>
                   <Flex align="center" gap="2" className="flex-shrink-0">
                     {idx === 0 && (
-                      <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full">
+                      <span className="text-xs px-2 py-0.5 bg-success/10 text-success rounded-full">
                         Latest
                       </span>
                     )}
@@ -493,27 +493,27 @@ export default function ExportBackupTab() {
       </section>
 
       {/* Danger Zone */}
-      <section className="bg-[var(--color-error)]/5 border border-[var(--color-error)]/20 rounded-xl p-4">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-error)] mb-3">
+      <section className="bg-error/5 border border-error/20 rounded-xl p-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-error mb-3">
           Danger Zone
         </p>
         <div className="space-y-3 text-sm">
           <Flex align="start" gap="2.5">
-            <CheckCircle size={14} className="text-[var(--color-success)] flex-shrink-0 mt-0.5" />
+            <CheckCircle size={14} className="text-success flex-shrink-0 mt-0.5" />
             <div className="text-mission-control-text-dim">
               <span className="font-medium text-mission-control-text">Safe backup:</span>{' '}
               A backup of your current database is automatically created before any restore operation
             </div>
           </Flex>
           <Flex align="start" gap="2.5">
-            <AlertTriangle size={14} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
+            <AlertTriangle size={14} className="text-warning flex-shrink-0 mt-0.5" />
             <div className="text-mission-control-text-dim">
               <span className="font-medium text-mission-control-text">Test restores:</span>{' '}
               Always verify backups can be restored in a test environment first
             </div>
           </Flex>
           <Flex align="start" gap="2.5">
-            <AlertTriangle size={14} className="text-[var(--color-error)] flex-shrink-0 mt-0.5" />
+            <AlertTriangle size={14} className="text-error flex-shrink-0 mt-0.5" />
             <div className="text-mission-control-text-dim">
               <span className="font-medium text-mission-control-text">Data loss risk:</span>{' '}
               Restoring a backup will replace ALL current data with the backup&apos;s contents

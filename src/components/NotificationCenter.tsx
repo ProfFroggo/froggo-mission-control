@@ -39,11 +39,11 @@ function relativeTime(iso: string): string {
 function TypeIcon({ type }: { type: string }) {
   const cls = 'w-4 h-4 flex-shrink-0';
   switch (type) {
-    case 'task_assigned':   return <CheckSquare className={cls + ' text-[var(--color-info)]'} aria-hidden="true" />;
-    case 'task_completed':  return <CheckCheck className={cls + ' text-[var(--color-success)]'} aria-hidden="true" />;
-    case 'approval_needed': return <ShieldAlert className={cls + ' text-[var(--color-warning)]'} aria-hidden="true" />;
-    case 'approval_resolved': return <ShieldCheck className={cls + ' text-[var(--color-success)]'} aria-hidden="true" />;
-    case 'agent_alert':     return <AlertCircle className={cls + ' text-[var(--color-error)]'} aria-hidden="true" />;
+    case 'task_assigned':   return <CheckSquare className={cls + ' text-info'} aria-hidden="true" />;
+    case 'task_completed':  return <CheckCheck className={cls + ' text-success'} aria-hidden="true" />;
+    case 'approval_needed': return <ShieldAlert className={cls + ' text-warning'} aria-hidden="true" />;
+    case 'approval_resolved': return <ShieldCheck className={cls + ' text-success'} aria-hidden="true" />;
+    case 'agent_alert':     return <AlertCircle className={cls + ' text-error'} aria-hidden="true" />;
     case 'mention':         return <AtSign className={cls + ' text-mission-control-accent'} aria-hidden="true" />;
     default:                return <Info className={cls + ' text-mission-control-text-dim'} aria-hidden="true" />;
   }

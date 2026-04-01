@@ -49,30 +49,30 @@ function DriveFileIcon({ kind, isFolder, open }: { kind: string; isFolder: boole
   const cls = 'flex-shrink-0';
   if (isFolder) {
     return open
-      ? <FolderOpen size={16} className={`text-[var(--color-warning)] ${cls}`} />
-      : <Folder size={16} className={`text-[var(--color-warning)] ${cls}`} />;
+      ? <FolderOpen size={16} className={`text-warning ${cls}`} />
+      : <Folder size={16} className={`text-warning ${cls}`} />;
   }
   switch (kind) {
-    case 'doc':    return <FileText size={14} className={`text-[var(--color-info)] ${cls}`} />;
-    case 'sheet':  return <FileSpreadsheet size={14} className={`text-[var(--color-success)] ${cls}`} />;
-    case 'slides': return <Presentation size={14} className={`text-[var(--color-review)] ${cls}`} />;
+    case 'doc':    return <FileText size={14} className={`text-info ${cls}`} />;
+    case 'sheet':  return <FileSpreadsheet size={14} className={`text-success ${cls}`} />;
+    case 'slides': return <Presentation size={14} className={`text-review ${cls}`} />;
     case 'image':  return <Image size={14} className={`text-pink-400 ${cls}`} />;
     case 'video':  return <Film size={14} className={`text-purple-400 ${cls}`} />;
-    case 'pdf':    return <FileText size={14} className={`text-[var(--color-error)] ${cls}`} />;
+    case 'pdf':    return <FileText size={14} className={`text-error ${cls}`} />;
     default:       return <File size={14} className={`text-mission-control-text-dim ${cls}`} />;
   }
 }
 
 function DriveIconBox({ kind, isFolder }: { kind: string; isFolder: boolean }) {
   const baseClass = 'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0';
-  if (isFolder) return <div className={`${baseClass} bg-[var(--color-warning)]/10`}><Folder size={16} className="text-[var(--color-warning)]" /></div>;
+  if (isFolder) return <div className={`${baseClass} bg-warning/10`}><Folder size={16} className="text-warning" /></div>;
   switch (kind) {
-    case 'doc':    return <div className={`${baseClass} bg-[var(--color-info)]/10`}><FileText size={14} className="text-[var(--color-info)]" /></div>;
-    case 'sheet':  return <div className={`${baseClass} bg-[var(--color-success)]/10`}><FileSpreadsheet size={14} className="text-[var(--color-success)]" /></div>;
-    case 'slides': return <div className={`${baseClass} bg-[var(--color-review)]/10`}><Presentation size={14} className="text-[var(--color-review)]" /></div>;
+    case 'doc':    return <div className={`${baseClass} bg-info/10`}><FileText size={14} className="text-info" /></div>;
+    case 'sheet':  return <div className={`${baseClass} bg-success/10`}><FileSpreadsheet size={14} className="text-success" /></div>;
+    case 'slides': return <div className={`${baseClass} bg-review/10`}><Presentation size={14} className="text-review" /></div>;
     case 'image':  return <div className={`${baseClass} bg-pink-500/10`}><Image size={14} className="text-pink-400" /></div>;
     case 'video':  return <div className={`${baseClass} bg-purple-500/10`}><Film size={14} className="text-purple-400" /></div>;
-    case 'pdf':    return <div className={`${baseClass} bg-[var(--color-error)]/10`}><FileText size={14} className="text-[var(--color-error)]" /></div>;
+    case 'pdf':    return <div className={`${baseClass} bg-error/10`}><FileText size={14} className="text-error" /></div>;
     default:       return <div className={`${baseClass} bg-mission-control-border/40`}><File size={14} className="text-mission-control-text-dim" /></div>;
   }
 }
@@ -140,8 +140,8 @@ export default function LibraryDriveTab() {
   if (needsAuth) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-4 p-8">
-        <div className="p-3 bg-[var(--color-warning)]/10 rounded-full">
-          <AlertCircle size={24} className="text-[var(--color-warning)]" />
+        <div className="p-3 bg-warning/10 rounded-full">
+          <AlertCircle size={24} className="text-warning" />
         </div>
         <div className="text-center">
           <p className="font-medium text-mission-control-text">Google Drive not connected</p>
@@ -208,9 +208,9 @@ export default function LibraryDriveTab() {
           <SkeletonList count={6} />
         ) : error ? (
           <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-            <AlertCircle size={24} className="text-[var(--color-error)]" />
+            <AlertCircle size={24} className="text-error" />
             <p className="text-sm text-mission-control-text-dim">{error}</p>
-            <button onClick={() => loadFiles(currentFolderId)} className="text-xs text-mission-control-accent hover:underline">Try again</button>
+            <button type="button" onClick={() => loadFiles(currentFolderId)} className="text-xs text-mission-control-accent hover:underline">Try again</button>
           </div>
         ) : files.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-mission-control-text-dim">

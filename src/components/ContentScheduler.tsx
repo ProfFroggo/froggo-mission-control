@@ -43,13 +43,13 @@ interface ScheduledItem {
 
 // ── Color coding per item type ───────────────────────────────────────────────
 const typeStyles: Record<string, { border: string; badge: string; label: string }> = {
-  post:    { border: 'border-[var(--color-info)]',    badge: 'bg-[var(--color-info)]/10 text-[var(--color-info)]',       label: 'Post' },
-  tweet:   { border: 'border-[var(--color-info)]',    badge: 'bg-[var(--color-info)]/10 text-[var(--color-info)]',       label: 'Post' },
-  task:    { border: 'border-[var(--color-warning)]', badge: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]', label: 'Task' },
-  meeting: { border: 'border-[var(--color-review)]',  badge: 'bg-[var(--color-review)]-subtle text-[var(--color-review)]',   label: 'Meeting' },
-  event:   { border: 'border-[var(--color-review)]',  badge: 'bg-[var(--color-review)]-subtle text-[var(--color-review)]',   label: 'Event' },
-  idea:    { border: 'border-[var(--color-success)]', badge: 'bg-[var(--color-success)]/10 text-[var(--color-success)]', label: 'Idea' },
-  email:   { border: 'border-[var(--color-success)]', badge: 'bg-[var(--color-success)]/10 text-[var(--color-success)]', label: 'Email' },
+  post:    { border: 'border-info',    badge: 'bg-info/10 text-info',       label: 'Post' },
+  tweet:   { border: 'border-info',    badge: 'bg-info/10 text-info',       label: 'Post' },
+  task:    { border: 'border-warning', badge: 'bg-warning/10 text-warning', label: 'Task' },
+  meeting: { border: 'border-review',  badge: 'bg-review-subtle text-review',   label: 'Meeting' },
+  event:   { border: 'border-review',  badge: 'bg-review-subtle text-review',   label: 'Event' },
+  idea:    { border: 'border-success', badge: 'bg-success/10 text-success', label: 'Idea' },
+  email:   { border: 'border-success', badge: 'bg-success/10 text-success', label: 'Email' },
   message: { border: 'border-muted',   badge: 'bg-muted-subtle text-muted',     label: 'Message' },
 };
 
@@ -72,8 +72,8 @@ function getTypeIcon(type: string): AnyIcon {
 const typeIconColor: Record<string, string> = {
   tweet:   'text-mission-control-text bg-mission-control-text/10',
   post:    'text-mission-control-text bg-mission-control-text/10',
-  email:   'text-[var(--color-success)] bg-[var(--color-success)]/10',
-  message: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle',
+  email:   'text-success bg-success/10',
+  message: 'text-review bg-review-subtle',
 };
 function getTypeIconColor(type: string) {
   return typeIconColor[type] ?? 'text-mission-control-text-dim bg-mission-control-border/30';
@@ -243,7 +243,12 @@ export default function ContentScheduler() {
       showToast('error', 'Missing fields', 'Please fill in all required fields');
       return;
     }
-    const scheduledFor = new Date(`${formDate}T${formTime}`).toISOString();
+    const parsedDate = new Date(`${formDate}T${formTime}`);
+    if (isNaN(parsedDate.getTime())) {
+      showToast('error', 'Invalid date', 'Please enter a valid date and time');
+      return;
+    }
+    const scheduledFor = parsedDate.toISOString();
     const payload = {
       type: formType,
       content: formContent,
@@ -452,9 +457,9 @@ export default function ContentScheduler() {
                 {style.label}
               </span>
               <span className={`text-xs px-2 py-0.5 rounded ${
-                item.status === 'pending' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
-                item.status === 'sent'    ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-                item.status === 'failed'  ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]'     :
+                item.status === 'pending' ? 'bg-warning/10 text-warning' :
+                item.status === 'sent'    ? 'bg-success/10 text-success' :
+                item.status === 'failed'  ? 'bg-error/10 text-error'     :
                 'bg-muted-subtle text-muted'
               }`}>
                 {item.status}
@@ -686,7 +691,7 @@ export default function ContentScheduler() {
                 <h1 className="text-lg font-semibold">Schedule Queue</h1>
                 {/* Items-this-week badge */}
                 {thisWeekItems.length > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 font-medium tabular-nums">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-info/10 text-info border border-info/30 font-medium tabular-nums">
                     {thisWeekItems.length} this week
                   </span>
                 )}
@@ -900,7 +905,7 @@ export default function ContentScheduler() {
                   </button>
                 </Flex>
               )}
-              {uploadError && <div className="text-xs text-[var(--color-error)] bg-[var(--color-error)]/10 px-2 py-1 rounded">{uploadError}</div>}
+              {uploadError && <div className="text-xs text-error bg-error/10 px-2 py-1 rounded">{uploadError}</div>}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -970,10 +975,10 @@ export default function ContentScheduler() {
                       {todayItems.length > 0 && (
                         <section className="mb-4">
                           <Flex align="center" gap="2" className="mb-2 px-1">
-                            <span className="text-[10px] font-bold text-[var(--color-info)] uppercase tracking-wide">Today</span>
-                            <span className="flex-1 h-px bg-[var(--color-info)]/20" />
+                            <span className="text-[10px] font-bold text-info uppercase tracking-wide">Today</span>
+                            <span className="flex-1 h-px bg-info/20" />
                           </Flex>
-                          <div className="rounded-xl p-3 bg-[var(--color-info)]/5 border border-[var(--color-info)]/20 space-y-2">
+                          <div className="rounded-xl p-3 bg-info/5 border border-info/20 space-y-2">
                             {todayItems.map((item) => renderItemCard(item))}
                           </div>
                         </section>

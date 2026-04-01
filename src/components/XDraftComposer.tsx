@@ -76,9 +76,9 @@ export default function XDraftComposer() {
   const isNearLimit = (text: string) => getCharCount(text) >= Math.floor(TWEET_CHAR_LIMIT * 0.8) && !isOverLimit(text);
   const isCriticalLimit = (text: string) => getCharCount(text) >= Math.floor(TWEET_CHAR_LIMIT * 0.95) && !isOverLimit(text);
   const getCharCountClass = (text: string) => {
-    if (isOverLimit(text)) return 'text-[var(--color-error)] font-semibold';
-    if (isCriticalLimit(text)) return 'text-[var(--color-error)]';
-    if (isNearLimit(text)) return 'text-[var(--color-warning)]';
+    if (isOverLimit(text)) return 'text-error font-semibold';
+    if (isCriticalLimit(text)) return 'text-error';
+    if (isNearLimit(text)) return 'text-warning';
     return 'text-mission-control-text-dim';
   };
 
@@ -197,7 +197,7 @@ export default function XDraftComposer() {
       <div className="mb-6">
         <Flex align="center" justify="between" className="mb-2">
           <Flex align="center" gap="2">
-            <FileText className="w-5 h-5 text-[var(--color-info)]" />
+            <FileText className="w-5 h-5 text-info" />
             <h3 className="text-lg font-semibold text-mission-control-text">Create Draft</h3>
           </Flex>
             <Button
@@ -252,7 +252,7 @@ export default function XDraftComposer() {
             {/* Version Selector */}
               <div>
                 <span className="block text-sm font-medium text-mission-control-text mb-2">
-                  Version <span className="text-[var(--color-error)]">*</span>
+                  Version <span className="text-error">*</span>
                 </span>
                 <Flex gap="2" role="radiogroup" aria-label="Version selection">
                   {['A', 'B', 'C'].map((v) => (
@@ -274,7 +274,7 @@ export default function XDraftComposer() {
               <div>
                 <Flex align="center" justify="between" className="mb-3">
                   <label htmlFor="tweet-content" className="text-sm font-medium text-mission-control-text">
-                    Tweets <span className="text-[var(--color-error)]">*</span>
+                    Tweets <span className="text-error">*</span>
                   </label>
                   {tweets.length < 10 && (
                     <button
@@ -346,7 +346,7 @@ export default function XDraftComposer() {
                           </Flex>
                           <p className="text-mission-control-text whitespace-pre-wrap break-words">{tweet}</p>
                           {index < tweets.filter(t => t.trim()).length - 1 && (
-                            <div className="mt-2 text-[var(--color-info)] text-sm">
+                            <div className="mt-2 text-info text-sm">
                               Show this thread
                             </div>
                           )}

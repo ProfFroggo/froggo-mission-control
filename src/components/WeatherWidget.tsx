@@ -70,9 +70,9 @@ export default function WeatherWidget() {
 
   const getWeatherColor = (description: string) => {
     const desc = description.toLowerCase();
-    if (desc.includes('rain') || desc.includes('shower')) return 'text-[var(--color-info)]';
+    if (desc.includes('rain') || desc.includes('shower')) return 'text-info';
     if (desc.includes('snow') || desc.includes('sleet')) return 'text-cyan-300';
-    if (desc.includes('clear') || desc.includes('sunny')) return 'text-[var(--color-warning)]';
+    if (desc.includes('clear') || desc.includes('sunny')) return 'text-warning';
     if (desc.includes('cloud') || desc.includes('overcast')) return 'text-mission-control-text-dim';
     return 'text-mission-control-text-dim';
   };
@@ -114,7 +114,7 @@ export default function WeatherWidget() {
           />
         ) : error ? (
           <Box className="text-center py-6 text-mission-control-text-dim">
-            <AlertCircle size={32} className="mx-auto mb-2 text-[var(--color-error)]" />
+            <AlertCircle size={32} className="mx-auto mb-2 text-error" />
             <p className="text-sm">{error}</p>
             <button type="button" onClick={fetchWeather} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors mt-2">
               Try again
@@ -134,14 +134,14 @@ export default function WeatherWidget() {
             {/* Today's High/Low */}
             <Flex align="center" gap="4" pt="4" className="border-t border-mission-control-border">
               <Flex align="center" gap="2" className="flex-1">
-                <ArrowUp size={16} className="text-[var(--color-error)]" />
+                <ArrowUp size={16} className="text-error" />
                 <Box>
                   <div className="text-xs text-mission-control-text-dim">High</div>
                   <div className="text-lg font-semibold">{today.maxtempC}°</div>
                 </Box>
               </Flex>
               <Flex align="center" gap="2" className="flex-1">
-                <ArrowDown size={16} className="text-[var(--color-info)]" />
+                <ArrowDown size={16} className="text-info" />
                 <Box>
                   <div className="text-xs text-mission-control-text-dim">Low</div>
                   <div className="text-lg font-semibold">{today.mintempC}°</div>
@@ -152,7 +152,7 @@ export default function WeatherWidget() {
             {/* Additional Details */}
             <Flex align="center" gap="4" pt="3" className="border-t border-mission-control-border/50">
               <Flex align="center" gap="2" className="text-sm">
-                <Droplets size={14} className="text-[var(--color-info)]" />
+                <Droplets size={14} className="text-info" />
                 <span className="text-mission-control-text-dim">{current.humidity}%</span>
               </Flex>
               <Flex align="center" gap="2" className="text-sm">
@@ -196,9 +196,9 @@ export default function WeatherWidget() {
                             {avgCondition}
                           </span>
                           <Flex align="center" gap="2" className="text-sm">
-                            <span className="text-[var(--color-error)]/80">{day.maxtempC}°</span>
+                            <span className="text-error/80">{day.maxtempC}°</span>
                             <span className="text-mission-control-text-dim">/</span>
-                            <span className="text-[var(--color-info)]/80">{day.mintempC}°</span>
+                            <span className="text-info/80">{day.mintempC}°</span>
                           </Flex>
                         </Flex>
                       );

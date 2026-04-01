@@ -45,9 +45,14 @@ import {
   Bot,
   ListChecks,
 } from "lucide-react";
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, createContext, useContext } from "react";
 import MarkdownMessage from "../MarkdownMessage";
 import { useArtifactStore, type Artifact, type ArtifactType } from "../../store/artifactStore";
+import { useArtifactOpen } from "../../hooks/useArtifactOpen";
+
+// Context so MarkdownMessage inside assistant-ui thread gets artifact support
+const ArtifactOpenContext = createContext<((lang: string, code: string) => void) | undefined>(undefined);
+function useArtifactOpenCtx() { return useContext(ArtifactOpenContext); }
 
 // ─────────────────────────────────────────────────────────────────
 // CSS keyframes — injected once on load
@@ -280,8 +285,8 @@ export function ensureCSS() {
     /* Thinking block */
     .aui-thinking-block {
       font-size: 12px; border-radius: 8px; overflow: hidden;
-      border: 1px solid color-mix(in srgb, #a78bfa 18%, transparent);
-      background: color-mix(in srgb, #a78bfa 5%, transparent);
+      border: 1px solid color-mix(in srgb, var(--color-review) 18%, transparent);
+      background: color-mix(in srgb, var(--color-review) 5%, transparent);
       margin: 4px 0;
       animation: aui-fade-in 0.15s ease both;
     }
@@ -292,7 +297,7 @@ export function ensureCSS() {
     }
     .aui-thinking-body {
       padding: 8px 12px;
-      border-top: 1px solid color-mix(in srgb, #a78bfa 12%, transparent);
+      border-top: 1px solid color-mix(in srgb, var(--color-review) 12%, transparent);
       font-size: 12px; line-height: 1.6;
       color: color-mix(in srgb, var(--mission-control-text) 75%, transparent);
       font-style: italic;
@@ -312,7 +317,8 @@ export function ensureCSS() {
 // ─────────────────────────────────────────────────────────────────
 
 export function MarkdownText({ text }: { text: string }) {
-  return <MarkdownMessage content={text} />;
+  const onArtifactOpen = useArtifactOpenCtx();
+  return <MarkdownMessage content={text} onArtifactOpen={onArtifactOpen} />;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -526,9 +532,9 @@ export function ToolGroupBlock({ tools, hasRunning }: { tools: ToolItem[]; hasRu
   const summaryIcon = hasRunning ? (
     <Loader2 size={13} className="animate-spin text-mission-control-accent flex-shrink-0" />
   ) : hasError ? (
-    <XCircle size={13} className="text-[var(--color-error)] flex-shrink-0" />
+    <XCircle size={13} className="text-error flex-shrink-0" />
   ) : allDone ? (
-    <CheckCircle2 size={13} className="text-[var(--color-success)] flex-shrink-0" />
+    <CheckCircle2 size={13} className="text-success flex-shrink-0" />
   ) : (
     <Wrench size={13} className="text-mission-control-text-dim flex-shrink-0" />
   );
@@ -572,7 +578,7 @@ export function ToolGroupBlock({ tools, hasRunning }: { tools: ToolItem[]; hasRu
                     {isToolRunning ? (
                       <Loader2 size={12} className="animate-spin text-mission-control-accent flex-shrink-0" />
                     ) : tool.isError ? (
-                      <XCircle size={12} className="text-[var(--color-error)] flex-shrink-0" />
+                      <XCircle size={12} className="text-error flex-shrink-0" />
                     ) : tool.result !== undefined ? (
                       <Icon size={12} className="text-mission-control-text-dim flex-shrink-0" />
                     ) : (
@@ -602,10 +608,10 @@ export function ToolGroupBlock({ tools, hasRunning }: { tools: ToolItem[]; hasRu
                     )}
                     {tool.result && (
                       <>
-                        <p className={`text-[10px] font-bold uppercase tracking-wider mt-2.5 mb-1 ${tool.isError ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider mt-2.5 mb-1 ${tool.isError ? 'text-error' : 'text-mission-control-text-dim'}`}>
                           {tool.isError ? 'Error' : 'Result'}
                         </p>
-                        <pre className={`aui-tool-code ${tool.isError ? 'text-[var(--color-error)]' : ''}`}>{tool.result}</pre>
+                        <pre className={`aui-tool-code ${tool.isError ? 'text-error' : ''}`}>{tool.result}</pre>
                       </>
                     )}
                   </div>
@@ -618,7 +624,7 @@ export function ToolGroupBlock({ tools, hasRunning }: { tools: ToolItem[]; hasRu
             <div className="aui-tool-row aui-tool-done-row">
               <div className="aui-tool-row-line" />
               <div className="aui-tool-row-content">
-                <CheckCircle2 size={12} className="text-[var(--color-success)] flex-shrink-0" />
+                <CheckCircle2 size={12} className="text-success flex-shrink-0" />
                 <span className="text-[11px] text-mission-control-text-dim">Done</span>
               </div>
             </div>
@@ -649,14 +655,14 @@ export function ThinkingBlock({ text }: { text: string }) {
         role="button"
         aria-expanded={open}
       >
-        <Brain size={12} style={{ color: '#a78bfa' }} className="flex-shrink-0" />
-        <span className="text-[11px] font-medium" style={{ color: '#a78bfa' }}>Thinking</span>
-        <span className="text-[10px] ml-1" style={{ color: 'color-mix(in srgb, #a78bfa 55%, transparent)' }}>
+        <Brain size={12} className="flex-shrink-0 text-review" />
+        <span className="text-[11px] font-medium text-review">Thinking</span>
+        <span className="text-[10px] ml-1 text-review/55">
           {chunks.length > 1 ? `${chunks.length} thoughts` : `${text.length} chars`}
         </span>
         <CollapseChevron
           size={11}
-          style={{ color: 'color-mix(in srgb, #a78bfa 55%, transparent)', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          style={{ color: 'color-mix(in srgb, var(--color-review) 55%, transparent)', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
           className="ml-auto flex-shrink-0 transition-[transform] duration-150"
         />
       </div>
@@ -668,7 +674,7 @@ export function ThinkingBlock({ text }: { text: string }) {
                 <div key={i} className="flex gap-2">
                   <span
                     className="text-[10px] font-mono flex-shrink-0 mt-0.5 w-4 text-right"
-                    style={{ color: 'color-mix(in srgb, #a78bfa 45%, transparent)' }}
+                    style={{ color: 'color-mix(in srgb, var(--color-review) 45%, transparent)' }}
                   >
                     {i + 1}.
                   </span>
@@ -1168,7 +1174,9 @@ export function MissionControlComposer({
 
 export function MissionControlThread() {
   ensureCSS();
+  const handleArtifactOpen = useArtifactOpen();
   return (
+    <ArtifactOpenContext.Provider value={handleArtifactOpen}>
     <ThreadPrimitive.Root className="flex flex-col h-full">
       {/* Wrap viewport in relative container so scroll-to-bottom button positions correctly */}
       <div className="relative flex-1 min-h-0">
@@ -1203,5 +1211,6 @@ export function MissionControlThread() {
         <ScrollToBottomButton />
       </div>
     </ThreadPrimitive.Root>
+    </ArtifactOpenContext.Provider>
   );
 }

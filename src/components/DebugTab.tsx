@@ -58,10 +58,10 @@ export default function DebugTab() {
   };
 
   const stateColor = {
-    connected: 'text-[var(--color-success)]',
-    connecting: 'text-[var(--color-warning)]',
-    authenticating: 'text-[var(--color-warning)]',
-    disconnected: 'text-[var(--color-error)]',
+    connected: 'text-success',
+    connecting: 'text-warning',
+    authenticating: 'text-warning',
+    disconnected: 'text-error',
   };
 
   const stateIcon = gwState === 'connected' ? Wifi : WifiOff;
@@ -116,7 +116,7 @@ export default function DebugTab() {
           ) : sessions.map((s: any, i: number) => (
             <div key={i} className="p-3 flex items-center gap-3 hover:bg-mission-control-bg/50">
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                Date.now() - (s.updatedAt || 0) < 300000 ? 'bg-[var(--color-success)]' : 'bg-mission-control-surface'
+                Date.now() - (s.updatedAt || 0) < 300000 ? 'bg-success' : 'bg-mission-control-surface'
               }`} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{s.label || s.key || s.sessionKey}</div>
@@ -146,7 +146,7 @@ export default function DebugTab() {
             const isError = /\berror\b/i.test(line);
             const isWarn = /\bwarn/i.test(line);
             return (
-              <div key={i} className={`py-0.5 px-2 ${isError ? 'text-[var(--color-error)]' : isWarn ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim'}`}>
+              <div key={i} className={`py-0.5 px-2 ${isError ? 'text-error' : isWarn ? 'text-warning' : 'text-mission-control-text-dim'}`}>
                 {line}
               </div>
             );

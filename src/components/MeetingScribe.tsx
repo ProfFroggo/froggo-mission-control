@@ -305,13 +305,16 @@ export default function MeetingScribe() {
         }
       }, CHUNK_INTERVAL_MS);
       
-      addActivity({ type: 'system', message: '🎙️ Meeting scribe started (Gemini)', timestamp: Date.now() });
+      addActivity({ type: 'system', message: 'Meeting scribe started (Gemini)', timestamp: Date.now() });
       
     } catch (err: unknown) {
-      // '[Scribe] Failed to start:', err;
       setError(err instanceof Error ? err.message : 'Failed to access microphone');
       isRecordingRef.current = false;
       setIsRecording(false);
+      // Clean up any partially-created resources
+      if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
+      if (audioCtxRef.current) { audioCtxRef.current.close().catch(() => {}); audioCtxRef.current = null; }
+      if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
     }
   }, [setMeetingActive, addActivity, processAudioChunk]);
 
@@ -374,7 +377,7 @@ export default function MeetingScribe() {
         setSummary(saved);
         addActivity({
           type: 'system',
-          message: `📋 Meeting ended: ${saved.savedPath ? 'transcript saved' : 'no save'} ${saved.tasksCreated > 0 ? `+ ${saved.tasksCreated} tasks` : ''}`,
+          message: `Meeting ended: ${saved.savedPath ? 'transcript saved' : 'no save'} ${saved.tasksCreated > 0 ? `+ ${saved.tasksCreated} tasks` : ''}`,
           timestamp: Date.now(),
         });
       }
@@ -577,10 +580,10 @@ ${transcriptText}`;
             <Flex align="center" justify="between" className="mt-4">
               <Flex align="center" gap="2">
                 <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-error)] opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--color-error)]" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-error" />
                 </span>
-                <span className="text-sm text-[var(--color-error)] font-medium">Recording</span>
+                <span className="text-sm text-error font-medium">Recording</span>
               </Flex>
               <span className="font-mono text-base tabular-nums text-mission-control-text">{formatDuration(timer)}</span>
               {/* Audio level bar */}
@@ -601,7 +604,7 @@ ${transcriptText}`;
           )}
           
           {error && (
-            <div className="mt-3 p-2 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded text-sm text-[var(--color-error)]">
+            <div className="mt-3 p-2 bg-error/10 border border-error/30 rounded text-sm text-error">
               {error}
             </div>
           )}
@@ -665,7 +668,7 @@ ${transcriptText}`;
               <ul className="space-y-1.5 text-xs max-h-32 overflow-y-auto">
                 {actionItems.map((item, i) => (
                   <li key={i} className="flex items-center gap-2 rounded-lg bg-mission-control-surface border border-mission-control-border px-2.5 py-1.5">
-                    <span className="px-1.5 py-0.5 bg-[var(--color-warning)]/10 rounded-full text-[var(--color-warning)] text-[10px] font-medium shrink-0 uppercase tracking-wide">
+                    <span className="px-1.5 py-0.5 bg-warning/10 rounded-full text-warning text-[10px] font-medium shrink-0 uppercase tracking-wide">
                       {item.type}
                     </span>
                     <span className="text-mission-control-text/70 truncate">{item.text}</span>
@@ -689,8 +692,8 @@ ${transcriptText}`;
             </Flex>
             
             {summary.savedPath && (
-              <div className="bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-lg p-3 mb-4">
-                <p className="text-sm text-[var(--color-success)]">Notes saved</p>
+              <div className="bg-success/10 border border-success/30 rounded-lg p-3 mb-4">
+                <p className="text-sm text-success">Notes saved</p>
                 <p className="text-xs text-mission-control-text-dim mt-1">{summary.savedPath.split('/').pop()}</p>
               </div>
             )}
@@ -699,8 +702,8 @@ ${transcriptText}`;
             {aiSummary ? (
               <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 mb-4">
                 <Flex align="center" gap="2" className="mb-2">
-                  <Sparkles size={16} className="text-[var(--color-review)]" />
-                  <span className="text-sm font-medium text-[var(--color-review)]">AI Summary</span>
+                  <Sparkles size={16} className="text-review" />
+                  <span className="text-sm font-medium text-review">AI Summary</span>
                 </Flex>
                 <div className="text-sm text-mission-control-text whitespace-pre-wrap">{aiSummary}</div>
               </div>
@@ -763,7 +766,7 @@ ${transcriptText}`;
             {/* Clear */}
             <button
               onClick={clearAll}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors mt-6"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors mt-6"
             >
               <Trash2 size={14} /> Clear
             </button>

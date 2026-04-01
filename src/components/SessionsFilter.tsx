@@ -59,11 +59,11 @@ function SortableSession({ sessionKey, children }: { sessionKey: string; childre
 
 const CHANNELS: { id: ChannelFilter; label: string; icon: React.ReactNode; color: string }[] = [
   { id: 'all', label: 'All', icon: <ClipboardList size={14} />, color: 'text-mission-control-text' },
-  { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={14} />, color: 'text-[var(--color-success)]' },
-  { id: 'telegram', label: 'Telegram', icon: <SendPlane size={14} />, color: 'text-[var(--color-info)]' },
-  { id: 'discord', label: 'Discord', icon: <Gamepad2 size={14} />, color: 'text-[var(--color-review)]' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={14} />, color: 'text-success' },
+  { id: 'telegram', label: 'Telegram', icon: <SendPlane size={14} />, color: 'text-info' },
+  { id: 'discord', label: 'Discord', icon: <Gamepad2 size={14} />, color: 'text-review' },
   { id: 'webchat', label: 'Webchat', icon: <Monitor size={14} />, color: 'text-mission-control-text-dim' },
-  { id: 'agents', label: 'Agents', icon: <Bot size={14} />, color: 'text-[var(--color-warning)]' },
+  { id: 'agents', label: 'Agents', icon: <Bot size={14} />, color: 'text-warning' },
 ];
 
 export default function SessionsFilter() {
@@ -382,7 +382,7 @@ export default function SessionsFilter() {
 
   const handleBulkDelete = async () => {
     if (selectedSessions.size === 0) return;
-    if (!confirm(`⚠️ DELETE ${selectedSessions.size} conversation(s)?\n\nThis will permanently remove all messages and cannot be undone.\n\nConsider using Archive instead to preserve conversations.`)) return;
+    if (!confirm(`DELETE ${selectedSessions.size} conversation(s)?\n\nThis will permanently remove all messages and cannot be undone.\n\nConsider using Archive instead to preserve conversations.`)) return;
     
     try {
       let successCount = 0;
@@ -759,7 +759,7 @@ export default function SessionsFilter() {
                     <div className="text-2xl">{channelInfo.icon}</div>
                     <div className="flex-1 min-w-0">
                       <Flex align="center" gap="2" className="mb-1">
-                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-[var(--color-success)]' : 'bg-mission-control-surface'}`} />
+                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-surface'}`} />
                         <span className="font-medium truncate">{getSessionName(session)}</span>
                         {pinnedSessions.has(session.key) && (
                           <span className="flex items-center gap-1 px-2 py-0.5 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-full text-xs">
@@ -768,19 +768,19 @@ export default function SessionsFilter() {
                           </span>
                         )}
                         {isMuted && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/30 rounded-full text-xs">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-warning/10 text-warning border border-warning/30 rounded-full text-xs">
                             <BellOff size={14} />
                             Muted
                           </span>
                         )}
                         {isSnoozeExpired && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/30 rounded-full text-xs animate-pulse">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-error/10 text-error border border-error/30 rounded-full text-xs animate-pulse">
                             <AlertCircle size={14} />
                             Reminder
                           </span>
                         )}
                         {isSnoozed && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 rounded-full text-xs">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-info/10 text-info border border-info/30 rounded-full text-xs">
                             <Moon size={14} />
                             Snoozed
                           </span>
@@ -930,22 +930,22 @@ export default function SessionsFilter() {
                         <div className="text-2xl">{channelInfo.icon}</div>
                         <div className="flex-1 min-w-0">
                           <Flex align="center" gap="2" className="mb-1">
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-[var(--color-success)]' : 'bg-mission-control-surface'}`} />
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-surface'}`} />
                             <span className="font-medium truncate">{getSessionName(session)}</span>
                             {isMuted && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/30 rounded-full text-xs">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-warning/10 text-warning border border-warning/30 rounded-full text-xs">
                                 <BellOff size={14} />
                                 Muted
                               </span>
                             )}
                             {isSnoozeExpired && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/30 rounded-full text-xs animate-pulse">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-error/10 text-error border border-error/30 rounded-full text-xs animate-pulse">
                                 <AlertCircle size={14} />
                                 Reminder
                               </span>
                             )}
                             {isSnoozed && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 rounded-full text-xs">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-info/10 text-info border border-info/30 rounded-full text-xs">
                                 <Moon size={14} />
                                 Snoozed
                               </span>

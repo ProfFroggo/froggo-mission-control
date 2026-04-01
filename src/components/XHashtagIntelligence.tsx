@@ -316,7 +316,7 @@ export function XHashtagIntelligence() {
             align="center"
             gap="2"
             className="p-3 rounded-lg text-sm"
-            style={{ background: 'var(--color-error-subtle)', color: 'var(--color-error)' }}
+            style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}
           >
             <AlertCircle size={16} />
             {searchError}
@@ -379,21 +379,21 @@ export function XHashtagIntelligence() {
                     <div className="grid grid-cols-4 divide-x divide-mission-control-border text-center py-2">
                       <div className="px-2">
                         <div className="text-sm font-semibold tabular-nums text-mission-control-text flex items-center justify-center gap-1">
-                          <Heart size={11} className="text-[var(--color-error)]" />
+                          <Heart size={11} className="text-error" />
                           {result.totalLikes}
                         </div>
                         <div className="text-xs text-mission-control-text-dim">likes</div>
                       </div>
                       <div className="px-2">
                         <div className="text-sm font-semibold tabular-nums text-mission-control-text flex items-center justify-center gap-1">
-                          <Repeat2 size={11} className="text-[var(--color-info)]" />
+                          <Repeat2 size={11} className="text-info" />
                           {result.totalRetweets}
                         </div>
                         <div className="text-xs text-mission-control-text-dim">retweets</div>
                       </div>
                       <div className="px-2">
                         <div className="text-sm font-semibold tabular-nums text-mission-control-text flex items-center justify-center gap-1">
-                          <MessageCircle size={11} className="text-[var(--color-warning)]" />
+                          <MessageCircle size={11} className="text-warning" />
                           {result.totalReplies}
                         </div>
                         <div className="text-xs text-mission-control-text-dim">replies</div>
@@ -476,7 +476,7 @@ export function XHashtagIntelligence() {
             {savedTags.length > 0 && (
               <span
                 className="px-2 py-0.5 text-xs rounded-full"
-                style={{ background: 'var(--color-info-subtle)', color: 'var(--color-info)' }}
+                style={{ background: 'var(--color-info-bg)', color: 'var(--color-info)' }}
               >
                 {savedTags.length}
               </span>
@@ -495,7 +495,7 @@ export function XHashtagIntelligence() {
                   gap="2"
                   className="px-2.5 py-1 rounded-full text-xs border border-mission-control-border group"
                   style={{
-                    background: 'var(--color-info-subtle)',
+                    background: 'var(--color-info-bg)',
                     color: 'var(--color-info)',
                   }}
                 >

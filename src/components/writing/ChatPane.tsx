@@ -218,7 +218,7 @@ export default function ChatPane() {
         )}
         {/* Error display */}
         {error && (
-          <div className="text-sm text-[var(--color-error)] px-2 py-1 mb-2">{error}</div>
+          <div className="text-sm text-error px-2 py-1 mb-2">{error}</div>
         )}
         {/* Scroll sentinel */}
         <div ref={scrollRef} />

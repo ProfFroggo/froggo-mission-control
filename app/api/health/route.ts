@@ -9,6 +9,7 @@ import { startClaraReviewCron } from '@/lib/claraReviewCron';
 import { startSessionKeepalive } from '@/lib/sessionKeepalive';
 import { startMemoryDecayCron, getVaultStats } from '@/lib/memoryDecayCron';
 import { startAutomationCron } from '@/lib/automationCron';
+import { startTelemetryRetention } from '@/lib/telemetry';
 import { startDriveSyncCron } from '@/lib/driveSyncCron';
 import { ENV } from '@/lib/env';
 import { getDb } from '@/lib/database';
@@ -63,6 +64,7 @@ export async function GET() {
     startSessionKeepalive();
     startMemoryDecayCron();
     startAutomationCron();
+    startTelemetryRetention();
     startDriveSyncCron();
   }
 

@@ -101,7 +101,7 @@ interface AIAnalysis {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const EMAIL_COLORS = ['text-[var(--color-warning)]', 'text-[var(--color-info)]', 'text-[var(--color-success)]', 'text-[var(--color-error)]', 'text-[var(--color-review)]'];
+const EMAIL_COLORS = ['text-warning', 'text-info', 'text-success', 'text-error', 'text-review'];
 
 function buildAccountsFromEmail(emailAccounts: Array<{ email: string; label: string }>): Account[] {
   return emailAccounts.map((entry, i) => ({
@@ -205,7 +205,7 @@ type TimeFilter = 'all' | 'today' | 'week';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function platformColor(_p: string): string {
-  return 'text-[var(--color-warning)]';
+  return 'text-warning';
 }
 
 function platformIcon(_platform: string, size: number) {
@@ -214,9 +214,9 @@ function platformIcon(_platform: string, size: number) {
 
 // Triage badge colors
 const TRIAGE_COLORS: Record<string, string> = {
-  urgent: 'bg-[var(--color-error)]',
-  action: 'bg-[var(--color-warning)]',
-  fyi: 'bg-[var(--color-info)]',
+  urgent: 'bg-error',
+  action: 'bg-warning',
+  fyi: 'bg-info',
   'no-reply': 'bg-mission-control-bg',
 };
 
@@ -650,7 +650,7 @@ function CenterPane({
                       </span>
                       <span className={`text-[10px] tabular-nums flex-shrink-0 inline-flex items-center gap-0.5 ${
                         Date.now() - new Date(conv.timestamp).getTime() > 3 * 24 * 60 * 60 * 1000
-                          ? 'text-[var(--color-warning)]'
+                          ? 'text-warning'
                           : 'text-mission-control-text-dim'
                       }`}>
                         {Date.now() - new Date(conv.timestamp).getTime() > 3 * 24 * 60 * 60 * 1000 && <Clock size={9} />}
@@ -687,14 +687,14 @@ function CenterPane({
                         </span>
                       )}
                       {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
-                        <span className="text-xs text-[var(--color-warning)] bg-[var(--color-warning)]/10 rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
+                        <span className="text-xs text-warning bg-warning/10 rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
                           <Reply size={8} />
                           reply
                         </span>
                       )}
                       {conv.has_attachment && <Paperclip size={10} className="text-mission-control-text-dim flex-shrink-0" />}
                       {conv.is_starred && (
-                        <Star size={10} className="text-[var(--color-warning)] flex-shrink-0" fill="currentColor" />
+                        <Star size={10} className="text-warning flex-shrink-0" fill="currentColor" />
                       )}
                     </div>
                   </div>
@@ -819,11 +819,11 @@ function InboxDashboard({
             <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Unread</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
-            <div className="text-2xl font-bold tabular-nums text-[var(--color-error)]">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'urgent').length}</div>
+            <div className="text-2xl font-bold tabular-nums text-error">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'urgent').length}</div>
             <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Urgent</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
-            <div className="text-2xl font-bold tabular-nums text-[var(--color-warning)]">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
+            <div className="text-2xl font-bold tabular-nums text-warning">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
             <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Action</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
@@ -864,7 +864,7 @@ function InboxDashboard({
                   >
                     <Flex align="start" gap="2">
                       <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
-                        analysis?.triage === 'urgent' ? 'bg-[var(--color-error)]' : 'bg-[var(--color-warning)]'
+                        analysis?.triage === 'urgent' ? 'bg-error' : 'bg-warning'
                       }`} />
                       <div className="flex-1 min-w-0">
                         <Flex align="center" gap="2" className="mb-0.5">
@@ -1228,15 +1228,15 @@ function RightPane({
           <Flex align="center" gap="2" className="mb-1.5">
             <Sparkles size={13} className="text-mission-control-accent flex-shrink-0" />
             <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-              aiAnalysis.triage === 'urgent' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
-              aiAnalysis.triage === 'action' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
-              aiAnalysis.triage === 'fyi' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' :
+              aiAnalysis.triage === 'urgent' ? 'bg-error/10 text-error' :
+              aiAnalysis.triage === 'action' ? 'bg-warning/10 text-warning' :
+              aiAnalysis.triage === 'fyi' ? 'bg-info/10 text-info' :
               'bg-mission-control-bg/20 text-mission-control-text-dim'
             }`}>
               {TRIAGE_LABELS[aiAnalysis.triage]}
             </span>
             {!aiAnalysis.reply_needed && (
-              <span className="text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-1.5 py-0.5 rounded font-medium">
+              <span className="text-xs text-success bg-success/10 px-1.5 py-0.5 rounded font-medium">
                 No reply needed
               </span>
             )}
@@ -1316,7 +1316,7 @@ function RightPane({
         ) : conversation.platform === 'telegram' ? (
           /* Telegram empty state — show preview while thread loads */
           <div className="bg-mission-control-surface rounded-lg p-4 border border-mission-control-border">
-            <Flex align="center" gap="2" className="mb-3 pb-3 border-b border-mission-control-border text-[var(--color-info)]">
+            <Flex align="center" gap="2" className="mb-3 pb-3 border-b border-mission-control-border text-info">
               <Send size={14} />
               <span className="font-semibold text-sm text-mission-control-text">{conversation.name || conversation.from}</span>
             </Flex>

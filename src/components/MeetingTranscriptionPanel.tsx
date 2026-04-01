@@ -171,7 +171,7 @@ export default function MeetingTranscriptionPanel() {
       </div>
 
       {error && (
-        <div className="mx-4 mt-2 p-3 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-lg text-sm">{error}</div>
+        <div className="mx-4 mt-2 p-3 bg-error/10 text-error rounded-lg text-sm">{error}</div>
       )}
 
       {/* Results */}
@@ -193,6 +193,7 @@ export default function MeetingTranscriptionPanel() {
                 <div className="flex items-center gap-1">
                   {!result.summary && (
                     <button
+                      type="button"
                       onClick={() => summarize(result.id)}
                       disabled={summarizingIds.has(result.id)}
                       title="AI Summarize"
@@ -201,10 +202,10 @@ export default function MeetingTranscriptionPanel() {
                       {summarizingIds.has(result.id) ? <Spinner /> : <Sparkles className="w-4 h-4" />}
                     </button>
                   )}
-                  <button onClick={() => downloadTranscript(result)} title="Download" className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+                  <button type="button" onClick={() => downloadTranscript(result)} title="Download" className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                     <Download className="w-4 h-4" />
                   </button>
-                  <button onClick={() => deleteResult(result.id)} title="Delete" className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-border/40 transition-colors">
+                  <button type="button" onClick={() => deleteResult(result.id)} title="Delete" className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-error/70 hover:text-error hover:bg-mission-control-border/40 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -215,7 +216,7 @@ export default function MeetingTranscriptionPanel() {
               </div>
 
               {errors[result.id] && (
-                <div className="p-2 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded text-xs">{errors[result.id]}</div>
+                <div className="p-2 bg-error/10 text-error rounded text-xs">{errors[result.id]}</div>
               )}
 
               {result.summary && (
@@ -224,7 +225,7 @@ export default function MeetingTranscriptionPanel() {
                   <p className="text-sm text-mission-control-text">{result.summary.summary}</p>
                   {result.summary.actionItems.length > 0 && (
                     <div>
-                      <div className="text-xs font-medium text-[var(--color-warning)] mb-1">Action Items</div>
+                      <div className="text-xs font-medium text-warning mb-1">Action Items</div>
                       <ul className="text-xs text-mission-control-text-dim space-y-1">
                         {result.summary.actionItems.map((item, i) => <li key={i}>- {item}</li>)}
                       </ul>
@@ -232,7 +233,7 @@ export default function MeetingTranscriptionPanel() {
                   )}
                   {result.summary.keyDecisions.length > 0 && (
                     <div>
-                      <div className="text-xs font-medium text-[var(--color-info)] mb-1">Key Decisions</div>
+                      <div className="text-xs font-medium text-info mb-1">Key Decisions</div>
                       <ul className="text-xs text-mission-control-text-dim space-y-1">
                         {result.summary.keyDecisions.map((d, i) => <li key={i}>- {d}</li>)}
                       </ul>

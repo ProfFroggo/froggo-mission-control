@@ -374,8 +374,8 @@ export function XResearchView() {
                       {/* Type Badge */}
                       <Flex align="center" gap="2" className="mb-2">
                         <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                          result.type === 'tweet' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' :
-                          result.type === 'thread' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
+                          result.type === 'tweet' ? 'bg-info/10 text-info' :
+                          result.type === 'thread' ? 'bg-success/10 text-success' :
                           result.type === 'user' ? 'bg-mission-control-border/50 text-mission-control-text-dim' :
                           'bg-mission-control-accent/10 text-mission-control-accent'
                         }`}>
@@ -449,7 +449,7 @@ export function XResearchView() {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-[var(--color-info)] hover:underline flex items-center gap-1"
+                              className="text-xs text-info hover:underline flex items-center gap-1"
                             >
                               View on X <ExternalLink size={10} />
                             </a>

@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEventBus } from '@/lib/useEventBus';
 import {
   ShieldAlert, ShieldCheck, ShieldX, Clock, RefreshCw,
   Check, X, User, MessageSquare,
@@ -56,16 +57,16 @@ interface Approval {
 
 // Solid icon+color map — no subtle/transparent backgrounds on the icon pill
 const TYPE_ICON_CONFIG: Record<string, { icon: React.ElementType; color: string; iconBg: string; accentBorder: string }> = {
-  task:        { icon: ListTodo,      color: 'text-[var(--color-warning)]',            iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-[var(--color-warning)]' },
+  task:        { icon: ListTodo,      color: 'text-warning',            iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-warning' },
   tweet:       { icon: Send,          color: 'text-mission-control-accent', iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-mission-control-accent' },
   post_x:      { icon: Send,          color: 'text-mission-control-accent', iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-mission-control-accent' },
   reply:       { icon: MessageSquare, color: 'text-mission-control-accent', iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-mission-control-accent' },
-  email:       { icon: Mail,          color: 'text-[var(--color-success)]',            iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-[var(--color-success)]' },
-  send_email:  { icon: Mail,          color: 'text-[var(--color-success)]',            iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-[var(--color-success)]' },
+  email:       { icon: Mail,          color: 'text-success',            iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-success' },
+  send_email:  { icon: Mail,          color: 'text-success',            iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-success' },
   message:     { icon: MessageSquare, color: 'text-mission-control-text-dim', iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-mission-control-border' },
-  action:      { icon: Zap,           color: 'text-[var(--color-error)]',              iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-[var(--color-error)]' },
-  delete_file: { icon: Trash2,        color: 'text-[var(--color-error)]',              iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-[var(--color-error)]' },
-  git_push:    { icon: GitBranch,     color: 'text-[var(--color-warning)]',            iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-[var(--color-warning)]' },
+  action:      { icon: Zap,           color: 'text-error',              iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-error' },
+  delete_file: { icon: Trash2,        color: 'text-error',              iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-error' },
+  git_push:    { icon: GitBranch,     color: 'text-warning',            iconBg: 'bg-mission-control-surface', accentBorder: 'border-l-2 border-warning' },
 };
 const FALLBACK_ICON_CONFIG = TYPE_ICON_CONFIG.action;
 
@@ -136,7 +137,7 @@ function TweetPreview({ text, account }: { text: string; account?: string }) {
               strokeDashoffset={circumference * (1 - pct)}
               strokeLinecap="round" transform="rotate(-90 10 10)" />
           </svg>
-          <span className={`text-xs font-mono ${over ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}>
+          <span className={`text-xs font-mono ${over ? 'text-error' : 'text-mission-control-text-dim'}`}>
             {over ? `-${charCount - 280}` : charCount}
           </span>
         </Flex>
@@ -175,11 +176,11 @@ function DeleteFilePreview({ filePath }: { filePath?: string }) {
   return (
     <div className="rounded-xl border border-mission-control-border bg-mission-control-bg p-4 space-y-3">
       <Flex align="center" gap="2">
-        <AlertTriangle className="w-4 h-4 text-[var(--color-error)] shrink-0" />
-        <span className="text-[10px] font-bold text-[var(--color-error)] uppercase tracking-wide">Irreversible — file will be permanently deleted</span>
+        <AlertTriangle className="w-4 h-4 text-error shrink-0" />
+        <span className="text-[10px] font-bold text-error uppercase tracking-wide">Irreversible — file will be permanently deleted</span>
       </Flex>
       <Flex align="center" gap="2" className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2">
-        <Trash2 className="w-3.5 h-3.5 text-[var(--color-error)] shrink-0" />
+        <Trash2 className="w-3.5 h-3.5 text-error shrink-0" />
         <code className="text-xs text-mission-control-text font-mono break-all">{filePath || '(no path)'}</code>
       </Flex>
     </div>
@@ -193,8 +194,8 @@ function GitPushPreview({ repoPatt, branch, remote, force, commitMsg }: {
     <div className="rounded-xl border border-mission-control-border bg-mission-control-bg p-4 space-y-3">
       {force && (
         <Flex align="center" gap="2">
-          <AlertTriangle className="w-4 h-4 text-[var(--color-warning)] shrink-0" />
-          <span className="text-[10px] font-bold text-[var(--color-warning)] uppercase tracking-wide">Force push — rewrites remote history</span>
+          <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
+          <span className="text-[10px] font-bold text-warning uppercase tracking-wide">Force push — rewrites remote history</span>
         </Flex>
       )}
       <div className="space-y-2 text-xs">
@@ -313,8 +314,8 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
   return (
     <div className="mx-5 my-4 rounded-xl border border-mission-control-border bg-mission-control-surface overflow-hidden">
       <div className="px-4 py-3 flex items-center gap-2 border-b border-mission-control-border">
-        <AlertTriangle size={14} className="text-[var(--color-warning)] flex-shrink-0" />
-        <span className="text-xs font-semibold text-[var(--color-warning)]">
+        <AlertTriangle size={14} className="text-warning flex-shrink-0" />
+        <span className="text-xs font-semibold text-warning">
           Needs Your Input
         </span>
         <span className="ml-auto px-2 py-0.5 rounded-full bg-mission-control-bg border border-mission-control-border text-xs font-mono text-mission-control-text-dim tabular-nums">
@@ -334,7 +335,7 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
                 onClick={() => toggle(task.id)}
                 className="w-full flex items-start gap-3 px-4 py-3.5 text-left hover:bg-mission-control-bg transition-colors"
               >
-                <AlertTriangle size={13} className="text-[var(--color-warning)] mt-1 flex-shrink-0" />
+                <AlertTriangle size={13} className="text-warning mt-1 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-mission-control-text">{task.title}</div>
                   <Flex align="center" gap="2" className="mt-0.5 text-xs text-mission-control-text-dim">
@@ -342,7 +343,7 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
                     {task.project && <><span>·</span><span>{task.project}</span></>}
                   </Flex>
                   {reason && !isOpen && (
-                    <div className="mt-1 text-xs text-[var(--color-warning)]/80 truncate">{reason}</div>
+                    <div className="mt-1 text-xs text-warning/80 truncate">{reason}</div>
                   )}
                 </div>
                 {isOpen
@@ -354,9 +355,9 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
                 <div className="px-4 pb-4 space-y-3 bg-mission-control-bg">
                   {reason && (
                     <div className="flex gap-2 p-3 rounded-lg border border-mission-control-border bg-mission-control-surface">
-                      <AlertTriangle size={13} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
+                      <AlertTriangle size={13} className="text-warning flex-shrink-0 mt-0.5" />
                       <div>
-                        <div className="text-xs font-semibold text-[var(--color-warning)] mb-0.5">Why it stopped</div>
+                        <div className="text-xs font-semibold text-warning mb-0.5">Why it stopped</div>
                         <div className="text-xs text-mission-control-text leading-relaxed">{reason}</div>
                       </div>
                     </div>
@@ -405,8 +406,8 @@ function PriorityBadge({ tier }: { tier: number }) {
   return (
     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
       tier === 0
-        ? 'bg-mission-control-surface border border-mission-control-border text-[var(--color-error)]'
-        : 'bg-mission-control-surface border border-mission-control-border text-[var(--color-warning)]'
+        ? 'bg-mission-control-surface border border-mission-control-border text-error'
+        : 'bg-mission-control-surface border border-mission-control-border text-warning'
     }`}>
       P{tier}
     </span>
@@ -420,17 +421,17 @@ function typeBadgeClass(type: string): string {
     case 'tweet':
     case 'post_x':
     case 'reply':
-      return 'bg-[var(--color-info)]/10 text-[var(--color-info)]';
+      return 'bg-info/10 text-info';
     case 'email':
     case 'send_email':
-      return 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]';
+      return 'bg-warning/10 text-warning';
     case 'task':
     case 'message':
     case 'action':
       return 'bg-mission-control-accent/10 text-mission-control-accent';
     case 'delete_file':
     case 'git_push':
-      return 'bg-[var(--color-error)]/10 text-[var(--color-error)]';
+      return 'bg-error/10 text-error';
     default:
       return 'bg-mission-control-accent/10 text-mission-control-accent';
   }
@@ -491,10 +492,10 @@ function ApprovalCard({
     : null;
 
   const urgencyLeftBorder = tier === 0
-    ? 'border-l-[3px] border-[var(--color-error)]'
+    ? 'border-l-[3px] border-error'
     : tier === 1
-    ? 'border-l-[3px] border-[var(--color-warning)]'
-    : 'border-l-[3px] border-[var(--color-info)]';
+    ? 'border-l-[3px] border-warning'
+    : 'border-l-[3px] border-info';
 
   const handleApprove = () => {
     if (!approveConfirm) { setApproveConfirm(true); setRejectConfirm(false); return; }
@@ -548,14 +549,14 @@ function ApprovalCard({
             <PriorityBadge tier={tier} />
             {approval.status !== 'pending' && (
               <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-mission-control-surface border border-mission-control-border ${
-                approval.status === 'approved' ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'
+                approval.status === 'approved' ? 'text-success' : 'text-error'
               }`}>
                 {approval.status === 'approved' ? <ShieldCheck className="w-3 h-3" /> : <ShieldX className="w-3 h-3" />}
                 {approval.status}
               </span>
             )}
             {isExecutable && approval.category === 'scheduled_action' && scheduledTime && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-mission-control-surface border border-mission-control-border text-[var(--color-warning)]">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-mission-control-surface border border-mission-control-border text-warning">
                 <CalendarClock className="w-3 h-3" />
                 {scheduledTime}
               </span>
@@ -638,7 +639,7 @@ function ApprovalCard({
             <div className="space-y-1.5">
               <Flex align="center" justify="between">
                 <span className="text-xs font-medium text-mission-control-text">Edit post text</span>
-                <span className={`text-xs font-mono ${(editedContent || '').length > 280 ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}>
+                <span className={`text-xs font-mono ${(editedContent || '').length > 280 ? 'text-error' : 'text-mission-control-text-dim'}`}>
                   {(editedContent || '').length}/280
                 </span>
               </Flex>
@@ -721,7 +722,7 @@ function ApprovalCard({
               {/* Reject reason (shown when rejectConfirm is active) */}
               {rejectConfirm && (
                 <div>
-                  <label className="text-xs font-medium text-[var(--color-error)] block mb-1.5">Rejection reason (required)</label>
+                  <label className="text-xs font-medium text-error block mb-1.5">Rejection reason (required)</label>
                   <TextArea
                     ref={rejectRef as React.RefObject<HTMLTextAreaElement>}
                     value={rejectReason}
@@ -739,7 +740,7 @@ function ApprovalCard({
                   type="button"
                   onClick={handleApprove}
                   disabled={isResponding}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--color-success)]/10 text-[var(--color-success)] hover:bg-[var(--color-success)]/20 border border-[var(--color-success)]/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-success/10 text-success hover:bg-success/20 border border-success/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isResponding ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                   {approveConfirm ? 'Confirm Approve?' : isExecutable ? 'Approve & Run' : 'Approve'}
@@ -748,7 +749,7 @@ function ApprovalCard({
                   type="button"
                   onClick={handleReject}
                   disabled={isResponding || (rejectConfirm && rejectReason.trim().length === 0)}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--color-error)]/10 text-[var(--color-error)] hover:bg-[var(--color-error)]/20 border border-[var(--color-error)]/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-error/10 text-error hover:bg-error/20 border border-error/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isResponding ? <RefreshCw className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                   {rejectConfirm ? 'Confirm Reject?' : 'Reject'}
@@ -835,9 +836,13 @@ export default function ApprovalQueuePanel() {
 
   useEffect(() => { load(); }, [load]);
 
+  // SSE-driven approval updates (Phase 88.4)
+  useEventBus('approval.created', useCallback(() => { load(true); }, [load]));
+  useEventBus('approval.updated', useCallback(() => { load(true); }, [load]));
+
   useEffect(() => {
     if (statusTab !== 'pending') return;
-    const id = setInterval(() => load(true), 20_000);
+    const id = setInterval(() => load(true), 120_000); // 120s fallback — SSE approval events are primary (Phase 88.4)
     return () => clearInterval(id);
   }, [statusTab, load]);
 
@@ -955,7 +960,7 @@ export default function ApprovalQueuePanel() {
               <Flex align="center" gap="2">
                 <span className="text-sm font-semibold text-mission-control-text">Approvals</span>
                 {(pendingTotal + humanReviewCount) > 0 && (
-                  <span className="bg-[var(--color-warning)]/15 text-[var(--color-warning)] text-[10px] font-bold px-2 py-0.5 rounded-full tabular-nums">
+                  <span className="bg-warning/15 text-warning text-[10px] font-bold px-2 py-0.5 rounded-full tabular-nums">
                     {pendingTotal + humanReviewCount}
                   </span>
                 )}
@@ -1077,7 +1082,7 @@ export default function ApprovalQueuePanel() {
         ) : approvals.length === 0 ? (
           statusTab === 'pending' ? (
             <Flex direction="column" align="center" justify="center" gap="2" className="py-20 text-center">
-              <CheckCircle size={40} className="text-[var(--color-success)] mb-2" />
+              <CheckCircle size={40} className="text-success mb-2" />
               <p className="text-sm font-semibold text-mission-control-text">No pending approvals</p>
               <p className="text-xs text-mission-control-text-dim max-w-xs">
                 Agents are running autonomously. Items requiring human review will appear here.

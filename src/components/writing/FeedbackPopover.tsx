@@ -408,7 +408,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
 
       {/* Error state */}
       {error && (
-        <div className="mt-2 text-sm text-[var(--color-error)]">{error}</div>
+        <div className="mt-2 text-sm text-error">{error}</div>
       )}
     </div>
   );

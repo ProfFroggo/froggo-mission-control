@@ -24,22 +24,22 @@ export function PriorityIndicator({
 
   const configs = {
     critical: {
-      color: 'bg-[var(--color-error)]',
-      textColor: 'text-[var(--color-error)]',
+      color: 'bg-error',
+      textColor: 'text-error',
       label: 'Critical',
       icon: Zap,
       pulse: true
     },
     high: {
-      color: 'bg-[var(--color-warning)]',
-      textColor: 'text-[var(--color-warning)]',
+      color: 'bg-warning',
+      textColor: 'text-warning',
       label: 'High',
       icon: AlertCircle,
       pulse: false
     },
     normal: {
-      color: 'bg-[var(--color-info)]',
-      textColor: 'text-[var(--color-info)]',
+      color: 'bg-info',
+      textColor: 'text-info',
       label: 'Normal',
       icon: TrendingUp,
       pulse: false
@@ -177,15 +177,15 @@ export function PriorityStats({ stats }: { stats: any }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className="text-xs text-mission-control-text-dim mb-1">Critical</div>
-          <div className="text-2xl font-bold text-[var(--color-error)]">{stats.critical || 0}</div>
+          <div className="text-2xl font-bold text-error">{stats.critical || 0}</div>
         </div>
         <div>
           <div className="text-xs text-mission-control-text-dim mb-1">High</div>
-          <div className="text-2xl font-bold text-[var(--color-warning)]">{stats.high || 0}</div>
+          <div className="text-2xl font-bold text-warning">{stats.high || 0}</div>
         </div>
         <div>
           <div className="text-xs text-mission-control-text-dim mb-1">Normal</div>
-          <div className="text-2xl font-bold text-[var(--color-info)]">{stats.normal || 0}</div>
+          <div className="text-2xl font-bold text-info">{stats.normal || 0}</div>
         </div>
         <div>
           <div className="text-xs text-mission-control-text-dim mb-1">Low</div>
@@ -200,7 +200,7 @@ export function PriorityStats({ stats }: { stats: any }) {
         </Flex>
         <Flex align="center" justify="between" mt="1" className="text-xs">
           <span className="text-mission-control-text-dim">Learning</span>
-          <span className="text-[var(--color-success)] font-medium">{stats.learnedSenders || 0} senders</span>
+          <span className="text-success font-medium">{stats.learnedSenders || 0} senders</span>
         </Flex>
       </div>
     </div>

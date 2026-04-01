@@ -226,7 +226,7 @@ export default function SetupWizard() {
     return (
       <div className="h-full flex items-center justify-center bg-mission-control-bg">
         <div className="text-center p-8">
-          <CheckCircle size={48} className="mx-auto text-[var(--color-success)] mb-4" />
+          <CheckCircle size={48} className="mx-auto text-success mb-4" />
           <p className="text-mission-control-text text-sm font-medium">Project created successfully!</p>
           <p className="text-mission-control-text-dim text-xs mt-1">Redirecting...</p>
         </div>

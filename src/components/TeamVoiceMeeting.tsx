@@ -20,13 +20,9 @@ import { useStore } from '../store/store';
 import { geminiLive, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
 import { createLogger } from '../utils/logger';
-// speakWithAgentVoice removed — TTS now handled via server proxy (/api/gemini/tts)
-import { geminiTts } from '../lib/geminiTts';
+import { speak as globalSpeak, stopSpeaking } from '../lib/globalTts';
 
 const logger = createLogger('TeamVoice');
-
-// Legacy Web Speech cancellation (kept for abort path cleanup)
-function stopSpeaking() { window.speechSynthesis.cancel(); }
 
 // API key loading — fetches from authenticated server endpoint, never from client settings
 async function loadApiKey(): Promise<string> {
@@ -128,15 +124,7 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
       .catch(err => console.error('[TeamVoiceMeeting] Failed to load API key:', err));
   }, []);
 
-  // Preload Web Speech API voices (they load asynchronously in Chrome)
-  useEffect(() => {
-    if (window.speechSynthesis) {
-      window.speechSynthesis.getVoices(); // trigger initial load
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices(); // cache on change
-      };
-    }
-  }, []);
+  // No voice preloading needed — Gemini Chirp 3 TTS is server-side
 
   // Keep device ID refs in sync
   useEffect(() => { micDeviceIdRef.current = micDeviceId; }, [micDeviceId]);
@@ -519,7 +507,7 @@ Respond as ${agentName(agentId)}:`;
         setTranscript(prev => [...prev, {
           id: `sys-${Date.now()}`,
           speaker: 'system',
-          content: `⚠️ ${message}`,
+          content: `${message}`,
           timestamp: Date.now(),
           type: 'text',
         }]);
@@ -688,15 +676,12 @@ Respond as ${agentName(agentId)}:`;
     ttsAbortRef.current = abort;
 
     try {
-      // Use Gemini TTS via server proxy — per-agent Chirp 3 voice, interruptible
-      const voice = getGeminiVoiceForAgent(_agentId);
-      await geminiTts(
-        text,
-        voice,
-        volumeRef.current,
-        speakerDeviceIdRef.current || undefined,
-        abort.signal,
-      );
+      // Use Gemini TTS via globalTts — per-agent Chirp 3 voice, interruptible
+      await globalSpeak(text, _agentId, {
+        volume: volumeRef.current,
+        sinkId: speakerDeviceIdRef.current || undefined,
+        signal: abort.signal,
+      });
     } catch {
       // Silently swallow — never block the meeting
     }
@@ -712,7 +697,7 @@ Respond as ${agentName(agentId)}:`;
   const startListening = async () => {
     if (listeningRef.current || !geminiLive.connected) return;
     stopSpeaking();
-    window.speechSynthesis.cancel();
+    stopSpeaking();
     try {
       await geminiLive.startMic(micDeviceIdRef.current || undefined);
       // geminiLive events will update listening state
@@ -721,7 +706,7 @@ Respond as ${agentName(agentId)}:`;
       setTranscript(prev => [...prev, {
         id: `sys-${Date.now()}`,
         speaker: 'system',
-        content: `⚠️ Microphone error: ${err instanceof Error ? err.message : String(err)}`,
+        content: `Microphone error: ${err instanceof Error ? err.message : String(err)}`,
         timestamp: Date.now(),
         type: 'text',
       }]);
@@ -742,7 +727,7 @@ Respond as ${agentName(agentId)}:`;
       setTranscript(prev => [...prev, {
         id: `sys-${Date.now()}`,
         speaker: 'system',
-        content: '⚠️ No Gemini API key. Configure it in Settings → API Keys.',
+        content: 'No Gemini API key. Configure it in Settings → API Keys.',
         timestamp: Date.now(),
         type: 'text',
       }]);
@@ -782,7 +767,7 @@ Respond as ${agentName(agentId)}:`;
       setTranscript(prev => [...prev, {
         id: `sys-${Date.now()}`,
         speaker: 'system',
-        content: `⚠️ Failed to start: ${err instanceof Error ? err.message : String(err)}`,
+        content: `Failed to start: ${err instanceof Error ? err.message : String(err)}`,
         timestamp: Date.now(),
         type: 'text',
       }]);
@@ -858,7 +843,7 @@ Respond as ${agentName(agentId)}:`;
     for (const entry of transcript) {
       const time = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const speaker = entry.speaker === 'user' ? 'Kevin'
-        : entry.speaker === 'system' ? '📋 System'
+        : entry.speaker === 'system' ? 'System'
         : (agentName(entry.speaker));
       content += `**[${time}] ${speaker}:** ${entry.content}\n\n`;
     }
@@ -908,8 +893,8 @@ Respond as ${agentName(agentId)}:`;
             <p className="text-sm text-mission-control-text-dim">
               {isActive ? (
                 <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-2 h-2 rounded-full bg-[var(--color-error)] animate-pulse" />
-                  <span className="text-[var(--color-error)] font-medium">LIVE</span>
+                  <span className="inline-block w-2 h-2 rounded-full bg-error animate-pulse" />
+                  <span className="text-error font-medium">LIVE</span>
                   <Clock size={11} className="ml-1" />
                   <span className="font-mono">{formatDuration(callDurationSecs)}</span>
                 </span>
@@ -1057,8 +1042,8 @@ Respond as ${agentName(agentId)}:`;
           <Flex align="center" gap="1">
             <button
               type="button"
-              onClick={() => { setMuted(!muted); if (!muted) { stopSpeaking(); window.speechSynthesis.cancel(); } }}
-              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${muted ? 'text-[var(--color-error)] hover:bg-mission-control-surface' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
+              onClick={() => { setMuted(!muted); if (!muted) { stopSpeaking(); stopSpeaking(); } }}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${muted ? 'text-error hover:bg-mission-control-surface' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
             >
               {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
             </button>
@@ -1101,8 +1086,8 @@ Respond as ${agentName(agentId)}:`;
 
       {/* Recording banner */}
       {isRecording && (
-        <Flex align="center" justify="center" gap="2" className="px-4 py-1.5 bg-[var(--color-error)]/10 border-b border-[var(--color-error)]/30 text-[var(--color-error)] text-xs font-medium">
-          <div className="w-2 h-2 rounded-full bg-[var(--color-error)] animate-pulse" />
+        <Flex align="center" justify="center" gap="2" className="px-4 py-1.5 bg-error/10 border-b border-error/30 text-error text-xs font-medium">
+          <div className="w-2 h-2 rounded-full bg-error animate-pulse" />
           Meeting is being recorded
         </Flex>
       )}
@@ -1150,10 +1135,10 @@ Respond as ${agentName(agentId)}:`;
                   <span className="text-sm text-mission-control-text flex-1">{agent?.name || id}</span>
                   <Flex align="center" gap="2">
                     {isSpeaking && (
-                      <span className="text-xs text-[var(--color-success)]">Speaking</span>
+                      <span className="text-xs text-success">Speaking</span>
                     )}
                     {isProcessing && !isSpeaking && (
-                      <span className="text-xs text-[var(--color-warning)]">Thinking</span>
+                      <span className="text-xs text-warning">Thinking</span>
                     )}
                     {isQueued && !isProcessing && (
                       <span className="text-xs text-mission-control-text-dim">Queued</span>
@@ -1164,7 +1149,7 @@ Respond as ${agentName(agentId)}:`;
                     <button
                       type="button"
                       onClick={() => toggleAgentMute(id)}
-                      className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${isAgentMuted ? 'text-[var(--color-error)] hover:bg-mission-control-surface' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
+                      className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${isAgentMuted ? 'text-error hover:bg-mission-control-surface' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
                       title={isAgentMuted ? 'Unmute agent' : 'Mute agent'}
                     >
                       {isAgentMuted ? <MicOff size={12} /> : <Mic size={12} />}
@@ -1218,7 +1203,7 @@ Respond as ${agentName(agentId)}:`;
                 )}
                 {/* Processing dot */}
                 {isProcessing && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--color-warning)] border-2 border-mission-control-bg animate-pulse" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-warning border-2 border-mission-control-bg animate-pulse" />
                 )}
                 {/* Queued dot */}
                 {isQueued && !isProcessing && (
@@ -1292,7 +1277,7 @@ Respond as ${agentName(agentId)}:`;
               )}
               <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
                 {isNewSpeaker && (
-                  <span className={`text-xs font-medium mb-1 px-1 ${isUser ? 'text-mission-control-accent' : (theme?.text || 'text-[var(--color-success)]')}`}>
+                  <span className={`text-xs font-medium mb-1 px-1 ${isUser ? 'text-mission-control-accent' : (theme?.text || 'text-success')}`}>
                     {isUser ? 'Kevin' : (agent?.name || entry.speaker)}
                   </span>
                 )}
@@ -1335,7 +1320,7 @@ Respond as ${agentName(agentId)}:`;
               <AgentAvatar agentId={processingAgent} size="xs" />
             </div>
             <div className="flex flex-col items-start">
-              <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">{agentName(processingAgent)}</span>
+              <span className="text-xs font-medium text-success mb-1 px-1">{agentName(processingAgent)}</span>
               <Flex gap="1" align="center" className="py-1">
                 <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1394,7 +1379,7 @@ Respond as ${agentName(agentId)}:`;
                 onClick={() => {
                   if (canInterrupt && speakingAgent) {
                     // Interrupt: cancel TTS, clear queue, start listening immediately
-                    window.speechSynthesis.cancel();
+                    stopSpeaking();
                     agentQueueRef.current = [];
                     setSpeakQueue([]);
                     setCanInterrupt(false);

@@ -25,17 +25,17 @@ const icons = {
 };
 
 const variantStyles: Record<ToastType, { border: string; icon: string }> = {
-  success: { border: 'border-l-4 border-l-[var(--color-success)]',  icon: 'text-[var(--color-success)]'  },
-  error:   { border: 'border-l-4 border-l-[var(--color-error)]',    icon: 'text-[var(--color-error)]'    },
-  warning: { border: 'border-l-4 border-l-[var(--color-warning)]',  icon: 'text-[var(--color-warning)]'  },
-  info:    { border: 'border-l-4 border-l-[var(--color-info)]',     icon: 'text-[var(--color-info)]'     },
+  success: { border: 'border-l-4 border-l-[var(--color-success)]',  icon: 'text-success'  },
+  error:   { border: 'border-l-4 border-l-[var(--color-error)]',    icon: 'text-error'    },
+  warning: { border: 'border-l-4 border-l-[var(--color-warning)]',  icon: 'text-warning'  },
+  info:    { border: 'border-l-4 border-l-[var(--color-info)]',     icon: 'text-info'     },
 };
 
 const progressColor: Record<ToastType, string> = {
-  success: 'bg-[var(--color-success)]',
-  error:   'bg-[var(--color-error)]',
-  warning: 'bg-[var(--color-warning)]',
-  info:    'bg-[var(--color-info)]',
+  success: 'bg-success',
+  error:   'bg-error',
+  warning: 'bg-warning',
+  info:    'bg-info',
 };
 
 function ToastItem({ toast, onDismiss }: ToastProps) {

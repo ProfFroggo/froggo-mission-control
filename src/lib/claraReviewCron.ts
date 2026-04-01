@@ -286,15 +286,31 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
           .get(task.id as string) as { status: string; assignedTo: string | null; reviewStatus: string | null; reviewNotes: string | null } | undefined;
 
         if (current?.status === 'in-progress' && current?.assignedTo) {
-          // Clara approved — dispatch the agent now
+          // Clara approved — check if agent already has an in-progress task
           const agentName = current.assignedTo;
-          const approvalMsg = `Pre-review passed: agent assigned (${agentName}), planning notes present, ${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''} defined. Dispatching to ${agentName}.`;
-          console.log(`[clara-review-cron] Pre-review approved task ${task.id} — dispatching to ${agentName}`);
-          db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
-            .run(task.id, 'clara', 'pre-review-approved', approvalMsg, Date.now());
-          // Increment count only on successful review (not on silent failures)
-          db.prepare('UPDATE tasks SET claraReviewCount = COALESCE(claraReviewCount, 0) + 1 WHERE id = ?').run(task.id);
-          dispatchTask(task.id as string);
+          const otherInProgress = (db.prepare(
+            `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress' AND id != ?`
+          ).get(agentName, task.id) as { cnt: number } | undefined)?.cnt ?? 0;
+
+          if (otherInProgress >= 1) {
+            // Agent is busy — hold task in internal-review until slot opens
+            console.log(`[clara-review-cron] Pre-review approved task ${task.id} but agent ${agentName} already has ${otherInProgress} in-progress task(s) — holding in internal-review`);
+            db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('internal-review', Date.now(), task.id);
+            db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+              .run(task.id, 'clara', 'pre-review-queued',
+                `Pre-review passed but agent ${agentName} is busy (${otherInProgress} in-progress task). Holding in queue — will auto-dispatch when agent has capacity.`,
+                Date.now());
+            db.prepare('UPDATE tasks SET claraReviewCount = COALESCE(claraReviewCount, 0) + 1 WHERE id = ?').run(task.id);
+          } else {
+            // Agent is free — dispatch now
+            const approvalMsg = `Pre-review passed: agent assigned (${agentName}), planning notes present, ${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''} defined. Dispatching to ${agentName}.`;
+            console.log(`[clara-review-cron] Pre-review approved task ${task.id} — dispatching to ${agentName}`);
+            db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+              .run(task.id, 'clara', 'pre-review-approved', approvalMsg, Date.now());
+            // Increment count only on successful review (not on silent failures)
+            db.prepare('UPDATE tasks SET claraReviewCount = COALESCE(claraReviewCount, 0) + 1 WHERE id = ?').run(task.id);
+            dispatchTask(task.id as string);
+          }
         } else if (current?.status === 'todo') {
           // Clara rejected — increment count, set lastClaraReviewAt, log reason
           const now = Date.now();
@@ -728,13 +744,33 @@ export function runReviewCycle(): { queued: number } {
       // Skip if no agent assigned
       if (!stuck.assignedTo) continue;
 
+      // Check if the agent already has another in-progress task — if so, this task
+      // is stuck because of the per-agent gate, not because the agent failed.
+      // Move it back to internal-review so it gets queued properly.
+      const otherInProgress = (getDb().prepare(
+        `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress' AND id != ?`
+      ).get(stuck.assignedTo, stuck.id) as { cnt: number } | undefined)?.cnt ?? 0;
+
+      if (otherInProgress >= 1) {
+        const now = Date.now();
+        console.log(`[clara-review-cron] Task ${stuck.id} stuck because agent ${stuck.assignedTo} has ${otherInProgress} other in-progress task(s) — returning to internal-review queue`);
+        getDb().prepare(`UPDATE tasks SET status = 'internal-review', reviewStatus = 'pre-approved', updatedAt = ? WHERE id = ?`).run(now, stuck.id);
+        getDb().prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+          .run(stuck.id, 'system', 'agent-busy-requeue',
+            `Agent ${stuck.assignedTo} is busy with another task. Moved back to queue — will auto-dispatch when agent has capacity.`,
+            now);
+        continue;
+      }
+
       console.log(`[clara-review-cron] Recovering stuck in-progress task ${stuck.id} — re-dispatching to ${stuck.assignedTo}`);
       const now = Date.now();
       getDb().prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
         .run(stuck.id, 'system', 'stuck-recovery',
           `Task stuck in-progress >30min with no activity. Re-dispatching to ${stuck.assignedTo}.`,
           now);
-      getDb().prepare('UPDATE tasks SET updatedAt = ? WHERE id = ?').run(now, stuck.id);
+      // NOTE: Do NOT reset updatedAt here — the activity insertion above already prevents
+      // re-triggering via the NOT IN subquery, and resetting updatedAt breaks the 4-hour
+      // escalation check which uses updatedAt < fourHoursAgo.
       dispatchTask(stuck.id);
     }
     if (stuckTasks.length > 0) {
@@ -803,6 +839,38 @@ export function runReviewCycle(): { queued: number } {
               `Reminder: Task "${stale.title}" has been waiting in human-review for over 24 hours. Please review.`,
               now);
         } catch { /* non-critical */ }
+      }
+    }
+  } catch { /* non-critical */ }
+
+  // ── Queue drain: dispatch next queued task for agents that are now free ──────
+  // Tasks with status=internal-review AND reviewStatus=pre-approved are Clara-approved
+  // but were held because the agent was busy. If the agent now has no in-progress tasks,
+  // move the oldest queued task to in-progress and dispatch it.
+  try {
+    const queued = getDb()
+      .prepare(`SELECT t.id, t.assignedTo FROM tasks t
+                WHERE t.status = 'internal-review' AND t.reviewStatus = 'pre-approved'
+                  AND t.assignedTo IS NOT NULL
+                ORDER BY t.updatedAt ASC`)
+      .all() as { id: string; assignedTo: string }[];
+
+    const dispatched = new Set<string>(); // track which agents we already dispatched to this cycle
+    for (const q of queued) {
+      if (dispatched.has(q.assignedTo)) continue; // 1 per agent per cycle
+      const busyCount = (getDb().prepare(
+        `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress'`
+      ).get(q.assignedTo) as { cnt: number } | undefined)?.cnt ?? 0;
+
+      if (busyCount === 0) {
+        const now = Date.now();
+        console.log(`[clara-review-cron] Agent ${q.assignedTo} is free — dispatching queued task ${q.id}`);
+        getDb().prepare(`UPDATE tasks SET status = 'in-progress', reviewStatus = 'pre-approved', updatedAt = ? WHERE id = ?`).run(now, q.id);
+        getDb().prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+          .run(q.id, 'system', 'queue-dispatch',
+            `Agent ${q.assignedTo} is now free. Dispatching from queue.`, now);
+        dispatchTask(q.id);
+        dispatched.add(q.assignedTo);
       }
     }
   } catch { /* non-critical */ }

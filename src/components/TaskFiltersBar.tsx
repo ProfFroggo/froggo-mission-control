@@ -48,9 +48,9 @@ const PRIORITIES: { id: TaskPriority | 'all'; label: string }[] = [
 ];
 
 const PRIORITY_COLORS: Record<string, string> = {
-  p0: 'text-[var(--color-error)]',
-  p1: 'text-[var(--color-warning)]',
-  p2: 'text-[var(--color-info)]',
+  p0: 'text-error',
+  p1: 'text-warning',
+  p2: 'text-info',
   p3: 'text-mission-control-text-dim',
   all: 'text-mission-control-text-dim',
 };

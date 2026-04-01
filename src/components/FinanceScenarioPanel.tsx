@@ -151,18 +151,19 @@ function QuickProjectionTab() {
               key={item.id}
               className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                 isCancelled
-                  ? 'bg-[var(--color-error)]/5 border-[var(--color-error)]/30 opacity-60'
+                  ? 'bg-error/5 border-error/30 opacity-60'
                   : 'bg-mission-control-border/20 border-mission-control-border'
               }`}
             >
               {/* Toggle */}
               <button
+                type="button"
                 onClick={() => setCancel(item.id, !isCancelled)}
                 aria-label={isCancelled ? 'Restore item' : 'Cancel item'}
                 title={isCancelled ? 'Click to restore' : 'Click to cancel'}
                 className={`inline-flex items-center justify-center w-8 h-8 rounded-full border flex-shrink-0 transition-colors ${
                   isCancelled
-                    ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 text-[var(--color-error)]'
+                    ? 'bg-error/10 border-error/30 text-error'
                     : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
@@ -250,21 +251,21 @@ function QuickProjectionTab() {
           <div
             className={`rounded-xl p-4 border ${
               result.savings.monthly >= 0
-                ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30'
-                : 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30'
+                ? 'bg-success/10 border-success/30'
+                : 'bg-error/10 border-error/30'
             }`}
           >
             <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1">
               {result.savings.monthly >= 0 ? (
-                <TrendingDown className="w-3 h-3 text-[var(--color-success)]" />
+                <TrendingDown className="w-3 h-3 text-success" />
               ) : (
-                <TrendingUp className="w-3 h-3 text-[var(--color-error)]" />
+                <TrendingUp className="w-3 h-3 text-error" />
               )}
               Savings
             </p>
             <p
               className={`text-xl font-bold tabular-nums ${
-                result.savings.monthly >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'
+                result.savings.monthly >= 0 ? 'text-success' : 'text-error'
               }`}
             >
               {result.savings.monthly >= 0 ? '+' : ''}
@@ -423,6 +424,7 @@ function ScenarioBuilderTab() {
         <Flex align="center" gap="2">
           {comparedIds.length >= 2 && (
             <button
+              type="button"
               onClick={() => setCompareMode((v) => !v)}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
                 compareMode
@@ -577,11 +579,11 @@ function ScenarioBuilderTab() {
                                 <div className="space-y-1 text-mission-control-text-dim">
                                   <Flex justify="between" gap="4">
                                     <span>Income</span>
-                                    <span className="text-[var(--color-success)]">{formatCurrency(d.income)}</span>
+                                    <span className="text-success">{formatCurrency(d.income)}</span>
                                   </Flex>
                                   <Flex justify="between" gap="4">
                                     <span>Expenses</span>
-                                    <span className="text-[var(--color-error)]">{formatCurrency(d.expenses)}</span>
+                                    <span className="text-error">{formatCurrency(d.expenses)}</span>
                                   </Flex>
                                   {d.oneTime !== 0 && (
                                     <Flex justify="between" gap="4">
@@ -591,13 +593,13 @@ function ScenarioBuilderTab() {
                                   )}
                                   <Flex justify="between" gap="4" className="border-t border-mission-control-border pt-1 mt-1">
                                     <span className="font-medium text-mission-control-text">Net</span>
-                                    <span className={d.net >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}>
+                                    <span className={d.net >= 0 ? 'text-success' : 'text-error'}>
                                       {formatCurrency(d.net)}
                                     </span>
                                   </Flex>
                                   <Flex justify="between" gap="4">
                                     <span className="font-medium text-mission-control-text">Balance</span>
-                                    <span className={d.runningBalance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}>
+                                    <span className={d.runningBalance >= 0 ? 'text-success' : 'text-error'}>
                                       {formatCurrency(d.runningBalance)}
                                     </span>
                                   </Flex>

@@ -280,11 +280,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ensureDir(expertiseMapDir);
             const expertiseMapPath = path.join(expertiseMapDir, 'expertise-map.md');
             const relFilePath = path.relative(VAULT_PATH, filePath);
-            const line = `| ${agent} | ${tags.join(', ')} | ${relFilePath} |\n`;
+            const line = `| ${agent} | ${tags.join(', ')} | ${relFilePath} |`;
             if (!fs.existsSync(expertiseMapPath)) {
               fs.writeFileSync(expertiseMapPath, `# Agent Expertise Map\n\n| Agent | Tags | Note |\n|-------|------|------|\n`, 'utf-8');
             }
-            fs.appendFileSync(expertiseMapPath, line, 'utf-8');
+            // Deduplicate: skip if this exact line already exists
+            const existing = fs.readFileSync(expertiseMapPath, 'utf-8');
+            if (!existing.includes(line)) {
+              fs.appendFileSync(expertiseMapPath, line + '\n', 'utf-8');
+            }
           } catch { /* non-critical */ }
         }
 
@@ -298,10 +302,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'memory_read': {
         const relPath  = args?.path as string;
-        const filePath = path.join(VAULT_PATH, relPath);
+        const filePath = path.resolve(VAULT_PATH, relPath);
 
-        // Safety: ensure the resolved path stays within the vault
-        if (!filePath.startsWith(VAULT_PATH)) {
+        // Safety: ensure the resolved path stays within the vault (resolve canonicalizes .. segments)
+        if (!filePath.startsWith(path.resolve(VAULT_PATH) + path.sep) && filePath !== path.resolve(VAULT_PATH)) {
           return {
             content: [{ type: 'text', text: 'Error: path traversal detected.' }],
             isError: true,
@@ -314,6 +318,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
 
+        // Secondary check: resolve symlinks to prevent symlink escape
+        const realFile = fs.realpathSync(filePath);
+        const realVault = fs.realpathSync(path.resolve(VAULT_PATH));
+        if (!realFile.startsWith(realVault + path.sep) && realFile !== realVault) {
+          return {
+            content: [{ type: 'text', text: 'Error: path traversal detected (symlink escape).' }],
+            isError: true,
+          };
+        }
+
         const content = fs.readFileSync(filePath, 'utf-8');
         return { content: [{ type: 'text', text: content }] };
       }
@@ -321,7 +335,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'memory_list': {
         const folder  = (args?.folder as string) || '';
         const limit   = (args?.limit  as number) || 20;
-        const baseDir = folder ? path.join(VAULT_PATH, folder) : VAULT_PATH;
+        const baseDir = folder ? path.resolve(VAULT_PATH, folder) : VAULT_PATH;
+
+        // Safety: ensure the resolved path stays within the vault
+        if (!baseDir.startsWith(path.resolve(VAULT_PATH) + path.sep) && baseDir !== path.resolve(VAULT_PATH)) {
+          return {
+            content: [{ type: 'text', text: 'Error: path traversal detected.' }],
+            isError: true,
+          };
+        }
 
         if (!fs.existsSync(baseDir)) {
           return { content: [{ type: 'text', text: `Folder not found: ${folder || '(vault root)'}. Use an empty folder arg to list the vault root.` }] };

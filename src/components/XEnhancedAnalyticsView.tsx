@@ -11,6 +11,7 @@ import {
 import { Spinner } from './LoadingStates';
 import { Button, IconButton, TextArea, Flex } from '@radix-ui/themes';
 import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
+import { useXAnalytics, invalidateXAnalytics, fetchXAnalytics } from '../hooks/useXAnalytics';
 
 interface PostMetrics {
   id: string;
@@ -134,10 +135,10 @@ export function XEnhancedAnalyticsView() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/x/analytics');
-      const data = res.ok ? await res.json() : {};
-      const profile = data.profile?.public_metrics ?? {};
-      const rawTweets: any[] = data.tweets ?? [];
+      // Use shared fetch with in-flight deduplication + caching
+      const apiData = await fetchXAnalytics();
+      const profile = apiData.profile?.public_metrics ?? {} as Partial<{ followers_count: number; following_count: number; tweet_count: number; like_count: number }>;
+      const rawTweets: any[] = apiData.tweets ?? [];
 
       // Filter tweets by selected time range
       const rangeDays = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
@@ -347,18 +348,18 @@ export function XEnhancedAnalyticsView() {
 
   const getPerformanceClass = (value: number, avg: number) => {
     const ratio = value / avg;
-    if (ratio >= 1.5) return 'text-[var(--color-success)]';
-    if (ratio >= 1.0) return 'text-[var(--color-info)]';
-    if (ratio >= 0.5) return 'text-[var(--color-warning)]';
-    return 'text-[var(--color-review)]';
+    if (ratio >= 1.5) return 'text-success';
+    if (ratio >= 1.0) return 'text-info';
+    if (ratio >= 0.5) return 'text-warning';
+    return 'text-review';
   };
 
   const getPerformanceIcon = (value: number, avg: number) => {
     const ratio = value / avg;
-    if (ratio >= 1.5) return <ArrowUp size={14} className="text-[var(--color-success)]" />;
-    if (ratio >= 1.0) return <ArrowUp size={14} className="text-[var(--color-info)]" />;
-    if (ratio >= 0.5) return <Minus size={14} className="text-[var(--color-warning)]" />;
-    return <ArrowDown size={14} className="text-[var(--color-review)]" />;
+    if (ratio >= 1.5) return <ArrowUp size={14} className="text-success" />;
+    if (ratio >= 1.0) return <ArrowUp size={14} className="text-info" />;
+    if (ratio >= 0.5) return <Minus size={14} className="text-warning" />;
+    return <ArrowDown size={14} className="text-review" />;
   };
 
   if (loading) {
@@ -485,7 +486,7 @@ export function XEnhancedAnalyticsView() {
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-1.5">
-                  <MessageCircle size={12} className="text-[var(--color-info)]" />
+                  <MessageCircle size={12} className="text-info" />
                   Posts
                 </p>
                 <div className="text-2xl font-bold text-mission-control-text tabular-nums">{data.summary.totalPosts}</div>
@@ -501,7 +502,7 @@ export function XEnhancedAnalyticsView() {
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-1.5">
-                  <TrendingUp size={12} className="text-[var(--color-success)]" />
+                  <TrendingUp size={12} className="text-success" />
                   Engagement
                 </p>
                 <div className="text-2xl font-bold tabular-nums" style={{ color: 'var(--color-success)' }}>{data.summary.engagementRate.toFixed(2)}%</div>
@@ -517,7 +518,7 @@ export function XEnhancedAnalyticsView() {
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-1.5">
-                  <Activity size={12} className="text-[var(--color-warning)]" />
+                  <Activity size={12} className="text-warning" />
                   Avg Likes
                 </p>
                 <div className="text-2xl font-bold tabular-nums" style={{ color: 'var(--color-warning)' }}>{data.summary.avgLikesPerTweet.toFixed(1)}</div>
@@ -582,7 +583,7 @@ export function XEnhancedAnalyticsView() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
                 <h3 className="font-semibold text-mission-control-text mb-4 flex items-center gap-2">
-                  <BarChart2 size={16} className="text-[var(--color-info)]" />
+                  <BarChart2 size={16} className="text-info" />
                   Content Type Distribution
                 </h3>
                 <div className="h-64">
@@ -613,7 +614,7 @@ export function XEnhancedAnalyticsView() {
 
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
                 <h3 className="font-semibold text-mission-control-text mb-4 flex items-center gap-2">
-                  <TrendingUp size={16} className="text-[var(--color-success)]" />
+                  <TrendingUp size={16} className="text-success" />
                   Engagement by Content Type
                 </h3>
                 <div className="h-64">
@@ -637,7 +638,7 @@ export function XEnhancedAnalyticsView() {
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
               <Flex align="center" justify="between" className="mb-4">
                 <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
-                  <Lightbulb size={16} className="text-[var(--color-warning)]" />
+                  <Lightbulb size={16} className="text-warning" />
                   Top Insights
                 </h3>
                 <button
@@ -653,8 +654,8 @@ export function XEnhancedAnalyticsView() {
                     <Flex align="center" gap="2" className="mb-2">
                       <span className="text-xl">{SUGGESTION_ICONS[suggestion.icon] || <Lightbulb size={20} />}</span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        suggestion.impact === 'high' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-                        suggestion.impact === 'medium' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+                        suggestion.impact === 'high' ? 'bg-success/10 text-success' :
+                        suggestion.impact === 'medium' ? 'bg-warning/10 text-warning' :
                         'bg-mission-control-border text-mission-control-text-dim'
                       }`}>
                         {suggestion.impact} impact
@@ -673,7 +674,7 @@ export function XEnhancedAnalyticsView() {
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
               <Flex align="center" justify="between" className="mb-1">
                 <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
-                  <TrendingUp size={16} className="text-[var(--color-success)]" />
+                  <TrendingUp size={16} className="text-success" />
                   Engagement Rate Trend
                 </h3>
               </Flex>
@@ -752,7 +753,7 @@ export function XEnhancedAnalyticsView() {
                   <Flex justify="between" className="mt-2 px-1">
                     {engagementTrend.labels.map((label, i) => (
                       <div key={label} className="flex flex-col items-center gap-0.5">
-                        <span className="text-xs font-semibold text-[var(--color-success)]">
+                        <span className="text-xs font-semibold text-success">
                           {engagementTrend.values[i].toFixed(1)}%
                         </span>
                         <span className="text-xs text-mission-control-text-dim">{label}</span>
@@ -773,7 +774,7 @@ export function XEnhancedAnalyticsView() {
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
               <Flex align="center" justify="between" className="mb-1">
                 <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
-                  <Clock size={16} className="text-[var(--color-info)]" />
+                  <Clock size={16} className="text-info" />
                   Best Posting Times
                 </h3>
               </Flex>
@@ -810,10 +811,10 @@ export function XEnhancedAnalyticsView() {
                             const normalized = maxScore > 0 ? (score / maxScore) * 100 : 0;
                             const cellClass =
                               normalized < 30
-                                ? 'bg-[var(--color-info)]/10'
+                                ? 'bg-info/10'
                                 : normalized < 60
-                                ? 'bg-[var(--color-info)]/40'
-                                : 'bg-[var(--color-info)]/70';
+                                ? 'bg-info/40'
+                                : 'bg-info/70';
                             return (
                               <div
                                 key={dayIdx}
@@ -830,9 +831,9 @@ export function XEnhancedAnalyticsView() {
                     <Flex align="center" justify="end" gap="2" className="mt-3">
                       <span className="text-xs text-mission-control-text-dim">Low</span>
                       <Flex gap="1">
-                        <div className="w-5 h-4 rounded-sm bg-[var(--color-info)]/10" />
-                        <div className="w-5 h-4 rounded-sm bg-[var(--color-info)]/40" />
-                        <div className="w-5 h-4 rounded-sm bg-[var(--color-info)]/70" />
+                        <div className="w-5 h-4 rounded-sm bg-info/10" />
+                        <div className="w-5 h-4 rounded-sm bg-info/40" />
+                        <div className="w-5 h-4 rounded-sm bg-info/70" />
                       </Flex>
                       <span className="text-xs text-mission-control-text-dim">High</span>
                     </Flex>
@@ -933,11 +934,11 @@ export function XEnhancedAnalyticsView() {
                               <span
                                 className={`text-xs font-semibold ${
                                   Number(engPct) >= 5
-                                    ? 'text-[var(--color-success)]'
+                                    ? 'text-success'
                                     : Number(engPct) >= 2
-                                    ? 'text-[var(--color-info)]'
+                                    ? 'text-info'
                                     : Number(engPct) >= 0.5
-                                    ? 'text-[var(--color-warning)]'
+                                    ? 'text-warning'
                                     : 'text-mission-control-text-dim'
                                 }`}
                               >
@@ -972,17 +973,17 @@ export function XEnhancedAnalyticsView() {
                   <span className="text-xs text-mission-control-text-dim">impressions</span>
                 </Flex>
                 <Flex align="center" gap="2">
-                  <Heart size={14} className="text-[var(--color-review)]" />
+                  <Heart size={14} className="text-review" />
                   <span className="text-mission-control-text">{avgMetrics.likes}</span>
                   <span className="text-xs text-mission-control-text-dim">likes</span>
                 </Flex>
                 <Flex align="center" gap="2">
-                  <Repeat size={14} className="text-[var(--color-success)]" />
+                  <Repeat size={14} className="text-success" />
                   <span className="text-mission-control-text">{avgMetrics.retweets}</span>
                   <span className="text-xs text-mission-control-text-dim">retweets</span>
                 </Flex>
                 <Flex align="center" gap="2">
-                  <MessageCircle size={14} className="text-[var(--color-info)]" />
+                  <MessageCircle size={14} className="text-info" />
                   <span className="text-mission-control-text">{avgMetrics.replies}</span>
                   <span className="text-xs text-mission-control-text-dim">replies</span>
                 </Flex>
@@ -1006,8 +1007,8 @@ export function XEnhancedAnalyticsView() {
                       <div className="flex-1 min-w-0">
                         <Flex align="center" gap="2" className="mb-1">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                            post.type === 'thread' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-                            post.type === 'reply' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' :
+                            post.type === 'thread' ? 'bg-success/10 text-success' :
+                            post.type === 'reply' ? 'bg-info/10 text-info' :
                             post.type === 'quote' ? 'bg-mission-control-accent/10 text-mission-control-accent' :
                             'bg-mission-control-accent/20 text-mission-control-accent'
                           }`}>
@@ -1033,19 +1034,19 @@ export function XEnhancedAnalyticsView() {
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                           <div>
-                            <Flex align="center" justify="center" gap="1" className="text-[var(--color-review)]">
+                            <Flex align="center" justify="center" gap="1" className="text-review">
                               <Heart size={12} />
                             </Flex>
                             <div className="text-xs font-medium text-mission-control-text">{post.likes}</div>
                           </div>
                           <div>
-                            <Flex align="center" justify="center" gap="1" className="text-[var(--color-success)]">
+                            <Flex align="center" justify="center" gap="1" className="text-success">
                               <Repeat size={12} />
                             </Flex>
                             <div className="text-xs font-medium text-mission-control-text">{post.retweets}</div>
                           </div>
                           <div>
-                            <Flex align="center" justify="center" gap="1" className="text-[var(--color-info)]">
+                            <Flex align="center" justify="center" gap="1" className="text-info">
                               <MessageCircle size={12} />
                             </Flex>
                             <div className="text-xs font-medium text-mission-control-text">{post.replies}</div>
@@ -1135,7 +1136,7 @@ export function XEnhancedAnalyticsView() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
                 <Flex align="center" gap="2" className="mb-2">
-                  <Zap size={16} className="text-[var(--color-warning)]" />
+                  <Zap size={16} className="text-warning" />
                   <span className="text-sm text-mission-control-text-dim">Best Day</span>
                 </Flex>
                 <div className="text-2xl font-bold text-mission-control-text">{bestTimes.day}</div>
@@ -1143,7 +1144,7 @@ export function XEnhancedAnalyticsView() {
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
                 <Flex align="center" gap="2" className="mb-2">
-                  <Clock size={16} className="text-[var(--color-info)]" />
+                  <Clock size={16} className="text-info" />
                   <span className="text-sm text-mission-control-text-dim">Best Time</span>
                 </Flex>
                 <div className="text-2xl font-bold text-mission-control-text">{bestTimes.hour}</div>
@@ -1151,7 +1152,7 @@ export function XEnhancedAnalyticsView() {
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
                 <Flex align="center" gap="2" className="mb-2">
-                  <Calendar size={16} className="text-[var(--color-success)]" />
+                  <Calendar size={16} className="text-success" />
                   <span className="text-sm text-mission-control-text-dim">Best Day + Time</span>
                 </Flex>
                 <div className="text-2xl font-bold text-mission-control-text">{bestTimes.combined}</div>
@@ -1164,7 +1165,7 @@ export function XEnhancedAnalyticsView() {
         {view === 'insights' && (
           <div className="space-y-4">
             <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
-              <Lightbulb size={16} className="text-[var(--color-warning)]" />
+              <Lightbulb size={16} className="text-warning" />
               AI-Powered Suggestions
             </h3>
             <div className="grid gap-4">
@@ -1179,8 +1180,8 @@ export function XEnhancedAnalyticsView() {
                       <Flex align="center" gap="2" className="mb-2">
                         <h4 className="font-semibold text-mission-control-text">{suggestion.title}</h4>
                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          suggestion.impact === 'high' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-                          suggestion.impact === 'medium' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+                          suggestion.impact === 'high' ? 'bg-success/10 text-success' :
+                          suggestion.impact === 'medium' ? 'bg-warning/10 text-warning' :
                           'bg-mission-control-border text-mission-control-text-dim'
                         }`}>
                           {suggestion.impact} impact
@@ -1202,7 +1203,7 @@ export function XEnhancedAnalyticsView() {
           <div className="space-y-6 max-w-2xl mx-auto">
             <div>
               <h3 className="font-semibold text-mission-control-text flex items-center gap-2 mb-1">
-                <Sparkles size={16} className="text-[var(--color-info)]" />
+                <Sparkles size={16} className="text-info" />
                 Before You Post
               </h3>
               <p className="text-sm text-mission-control-text-dim">
@@ -1261,7 +1262,7 @@ export function XEnhancedAnalyticsView() {
               <Flex
                 align="center"
                 gap="2"
-                className="p-3 rounded-xl text-sm bg-[var(--color-error-subtle)] text-[var(--color-error)]"
+                className="p-3 rounded-xl text-sm bg-error-subtle text-error"
               >
                 <AlertCircle size={16} />
                 {predictionError}
@@ -1294,7 +1295,7 @@ export function XEnhancedAnalyticsView() {
 
                 {/* Optimal post time */}
                 <Flex align="center" gap="3" p="3" className="rounded-lg bg-mission-control-surface border border-mission-control-border">
-                  <Clock size={16} className="text-[var(--color-info)]" />
+                  <Clock size={16} className="text-info" />
                   <div>
                     <div className="text-xs text-mission-control-text-dim">Optimal post time</div>
                     <div className="text-sm font-semibold text-mission-control-text">{prediction.optimalPostTime}</div>
@@ -1308,9 +1309,9 @@ export function XEnhancedAnalyticsView() {
                     {prediction.contentSignals.map(signal => (
                       <Flex key={signal.label} align="center" gap="3">
                         {signal.verdict === 'good' ? (
-                          <CheckCircle2 size={14} className="text-[var(--color-success)] flex-shrink-0" />
+                          <CheckCircle2 size={14} className="text-success flex-shrink-0" />
                         ) : signal.verdict === 'improve' ? (
-                          <AlertCircle size={14} className="text-[var(--color-warning)] flex-shrink-0" />
+                          <AlertCircle size={14} className="text-warning flex-shrink-0" />
                         ) : (
                           <Minus size={14} className="text-mission-control-text-dim flex-shrink-0" />
                         )}
@@ -1340,7 +1341,7 @@ export function XEnhancedAnalyticsView() {
                   <ul className="space-y-2">
                     {prediction.improvements.map((tip, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
-                        <Lightbulb size={13} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
+                        <Lightbulb size={13} className="text-warning flex-shrink-0 mt-0.5" />
                         {tip}
                       </li>
                     ))}

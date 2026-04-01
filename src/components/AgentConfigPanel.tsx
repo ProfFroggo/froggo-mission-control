@@ -165,11 +165,11 @@ const MCP_SERVERS = [
 
 // Approval tiers
 const TRUST_TIERS = [
-  { id: 'restricted', label: 'Restricted', desc: 'Read-only. No writes, no approvals granted.', color: 'text-[var(--color-error)]' },
-  { id: 'apprentice',  label: 'Apprentice',  desc: 'Tier 1 auto-approved. Tier 2+ queued for review.', color: 'text-[var(--color-warning)]' },
-  { id: 'worker',      label: 'Worker',      desc: 'Tier 1-2 auto-approved. Tier 3 queued.', color: 'text-[var(--color-info)]' },
-  { id: 'trusted',     label: 'Trusted',     desc: 'All tiers auto-approved except Tier 3 external actions.', color: 'text-[var(--color-success)]' },
-  { id: 'admin',       label: 'Admin',       desc: 'Full autonomy. All tiers auto-approved.', color: 'text-[var(--color-review)]' },
+  { id: 'restricted', label: 'Restricted', desc: 'Read-only. No writes, no approvals granted.', color: 'text-error' },
+  { id: 'apprentice',  label: 'Apprentice',  desc: 'Tier 1 auto-approved. Tier 2+ queued for review.', color: 'text-warning' },
+  { id: 'worker',      label: 'Worker',      desc: 'Tier 1-2 auto-approved. Tier 3 queued.', color: 'text-info' },
+  { id: 'trusted',     label: 'Trusted',     desc: 'All tiers auto-approved except Tier 3 external actions.', color: 'text-success' },
+  { id: 'admin',       label: 'Admin',       desc: 'Full autonomy. All tiers auto-approved.', color: 'text-review' },
 ];
 
 const PERMISSION_GROUPS = [
@@ -244,7 +244,7 @@ const TIER_PRESETS: Record<string, Record<string, boolean>> = {
   },
 };
 
-const TIER_COLORS = ['text-[var(--color-success)]', 'text-[var(--color-info)]', 'text-[var(--color-warning)]', 'text-[var(--color-error)]'];
+const TIER_COLORS = ['text-success', 'text-info', 'text-warning', 'text-error'];
 
 type Tab = 'soul' | 'model' | 'skills' | 'tools' | 'api' | 'permissions' | 'performance';
 
@@ -627,8 +627,8 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
       <div className="flex border-b border-mission-control-border mb-4 overflow-x-auto">
         {TABS.map(t => (
           <button
-            key={t.id}
             type="button"
+            key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex-shrink-0 relative px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
               tab === t.id
@@ -637,7 +637,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
             }`}
           >
             {t.label}
-            {t.dirty && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-warning)] absolute top-1 right-1" />}
+            {t.dirty && <span className="w-1.5 h-1.5 rounded-full bg-warning absolute top-1 right-1" />}
           </button>
         ))}
       </div>
@@ -652,7 +652,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
             <div className="space-y-3">
               <p className="text-xs text-mission-control-text-dim/70">Defines {agentName}'s personality, responsibilities, and behavior rules.</p>
               {showRestartBanner && (
-                <Flex align="center" gap="2" className="px-3 py-2 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg text-[var(--color-warning)] text-xs">
+                <Flex align="center" gap="2" className="px-3 py-2 bg-warning/10 border border-warning/30 rounded-lg text-warning text-xs">
                   <AlertCircle size={12} />
                   Restart {agentName} for changes to take effect.
                   <button type="button" onClick={() => setShowRestartBanner(false)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors ml-auto">
@@ -789,8 +789,8 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     const on = activeSkills.includes(skill.slug);
                     return (
                       <button key={skill.id} type="button" onClick={() => toggleSkill(skill.slug)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${on ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30' : 'border-mission-control-border hover:border-mission-control-accent/30 hover:bg-mission-control-accent/5'}`}>
-                        <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${on ? 'bg-[var(--color-success)] border-[var(--color-success)]' : 'border-mission-control-border'}`}>
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${on ? 'bg-success/10 border-success/30' : 'border-mission-control-border hover:border-mission-control-accent/30 hover:bg-mission-control-accent/5'}`}>
+                        <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${on ? 'bg-success border-success' : 'border-mission-control-border'}`}>
                           {on && <Check size={10} className="text-white" />}
                         </div>
                         <span className="flex-1 text-sm text-mission-control-text">{skill.name}</span>
@@ -1102,10 +1102,10 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                         Tier change: {TRUST_TIERS.find(t => t.id === prevTrustTier)?.label} → {TRUST_TIERS.find(t => t.id === trustTier)?.label}
                       </div>
                       {gained.length > 0 && (
-                        <div className="text-[var(--color-success)]">+ Granting: {gained.join(', ')}</div>
+                        <div className="text-success">+ Granting: {gained.join(', ')}</div>
                       )}
                       {lost.length > 0 && (
-                        <div className="text-[var(--color-error)]">- Removing: {lost.join(', ')}</div>
+                        <div className="text-error">- Removing: {lost.join(', ')}</div>
                       )}
                     </div>
                   );
@@ -1153,9 +1153,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                                         className="px-2 py-0.5 rounded text-xs text-mission-control-text-dim hover:text-mission-control-text border border-transparent hover:border-mission-control-border transition-colors">Reset</button>
                                     )}
                                     <button type="button" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
-                                      className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === true ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]' : 'border-mission-control-border text-mission-control-text-dim hover:border-[var(--color-success)]/30 hover:text-[var(--color-success)]'}`}>Allow</button>
+                                      className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === true ? 'bg-success/10 border-success/30 text-success' : 'border-mission-control-border text-mission-control-text-dim hover:border-success/30 hover:text-success'}`}>Allow</button>
                                     <button type="button" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
-                                      className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === false ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 text-[var(--color-error)]' : 'border-mission-control-border text-mission-control-text-dim hover:border-[var(--color-error)]/30 hover:text-[var(--color-error)]'}`}>Deny</button>
+                                      className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === false ? 'bg-error/10 border-error/30 text-error' : 'border-mission-control-border text-mission-control-text-dim hover:border-error/30 hover:text-error'}`}>Deny</button>
                                   </div>
                                 </Flex>
                               );
@@ -1243,7 +1243,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     <Flex align="center" gap="3">
                       <div className="flex-1 h-2 rounded-full bg-mission-control-surface overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-[var(--color-success)] transition-colors"
+                          className="h-full rounded-full bg-success transition-colors"
                           style={{ width: `${metrics.approvalRate ?? 0}%` }}
                         />
                       </div>
@@ -1252,8 +1252,8 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                       </span>
                     </Flex>
                     <Flex gap="4" className="text-xs text-mission-control-text-dim">
-                      <span className="text-[var(--color-success)]">{metrics.reviewsApproved} approved</span>
-                      <span className="text-[var(--color-error)]">{metrics.reviewsRejected} rejected</span>
+                      <span className="text-success">{metrics.reviewsApproved} approved</span>
+                      <span className="text-error">{metrics.reviewsRejected} rejected</span>
                     </Flex>
                   </div>
 

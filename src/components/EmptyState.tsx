@@ -158,17 +158,17 @@ const EmptyState = React.memo(function EmptyState(props: EmptyStateProps) {
   const wrapperClass = variant === 'global'
     ? `rounded-xl border border-mission-control-accent/20 bg-mission-control-accent/5`
     : variant === 'error'
-    ? `rounded-xl border border-[var(--color-error-border)] bg-[var(--color-error-bg)]`
+    ? `rounded-xl border border-error-border bg-error-subtle`
     : '';
 
   const iconClass = isError
-    ? 'text-[var(--color-error)] opacity-70'
+    ? 'text-error opacity-70'
     : variant === 'global'
     ? 'text-mission-control-accent opacity-60'
     : 'text-mission-control-text-dim opacity-40';
 
-  const titleClass = isError ? 'text-[var(--color-error)]' : 'text-mission-control-text';
-  const descClass = isError ? 'text-[var(--color-error)]/70' : 'text-mission-control-text-dim';
+  const titleClass = isError ? 'text-error' : 'text-mission-control-text';
+  const descClass = isError ? 'text-error/70' : 'text-mission-control-text-dim';
 
   const containerSize = effectiveSize === 'sm' ? 'w-10 h-10' : effectiveSize === 'lg' ? 'w-14 h-14' : 'w-12 h-12';
   const containerIconSize = effectiveSize === 'sm' ? iconSize - 8 : iconSize - 16;
@@ -183,7 +183,7 @@ const EmptyState = React.memo(function EmptyState(props: EmptyStateProps) {
         <div
           className={`${containerSize} rounded-xl flex items-center justify-center ${
             isError
-              ? 'bg-[var(--color-error)]/10'
+              ? 'bg-error/10'
               : variant === 'global'
               ? 'bg-mission-control-accent/10'
               : 'bg-mission-control-border/30'

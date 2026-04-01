@@ -10,9 +10,9 @@ import AgentAvatar from '../AgentAvatar';
 import { showToast } from '../Toast';
 
 const PRIORITY_OPTIONS = [
-  { value: 'p0', label: 'P0 — Urgent', color: 'text-[var(--color-error)]' },
-  { value: 'p1', label: 'P1 — High',   color: 'text-[var(--color-warning)]' },
-  { value: 'p2', label: 'P2 — Medium', color: 'text-[var(--color-info)]' },
+  { value: 'p0', label: 'P0 — Urgent', color: 'text-error' },
+  { value: 'p1', label: 'P1 — High',   color: 'text-warning' },
+  { value: 'p2', label: 'P2 — Medium', color: 'text-info' },
   { value: 'p3', label: 'P3 — Low',    color: 'text-mission-control-text-dim' },
 ];
 
@@ -86,7 +86,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
           </Flex>
 
           {error && (
-            <Flex align="start" gap="2" className="px-3 py-2 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg text-[var(--color-error)] text-xs">
+            <Flex align="start" gap="2" className="px-3 py-2 bg-error/10 border border-error/30 rounded-lg text-error text-xs">
               <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
               {error}
             </Flex>
@@ -96,7 +96,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
           <div className="space-y-1">
             <label className="text-xs font-medium text-mission-control-text-dim mb-1 block">Assign to agent</label>
             {members.length === 0 ? (
-              <p className="text-xs text-[var(--color-warning)] flex items-center gap-1">
+              <p className="text-xs text-warning flex items-center gap-1">
                 <AlertTriangle size={12} /> No agents assigned to this project. Add agents first.
               </p>
             ) : (

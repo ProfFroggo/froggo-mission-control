@@ -72,7 +72,7 @@ export default function EmailWidget() {
     <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="2">
-          <Mail size={16} className="text-[var(--color-success)]" />
+          <Mail size={16} className="text-success" />
           <h2 className="font-semibold">Email</h2>
           {totalUnread > 0 && (
             <span className="text-xs px-1.5 py-0.5 bg-mission-control-accent/20 text-mission-control-accent rounded-full flex-shrink-0 whitespace-nowrap">
@@ -80,7 +80,7 @@ export default function EmailWidget() {
             </span>
           )}
           {totalAction > 0 && (
-            <span className="text-xs px-1.5 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full flex-shrink-0 whitespace-nowrap">
+            <span className="text-xs px-1.5 py-0.5 bg-error/10 text-error rounded-full flex-shrink-0 whitespace-nowrap">
               {totalAction} action
             </span>
           )}
@@ -105,9 +105,9 @@ export default function EmailWidget() {
           />
         ) : error ? (
           <div className="p-6 text-center text-mission-control-text-dim">
-            <AlertCircle size={24} className="mx-auto mb-2 text-[var(--color-error)]" />
+            <AlertCircle size={24} className="mx-auto mb-2 text-error" />
             <p className="text-sm">{error}</p>
-            <button onClick={fetchEmail} className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+            <button type="button" onClick={fetchEmail} className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
               Try again
             </button>
           </div>
@@ -115,7 +115,7 @@ export default function EmailWidget() {
           <div className="p-6 text-center text-mission-control-text-dim">
             <Inbox size={24} className="mx-auto mb-2 opacity-50" />
             <p className="text-sm">Click refresh to check email</p>
-            <button onClick={fetchEmail} className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+            <button type="button" onClick={fetchEmail} className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
               Fetch now
             </button>
           </div>
@@ -140,13 +140,13 @@ export default function EmailWidget() {
                 </Flex>
                 <Flex align="center" gap="2">
                   {account.action > 0 && (
-                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full">
+                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-error/10 text-error rounded-full">
                       <Tag size={10} />
                       {account.action}
                     </span>
                   )}
                   {account.starred > 0 && (
-                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full">
+                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-warning/10 text-warning rounded-full">
                       <Star size={10} />
                       {account.starred}
                     </span>

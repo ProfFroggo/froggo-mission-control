@@ -73,7 +73,7 @@ function DailyCostChart({ byDay }: { byDay: DayUsage[] }) {
               width={barW}
               height={h}
               rx={1}
-              fill="var(--mission-control-accent, #22c55e)"
+              fill="var(--mission-control-accent)"
               opacity={0.8}
             >
               <title>{day.date}: ${day.cost.toFixed(4)}</title>
@@ -261,18 +261,18 @@ export default function AgentTokenDetailModal({
           {agentCostPerDay > 0 && (
             <div className="px-6 pb-3">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 flex items-center gap-3 text-sm">
-                <DollarSign size={16} className="text-[var(--color-warning)] shrink-0" />
+                <DollarSign size={16} className="text-warning shrink-0" />
                 <span>
                   This agent costs{' '}
-                  <strong className="text-[var(--color-warning)]">${agentCostPerDay.toFixed(4)}/day</strong>
+                  <strong className="text-warning">${agentCostPerDay.toFixed(4)}/day</strong>
                   {teamAvgCostPerDay > 0 && (
                     <>
                       {' '}vs team avg{' '}
                       <strong>${teamAvgCostPerDay.toFixed(4)}/day</strong>
                       {agentCostPerDay > teamAvgCostPerDay ? (
-                        <span className="text-[var(--color-error)]"> (+{(((agentCostPerDay - teamAvgCostPerDay) / teamAvgCostPerDay) * 100).toFixed(0)}%)</span>
+                        <span className="text-error"> (+{(((agentCostPerDay - teamAvgCostPerDay) / teamAvgCostPerDay) * 100).toFixed(0)}%)</span>
                       ) : (
-                        <span className="text-[var(--color-success)]"> ({(((agentCostPerDay - teamAvgCostPerDay) / teamAvgCostPerDay) * 100).toFixed(0)}%)</span>
+                        <span className="text-success"> ({(((agentCostPerDay - teamAvgCostPerDay) / teamAvgCostPerDay) * 100).toFixed(0)}%)</span>
                       )}
                     </>
                   )}
@@ -312,16 +312,16 @@ export default function AgentTokenDetailModal({
                         <td className="py-2 px-3 text-mission-control-text-dim">
                           {truncateModel(entry.model)}
                         </td>
-                        <td className="py-2 px-3 text-right text-[var(--color-info)] tabular-nums">
+                        <td className="py-2 px-3 text-right text-info tabular-nums">
                           {entry.input_tokens.toLocaleString()}
                         </td>
-                        <td className="py-2 px-3 text-right text-[var(--color-review)] tabular-nums">
+                        <td className="py-2 px-3 text-right text-review tabular-nums">
                           {entry.output_tokens.toLocaleString()}
                         </td>
-                        <td className="py-2 px-3 text-right text-[var(--color-success)] font-medium tabular-nums">
+                        <td className="py-2 px-3 text-right text-success font-medium tabular-nums">
                           {entry.total_tokens.toLocaleString()}
                         </td>
-                        <td className="py-2 px-3 text-right text-[var(--color-warning)] tabular-nums">
+                        <td className="py-2 px-3 text-right text-warning tabular-nums">
                           ${entry.cost.toFixed(4)}
                         </td>
                       </tr>
@@ -363,13 +363,13 @@ export default function AgentTokenDetailModal({
               )}
               <div>
                 <div className="text-xs text-mission-control-text-dim mb-1">Total Tokens</div>
-                <div className="text-lg font-semibold text-[var(--color-success)] tabular-nums">
+                <div className="text-lg font-semibold text-success tabular-nums">
                   {totalTokens.toLocaleString()}
                 </div>
               </div>
               <div>
                 <div className="text-xs text-mission-control-text-dim mb-1">Total Cost</div>
-                <div className="text-lg font-semibold text-[var(--color-warning)] tabular-nums">
+                <div className="text-lg font-semibold text-warning tabular-nums">
                   ${totalCost.toFixed(4)}
                 </div>
               </div>

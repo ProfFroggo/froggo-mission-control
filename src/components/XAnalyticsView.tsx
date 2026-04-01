@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BarChart2, TrendingUp, Eye, Activity, Download, Users, RefreshCw } from 'lucide-react';
 import { Button, Flex } from '@radix-ui/themes';
+import { fetchXAnalytics } from '../hooks/useXAnalytics';
 
 interface AnalyticsSummary {
   followers: number;
@@ -39,11 +40,11 @@ export function XAnalyticsView() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/x/analytics');
-      if (!res.ok) { setSummary(null); setTopContent([]); return; }
-      const data = await res.json();
+      // Use shared fetch with in-flight deduplication + caching
+      const data = await fetchXAnalytics();
+      if (!data.ok) { setSummary(null); setTopContent([]); return; }
       const tweets: any[] = data.tweets ?? [];
-      const metrics = data.profile?.public_metrics ?? {};
+      const metrics = data.profile?.public_metrics ?? {} as Partial<{ followers_count: number; following_count: number; tweet_count: number; like_count: number }>;
       setSummary({
         followers: metrics.followers_count ?? 0,
         following: metrics.following_count ?? 0,
@@ -136,24 +137,24 @@ export function XAnalyticsView() {
       value: summary?.engagementRate ?? 0,
       icon: TrendingUp,
       format: (v: number) => `${v.toFixed(2)}%`,
-      color: 'text-[var(--color-success)]',
-      bg: 'bg-[var(--color-success)]/10',
+      color: 'text-success',
+      bg: 'bg-success/10',
     },
     {
       label: 'Total Impressions',
       value: summary?.totalImpressions ?? 0,
       icon: Eye,
       format: (v: number) => v.toLocaleString(),
-      color: 'text-[var(--color-info)]',
-      bg: 'bg-[var(--color-info)]/10',
+      color: 'text-info',
+      bg: 'bg-info/10',
     },
     {
       label: 'Total Engagements',
       value: totalEngagements,
       icon: Activity,
       format: (v: number) => v.toLocaleString(),
-      color: 'text-[var(--color-review)]',
-      bg: 'bg-[var(--color-review)]-subtle',
+      color: 'text-review',
+      bg: 'bg-review-subtle',
     },
   ];
 
@@ -199,7 +200,7 @@ export function XAnalyticsView() {
           <>
             {/* Estimated data banner */}
             {summary?.estimated && (
-              <Flex align="center" gap="2" className="px-4 py-2.5 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/20 rounded-lg text-[var(--color-warning)] text-sm">
+              <Flex align="center" gap="2" className="px-4 py-2.5 bg-warning/10 border border-warning/20 rounded-lg text-warning text-sm">
                 <Activity size={16} />
                 <span>Showing estimated metrics. Connect X API for real-time data.</span>
               </Flex>
@@ -252,8 +253,8 @@ export function XAnalyticsView() {
                       </div>
                       <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
                         post.status === 'posted'
-                          ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]'
-                          : 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
+                          ? 'bg-success/10 text-success'
+                          : 'bg-info/10 text-info'
                       }`}>
                         {post.status}
                       </span>

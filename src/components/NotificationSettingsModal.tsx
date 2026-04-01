@@ -260,6 +260,7 @@ export default function NotificationSettingsModal({
             )}
           </div>
           <button
+            type="button"
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             onClick={onClose}
             title="Close (ESC)"
@@ -273,10 +274,10 @@ export default function NotificationSettingsModal({
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
           {/* Mute Status */}
           {isMuted && (
-            <div className="bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg p-4 flex items-start gap-3">
-              <BellOff size={20} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
+            <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 flex items-start gap-3">
+              <BellOff size={20} className="text-warning flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-[var(--color-warning)]">Conversation Muted</p>
+                <p className="font-medium text-warning">Conversation Muted</p>
                 <p className="text-sm text-mission-control-text-dim mt-1">
                   Until {new Date(muteUntil).toLocaleString()}
                 </p>
@@ -296,16 +297,16 @@ export default function NotificationSettingsModal({
           <div className="bg-mission-control-bg rounded-lg p-4">
             <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Quick Mute</p>
             <div className="flex gap-2 flex-wrap">
-              <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(1)} disabled={saving}>
+              <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(1)} disabled={saving}>
                 1 hour
               </button>
-              <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(4)} disabled={saving}>
+              <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(4)} disabled={saving}>
                 4 hours
               </button>
-              <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(24)} disabled={saving}>
+              <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(24)} disabled={saving}>
                 24 hours
               </button>
-              <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(168)} disabled={saving}>
+              <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(168)} disabled={saving}>
                 1 week
               </button>
             </div>
@@ -429,6 +430,7 @@ export default function NotificationSettingsModal({
                     >
                       #{keyword}
                       <button
+                        type="button"
                         className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         onClick={() => removeKeyword(keyword)}
                         aria-label={`Remove keyword ${keyword}`}

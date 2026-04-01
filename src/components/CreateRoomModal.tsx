@@ -56,6 +56,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
             </div>
           </Flex>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close"
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"

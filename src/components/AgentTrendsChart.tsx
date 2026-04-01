@@ -197,7 +197,7 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
             type="button"
             onClick={handleCopy}
             title="Copy to clipboard"
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs hover:bg-mission-control-border/40 transition-colors ${copied ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs hover:bg-mission-control-border/40 transition-colors ${copied ? 'text-success' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
@@ -249,7 +249,7 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
                   y1={y}
                   x2={CHART_W - CHART_PADDING.right}
                   y2={y}
-                  stroke="var(--mission-control-border, #334155)"
+                  stroke="var(--mission-control-border)"
                   strokeWidth={0.5}
                   strokeDasharray="3,3"
                 />
@@ -259,7 +259,7 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
                   textAnchor="end"
                   dominantBaseline="middle"
                   fontSize={9}
-                  fill="var(--mission-control-text-dim, #64748b)"
+                  fill="var(--mission-control-text-dim)"
                 >
                   {tick}
                 </text>
@@ -279,7 +279,7 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
                   y={CHART_PADDING.top + innerH + 14}
                   textAnchor="middle"
                   fontSize={8}
-                  fill="var(--mission-control-text-dim, #64748b)"
+                  fill="var(--mission-control-text-dim)"
                 >
                   {formatDate(date)}
                 </text>
@@ -330,7 +330,7 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
             y1={yPos(0)}
             x2={CHART_W - CHART_PADDING.right}
             y2={yPos(0)}
-            stroke="var(--mission-control-border, #334155)"
+            stroke="var(--mission-control-border)"
             strokeWidth={1}
           />
         </svg>
@@ -369,10 +369,10 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
                     <span
                       className={`tabular-nums ${
                         avgSuccessRate(agent) >= 80
-                          ? 'text-[var(--color-success)]'
+                          ? 'text-success'
                           : avgSuccessRate(agent) >= 50
-                          ? 'text-[var(--color-warning)]'
-                          : 'text-[var(--color-error)]'
+                          ? 'text-warning'
+                          : 'text-error'
                       }`}
                     >
                       {avgSuccessRate(agent)}%

@@ -253,7 +253,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
             <div className="min-w-0">
               <h2 className="text-base font-semibold text-mission-control-text flex items-center gap-2">
                 Chat with {agent.name}
-                <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-lg">
+                <span className="text-xs px-2 py-0.5 bg-success/10 text-success rounded-lg">
                   Live LLM
                 </span>
               </h2>
@@ -323,7 +323,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
               const isNewSpeaker = !prev || prev.role !== msg.role;
               if (msg.role === 'system') {
                 return (
-                  <div key={i} className="flex items-start gap-2 px-3 py-2 bg-[var(--color-warning)]/8 border border-[var(--color-warning)]/20 rounded-lg text-sm text-[var(--color-warning)] my-2">
+                  <div key={i} className="flex items-start gap-2 px-3 py-2 bg-warning/8 border border-warning/20 rounded-lg text-sm text-warning my-2">
                     {msg.content.startsWith('Failed') ? <XCircle size={14} className="flex-shrink-0 mt-0.5" /> : <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />}
                     <span>{msg.content}</span>
                   </div>
@@ -340,7 +340,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                   )}
                   <div className={`max-w-[80%] flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                     {isNewSpeaker && msg.role !== 'user' && (
-                      <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">{agent.name}</span>
+                      <span className="text-xs font-medium text-success mb-1 px-1">{agent.name}</span>
                     )}
                     {isNewSpeaker && msg.role === 'user' && (
                       <span className="text-xs font-medium text-mission-control-accent mb-1 px-1">You</span>
@@ -381,7 +381,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                   <Bot size={14} className="text-mission-control-text-dim" />
                 </div>
                 <div className="flex flex-col items-start">
-                  <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">{agent.name}</span>
+                  <span className="text-xs font-medium text-success mb-1 px-1">{agent.name}</span>
                   <div className="text-sm text-mission-control-text">
                     <Flex gap="1" align="center" className="py-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -411,6 +411,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                 className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-[14px] px-4 py-3 text-sm resize-none text-mission-control-text placeholder:text-mission-control-text-dim outline-none focus:border-[var(--mission-control-accent)] focus:ring-2 focus:ring-[var(--mission-control-accent)]/20 transition-colors"
               />
               <button
+                type="button"
                 onClick={() => sendMessage()}
                 disabled={!input.trim() || sending}
                 className="w-8 h-8 rounded-lg bg-[var(--mission-control-accent)] text-white flex items-center justify-center hover:opacity-85 transition-opacity disabled:opacity-40 flex-shrink-0"

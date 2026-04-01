@@ -47,14 +47,14 @@ function formatDuration(ms: number): string {
 }
 
 function TrendIcon({ trend }: { trend: AgentScore['trend'] }) {
-  if (trend === 'improving') return <TrendingUp  size={14} className="text-[var(--color-success)] flex-shrink-0" />;
-  if (trend === 'declining') return <TrendingDown size={14} className="text-[var(--color-error)] flex-shrink-0" />;
+  if (trend === 'improving') return <TrendingUp  size={14} className="text-success flex-shrink-0" />;
+  if (trend === 'declining') return <TrendingDown size={14} className="text-error flex-shrink-0" />;
   return <Minus size={14} className="text-mission-control-text-dim flex-shrink-0" />;
 }
 
 function ScoreBar({ score }: { score: number }) {
-  const color = score >= 75 ? 'bg-[var(--color-success)]' : score >= 45 ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-error)]';
-  const textColor = score >= 75 ? 'text-[var(--color-success)]' : score >= 45 ? 'text-[var(--color-warning)]' : 'text-[var(--color-error)]';
+  const color = score >= 75 ? 'bg-success' : score >= 45 ? 'bg-warning' : 'bg-error';
+  const textColor = score >= 75 ? 'text-success' : score >= 45 ? 'text-warning' : 'text-error';
   return (
     <div className="flex items-center gap-2 min-w-[120px]">
       <div className="flex-1 h-1.5 bg-mission-control-border rounded-full overflow-hidden">
@@ -240,7 +240,7 @@ export default function AgentLeaderboard() {
 
       {/* Error */}
       {error && (
-        <Flex align="center" gap="2" p="3" className="rounded-lg border border-[var(--color-error-border)] bg-[var(--color-error-bg)] text-sm text-[var(--color-error)]">
+        <Flex align="center" gap="2" p="3" className="rounded-lg border border-error-border bg-error-subtle text-sm text-error">
           <AlertTriangle size={14} className="flex-shrink-0" />
           {error}
         </Flex>
@@ -306,22 +306,22 @@ export default function AgentLeaderboard() {
                 <div className="flex-shrink-0 text-right min-w-[60px]">
                   {sortBy === 'successRate' ? (
                     <>
-                      <div className="text-sm font-mono font-bold tabular-nums text-[var(--color-success)]">{row.metrics.successRate}%</div>
+                      <div className="text-sm font-mono font-bold tabular-nums text-success">{row.metrics.successRate}%</div>
                       <div className="text-[10px] text-mission-control-text-dim/70">success</div>
                     </>
                   ) : sortBy === 'tasksCompleted' ? (
                     <>
-                      <div className="text-sm font-mono font-bold tabular-nums text-[var(--color-info)]">{row.metrics.tasksCompleted}</div>
+                      <div className="text-sm font-mono font-bold tabular-nums text-info">{row.metrics.tasksCompleted}</div>
                       <div className="text-[10px] text-mission-control-text-dim/70">tasks</div>
                     </>
                   ) : sortBy === 'avgSpeed' ? (
                     <>
-                      <div className="text-sm font-mono font-bold tabular-nums text-[var(--color-warning)]">{formatDuration(row.metrics.avgDurationMs)}</div>
+                      <div className="text-sm font-mono font-bold tabular-nums text-warning">{formatDuration(row.metrics.avgDurationMs)}</div>
                       <div className="text-[10px] text-mission-control-text-dim/70">avg</div>
                     </>
                   ) : sortBy === 'costEfficiency' ? (
                     <>
-                      <div className="text-sm font-mono font-bold tabular-nums text-[var(--color-review)]">
+                      <div className="text-sm font-mono font-bold tabular-nums text-review">
                         ${row.metrics.tasksCompleted > 0
                           ? (row.metrics.totalCostUsd / row.metrics.tasksCompleted).toFixed(3)
                           : '—'}
@@ -330,7 +330,7 @@ export default function AgentLeaderboard() {
                     </>
                   ) : (
                     <>
-                      <div className="text-sm font-mono font-bold tabular-nums text-[var(--color-success)]">{row.metrics.tasksCompleted}</div>
+                      <div className="text-sm font-mono font-bold tabular-nums text-success">{row.metrics.tasksCompleted}</div>
                       <div className="text-[10px] text-mission-control-text-dim/70">tasks</div>
                     </>
                   )}

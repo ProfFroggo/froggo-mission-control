@@ -65,12 +65,12 @@ const typeIcons = {
 };
 
 const typeColors = {
-  task: 'text-[var(--color-info)] bg-[var(--color-info)]/10',
-  fact: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle',
-  message: 'text-[var(--color-success)] bg-[var(--color-success)]/10',
-  email: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',
+  task: 'text-info bg-info/10',
+  fact: 'text-review bg-review-subtle',
+  message: 'text-success bg-success/10',
+  email: 'text-warning bg-warning/10',
   session: 'text-cyan-400 bg-cyan-500/10',
-  calendar: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',
+  calendar: 'text-warning bg-warning/10',
   tweet: 'text-sky-400 bg-sky-500/10',
   agent: 'text-pink-400 bg-pink-500/10',
   automation: 'text-violet-400 bg-violet-500/10',
@@ -90,9 +90,9 @@ const typeLabels = {
 
 const statusColors = {
   todo: 'text-mission-control-text-dim',
-  'in-progress': 'text-[var(--color-info)]',
-  done: 'text-[var(--color-success)]',
-  blocked: 'text-[var(--color-error)]',
+  'in-progress': 'text-info',
+  done: 'text-success',
+  blocked: 'text-error',
 };
 
 export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSearchProps) {

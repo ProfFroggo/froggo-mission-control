@@ -36,7 +36,7 @@ export default function WizardReview() {
     return (
       <div className="h-full flex items-center justify-center bg-mission-control-bg">
         <div className="text-center p-8">
-          <AlertCircle size={32} className="mx-auto text-[var(--color-error)] mb-3" />
+          <AlertCircle size={32} className="mx-auto text-error mb-3" />
           <p className="text-mission-control-text text-sm font-medium">No plan to review</p>
           <div className="mt-4 flex justify-center">
             <button
@@ -158,7 +158,7 @@ export default function WizardReview() {
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
         {/* Error banner */}
         {error && (
-          <Flex align="start" gap="2" className="p-3 rounded-lg bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)] text-sm">
+          <Flex align="start" gap="2" className="p-3 rounded-lg bg-error/10 border border-error/30 text-error text-sm">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
             <div>
               <p className="font-medium">Creation failed</p>

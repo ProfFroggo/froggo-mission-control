@@ -15,10 +15,10 @@ interface FunnelStage {
 }
 
 const STAGES: FunnelStage[] = [
-  { label: 'Todo', status: 'todo', color: '#6b7a8d' },
-  { label: 'In Progress', status: 'in-progress', color: 'var(--color-info, #3b82f6)' },
-  { label: 'Review', status: 'review', color: '#8b5cf6' },
-  { label: 'Done', status: 'done', color: 'var(--color-success, #22c55e)' },
+  { label: 'Todo', status: 'todo', color: 'var(--color-muted)' },
+  { label: 'In Progress', status: 'in-progress', color: 'var(--color-info)' },
+  { label: 'Review', status: 'review', color: 'var(--color-review)' },
+  { label: 'Done', status: 'done', color: 'var(--color-success)' },
 ];
 
 function buildBomCsv(stages: FunnelStage[], counts: Record<string, number>): string {
@@ -138,7 +138,7 @@ export default function FunnelChart() {
             title="Copy to clipboard"
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
-            {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
+            {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
           </button>
         </Flex>
@@ -184,7 +184,7 @@ export default function FunnelChart() {
                     style={{
                       borderLeft: '4px solid transparent',
                       borderRight: '4px solid transparent',
-                      borderTop: `6px solid var(--mission-control-text-dim, #64748b)`,
+                      borderTop: `6px solid var(--mission-control-text-dim)`,
                       display: 'inline-block',
                     }}
                   />

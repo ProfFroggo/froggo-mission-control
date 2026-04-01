@@ -26,18 +26,18 @@ interface Props {
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
   'todo': <Circle size={14} className="text-mission-control-text-dim" />,
-  'internal-review': <Eye size={14} className="text-[var(--color-warning)]" />,
-  'in-progress': <Clock size={14} className="text-[var(--color-info)]" />,
-  'agent-review': <Eye size={14} className="text-danger" />,
-  'human-review': <User size={14} className="text-[var(--color-review)]" />,
-  'done': <CheckCircle2 size={14} className="text-[var(--color-success)]" />,
+  'internal-review': <Eye size={14} className="text-warning" />,
+  'in-progress': <Clock size={14} className="text-info" />,
+  'review': <Eye size={14} className="text-danger" />,
+  'human-review': <User size={14} className="text-review" />,
+  'done': <CheckCircle2 size={14} className="text-success" />,
 };
 
 const STATUS_LABEL: Record<string, string> = {
   'todo': 'To Do',
   'internal-review': 'Internal Review',
   'in-progress': 'In Progress',
-  'agent-review': 'Agent Review',
+  'review': 'Agent Review',
   'human-review': 'Human Review',
   'done': 'Done',
 };
@@ -136,7 +136,7 @@ export default function ModuleBuildProgress({ moduleId }: Props) {
       {/* Footer actions */}
       <Flex align="center" gap="3" className="px-4 py-3 border-t border-mission-control-border">
         {allDone ? (
-          <Flex align="center" gap="2" className="text-sm text-[var(--color-success)] font-medium">
+          <Flex align="center" gap="2" className="text-sm text-success font-medium">
             <CheckCircle2 size={16} />
             Module complete
           </Flex>

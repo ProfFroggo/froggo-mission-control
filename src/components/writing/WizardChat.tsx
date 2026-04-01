@@ -42,13 +42,13 @@ function ExtractionProgress() {
           return (
             <Flex key={label} align="center" gap="3">
               {done ? (
-                <CheckCircle size={16} className="text-[var(--color-success)] flex-shrink-0" />
+                <CheckCircle size={16} className="text-success flex-shrink-0" />
               ) : active ? (
                 <Loader2 size={16} className="text-mission-control-accent animate-spin flex-shrink-0" />
               ) : (
                 <div className="w-4 h-4 rounded-full border border-mission-control-border flex-shrink-0" />
               )}
-              <span className={`text-sm ${done ? 'text-[var(--color-success)]' : active ? 'text-mission-control-text' : 'text-mission-control-text-dim'}`}>
+              <span className={`text-sm ${done ? 'text-success' : active ? 'text-mission-control-text' : 'text-mission-control-text-dim'}`}>
                 {label}{active ? '...' : ''}
               </span>
             </Flex>
@@ -261,9 +261,9 @@ export default function WizardChat() {
     <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Error banners */}
       {(extractionError || error) && (
-        <div className="px-4 py-2 bg-[var(--color-error)]/10 border-b border-[var(--color-error)]/30 flex items-center gap-2">
-          <AlertCircle size={14} className="text-[var(--color-error)] flex-shrink-0" />
-          <span className="text-xs text-[var(--color-error)]">{extractionError || error}</span>
+        <div className="px-4 py-2 bg-error/10 border-b border-error/30 flex items-center gap-2">
+          <AlertCircle size={14} className="text-error flex-shrink-0" />
+          <span className="text-xs text-error">{extractionError || error}</span>
           <button
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ml-auto"
             onClick={() => { setExtractionError(null); setError(null); }}

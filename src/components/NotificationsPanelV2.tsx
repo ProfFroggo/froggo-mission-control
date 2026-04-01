@@ -31,18 +31,18 @@ const SOUND_PREF_KEY = 'mission-control.notification-sound';
 // ─── Type config ──────────────────────────────────────────────────────────────
 
 const typeConfig: Record<string, { icon: any; color: string; label: string }> = {
-  task_complete:    { icon: CheckCircle,   color: 'text-[var(--color-success)] bg-[var(--color-success)]/10',       label: 'Task Complete'   },
-  task_deadline:    { icon: Clock3,        color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',       label: 'Deadline'        },
-  task_assigned:    { icon: CheckSquare,   color: 'text-[var(--color-info)] bg-[var(--color-info)]/10',             label: 'Task Assigned'   },
-  agent_update:     { icon: Bot,           color: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle',         label: 'Agent Update'    },
-  message_arrival:  { icon: MessageSquare, color: 'text-[var(--color-info)] bg-[var(--color-info)]/10',             label: 'Message'         },
-  approval_pending: { icon: Eye,           color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',       label: 'Review Needed'   },
-  human_review:     { icon: AlertTriangle, color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',       label: 'Human Review'    },
+  task_complete:    { icon: CheckCircle,   color: 'text-success bg-success/10',       label: 'Task Complete'   },
+  task_deadline:    { icon: Clock3,        color: 'text-warning bg-warning/10',       label: 'Deadline'        },
+  task_assigned:    { icon: CheckSquare,   color: 'text-info bg-info/10',             label: 'Task Assigned'   },
+  agent_update:     { icon: Bot,           color: 'text-review bg-review-subtle',         label: 'Agent Update'    },
+  message_arrival:  { icon: MessageSquare, color: 'text-info bg-info/10',             label: 'Message'         },
+  approval_pending: { icon: Eye,           color: 'text-warning bg-warning/10',       label: 'Review Needed'   },
+  human_review:     { icon: AlertTriangle, color: 'text-warning bg-warning/10',       label: 'Human Review'    },
   calendar_event:   { icon: Calendar,      color: 'text-pink-400 bg-pink-500/10',         label: 'Event'           },
-  system_alert:     { icon: AlertTriangle, color: 'text-[var(--color-error)] bg-[var(--color-error)]/10',           label: 'Alert'           },
+  system_alert:     { icon: AlertTriangle, color: 'text-error bg-error/10',           label: 'Alert'           },
   skill_learned:    { icon: Star,          color: 'text-cyan-400 bg-cyan-500/10',         label: 'Skill'           },
-  approval_needed:  { icon: Shield,        color: 'text-danger bg-danger-subtle',         label: 'Approval Needed' },
-  error:            { icon: XCircle,       color: 'text-[var(--color-error)] bg-[var(--color-error)]/10',           label: 'Error'           },
+  approval_needed:  { icon: Shield,        color: 'text-danger bg-danger/10',              label: 'Approval Needed' },
+  error:            { icon: XCircle,       color: 'text-error bg-error/10',           label: 'Error'           },
 };
 
 // ─── Group definitions ────────────────────────────────────────────────────────
@@ -562,7 +562,7 @@ export default function NotificationsPanelV2() {
             <div className="p-2 bg-mission-control-accent/20 rounded-lg relative">
               <Bell size={24} className="text-mission-control-accent" />
               {stats.unread > 0 && (
-                <div className="absolute -top-1 -right-1 bg-[var(--color-error)] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center tabular-nums">
+                <div className="absolute -top-1 -right-1 bg-error text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center tabular-nums">
                   {stats.unread > 9 ? '9+' : stats.unread}
                 </div>
               )}
@@ -729,7 +729,7 @@ export default function NotificationsPanelV2() {
                             key={notif.id}
                             className={`p-4 rounded-lg border transition-colors group ${
                               notif.priority === 'urgent'
-                                ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 border-l-2 border-l-[var(--color-error)] shadow-lg'
+                                ? 'bg-error/10 border-error/30 border-l-2 border-l-[var(--color-error)] shadow-lg'
                                 : notif.read
                                 ? 'bg-transparent border-mission-control-border opacity-70'
                                 : 'bg-mission-control-accent/5 border-mission-control-border border-l-2 border-l-mission-control-accent shadow-card hover:shadow-card-hover'
@@ -759,7 +759,7 @@ export default function NotificationsPanelV2() {
                                     {/* High-priority red "!" badge */}
                                     {highPriority && (
                                       <span
-                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--color-error)]/20 text-[var(--color-error)] text-xs font-bold flex-shrink-0"
+                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-error/20 text-error text-xs font-bold flex-shrink-0"
                                         title="High priority"
                                         aria-label="High priority"
                                       >
@@ -771,7 +771,7 @@ export default function NotificationsPanelV2() {
                                     {!highPriority && notif.priority !== 'normal' && (
                                       <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded flex-shrink-0 whitespace-nowrap ${
                                         notif.priority === 'high'
-                                          ? 'bg-[var(--color-warning)]/20 text-[var(--color-warning)]'
+                                          ? 'bg-warning/20 text-warning'
                                           : 'bg-mission-control-border/40 text-mission-control-text-dim'
                                       }`}>
                                         {notif.priority.charAt(0).toUpperCase() + notif.priority.slice(1)}

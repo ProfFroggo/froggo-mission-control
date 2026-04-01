@@ -244,7 +244,7 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
       </Flex>
 
       {error && !loading && (
-        <Flex align="center" gap="2" p="3" className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 text-xs text-[var(--color-error)]">
+        <Flex align="center" gap="2" p="3" className="rounded-lg border border-error/30 bg-error/10 text-xs text-error">
           <AlertTriangle size={12} className="flex-shrink-0" />
           {error}
         </Flex>

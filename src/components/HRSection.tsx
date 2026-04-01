@@ -116,16 +116,16 @@ export default function HRSection() {
   return (
     <>
       <div className="mb-8">
-        <div className="rounded-lg border border-[var(--color-success)]/30 bg-mission-control-surface overflow-hidden">
+        <div className="rounded-lg border border-success/30 bg-mission-control-surface overflow-hidden">
           {/* HR Header */}
-          <Flex align="center" gap="3" className="p-4 border-b border-[var(--color-success)]/30">
-            <div className="w-12 h-12 rounded-full bg-[var(--color-success)]/10 border border-[var(--color-success)]/20 flex items-center justify-center text-[var(--color-success)]">
+          <Flex align="center" gap="3" className="p-4 border-b border-success/30">
+            <div className="w-12 h-12 rounded-full bg-success/10 border border-success/20 flex items-center justify-center text-success">
               <GraduationCap size={22} />
             </div>
             <div className="flex-1">
               <h2 className="font-bold text-mission-control-text flex items-center gap-2">
                 HR Agent
-                <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/30">
+                <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-success/10 text-success border border-success/30">
                   Agent Management
                 </span>
               </h2>
@@ -170,7 +170,7 @@ export default function HRSection() {
                 </div>
               </div>
               <div className="p-3 bg-mission-control-surface">
-                <div className={`text-lg font-bold tabular-nums font-mono ${teamHealth.agentsNeedingTraining.length > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-success)]'}`}>
+                <div className={`text-lg font-bold tabular-nums font-mono ${teamHealth.agentsNeedingTraining.length > 0 ? 'text-warning' : 'text-success'}`}>
                   {teamHealth.agentsNeedingTraining.length > 0 ? teamHealth.agentsNeedingTraining.length : '0'}
                 </div>
                 <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
@@ -185,7 +185,7 @@ export default function HRSection() {
           {/* Skill gaps alert */}
           {teamHealth && teamHealth.agentsNeedingTraining.length > 0 && (
             <div className="px-4 pb-3">
-              <Flex align="center" gap="2" className="px-3 py-2 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-xs text-[var(--color-warning)]">
+              <Flex align="center" gap="2" className="px-3 py-2 rounded-lg bg-warning/10 border border-warning/30 text-xs text-warning">
                 <AlertTriangle size={12} className="flex-shrink-0" />
                 <span>
                   <strong>{teamHealth.agentsNeedingTraining.join(', ')}</strong>{' '}

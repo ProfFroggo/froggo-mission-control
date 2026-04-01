@@ -24,8 +24,11 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const { id, name, topic, agents } = await request.json();
 
-    if (!name) {
-      return NextResponse.json({ error: 'name is required' }, { status: 400 });
+    if (!name || typeof name !== 'string' || name.length > 200) {
+      return NextResponse.json({ error: 'name is required and must be 200 characters or fewer' }, { status: 400 });
+    }
+    if (agents !== undefined && !Array.isArray(agents)) {
+      return NextResponse.json({ error: 'agents must be an array' }, { status: 400 });
     }
 
     const roomId = id || `room-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;

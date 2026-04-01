@@ -4,6 +4,7 @@
 
 import { getDb } from './database';
 import { emitSSEEvent } from './sseEmitter';
+import { randomUUID } from 'crypto';
 
 export interface CreateNotificationInput {
   type: string;
@@ -16,7 +17,7 @@ export interface CreateNotificationInput {
 export async function createNotification(data: CreateNotificationInput): Promise<void> {
   try {
     const db = getDb();
-    const id = `notif-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const id = `notif-${randomUUID()}`;
     const now = new Date().toISOString();
     db.prepare(
       `INSERT INTO notifications (id, type, title, body, userId, metadata, createdAt)

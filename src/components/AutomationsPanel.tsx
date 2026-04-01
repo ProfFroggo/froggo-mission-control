@@ -4,7 +4,7 @@ import {
   Zap, Clock, Globe, Bot, Plus, Play, Trash2, Edit2,
   LayoutGrid, ChevronRight, AlertCircle, CheckCircle,
   RefreshCw, FileText, MessageSquare, Archive, Layers, List, History,
-  Users, BarChart2,
+  Users, BarChart2, Workflow, GitBranch, Sparkles,
 } from 'lucide-react';
 import { Button, Switch, Flex } from '@radix-ui/themes';
 import SearchInput from './SearchInput';
@@ -21,7 +21,7 @@ export type TriggerType = 'schedule' | 'event' | 'webhook' | 'manual';
 
 export interface AutomationStep {
   id: string;
-  type: 'run-agent' | 'post-chat' | 'save-library' | 'send-approval' | 'delay' | 'create-task';
+  type: 'run-agent' | 'post-chat' | 'save-library' | 'send-approval' | 'delay' | 'create-task' | 'run-workflow';
   label: string;
   config: Record<string, unknown>;
 }
@@ -42,7 +42,7 @@ export interface Automation {
 
 // ─── Template definitions ────────────────────────────────────────────────────
 
-type TemplateCategory = 'Content' | 'Social' | 'Reporting' | 'Tasks' | 'Alerts';
+type TemplateCategory = 'Content' | 'Social' | 'Reporting' | 'Tasks' | 'Alerts' | 'Workflow' | 'AI';
 
 interface Template {
   id: string;
@@ -168,16 +168,42 @@ const TEMPLATES: Template[] = [
       } },
     ],
   },
+  {
+    id: 'tpl-workflow-data-pipeline',
+    name: 'Automated Data Pipeline',
+    description: 'Triggers a Workflow Studio pipeline on schedule to process and transform data.',
+    category: 'Workflow',
+    icon: GitBranch,
+    trigger_type: 'schedule',
+    trigger_config: { time: '06:00', frequency: 'daily' },
+    steps: [
+      { type: 'run-workflow', label: 'Run Data Pipeline', config: { workflowId: '', inputs: {} } },
+      { type: 'post-chat', label: 'Report Results', config: { room: 'general', message: 'Data pipeline completed' } },
+    ],
+  },
+  {
+    id: 'tpl-workflow-content-gen',
+    name: 'AI Content Generation Workflow',
+    description: 'Runs an AI content generation workflow and saves output to library.',
+    category: 'AI',
+    icon: Sparkles,
+    trigger_type: 'manual',
+    trigger_config: {},
+    steps: [
+      { type: 'run-workflow', label: 'Generate Content', config: { workflowId: '', inputs: {} } },
+      { type: 'save-library', label: 'Save to Library', config: { folder: 'generated-content' } },
+    ],
+  },
 ];
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: AutomationStatus }) {
   const map: Record<AutomationStatus, { label: string; className: string }> = {
-    active:  { label: 'Active',  className: 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)]' },
-    paused:  { label: 'Paused',  className: 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)]' },
+    active:  { label: 'Active',  className: 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-success/10 text-success' },
+    paused:  { label: 'Paused',  className: 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-warning/10 text-warning' },
     draft:   { label: 'Draft',   className: 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-mission-control-border/50 text-mission-control-text-dim' },
-    error:   { label: 'Error',   className: 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-danger)]/10 text-[var(--color-danger)]' },
+    error:   { label: 'Error',   className: 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-danger)]/10 text-danger' },
   };
   const { label, className } = map[status];
   return (
@@ -198,7 +224,7 @@ function TriggerIcon({ type }: { type: TriggerType }) {
   };
   const Icon = icons[type];
   return (
-    <span title={type} className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]">
+    <span title={type} className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info">
       <Icon size={10} />
       {type}
     </span>
@@ -270,13 +296,13 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
         <Button size="1" variant="outline" onClick={() => onRunNow(automation.id)}>
           <Play size={12} /> Run now
         </Button>
-        <button onClick={() => onEdit(automation)} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
+        <button type="button" onClick={() => onEdit(automation)} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
           <Edit2 size={12} /> Edit
         </button>
-        <button onClick={() => onOpenStepBuilder(automation)} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
+        <button type="button" onClick={() => onOpenStepBuilder(automation)} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
           <List size={12} /> Steps
         </button>
-        <button onClick={() => onOpenRunLog(automation)} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
+        <button type="button" onClick={() => onOpenRunLog(automation)} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
           <History size={12} /> History
         </button>
         <button
@@ -284,7 +310,7 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOp
           onClick={() => onDelete(automation.id)}
           title="Delete automation"
           aria-label="Delete automation"
-          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-border/40 transition-colors ml-auto"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-error hover:bg-mission-control-border/40 transition-colors ml-auto"
         >
           <Trash2 size={12} />
         </button>
@@ -306,6 +332,8 @@ const CATEGORY_COLORS: Record<TemplateCategory, string> = {
   Reporting: 'var(--color-info)',
   Tasks:     'var(--color-success)',
   Alerts:    'var(--color-warning)',
+  Workflow:  'var(--color-review)',
+  AI:        'var(--color-info)',
 };
 
 function TemplateCard({ template, onUse }: TemplateCardProps) {
@@ -573,7 +601,7 @@ export default function AutomationsPanel() {
               placeholder="Search automations..."
               className="flex-1 max-w-sm"
             />
-            <button onClick={fetchAutomations} title="Refresh" aria-label="Refresh automations" className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
+            <button type="button" onClick={fetchAutomations} title="Refresh" aria-label="Refresh automations" className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors">
               <RefreshCw size={14} />
             </button>
           </Flex>

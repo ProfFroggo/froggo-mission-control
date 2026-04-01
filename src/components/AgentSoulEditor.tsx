@@ -471,8 +471,8 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
         </Flex>
 
         {showHint && (
-          <div className="rounded-lg bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)] mb-2">Expected format</p>
+          <div className="rounded-lg bg-info/10 border border-info/30 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-info mb-2">Expected format</p>
             <pre className="text-xs text-mission-control-text-dim/70 whitespace-pre-wrap font-mono leading-relaxed">
               {SOUL_HINT}
             </pre>
@@ -490,7 +490,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
 
         {/* Sticky footer row */}
         <Flex align="center" justify="between" gap="2" className="sticky bottom-0 bg-transparent pt-1 pb-0">
-          <span className={`text-[11px] tabular-nums ${charCount > MAX_CHARS * 0.9 ? 'text-[var(--color-warning)]' : 'text-mission-control-text-dim/70'}`}>
+          <span className={`text-[11px] tabular-nums ${charCount > MAX_CHARS * 0.9 ? 'text-warning' : 'text-mission-control-text-dim/70'}`}>
             {charCount.toLocaleString()} / {(MAX_CHARS / 1024).toFixed(0)}KB
             {isDirty && <span className="ml-2 text-[var(--mission-control-accent)]">Unsaved</span>}
           </span>

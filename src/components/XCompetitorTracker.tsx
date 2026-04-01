@@ -107,7 +107,7 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="3">
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border border-mission-control-border flex-shrink-0 bg-[var(--color-info)]/10 text-[var(--color-info)]"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border border-mission-control-border flex-shrink-0 bg-info/10 text-info"
           >
             {data.handle[0].toUpperCase()}
           </div>
@@ -140,7 +140,7 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
             href={`https://x.com/${data.handle}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-[var(--color-info)] hover:underline flex items-center gap-1"
+            className="text-xs text-info hover:underline flex items-center gap-1"
           >
             <ExternalLink size={12} />
           </a>
@@ -171,14 +171,14 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
         </div>
         <div className="px-3">
           <div className="text-base font-semibold text-mission-control-text flex items-center justify-center gap-1">
-            <Heart size={12} className="text-[var(--color-error)]" />
+            <Heart size={12} className="text-error" />
             {formatNumber(data.totalLikes)}
           </div>
           <div className="text-xs text-mission-control-text-dim mt-0.5">total likes</div>
         </div>
         <div className="px-3">
           <div className="text-base font-semibold text-mission-control-text flex items-center justify-center gap-1">
-            <Repeat2 size={12} className="text-[var(--color-info)]" />
+            <Repeat2 size={12} className="text-info" />
             {formatNumber(data.totalRetweets)}
           </div>
           <div className="text-xs text-mission-control-text-dim mt-0.5">total retweets</div>
@@ -381,7 +381,7 @@ export function XCompetitorTracker() {
           <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
             <Flex align="center" justify="between" className="mb-2">
               <Flex align="center" gap="2">
-                <FileText size={14} className="text-[var(--color-info)]" />
+                <FileText size={14} className="text-info" />
                 <span className="text-sm font-medium text-mission-control-text">{latestReport.title}</span>
               </Flex>
               <Flex align="center" gap="2">
@@ -539,7 +539,7 @@ export function XCompetitorTracker() {
             align="center"
             gap="2"
             className="p-3 rounded-lg text-sm"
-            style={{ background: 'var(--color-error-subtle)', color: 'var(--color-error)' }}
+            style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}
           >
             <AlertCircle size={16} />
             {error}

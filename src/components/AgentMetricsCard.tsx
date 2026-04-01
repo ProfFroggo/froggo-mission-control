@@ -36,11 +36,11 @@ function OrchestratorMetrics({ m, compact }: { m: Record<string, number>; compac
           <Users size={13} />
           <span>{m.agentsActive ?? 0}/{m.agentsTotal ?? 0} active</span>
         </Flex>
-        <Flex align="center" gap="1" className="text-[var(--color-info)] no-shrink">
+        <Flex align="center" gap="1" className="text-info no-shrink">
           <GitBranch size={13} />
           <span>{m.dispatches ?? 0} dispatches</span>
         </Flex>
-        <Flex align="center" gap="1" className="text-[var(--color-warning)] no-shrink">
+        <Flex align="center" gap="1" className="text-warning no-shrink">
           <Target size={13} />
           <span>{m.openTasks ?? 0} open</span>
         </Flex>
@@ -55,12 +55,12 @@ function OrchestratorMetrics({ m, compact }: { m: Record<string, number>; compac
       </Flex>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Stat icon={Users} label="Agents Active" value={`${m.agentsActive ?? 0}/${m.agentsTotal ?? 0}`} color="text-mission-control-accent" />
-        <Stat icon={GitBranch} label="Dispatches" value={m.dispatches ?? 0} color="text-[var(--color-info)]" sub="tasks dispatched" />
-        <Stat icon={Target} label="Open Tasks" value={m.openTasks ?? 0} color="text-[var(--color-warning)]" sub="being overseen" />
+        <Stat icon={GitBranch} label="Dispatches" value={m.dispatches ?? 0} color="text-info" sub="tasks dispatched" />
+        <Stat icon={Target} label="Open Tasks" value={m.openTasks ?? 0} color="text-warning" sub="being overseen" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <Stat icon={Zap} label="Cron Runs" value={m.cronRuns ?? 0} color="text-[var(--color-success)]" sub="scheduled jobs" />
-        <Stat icon={TrendingUp} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-[var(--color-danger)]" sub="actions taken" />
+        <Stat icon={Zap} label="Cron Runs" value={m.cronRuns ?? 0} color="text-success" sub="scheduled jobs" />
+        <Stat icon={TrendingUp} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-danger" sub="actions taken" />
       </div>
     </div>
   );
@@ -74,11 +74,11 @@ function HRMetrics({ m, compact }: { m: Record<string, number>; compact: boolean
           <Users size={13} />
           <span>{m.agentsTotal ?? 0} agents</span>
         </Flex>
-        <Flex align="center" gap="1" className="text-[var(--color-success)] no-shrink">
+        <Flex align="center" gap="1" className="text-success no-shrink">
           <BookOpen size={13} />
           <span>{m.skillSlotsTotal ?? 0} skills</span>
         </Flex>
-        <Flex align="center" gap="1" className="text-[var(--color-info)] no-shrink">
+        <Flex align="center" gap="1" className="text-info no-shrink">
           <CheckCircle size={13} />
           <span>{m.problemsResolved ?? 0} resolved</span>
         </Flex>
@@ -89,16 +89,16 @@ function HRMetrics({ m, compact }: { m: Record<string, number>; compact: boolean
     <div className="space-y-3">
       <Flex align="center" justify="between">
         <h4 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">HR Metrics</h4>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/30">People Ops</span>
+        <span className="text-xs px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/30">People Ops</span>
       </Flex>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Stat icon={Users} label="Agent Roster" value={m.agentsTotal ?? 0} color="text-mission-control-accent" sub="total agents" />
-        <Stat icon={BookOpen} label="Skills Distributed" value={m.skillSlotsTotal ?? 0} color="text-[var(--color-success)]" sub={`${m.agentsWithSkills ?? 0} agents trained`} />
-        <Stat icon={CheckCircle} label="Problems Resolved" value={m.problemsResolved ?? 0} color="text-[var(--color-info)]" sub="HR tasks done" />
+        <Stat icon={BookOpen} label="Skills Distributed" value={m.skillSlotsTotal ?? 0} color="text-success" sub={`${m.agentsWithSkills ?? 0} agents trained`} />
+        <Stat icon={CheckCircle} label="Problems Resolved" value={m.problemsResolved ?? 0} color="text-info" sub="HR tasks done" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <Stat icon={Shield} label="Reviews Done" value={m.reviewsDone ?? 0} color="text-[var(--color-warning)]" sub="approvals handled" />
-        <Stat icon={TrendingUp} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-[var(--color-danger)]" sub="actions taken" />
+        <Stat icon={Shield} label="Reviews Done" value={m.reviewsDone ?? 0} color="text-warning" sub="approvals handled" />
+        <Stat icon={TrendingUp} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-danger" sub="actions taken" />
       </div>
     </div>
   );
@@ -106,8 +106,8 @@ function HRMetrics({ m, compact }: { m: Record<string, number>; compact: boolean
 
 function QCMetrics({ m, compact }: { m: Record<string, number>; compact: boolean }) {
   const passRate = m.passRate ?? 0;
-  const ratingColor = passRate >= 90 ? 'text-[var(--color-success)]' : passRate >= 75 ? 'text-[var(--color-warning)]' : 'text-[var(--color-error)]';
-  const ratingBg = passRate >= 90 ? 'bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/30' : passRate >= 75 ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border-[var(--color-warning)]/30' : 'bg-[var(--color-error)]/10 text-[var(--color-error)] border-[var(--color-error)]/30';
+  const ratingColor = passRate >= 90 ? 'text-success' : passRate >= 75 ? 'text-warning' : 'text-error';
+  const ratingBg = passRate >= 90 ? 'bg-success/10 text-success border-success/30' : passRate >= 75 ? 'bg-warning/10 text-warning border-warning/30' : 'bg-error/10 text-error border-error/30';
   const ratingLabel = passRate >= 90 ? 'High Quality' : passRate >= 75 ? 'Good' : 'Needs Attention';
 
   if (compact) {
@@ -117,11 +117,11 @@ function QCMetrics({ m, compact }: { m: Record<string, number>; compact: boolean
           <Shield size={13} />
           <span className="font-semibold">{passRate.toFixed(1)}%</span>
         </Flex>
-        <Flex align="center" gap="1" className="text-[var(--color-success)] no-shrink">
+        <Flex align="center" gap="1" className="text-success no-shrink">
           <ThumbsUp size={13} />
           <span>{m.reviewsApproved ?? 0}</span>
         </Flex>
-        <Flex align="center" gap="1" className="text-[var(--color-error)] no-shrink">
+        <Flex align="center" gap="1" className="text-error no-shrink">
           <ThumbsDown size={13} />
           <span>{m.reviewsRejected ?? 0}</span>
         </Flex>
@@ -141,15 +141,15 @@ function QCMetrics({ m, compact }: { m: Record<string, number>; compact: boolean
             <span className="text-xs text-mission-control-text-dim">Pass Rate</span>
           </Flex>
           <div className={`text-2xl font-bold tabular-nums font-mono ${ratingColor}`}>{passRate.toFixed(1)}%</div>
-          <ProgressBar value={passRate} max={100} color={passRate >= 90 ? 'bg-[var(--color-success)]' : passRate >= 75 ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-error)]'} />
+          <ProgressBar value={passRate} max={100} color={passRate >= 90 ? 'bg-success' : passRate >= 75 ? 'bg-warning' : 'bg-error'} />
           <div className="text-xs text-mission-control-text-dim mt-1">{m.reviewsTotal ?? 0} total reviews</div>
         </Box>
-        <Stat icon={ThumbsUp} label="Approved" value={m.reviewsApproved ?? 0} color="text-[var(--color-success)]" sub="passed review" />
-        <Stat icon={ThumbsDown} label="Rejected" value={m.reviewsRejected ?? 0} color="text-[var(--color-error)]" sub="sent back" />
+        <Stat icon={ThumbsUp} label="Approved" value={m.reviewsApproved ?? 0} color="text-success" sub="passed review" />
+        <Stat icon={ThumbsDown} label="Rejected" value={m.reviewsRejected ?? 0} color="text-error" sub="sent back" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <Stat icon={Clock} label="Awaiting Review" value={m.awaitingReview ?? 0} color="text-[var(--color-warning)]" sub="in queue" />
-        <Stat icon={AlertCircle} label="Escalated" value={m.escalatedToHuman ?? 0} color="text-[var(--color-review)]" sub="to human-review" />
+        <Stat icon={Clock} label="Awaiting Review" value={m.awaitingReview ?? 0} color="text-warning" sub="in queue" />
+        <Stat icon={AlertCircle} label="Escalated" value={m.escalatedToHuman ?? 0} color="text-review" sub="to human-review" />
       </div>
     </div>
   );
@@ -167,11 +167,11 @@ function InboxMetrics({ m, compact }: { m: Record<string, number>; compact: bool
           <Inbox size={13} />
           <span>{m.messagesTotal ?? 0} msgs</span>
         </Flex>
-        <Flex align="center" gap="1" className="text-[var(--color-success)] no-shrink">
+        <Flex align="center" gap="1" className="text-success no-shrink">
           <CheckCircle size={13} />
           <span>{m.approvalsHandled ?? 0} approvals</span>
         </Flex>
-        <Flex align="center" gap="1" className="text-[var(--color-info)] no-shrink">
+        <Flex align="center" gap="1" className="text-info no-shrink">
           <Zap size={13} />
           <span>{m.actionsLast7Days ?? 0} this week</span>
         </Flex>
@@ -182,24 +182,24 @@ function InboxMetrics({ m, compact }: { m: Record<string, number>; compact: bool
     <div className="space-y-3">
       <Flex align="center" justify="between">
         <h4 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Communications</h4>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30">Auto-Comms</span>
+        <span className="text-xs px-2 py-0.5 rounded-full bg-info/10 text-info border border-info/30">Auto-Comms</span>
       </Flex>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Box className="bg-mission-control-bg rounded-lg p-3">
           <Flex align="center" gap="2" mb="1">
-            <Inbox size={13} className="text-[var(--color-info)]" />
+            <Inbox size={13} className="text-info" />
             <span className="text-xs text-mission-control-text-dim">Messages</span>
           </Flex>
-          <div className="text-2xl font-bold tabular-nums font-mono text-[var(--color-info)]">{m.messagesTotal ?? 0}</div>
-          <ProgressBar value={m.messagesRead ?? 0} max={m.messagesTotal || 1} color="bg-[var(--color-info)]" />
+          <div className="text-2xl font-bold tabular-nums font-mono text-info">{m.messagesTotal ?? 0}</div>
+          <ProgressBar value={m.messagesRead ?? 0} max={m.messagesTotal || 1} color="bg-info" />
           <div className="text-xs text-mission-control-text-dim mt-1">{readRate}% processed</div>
         </Box>
-        <Stat icon={CheckCircle} label="Approvals" value={m.approvalsHandled ?? 0} color="text-[var(--color-success)]" sub="handled" />
+        <Stat icon={CheckCircle} label="Approvals" value={m.approvalsHandled ?? 0} color="text-success" sub="handled" />
         <Stat icon={GitBranch} label="Tasks Created" value={m.tasksCreated ?? 0} color="text-mission-control-accent" sub="from inbox" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <Stat icon={Zap} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-[var(--color-warning)]" sub="auto-actions" />
-        <Stat icon={TrendingUp} label="Total Actions" value={m.totalActions ?? 0} color="text-[var(--color-danger)]" sub="all time" />
+        <Stat icon={Zap} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-warning" sub="auto-actions" />
+        <Stat icon={TrendingUp} label="Total Actions" value={m.totalActions ?? 0} color="text-danger" sub="all time" />
       </div>
     </div>
   );
@@ -256,11 +256,11 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
   };
 
   const getRatingBadge = (rate: number) => {
-    if (rate >= 95) return { label: 'Excellent', color: 'text-[var(--color-success)] bg-[var(--color-success)]/10 border-[var(--color-success)]/30' };
-    if (rate >= 85) return { label: 'Great',     color: 'text-[var(--color-info)] bg-[var(--color-info)]/10 border-[var(--color-info)]/30' };
-    if (rate >= 70) return { label: 'Good',      color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30' };
-    if (rate >= 50) return { label: 'Fair',      color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30' };
-    return { label: 'Needs Improvement', color: 'text-[var(--color-error)] bg-[var(--color-error)]/10 border-[var(--color-error)]/30' };
+    if (rate >= 95) return { label: 'Excellent', color: 'text-success bg-success/10 border-success/30' };
+    if (rate >= 85) return { label: 'Great',     color: 'text-info bg-info/10 border-info/30' };
+    if (rate >= 70) return { label: 'Good',      color: 'text-warning bg-warning/10 border-warning/30' };
+    if (rate >= 50) return { label: 'Fair',      color: 'text-warning bg-warning/10 border-warning/30' };
+    return { label: 'Needs Improvement', color: 'text-error bg-error/10 border-error/30' };
   };
 
   const rating = getRatingBadge(m.completionRate);
@@ -278,7 +278,7 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
     return (
       <Flex align="end" gap="1" className="h-8">
         {data.slice(0, 7).reverse().map((p, i) => (
-          <div key={i} className="flex-1 bg-[var(--color-info)]/10 rounded-t transition-colors"
+          <div key={i} className="flex-1 bg-info/10 rounded-t transition-colors"
             style={{ height: `${(p.tasks_completed / maxVal) * 100}%` }} />
         ))}
       </Flex>
@@ -296,7 +296,7 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
           <Clock size={14} className="no-shrink" />
           <span className="no-shrink">{formatAvgTime(m.avgTaskTimeHours)}</span>
         </Flex>
-        <Flex align="center" gap="1" className="text-[var(--color-success)] no-shrink no-wrap">
+        <Flex align="center" gap="1" className="text-success no-shrink no-wrap">
           <CheckCircle size={14} className="no-shrink" />
           <span className="no-shrink">{m.completedTasks}</span>
         </Flex>
@@ -318,33 +318,33 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Box className="bg-mission-control-bg rounded-lg p-3">
           <Flex align="center" gap="2" mb="1">
-            <Target size={16} className="text-[var(--color-success)]" />
+            <Target size={16} className="text-success" />
             <span className="text-xs text-mission-control-text-dim">Accuracy Rate</span>
           </Flex>
-          <div className="text-2xl font-bold tabular-nums font-mono text-[var(--color-success)]">{m.completionRate.toFixed(1)}%</div>
-          <ProgressBar value={m.completionRate} max={100} color="bg-[var(--color-success)]" />
+          <div className="text-2xl font-bold tabular-nums font-mono text-success">{m.completionRate.toFixed(1)}%</div>
+          <ProgressBar value={m.completionRate} max={100} color="bg-success" />
           <div className="text-xs tabular-nums font-mono text-mission-control-text-dim mt-1">{m.completedTasks} / {m.totalTasks} tasks</div>
         </Box>
 
         <Box className="bg-mission-control-bg rounded-lg p-3">
           <Flex align="center" gap="2" mb="1">
-            <CheckCircle size={16} className="text-[var(--color-info)]" />
+            <CheckCircle size={16} className="text-info" />
             <span className="text-xs text-mission-control-text-dim">Task Completion</span>
           </Flex>
-          <div className="text-2xl font-bold tabular-nums font-mono text-[var(--color-info)]">{m.completedTasks}</div>
-          <ProgressBar value={m.completedTasks} max={m.totalTasks || 1} color="bg-[var(--color-info)]" />
+          <div className="text-2xl font-bold tabular-nums font-mono text-info">{m.completedTasks}</div>
+          <ProgressBar value={m.completedTasks} max={m.totalTasks || 1} color="bg-info" />
           <div className="text-xs tabular-nums font-mono text-mission-control-text-dim mt-1">{m.inProgressTasks} in progress</div>
         </Box>
 
         <Box className="bg-mission-control-bg rounded-lg p-3">
           <Flex align="center" gap="2" mb="1">
-            <Clock size={16} className="text-[var(--color-review)]" />
+            <Clock size={16} className="text-review" />
             <span className="text-xs text-mission-control-text-dim">Avg Task Time</span>
           </Flex>
-          <div className="text-2xl font-bold tabular-nums font-mono text-[var(--color-review)]">{formatAvgTime(m.avgTaskTimeHours)}</div>
+          <div className="text-2xl font-bold tabular-nums font-mono text-review">{formatAvgTime(m.avgTaskTimeHours)}</div>
           <div className="text-xs text-mission-control-text-dim mt-2">
             {m.reviewSuccessRate > 0 && (
-              <span className="tabular-nums text-[var(--color-success)]">{m.reviewSuccessRate.toFixed(0)}% review pass</span>
+              <span className="tabular-nums text-success">{m.reviewSuccessRate.toFixed(0)}% review pass</span>
             )}
           </div>
         </Box>
@@ -353,11 +353,11 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Box className="bg-mission-control-bg rounded-lg p-3">
           <Flex align="center" gap="2" mb="2">
-            <Zap size={14} className="text-[var(--color-warning)]" />
+            <Zap size={14} className="text-warning" />
             <span className="text-xs text-mission-control-text-dim">Last 7 Days</span>
           </Flex>
           <Flex align="baseline" gap="2">
-            <span className="text-2xl font-bold tabular-nums font-mono text-[var(--color-warning)]">{m.completedLast7Days}</span>
+            <span className="text-2xl font-bold tabular-nums font-mono text-warning">{m.completedLast7Days}</span>
             <span className="text-xs text-mission-control-text-dim">tasks completed</span>
           </Flex>
           {m.performanceTrend && <div className="mt-2"><Sparkline data={m.performanceTrend} /></div>}
@@ -369,10 +369,10 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
             <span className="text-xs text-mission-control-text-dim">Subtask Progress</span>
           </Flex>
           <Flex align="baseline" gap="2">
-            <span className="text-2xl font-bold tabular-nums font-mono text-[var(--color-danger)]">{m.subtaskCompletionRate.toFixed(0)}%</span>
+            <span className="text-2xl font-bold tabular-nums font-mono text-danger">{m.subtaskCompletionRate.toFixed(0)}%</span>
             <span className="text-xs text-mission-control-text-dim">completion</span>
           </Flex>
-          <ProgressBar value={m.subtaskCompletionRate} max={100} color="bg-[var(--color-review)]" />
+          <ProgressBar value={m.subtaskCompletionRate} max={100} color="bg-review" />
         </Box>
       </div>
 
@@ -380,13 +380,13 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
         <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
           {m.reviewTasks > 0 && (
             <Flex align="center" gap="1">
-              <div className="w-2 h-2 rounded-full bg-[var(--color-info)]" />
+              <div className="w-2 h-2 rounded-full bg-info" />
               <span>{m.reviewTasks} in review</span>
             </Flex>
           )}
           {m.blockedTasks > 0 && (
             <Flex align="center" gap="1">
-              <AlertCircle size={14} className="text-[var(--color-error)]" />
+              <AlertCircle size={14} className="text-error" />
               <span>{m.blockedTasks} blocked</span>
             </Flex>
           )}

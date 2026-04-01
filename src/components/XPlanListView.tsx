@@ -70,7 +70,7 @@ export default function XPlanListView() {
       {/* Header */}
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="2">
-          <FileText className="w-5 h-5 text-[var(--color-info)]" />
+          <FileText className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Content Plans</h3>
         </Flex>
         <Button
@@ -110,16 +110,16 @@ export default function XPlanListView() {
                 <h4 className="text-sm font-bold text-mission-control-text">{plan.title}</h4>
               </Flex>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info">
                   {plan.content_type}
                 </span>
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-accent/10 text-mission-control-accent">
                   {plan.thread_length} tweet{plan.thread_length > 1 ? 's' : ''}
                 </span>
                 <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                  plan.status === 'approved' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-                  plan.status === 'rejected' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
-                  'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
+                  plan.status === 'approved' ? 'bg-success/10 text-success' :
+                  plan.status === 'rejected' ? 'bg-error/10 text-error' :
+                  'bg-warning/10 text-warning'
                 }`}>
                   {plan.status}
                 </span>

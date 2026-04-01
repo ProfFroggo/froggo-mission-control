@@ -468,7 +468,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
                     type="button"
                     onClick={() => deleteSavedFilter(filter.id)}
                     aria-label="Delete saved filter"
-                    className="inline-flex items-center justify-center w-6 h-6 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+                    className="inline-flex items-center justify-center w-6 h-6 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                   >
                     <X size={14} />
                   </button>

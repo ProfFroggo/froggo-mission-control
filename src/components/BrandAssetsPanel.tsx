@@ -65,9 +65,9 @@ const SCOPE_OPTIONS = [
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  logos:         'text-[var(--color-info)] bg-[var(--color-info)]',
-  colors:        'text-[var(--color-review)] bg-[var(--color-review)]',
-  typography:    'text-[var(--color-success)] bg-[var(--color-success)]',
+  logos:         'text-info bg-info',
+  colors:        'text-review bg-review',
+  typography:    'text-success bg-success',
   imagery:       'text-danger bg-danger',
   presentations: 'text-pink-400 bg-pink-500/10',
   guidelines:    'text-mission-control-accent bg-mission-control-accent/10',
@@ -95,9 +95,9 @@ function getFileIcon(fileType: string): React.ElementType {
 
 function getFileTypeBg(fileType: string): string {
   switch (fileType) {
-    case 'pdf':      return 'bg-[var(--color-error)]';
-    case 'video':    return 'bg-[var(--color-review)]';
-    case 'document': return 'bg-[var(--color-info)]';
+    case 'pdf':      return 'bg-error';
+    case 'video':    return 'bg-review';
+    case 'document': return 'bg-info';
     default:         return 'bg-muted-subtle';
   }
 }
@@ -123,7 +123,7 @@ function AssetCard({ asset, onClick }: AssetCardProps) {
   return (
     <div
       onClick={onClick}
-      className="group rounded-lg bg-mission-control-surface border border-mission-control-border hover:border-[var(--color-info)]/40 cursor-pointer transition-colors overflow-hidden"
+      className="group rounded-lg bg-mission-control-surface border border-mission-control-border hover:border-info/40 cursor-pointer transition-colors overflow-hidden"
     >
       {/* Preview area */}
       <div className="w-full h-28 overflow-hidden flex items-center justify-center bg-mission-control-bg">
@@ -225,6 +225,7 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      if (!res.ok) { setError(`Save failed (${res.status})`); return; }
       const data = await res.json() as { success: boolean; error?: string };
       if (!data.success) { setError(data.error ?? 'Save failed'); return; }
       onSaved();
@@ -247,6 +248,7 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
             {initial ? 'Edit Asset' : 'Add Brand Asset'}
           </span>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close"
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
@@ -258,7 +260,7 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
         {/* Body */}
         <div className="p-4 space-y-3 overflow-y-auto max-h-[70vh]">
           {error && (
-            <p className="text-xs text-[var(--color-error)] bg-[var(--color-error)] border border-[var(--color-error)] rounded px-3 py-2">{error}</p>
+            <p className="text-xs text-error bg-error border border-error rounded px-3 py-2">{error}</p>
           )}
 
           <TextField.Root
@@ -374,6 +376,7 @@ function AssetDrawer({ asset, onClose, onEdit, onDelete }: AssetDrawerProps) {
       <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border">
         <span className="font-semibold text-mission-control-text text-sm truncate">{asset.name}</span>
         <button
+          type="button"
           onClick={onClose}
           aria-label="Close"
           className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors shrink-0 ml-2"
@@ -424,7 +427,7 @@ function AssetDrawer({ asset, onClose, onEdit, onDelete }: AssetDrawerProps) {
             href={asset.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors truncate"
+            className="flex items-center gap-1.5 text-xs text-info hover:text-info transition-colors truncate"
           >
             <ExternalLink size={12} className="shrink-0" />
             <span className="truncate">{asset.url}</span>
@@ -517,7 +520,10 @@ export default function BrandAssetsPanel() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: string) => {
-    await fetch(`/api/brand-assets/${id}`, { method: 'DELETE' });
+    try {
+      const res = await fetch(`/api/brand-assets/${id}`, { method: 'DELETE' });
+      if (!res.ok) console.error(`[BrandAssets] Delete failed: ${res.status}`);
+    } catch { /* network error */ }
     setSelected(null);
     load();
   };
@@ -563,7 +569,7 @@ export default function BrandAssetsPanel() {
                 onClick={() => setCategory(value)}
                 className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors ${
                   active
-                    ? 'bg-[var(--color-info)]/20 text-[var(--color-info)] font-medium'
+                    ? 'bg-info/20 text-info font-medium'
                     : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
                 }`}
               >
@@ -593,6 +599,7 @@ export default function BrandAssetsPanel() {
               </TextField.Root>
               {search && (
                 <button
+                  type="button"
                   onClick={() => setSearch('')}
                   aria-label="Clear search"
                   className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors absolute right-2.5 top-1/2 -translate-y-1/2"
@@ -645,7 +652,7 @@ export default function BrandAssetsPanel() {
                       <div
                         key={asset.id}
                         onClick={() => setSelected(prev => prev?.id === asset.id ? null : asset)}
-                        className={`border rounded-lg p-4 bg-mission-control-surface cursor-pointer transition-colors hover:border-[var(--color-info)]/40 ${
+                        className={`border rounded-lg p-4 bg-mission-control-surface cursor-pointer transition-colors hover:border-info/40 ${
                           isSelected ? 'border-mission-control-accent/60' : 'border-mission-control-border'
                         }`}
                       >

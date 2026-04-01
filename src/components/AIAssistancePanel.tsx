@@ -284,17 +284,17 @@ Provide a brief, actionable summary.`;
   }
 
   const sentimentColors = {
-    positive: 'text-[var(--color-success)] bg-[var(--color-success)]/10',
-    neutral: 'text-[var(--color-info)] bg-[var(--color-info)]/10',
-    negative: 'text-[var(--color-error)] bg-[var(--color-error)]/10',
-    urgent: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',
-    questioning: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle',
+    positive: 'text-success bg-success/10',
+    neutral: 'text-info bg-info/10',
+    negative: 'text-error bg-error/10',
+    urgent: 'text-warning bg-warning/10',
+    questioning: 'text-review bg-review-subtle',
   };
 
   const urgencyColors = {
-    low: 'text-[var(--color-success)]',
-    medium: 'text-[var(--color-warning)]',
-    high: 'text-[var(--color-error)]',
+    low: 'text-success',
+    medium: 'text-warning',
+    high: 'text-error',
   };
 
   const toneIcons: Record<string, LucideIcon> = {
@@ -313,6 +313,7 @@ Provide a brief, actionable summary.`;
           <h2 className="font-semibold">AI Assistance</h2>
         </Flex>
         <button
+          type="button"
           onClick={onClose}
           className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           aria-label="Close panel"
@@ -324,6 +325,7 @@ Provide a brief, actionable summary.`;
       {/* Tab Navigation */}
       <div className="flex border-b border-mission-control-border bg-mission-control-bg">
         <button
+          type="button"
           onClick={() => setActiveTab('suggestions')}
           className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
             activeTab === 'suggestions'
@@ -335,6 +337,7 @@ Provide a brief, actionable summary.`;
           Suggestions
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('sentiment')}
           className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
             activeTab === 'sentiment'
@@ -346,6 +349,7 @@ Provide a brief, actionable summary.`;
           Sentiment
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('summary')}
           className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
             activeTab === 'summary'
@@ -388,17 +392,19 @@ Provide a brief, actionable summary.`;
                         </span>
                         <Flex gap="1">
                           <button
+                            type="button"
                             onClick={() => handleCopySuggestion(suggestion)}
                             className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                             title="Copy to clipboard"
                           >
                             {copiedId === suggestion.id ? (
-                              <Check size={14} className="text-[var(--color-success)]" />
+                              <Check size={14} className="text-success" />
                             ) : (
                               <Copy size={14} />
                             )}
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleApplySuggestion(suggestion)}
                             className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                             title="Apply suggestion"

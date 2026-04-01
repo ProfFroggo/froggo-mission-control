@@ -10,6 +10,7 @@ import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
+import { fetchXAnalytics } from '../hooks/useXAnalytics';
 import {
   CHART_COLORS, CHART_AXIS, CHART_GRID, CHART_MARGIN,
   CHART_TOOLTIP, premiumAreaProps, areaGradientStops,
@@ -104,8 +105,8 @@ function KPICard({ label, value, sub, curr = 0, prev = 0, sparkData, sparkColor,
         {t.dir !== 'flat' && t.pct > 0 && (
           <span className={`flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${
             t.dir === 'up'
-              ? 'bg-[var(--color-success-bg)] text-[var(--color-success)] border border-[var(--color-success-border)]'
-              : 'bg-[var(--color-error-bg)] text-[var(--color-error)] border border-[var(--color-error-border)]'
+              ? 'bg-success-subtle text-success border border-success-border'
+              : 'bg-error-subtle text-error border border-error-border'
           }`}>
             {t.dir === 'up' ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
             {t.pct}%
@@ -274,10 +275,11 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
 
   // Fetch analytics (resilient — allSettled so one failure doesn't block others)
   const loadAnalytics = useCallback(async () => {
+    const fetchOpts = { signal: AbortSignal.timeout(15_000) };
     const [tStats, trends, xAnalytics] = await Promise.allSettled([
-      fetch('/api/analytics/task-stats?days=8').then(r => r.json()),
-      fetch('/api/analytics/agent-trends?days=7').then(r => r.json()),
-      fetch('/api/x/analytics').then(r => r.json()),
+      fetch('/api/analytics/task-stats?days=8', fetchOpts).then(r => r.json()),
+      fetch('/api/analytics/agent-trends?days=7', fetchOpts).then(r => r.json()),
+      fetchXAnalytics(),
     ]);
 
     // Task stats
@@ -388,7 +390,7 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 flex items-center justify-between px-6 h-[52px] border-b border-mission-control-border bg-mission-control-surface/80">
         <div className="flex items-center gap-3">
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? 'bg-[var(--color-success)]' : 'bg-[var(--color-error)] animate-pulse'}`} />
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? 'bg-success' : 'bg-error animate-pulse'}`} />
           <span className="text-sm font-semibold text-mission-control-text">{greeting()}, Kevin</span>
           <span className="text-sm text-mission-control-text-dim hidden sm:inline">
             · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
@@ -397,7 +399,7 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
         <div className="flex items-center gap-2">
           {attentionCount > 0 && (
             <button type="button" onClick={() => onNavigate?.('approvals')}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] text-[var(--color-warning)] hover:bg-[var(--color-warning-bg)] transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-warning-border bg-warning-subtle text-warning hover:bg-warning-subtle transition-colors">
               <Zap size={11} />
               {attentionCount} need{attentionCount === 1 ? 's' : ''} action
             </button>
@@ -601,7 +603,7 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
                 sortedAgents.map(agent => {
                   const isActive = agent.status === 'active' || agent.status === 'busy';
                   const hasSession = !!agent.sessionKey && activeSessionKeys.has(agent.sessionKey);
-                  const dotColor = isActive ? 'bg-[var(--color-success)]' : hasSession ? 'bg-[var(--color-info)]' : 'bg-mission-control-border';
+                  const dotColor = isActive ? 'bg-success' : hasSession ? 'bg-info' : 'bg-mission-control-border';
                   return (
                     <button
                       key={agent.id}
@@ -641,7 +643,7 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-6 text-center px-4">
-                <CheckCircle size={20} className="text-[var(--color-success)] mb-1.5" />
+                <CheckCircle size={20} className="text-success mb-1.5" />
                 <p className="text-xs text-mission-control-text-dim">All clear</p>
               </div>
             )}

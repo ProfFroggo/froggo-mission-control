@@ -218,7 +218,7 @@ export default function PerformanceTable() {
                       </Flex>
                     </td>
                     <td className="w-20 text-right tabular-nums whitespace-nowrap">
-                      <span className={agent.success_rate >= 0.8 ? 'text-[var(--color-success)]' : agent.success_rate >= 0.6 ? 'text-[var(--color-warning)]' : 'text-[var(--color-error)]'}>
+                      <span className={agent.success_rate >= 0.8 ? 'text-success' : agent.success_rate >= 0.6 ? 'text-warning' : 'text-error'}>
                         {(agent.success_rate * 100).toFixed(0)}%
                       </span>
                     </td>
@@ -226,7 +226,7 @@ export default function PerformanceTable() {
                       <span className="text-mission-control-text-dim">{agent.avg_completion_hours.toFixed(1)}h</span>
                     </td>
                     <td className="w-20 text-right tabular-nums whitespace-nowrap">
-                      <span className={agent.clara_approval_rate >= 0.85 ? 'text-[var(--color-success)]' : agent.clara_approval_rate >= 0.7 ? 'text-[var(--color-warning)]' : 'text-[var(--color-error)]'}>
+                      <span className={agent.clara_approval_rate >= 0.85 ? 'text-success' : agent.clara_approval_rate >= 0.7 ? 'text-warning' : 'text-error'}>
                         {(agent.clara_approval_rate * 100).toFixed(0)}%
                       </span>
                     </td>
@@ -291,7 +291,7 @@ export default function PerformanceTable() {
                       <div className="flex-1">
                         {entry.type === 'lifecycle' ? (
                           <div>
-                            <div className="text-sm font-medium text-[var(--color-warning)]">
+                            <div className="text-sm font-medium text-warning">
                               Lifecycle: {entry.field}
                             </div>
                             <div className="text-xs text-mission-control-text-dim mt-1">
@@ -316,7 +316,7 @@ export default function PerformanceTable() {
                               </div>
                             )}
                             {entry.outcome && (
-                              <div className={`text-xs mt-1 ${entry.outcome === 'success' ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
+                              <div className={`text-xs mt-1 ${entry.outcome === 'success' ? 'text-success' : 'text-error'}`}>
                                 Outcome: {entry.outcome}
                               </div>
                             )}

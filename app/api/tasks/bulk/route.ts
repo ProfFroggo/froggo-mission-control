@@ -67,114 +67,120 @@ export async function POST(request: NextRequest) {
     const updated: string[] = [];
     const failed: string[] = [];
 
-    if (action === 'delete') {
-      // Delete all listed tasks
-      for (const id of idList) {
-        try {
-          // Cascade cleanup
-          try { db.prepare('DELETE FROM task_activity WHERE taskId = ?').run(id); } catch { /* non-critical */ }
+    // Wrap all bulk operations in a transaction for atomicity
+    const runBulk = db.transaction(() => {
+      if (action === 'delete') {
+        for (const id of idList) {
           try {
-            const approvalIds = db.prepare(
-              `SELECT id FROM approvals WHERE json_extract(metadata, '$.taskId') = ?`
-            ).all(id) as { id: string }[];
-            for (const { id: approvalId } of approvalIds) {
-              db.prepare('DELETE FROM approvals WHERE id = ?').run(approvalId);
-            }
-          } catch { /* non-critical */ }
+            try { db.prepare('DELETE FROM task_activity WHERE taskId = ?').run(id); } catch { /* non-critical */ }
+            try {
+              const approvalIds = db.prepare(
+                `SELECT id FROM approvals WHERE json_extract(metadata, '$.taskId') = ?`
+              ).all(id) as { id: string }[];
+              for (const { id: approvalId } of approvalIds) {
+                db.prepare('DELETE FROM approvals WHERE id = ?').run(approvalId);
+              }
+            } catch { /* non-critical */ }
 
-          const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
-          if (result.changes > 0) {
-            updated.push(id);
-          } else {
-            failed.push(id); // Not found
+            const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+            if (result.changes > 0) {
+              updated.push(id);
+            } else {
+              failed.push(id);
+            }
+          } catch {
+            failed.push(id);
           }
-        } catch {
-          failed.push(id);
         }
+        return;
       }
 
-      // Emit SSE for each deleted task
+      if (action === 'status') {
+        const newStatus = value as string;
+        for (const id of idList) {
+          try {
+            const result = db.prepare(
+              'UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?'
+            ).run(newStatus, now, id);
+            if (result.changes > 0) {
+              updated.push(id);
+              db.prepare(
+                'INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)'
+              ).run(id, null, 'status_change', `Bulk status update → ${newStatus}`, now);
+            } else {
+              failed.push(id);
+            }
+          } catch {
+            failed.push(id);
+          }
+        }
+        return;
+      }
+
+      if (action === 'assign') {
+        const agentId = (value ?? null) as string | null;
+        for (const id of idList) {
+          try {
+            const result = db.prepare(
+              'UPDATE tasks SET assignedTo = ?, updatedAt = ? WHERE id = ?'
+            ).run(agentId, now, id);
+            if (result.changes > 0) {
+              updated.push(id);
+              db.prepare(
+                'INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)'
+              ).run(id, agentId, 'update', agentId ? `Bulk assigned to ${agentId}` : 'Bulk unassigned', now);
+            } else {
+              failed.push(id);
+            }
+          } catch {
+            failed.push(id);
+          }
+        }
+        return;
+      }
+
+      if (action === 'priority') {
+        const newPriority = value as string;
+        for (const id of idList) {
+          try {
+            const result = db.prepare(
+              'UPDATE tasks SET priority = ?, updatedAt = ? WHERE id = ?'
+            ).run(newPriority, now, id);
+            if (result.changes > 0) {
+              updated.push(id);
+              db.prepare(
+                'INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)'
+              ).run(id, null, 'update', `Bulk priority set to ${newPriority}`, now);
+            } else {
+              failed.push(id);
+            }
+          } catch {
+            failed.push(id);
+          }
+        }
+        return;
+      }
+    });
+
+    runBulk();
+
+    // Emit SSE events outside the transaction
+    if (action === 'delete') {
       for (const id of updated) {
         try { emitSSEEvent('task.deleted', { id }); } catch { /* non-critical */ }
       }
-
       return NextResponse.json({ updated: updated.length, failed });
     }
-
     if (action === 'status') {
-      const newStatus = value as string;
-      for (const id of idList) {
-        try {
-          const result = db.prepare(
-            'UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?'
-          ).run(newStatus, now, id);
-          if (result.changes > 0) {
-            updated.push(id);
-            // Log activity
-            db.prepare(
-              'INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)'
-            ).run(id, null, 'status_change', `Bulk status update → ${newStatus}`, now);
-          } else {
-            failed.push(id);
-          }
-        } catch {
-          failed.push(id);
-        }
-      }
-
-      // Emit SSE
-      try { emitSSEEvent('task.updated', { ids: updated, status: newStatus }); } catch { /* non-critical */ }
-
+      try { emitSSEEvent('task.updated', { ids: updated, status: value }); } catch { /* non-critical */ }
       return NextResponse.json({ updated: updated.length, failed });
     }
-
     if (action === 'assign') {
-      const agentId = (value ?? null) as string | null;
-      for (const id of idList) {
-        try {
-          const result = db.prepare(
-            'UPDATE tasks SET assignedTo = ?, updatedAt = ? WHERE id = ?'
-          ).run(agentId, now, id);
-          if (result.changes > 0) {
-            updated.push(id);
-            db.prepare(
-              'INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)'
-            ).run(id, agentId, 'update', agentId ? `Bulk assigned to ${agentId}` : 'Bulk unassigned', now);
-          } else {
-            failed.push(id);
-          }
-        } catch {
-          failed.push(id);
-        }
-      }
-
-      try { emitSSEEvent('task.updated', { ids: updated, assignedTo: agentId }); } catch { /* non-critical */ }
-
+      try { emitSSEEvent('task.updated', { ids: updated, assignedTo: value ?? null }); } catch { /* non-critical */ }
       return NextResponse.json({ updated: updated.length, failed });
     }
-
     if (action === 'priority') {
-      const newPriority = value as string;
-      for (const id of idList) {
-        try {
-          const result = db.prepare(
-            'UPDATE tasks SET priority = ?, updatedAt = ? WHERE id = ?'
-          ).run(newPriority, now, id);
-          if (result.changes > 0) {
-            updated.push(id);
-            db.prepare(
-              'INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)'
-            ).run(id, null, 'update', `Bulk priority set to ${newPriority}`, now);
-          } else {
-            failed.push(id);
-          }
-        } catch {
-          failed.push(id);
-        }
-      }
-
-      try { emitSSEEvent('task.updated', { ids: updated, priority: newPriority }); } catch { /* non-critical */ }
-
+      try { emitSSEEvent('task.updated', { ids: updated, priority: value }); } catch { /* non-critical */ }
       return NextResponse.json({ updated: updated.length, failed });
     }
 

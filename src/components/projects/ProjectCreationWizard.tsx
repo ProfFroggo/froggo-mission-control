@@ -770,7 +770,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                 <Flex align="center" gap="2">
                   {gsdDocs
                     ? <GitBranch size={14} className="text-mission-control-accent" />
-                    : <CheckCircle size={14} className="text-[var(--color-success)]" />}
+                    : <CheckCircle size={14} className="text-success" />}
                   <p className="text-[10px] font-bold text-mission-control-text uppercase tracking-wide">
                     {gsdDocs ? 'GSD Plan Generated' : 'Ready to Create'}
                   </p>
@@ -1131,19 +1131,19 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               {steps.map(s => (
                 <div key={s.id} className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${
                   s.status === 'running' ? 'bg-mission-control-accent/5 border-mission-control-accent/30' :
-                  s.status === 'done'    ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30' :
-                  s.status === 'error'   ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30' :
+                  s.status === 'done'    ? 'bg-success/10 border-success/30' :
+                  s.status === 'error'   ? 'bg-error/10 border-error/30' :
                   'bg-mission-control-surface border-mission-control-border'
                 }`}>
                   <div className="flex-shrink-0 mt-0.5">
                     {s.status === 'running' && <Loader2 size={16} className="text-mission-control-accent animate-spin" />}
-                    {s.status === 'done'    && <CheckCircle size={16} className="text-[var(--color-success)]" />}
-                    {s.status === 'error'   && <XCircle size={16} className="text-[var(--color-error)]" />}
+                    {s.status === 'done'    && <CheckCircle size={16} className="text-success" />}
+                    {s.status === 'error'   && <XCircle size={16} className="text-error" />}
                     {s.status === 'pending' && <Circle size={16} className="text-mission-control-border" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium ${
-                      s.status === 'done' ? 'text-[var(--color-success)]' : s.status === 'error' ? 'text-[var(--color-error)]' :
+                      s.status === 'done' ? 'text-success' : s.status === 'error' ? 'text-error' :
                       s.status === 'running' ? 'text-mission-control-accent' : 'text-mission-control-text-dim'
                     }`}>{s.label}</div>
                     <div className="text-xs text-mission-control-text-dim mt-0.5">{s.errorMsg || s.detail}</div>
@@ -1153,8 +1153,8 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             </div>
 
             {createError && (
-              <div className="mt-4 p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-xl">
-                <div className="text-sm text-[var(--color-error)] font-medium">Setup failed</div>
+              <div className="mt-4 p-3 bg-error/10 border border-error/30 rounded-xl">
+                <div className="text-sm text-error font-medium">Setup failed</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">{createError}</div>
               </div>
             )}

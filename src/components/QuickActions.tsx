@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import {
   MessageSquare, CheckCircle, Search, Send, X,
-  ChevronLeft, ChevronRight, GripVertical, Mic, MicOff, Phone, PhoneOff, ListTodo, Play, Sparkles, Monitor, Camera, CameraOff,
+  ChevronLeft, ChevronRight, GripVertical, Mic, MicOff, Phone, PhoneOff, ListTodo, Play, Sparkles, Monitor, Camera, CameraOff, StickyNote, Plus,
 } from 'lucide-react';
 import { Button, IconButton, Text, Flex, TextArea, Select, Spinner } from '@radix-ui/themes';
 import { TextField } from '@radix-ui/themes';
@@ -15,6 +15,7 @@ import AgentAvatar from './AgentAvatar';
 import { ChatAgent, fetchAgentList } from './AgentSelector';
 import { GeminiLiveService, VideoMode, getGeminiVoiceForAgent, GeminiToolCall } from '../lib/geminiLiveService';
 import { loadAgentContext, invalidateAgentContext } from '../lib/agentContext';
+import { GeminiStt } from '../lib/globalStt';
 import MarkdownMessage from './MarkdownMessage';
 import { buildSystemInstruction, buildAgentTools, executeToolCall, loadRecentChatHistory, type AgentContext } from '../lib/voiceCallShared';
 import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
@@ -108,9 +109,9 @@ const VIEW_AGENT_SUGGESTIONS: Record<string, string[]> = {
 // Task quick-status options
 const TASK_STATUSES = [
   { label: 'To Do', value: 'todo', icon: ListTodo, color: 'text-mission-control-text-dim' },
-  { label: 'In Progress', value: 'in-progress', icon: Play, color: 'text-[var(--color-info)]' },
-  { label: 'Review', value: 'review', icon: Search, color: 'text-[var(--color-warning)]' },
-  { label: 'Done', value: 'done', icon: CheckCircle, color: 'text-[var(--color-success)]' },
+  { label: 'In Progress', value: 'in-progress', icon: Play, color: 'text-info' },
+  { label: 'Review', value: 'review', icon: Search, color: 'text-warning' },
+  { label: 'Done', value: 'done', icon: CheckCircle, color: 'text-success' },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -260,9 +261,9 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
       )}
 
       {activeCall && (
-        <Flex align="center" gap="2" className="mb-2 p-2 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
-          <span className="w-2 h-2 bg-[var(--color-error)] rounded-full animate-pulse" />
-          <span className="text-xs text-[var(--color-error)]">In call with {activeCall.agentName}</span>
+        <Flex align="center" gap="2" className="mb-2 p-2 bg-error/10 border border-error/30 rounded-lg">
+          <span className="w-2 h-2 bg-error rounded-full animate-pulse" />
+          <span className="text-xs text-error">In call with {activeCall.agentName}</span>
         </Flex>
       )}
       <div className="space-y-1">
@@ -282,7 +283,7 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
               <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>
             </div>
             {activeCall?.agentId === agent.id && (
-              <PhoneOff size={14} className="text-[var(--color-error)]" />
+              <PhoneOff size={14} className="text-error" />
             )}
           </button>
         ))}
@@ -542,6 +543,11 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   const [agentCallModalOpen, setAgentCallModalOpen] = useState(false);
   const [contextChatOpen, setContextChatOpen] = useState(false);
   const [taskShortcutsOpen, setTaskShortcutsOpen] = useState(false);
+  const [quickNoteOpen, setQuickNoteOpen] = useState(false);
+  const [quickNoteText, setQuickNoteText] = useState('');
+  const [quickNoteSaving, setQuickNoteSaving] = useState(false);
+  const [quickNoteListening, setQuickNoteListening] = useState(false);
+  const quickNoteSttRef = useRef<GeminiStt | null>(null);
 
   // FEATURE 2: Call persistence + real voice state
   const [activeCall, setActiveCall] = useState<{ agentId: string; agentName: string } | null>(loadActiveCall);
@@ -575,6 +581,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setContextChatOpen(false);
     setTaskShortcutsOpen(false);
     setAgentChatModalOpen(false);
+    setQuickNoteOpen(false);
+    if (quickNoteSttRef.current) { quickNoteSttRef.current.stop(); setQuickNoteListening(false); }
   };
 
   // Persist toolbar state (not in floating mode — don't clobber in-app state)
@@ -596,6 +604,51 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       textarea?.focus();
     }
   }, [quickMessageOpen]);
+
+  // ─── Quick Note helpers ────────────────────────────────────────────────────
+  const saveQuickNote = async () => {
+    if (!quickNoteText.trim()) return;
+    setQuickNoteSaving(true);
+    try {
+      const res = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: quickNoteText.trim() }),
+      });
+      if (res.ok) {
+        showToast('success', 'Note saved', quickNoteText.trim().slice(0, 60));
+        setQuickNoteText('');
+        setQuickNoteOpen(false);
+      } else {
+        showToast('error', 'Failed', 'Could not save note');
+      }
+    } catch {
+      showToast('error', 'Error', 'Network error saving note');
+    }
+    setQuickNoteSaving(false);
+  };
+
+  const toggleQuickNoteSTT = () => {
+    if (quickNoteListening && quickNoteSttRef.current) {
+      quickNoteSttRef.current.stop();
+      setQuickNoteListening(false);
+      return;
+    }
+
+    const stt = new GeminiStt({
+      continuous: true,
+      chunkDurationMs: 8000,
+      onTranscript: (text) => { setQuickNoteText(prev => prev ? `${prev} ${text}` : text); },
+      onError: (err) => {
+        showToast('error', 'STT error', err);
+        setQuickNoteListening(false);
+      },
+      onEnd: () => { setQuickNoteListening(false); },
+    });
+    quickNoteSttRef.current = stt;
+    stt.start();
+    setQuickNoteListening(true);
+  };
 
   // Agent context for voice calls
   const agentContextRef = useRef<AgentContext | null>(null);
@@ -1081,6 +1134,55 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         </div>
       )}
 
+      {/* Quick Note Modal */}
+      {quickNoteOpen && !state.isCollapsed && (
+        <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-4`}>
+          <Flex align="center" justify="between" className="mb-3">
+            <Text weight="medium" className="flex items-center gap-2">
+              <StickyNote size={16} className="text-mission-control-accent" />
+              Quick Note
+            </Text>
+            <button type="button" onClick={() => setQuickNoteOpen(false)} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+              <X size={16} />
+            </button>
+          </Flex>
+          <TextArea
+            value={quickNoteText}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setQuickNoteText(e.target.value)}
+            placeholder="Type a note and press Enter..."
+            rows={3}
+            size="2"
+            onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveQuickNote(); }
+            }}
+          />
+          <Flex justify="between" align="center" mt="2">
+            <button
+              type="button"
+              onClick={toggleQuickNoteSTT}
+              title={quickNoteListening ? 'Stop listening' : 'Voice input'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                quickNoteListening
+                  ? 'bg-destructive/10 text-destructive animate-pulse'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
+              }`}
+            >
+              {quickNoteListening ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+            <Button
+              size="2"
+              variant="solid"
+              color="violet"
+              disabled={!quickNoteText.trim() || quickNoteSaving}
+              onClick={saveQuickNote}
+            >
+              {quickNoteSaving ? <Spinner size="1" /> : <Plus size={14} />}
+              Save
+            </Button>
+          </Flex>
+        </div>
+      )}
+
       {/* FEATURE 2: Agent Call Modal */}
       {agentCallModalOpen && (
         <AgentCallModal
@@ -1114,9 +1216,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                   src={`/api/agents/${activeCall.agentId}/avatar`}
                   alt={activeCall.agentName}
                   className={`w-32 h-32 rounded-full object-cover border-4 transition-colors duration-300 ${
-                    callRinging ? 'border-[var(--color-warning)] animate-pulse scale-95'
-                    : callSpeaking ? 'border-[var(--color-success)] scale-110 shadow-lg'
-                    : callListening ? 'border-[var(--color-info)] scale-105 shadow-lg'
+                    callRinging ? 'border-warning animate-pulse scale-95'
+                    : callSpeaking ? 'border-success scale-110 shadow-lg'
+                    : callListening ? 'border-info scale-105 shadow-lg'
                     : 'border-mission-control-border'
                   }`}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -1134,7 +1236,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                   </div>
                 </div>
                 {callVideoMode !== 'none' && (
-                  <span className="text-xs bg-[var(--color-success)]/10 text-white px-2 py-0.5 rounded-full">
+                  <span className="text-xs bg-success/10 text-white px-2 py-0.5 rounded-full">
                     {callVideoMode === 'screen' ? 'Screen' : 'Camera'}
                   </span>
                 )}
@@ -1387,8 +1489,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
             </button>
             {activeCall && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-error)]" style={isFloating ? noDrag : {}}>
-                <span className="w-1.5 h-1.5 bg-[var(--color-error)] rounded-full animate-pulse" />
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-error" style={isFloating ? noDrag : {}}>
+                <span className="w-1.5 h-1.5 bg-error rounded-full animate-pulse" />
                 {activeCall.agentName}
               </span>
             )}
@@ -1413,6 +1515,21 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <Search size={16} />
+            </button>
+
+            {/* Quick Note button */}
+            <button
+              type="button"
+              onClick={() => { closeAllModals(); setQuickNoteOpen(!quickNoteOpen); }}
+              title="Quick Note"
+              style={isFloating ? noDrag : {}}
+              className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+                quickNoteOpen
+                  ? 'text-mission-control-accent bg-mission-control-accent/10'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
+              }`}
+            >
+              <StickyNote size={16} />
             </button>
 
             {/* Agent Chat button */}

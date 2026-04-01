@@ -19,9 +19,9 @@ const CHART_PADDING = { top: 16, right: 16, bottom: 40, left: 48 };
 const BAR_GAP = 4;
 
 const COLORS = {
-  created: 'var(--color-info, #3b82f6)',
-  completed: 'var(--color-success, #22c55e)',
-  inProgress: 'var(--color-warning, #f59e0b)',
+  created: 'var(--color-info)',
+  completed: 'var(--color-success)',
+  inProgress: 'var(--color-warning)',
 };
 
 function formatWeek(dateStr: string): string {
@@ -153,7 +153,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
             title="Copy to clipboard"
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
-            {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
+            {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
           </button>
         </Flex>
@@ -192,7 +192,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                   y1={y}
                   x2={chartW - CHART_PADDING.right}
                   y2={y}
-                  stroke="var(--mission-control-border, #334155)"
+                  stroke="var(--mission-control-border)"
                   strokeWidth={0.5}
                   strokeDasharray="3,3"
                 />
@@ -202,7 +202,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                   textAnchor="end"
                   dominantBaseline="middle"
                   fontSize={9}
-                  fill="var(--mission-control-text-dim, #64748b)"
+                  fill="var(--mission-control-text-dim)"
                 >
                   {tick}
                 </text>
@@ -265,7 +265,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                     y={baseY - h_created - h_completed - h_inProgress - 3}
                     textAnchor="middle"
                     fontSize={8}
-                    fill="var(--mission-control-text-dim, #64748b)"
+                    fill="var(--mission-control-text-dim)"
                   >
                     {stackedTotal}
                   </text>
@@ -276,7 +276,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                   y={baseY + 14}
                   textAnchor="middle"
                   fontSize={8}
-                  fill="var(--mission-control-text-dim, #64748b)"
+                  fill="var(--mission-control-text-dim)"
                 >
                   {label}
                 </text>
@@ -290,7 +290,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
             y1={yPos(0)}
             x2={chartW - CHART_PADDING.right}
             y2={yPos(0)}
-            stroke="var(--mission-control-border, #334155)"
+            stroke="var(--mission-control-border)"
             strokeWidth={1}
           />
         </svg>

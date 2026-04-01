@@ -74,10 +74,11 @@ export default function ConversationPanel({
           {sectionProgress.map(s => (
             <button
               key={s.id}
+              type="button"
               onClick={() => onJumpToSection(s.id)}
               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                 s.complete
-                  ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]'
+                  ? 'bg-success/10 border-success/30 text-success'
                   : s.id === currentSection
                   ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
                   : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'

@@ -24,12 +24,12 @@ interface WidgetLoaderProps {
  */
 function WidgetError({ widgetName }: { widgetName: string }) {
   return (
-    <div className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 p-4 text-sm">
-      <Flex align="center" gap="2" className="text-[var(--color-error)]">
+    <div className="rounded-lg border border-error/30 bg-error/10 p-4 text-sm">
+      <Flex align="center" gap="2" className="text-error">
         <AlertCircle size={16} />
         <span className="font-medium">Widget failed to load: {widgetName}</span>
       </Flex>
-      <p className="mt-1 text-xs text-[var(--color-error)]/70">
+      <p className="mt-1 text-xs text-error/70">
         The widget encountered an error during initialization.
       </p>
     </div>
@@ -133,10 +133,10 @@ function WidgetPlaceholder({
           <h4 className="font-semibold text-sm">{widget.name}</h4>
           <p className="text-xs text-mission-control-text-dim mt-1">{widget.description}</p>
           <div className="mt-3 text-xs text-mission-control-text-dim">
-            <span className="px-2 py-1 rounded-lg bg-[var(--color-info)]/10 text-[var(--color-info)]">
+            <span className="px-2 py-1 rounded-lg bg-info/10 text-info">
               Widget: {widget.id}
             </span>
-            <span className="ml-2 px-2 py-1 rounded-lg bg-[var(--color-review)]-subtle text-[var(--color-review)]">
+            <span className="ml-2 px-2 py-1 rounded-lg bg-review-subtle text-review">
               Agent: {agentId}
             </span>
           </div>

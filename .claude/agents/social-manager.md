@@ -136,4 +136,6 @@ Save all output files to `~/mission-control/library/`:
 - **Content calendars**: `library/campaigns/campaign-{name}-{date}/docs/strategies/`
 - **Drafted tweets / threads**: `library/campaigns/campaign-{name}-{date}/docs/YYYY-MM-DD_tweets_description.md`
 - **Newsletter briefs**: `library/campaigns/campaign-{name}-{date}/docs/YYYY-MM-DD_newsletter_brief.md`
+- **Engagement logs** (mention/DM response records): `library/docs/social/YYYY-MM-DD_engagement-log_description.md`
+- **Approval records** (approval requests and outcomes): `library/docs/social/YYYY-MM-DD_approval-record_description.md`
 - Always create a campaign folder for each initiative: `library/campaigns/campaign-{name}-{date}/`

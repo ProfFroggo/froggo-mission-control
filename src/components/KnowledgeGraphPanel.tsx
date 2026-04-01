@@ -242,7 +242,7 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
                     key={i}
                     x1={s.x} y1={s.y}
                     x2={t.x} y2={t.y}
-                    stroke="var(--color-border, #333)"
+                    stroke="var(--mission-control-border)"
                     strokeWidth={1.5}
                     strokeOpacity={0.5}
                   />

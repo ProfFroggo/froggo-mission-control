@@ -76,6 +76,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
           <h2 className="text-base font-semibold text-mission-control-text">Share Your Screen</h2>
           <Flex align="center" gap="2">
             <button
+              type="button"
               onClick={fetchSources}
               title="Refresh"
               className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
@@ -129,6 +130,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
               </div>
               <Flex gap="3">
                 <button
+                  type="button"
                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() => {
                     // Not available in web mode — user must open System Settings manually
@@ -142,9 +144,10 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
               </Flex>
             </Flex>
           ) : error ? (
-            <Flex direction="column" align="center" justify="center" py="9" className="text-[var(--color-error)]">
+            <Flex direction="column" align="center" justify="center" py="9" className="text-error">
               <p className="text-sm flex items-center gap-1"><AlertTriangle size={14} className="inline" /> {error}</p>
               <button
+                type="button"
                 className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 onClick={fetchSources}
               >

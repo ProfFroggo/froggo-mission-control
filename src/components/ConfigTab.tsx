@@ -157,13 +157,13 @@ export default function ConfigTab() {
     <div className="space-y-6">
       {/* Issues Banner */}
       {issues.length > 0 && (
-        <div className="p-4 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg">
+        <div className="p-4 bg-warning/10 border border-warning/30 rounded-lg">
           <Flex align="center" gap="2" className="mb-2">
-            <AlertTriangle size={16} className="text-[var(--color-warning)]" />
-            <span className="font-medium text-[var(--color-warning)]">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
+            <AlertTriangle size={16} className="text-warning" />
+            <span className="font-medium text-warning">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
           </Flex>
           {issues.map((issue, i) => (
-            <div key={i} className="text-sm text-[var(--color-warning)]">{issue.path}: {issue.message}</div>
+            <div key={i} className="text-sm text-warning">{issue.path}: {issue.message}</div>
           ))}
         </div>
       )}
@@ -194,7 +194,7 @@ export default function ConfigTab() {
         >
           <Code size={16} /> Raw JSON
         </button>
-        {dirty && <span className="text-xs text-[var(--color-warning)]">• Unsaved changes</span>}
+        {dirty && <span className="text-xs text-warning">• Unsaved changes</span>}
       </Flex>
 
       {showRaw ? (

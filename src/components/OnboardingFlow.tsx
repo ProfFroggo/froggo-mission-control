@@ -402,7 +402,7 @@ function StepFirstTask({
       <div className="space-y-3.5">
         <div>
           <label htmlFor="ob-task-title" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
-            Task title <span className="text-[var(--color-error)]">*</span>
+            Task title <span className="text-error">*</span>
           </label>
           <TextField.Root
             id="ob-task-title"
@@ -414,7 +414,7 @@ function StepFirstTask({
             placeholder="e.g. Draft a product announcement"
             disabled={taskCreated}
           />
-          {error && <p className="mt-1 text-xs text-[var(--color-error)]">{error}</p>}
+          {error && <p className="mt-1 text-xs text-error">{error}</p>}
         </div>
 
         <div>
@@ -770,7 +770,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           {/* Header */}
           <Flex align="center" justify="between" className="px-6 pt-5 pb-0">
             <StepDots total={TOTAL_STEPS} current={step} />
-            <button onClick={handleSkipAll} aria-label="Skip onboarding" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+            <button type="button" onClick={handleSkipAll} aria-label="Skip onboarding" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={14} />
             </button>
           </Flex>
@@ -972,7 +972,7 @@ export function QuickTips({ onDone }: QuickTipsProps) {
               <h3 className="text-sm font-semibold text-mission-control-text mt-0.5">{tip.title}</h3>
               <p className="text-xs text-mission-control-text-dim mt-1 leading-relaxed">{tip.content}</p>
             </div>
-            <button onClick={handleSkip} aria-label="Close tips" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0">
+            <button type="button" onClick={handleSkip} aria-label="Close tips" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0">
               <X size={14} />
             </button>
           </Flex>

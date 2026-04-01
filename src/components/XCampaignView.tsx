@@ -299,7 +299,7 @@ export default function XCampaignView() {
       <div className="flex flex-col h-full bg-mission-control-bg">
         <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
           <Flex align="center" gap="2">
-            <Rocket className="w-5 h-5 text-[var(--color-info)]" />
+            <Rocket className="w-5 h-5 text-info" />
             <h3 className="text-lg font-semibold text-mission-control-text">
               {editingCampaign.status === 'draft' && !campaigns.find(c => c.id === editingCampaign.id) ? 'New Campaign' : 'Edit Campaign'}
             </h3>
@@ -380,7 +380,7 @@ export default function XCampaignView() {
                       type="button"
                     >
                       <GripVertical className="w-4 h-4 text-mission-control-text-dim flex-shrink-0" />
-                      <span className="w-8 h-8 flex items-center justify-center bg-[var(--color-info)]/20 text-[var(--color-info)] text-sm font-bold rounded-full flex-shrink-0">
+                      <span className="w-8 h-8 flex items-center justify-center bg-info/20 text-info text-sm font-bold rounded-full flex-shrink-0">
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -449,7 +449,7 @@ export default function XCampaignView() {
                             rows={3}
                             size="2"
                           />
-                          <div className={`text-xs mt-1 ${countChars(stage.content) > 280 ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}>
+                          <div className={`text-xs mt-1 ${countChars(stage.content) > 280 ? 'text-error' : 'text-mission-control-text-dim'}`}>
                             <span className="tabular-nums">{countChars(stage.content)}/280</span>
                           </div>
                         </div>
@@ -469,7 +469,7 @@ export default function XCampaignView() {
                           <button
                             type="button"
                             onClick={() => removeStage(stage.id)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-error hover:bg-mission-control-surface transition-colors"
                           >
                             <Trash2 className="w-3 h-3" />
                             Remove stage
@@ -500,7 +500,7 @@ export default function XCampaignView() {
     <Flex direction="column" height="100%" className="bg-mission-control-bg">
       <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="2">
-          <Rocket className="w-5 h-5 text-[var(--color-info)]" />
+          <Rocket className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Campaigns</h3>
         </Flex>
         <Button onClick={createNewCampaign} variant="solid" color="blue" size="2">
@@ -577,9 +577,9 @@ export default function XCampaignView() {
             const daySpan = campaign.stages ? Math.max(...campaign.stages.map((s: any) => s.dayOffset || 0), 0) + 1 : 0;
             const statusColors: Record<string, string> = {
               draft: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mission-control-border text-mission-control-text-dim text-xs font-medium',
-              ready: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] text-xs font-medium',
-              scheduled: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)] text-xs font-medium',
-              active: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)] text-xs font-medium',
+              ready: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/10 text-warning text-xs font-medium',
+              scheduled: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-info/10 text-info text-xs font-medium',
+              active: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium',
               completed: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mission-control-border text-mission-control-text-dim text-xs font-medium',
             };
             return (
@@ -587,7 +587,7 @@ export default function XCampaignView() {
                 key={campaign.id}
                 role="button"
                 tabIndex={0}
-                className="bg-mission-control-border/20 border border-mission-control-border rounded-lg p-4 hover:border-[var(--color-info)]/50 transition-colors cursor-pointer"
+                className="bg-mission-control-border/20 border border-mission-control-border rounded-lg p-4 hover:border-info/50 transition-colors cursor-pointer"
                 onClick={() => { setEditingCampaign(campaign); setExpandedStages(new Set()); }}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setEditingCampaign(campaign); setExpandedStages(new Set()); } }}
               >
@@ -608,7 +608,7 @@ export default function XCampaignView() {
                     type="button"
                     onClick={e => { e.stopPropagation(); deleteCampaign(campaign.id); }}
                     aria-label="Delete campaign"
-                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors ml-auto"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-error hover:bg-mission-control-surface transition-colors ml-auto"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

@@ -129,6 +129,7 @@ export default function PromptDialog({
         <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <h2 className="text-base font-semibold text-mission-control-text">{title}</h2>
           <button
+            type="button"
             onClick={onClose}
             disabled={isSubmitting}
             aria-label="Close"
@@ -170,7 +171,7 @@ export default function PromptDialog({
 
           {/* Error */}
           {submitError && (
-            <p className="text-sm text-[var(--color-error)]">{submitError}</p>
+            <p className="text-sm text-error">{submitError}</p>
           )}
         </div>
 

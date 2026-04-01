@@ -89,19 +89,19 @@ function statusColor(status: PostStatus): { bg: string; text: string; border: st
       };
     case 'scheduled':
       return {
-        bg: 'var(--color-info-subtle)',
+        bg: 'var(--color-info-bg)',
         text: 'var(--color-info)',
         border: 'var(--color-info)',
       };
     case 'posted':
       return {
-        bg: 'var(--color-success-subtle)',
+        bg: 'var(--color-success-bg)',
         text: 'var(--color-success)',
         border: 'var(--color-success)',
       };
     case 'failed':
       return {
-        bg: 'var(--color-error-subtle)',
+        bg: 'var(--color-error-bg)',
         text: 'var(--color-error)',
         border: 'var(--color-error)',
       };
@@ -199,7 +199,7 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
           className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0"
         >
           <Flex align="center" gap="2">
-            <FileText size={16} className="text-[var(--color-info)]" />
+            <FileText size={16} className="text-info" />
             <span className="text-sm font-semibold text-mission-control-text">
               Post Detail
             </span>
@@ -242,7 +242,7 @@ function PostDetailDrawer({ post, onClose, onDelete, onStatusChange }: DrawerPro
               {post.content}
             </p>
             <div
-              className={`text-xs mt-1 text-right ${post.content.length > X_CHAR_LIMIT ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}
+              className={`text-xs mt-1 text-right ${post.content.length > X_CHAR_LIMIT ? 'text-error' : 'text-mission-control-text-dim'}`}
             >
               {post.content.length} / {X_CHAR_LIMIT}
             </div>
@@ -343,7 +343,7 @@ function NewPostModal({ defaultDate, onSubmit, onClose }: NewPostModalProps) {
           className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0"
         >
           <Flex align="center" gap="2">
-            <Plus size={16} className="text-[var(--color-info)]" />
+            <Plus size={16} className="text-info" />
             <span className="text-sm font-semibold text-mission-control-text">
               Schedule New Post
             </span>
@@ -372,7 +372,7 @@ function NewPostModal({ defaultDate, onSubmit, onClose }: NewPostModalProps) {
               color={overLimit ? 'red' : undefined}
             />
             <div
-              className={`text-xs mt-1 text-right ${overLimit ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}
+              className={`text-xs mt-1 text-right ${overLimit ? 'text-error' : 'text-mission-control-text-dim'}`}
             >
               {content.length} / {X_CHAR_LIMIT}
             </div>
@@ -565,7 +565,7 @@ export function XContentCalendar() {
         className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0"
       >
         <Flex align="center" gap="3">
-          <Calendar size={18} className="text-[var(--color-info)]" />
+          <Calendar size={18} className="text-info" />
           <span className="text-sm font-semibold text-mission-control-text">
             Content Calendar
           </span>
@@ -645,12 +645,12 @@ export function XContentCalendar() {
               >
                 {/* Day header */}
                 <div
-                  className={`p-2 border-b border-mission-control-border text-center ${today ? 'bg-[var(--color-info)]/10' : 'bg-mission-control-surface'}`}
+                  className={`p-2 border-b border-mission-control-border text-center ${today ? 'bg-info/10' : 'bg-mission-control-surface'}`}
                 >
-                  <div className={`text-[10px] font-bold uppercase tracking-wider ${today ? 'text-[var(--color-info)]' : 'text-mission-control-text-dim'}`}>
+                  <div className={`text-[10px] font-bold uppercase tracking-wider ${today ? 'text-info' : 'text-mission-control-text-dim'}`}>
                     {DAY_LABELS[idx]}
                   </div>
-                  <div className={`text-sm font-semibold ${today ? 'text-[var(--color-info)]' : 'text-mission-control-text'}`}>
+                  <div className={`text-sm font-semibold ${today ? 'text-info' : 'text-mission-control-text'}`}>
                     {day.getDate()}
                   </div>
                 </div>

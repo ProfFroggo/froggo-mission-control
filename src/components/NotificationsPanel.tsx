@@ -20,12 +20,12 @@ interface UnifiedNotification {
 }
 
 const sourceConfig: Record<string, { icon: any; color: string; label: string }> = {
-  inbox: { icon: Inbox, color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10', label: 'Inbox' },
-  whatsapp: { icon: MessageSquare, color: 'text-[var(--color-success)] bg-[var(--color-success)]/10', label: 'WhatsApp' },
-  telegram: { icon: MessageSquare, color: 'text-[var(--color-info)] bg-[var(--color-info)]/10', label: 'Telegram' },
-  discord: { icon: MessageSquare, color: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle', label: 'Discord' },
-  email: { icon: Mail, color: 'text-[var(--color-error)] bg-[var(--color-error)]/10', label: 'Email' },
-  calendar: { icon: Calendar, color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10', label: 'Calendar' },
+  inbox: { icon: Inbox, color: 'text-warning bg-warning/10', label: 'Inbox' },
+  whatsapp: { icon: MessageSquare, color: 'text-success bg-success/10', label: 'WhatsApp' },
+  telegram: { icon: MessageSquare, color: 'text-info bg-info/10', label: 'Telegram' },
+  discord: { icon: MessageSquare, color: 'text-review bg-review-subtle', label: 'Discord' },
+  email: { icon: Mail, color: 'text-error bg-error/10', label: 'Email' },
+  calendar: { icon: Calendar, color: 'text-warning bg-warning/10', label: 'Calendar' },
   system: { icon: Bell, color: 'text-mission-control-text-dim bg-mission-control-surface/10', label: 'System' },
 };
 
@@ -225,7 +225,7 @@ export default function NotificationsPanel() {
                   key={notif.id}
                   className={`p-4 rounded-lg border transition-colors ${
                     notif.urgent
-                      ? 'bg-[var(--color-error)]/10 border-[var(--color-error)]/30 border-l-2 border-l-[var(--color-error)]'
+                      ? 'bg-error/10 border-error/30 border-l-2 border-l-[var(--color-error)]'
                       : notif.read
                       ? 'bg-transparent border-mission-control-border opacity-70'
                       : 'bg-mission-control-accent/5 border-mission-control-border border-l-2 border-l-mission-control-accent shadow-card'

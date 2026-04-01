@@ -1,4 +1,4 @@
-import { memo, useState, type ComponentPropsWithoutRef, type CSSProperties } from 'react';
+import { memo, lazy, Suspense, useState, type ComponentPropsWithoutRef, type CSSProperties } from 'react';
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/cjs/prism-light';
 import javascript from 'react-syntax-highlighter/dist/cjs/languages/prism/javascript';
 import typescript from 'react-syntax-highlighter/dist/cjs/languages/prism/typescript';
@@ -41,8 +41,14 @@ import { Copy, Check, ExternalLink, FileCode, GitBranch, FileJson, FileText as F
 import { Button } from '@radix-ui/themes';
 import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
-import { ToolUIRenderer } from './tool-ui/ToolUIRenderer';
-import { detectToolUIType } from './tool-ui/schemas';
+import { detectToolUIType } from './tool-ui/detectToolUIType';
+
+// Lazy-load ToolUIRenderer — it transitively imports recharts (~300KB),
+// diff (~40KB), and 50+ lucide icons. Only needed when a JSON code block
+// has an @type field, which is a rare conditional path.
+const ToolUIRenderer = lazy(() =>
+  import('./tool-ui/ToolUIRenderer').then(m => ({ default: m.ToolUIRenderer }))
+);
 
 interface MentionData {
   ids: string[];
@@ -120,11 +126,16 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
               const code = String(children).replace(/\n$/, '');
 
               // Tool-UI: render JSON blocks with @type field as interactive components
+              // ToolUIRenderer is lazy-loaded — only downloads recharts/diff when needed
               if (!streaming && lang.toLowerCase() === 'json') {
                 try {
                   const parsed = JSON.parse(code);
                   if (detectToolUIType(parsed)) {
-                    return <ToolUIRenderer jsonString={code} />;
+                    return (
+                      <Suspense fallback={<div className="animate-pulse bg-mission-control-border rounded-lg h-24" />}>
+                        <ToolUIRenderer jsonString={code} />
+                      </Suspense>
+                    );
                   }
                 } catch { /* not valid JSON — fall through */ }
               }
@@ -158,7 +169,7 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
           img: (props: ComponentPropsWithoutRef<'img'>) => {
             const safe = typeof props.src === 'string' ? sanitizeUrl(props.src) : null;
             if (!safe) return null;
-            return <img {...props} src={safe} className="max-w-full rounded-lg my-2 block" style={{ maxHeight: 480, objectFit: 'contain' }} />;
+            return <img {...props} src={safe} alt={props.alt || 'Image'} className="max-w-full rounded-lg my-2 block" style={{ maxHeight: 480, objectFit: 'contain' }} />;
           },
 
           // Strong / Em
@@ -224,7 +235,7 @@ function ArtifactCard({ lang, code, onOpen }: { lang: string; code: string; onOp
         aria-label="Copy code"
         className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover:opacity-100"
       >
-        {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
+        {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
       </button>
       {onOpen && (
         <Button
@@ -298,7 +309,7 @@ export function CodeBlock({ code, language }: { code: string; language: string }
           aria-label="Copy code to clipboard"
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover/code:opacity-100"
         >
-          {copied ? <Check size={12} className="text-[var(--color-success)]" /> : <Copy size={12} />}
+          {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
           <span>{copied ? 'Copied!' : 'Copy'}</span>
         </button>
       </div>

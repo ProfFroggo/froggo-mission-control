@@ -13,7 +13,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         'text-mission-control-text placeholder:text-mission-control-text-dim/50',
         'hover:border-[var(--mission-control-accent)]/40',
         'focus:outline-none focus:ring-1 focus:ring-[var(--mission-control-accent)]/30 focus:border-[var(--mission-control-accent)]',
-        'aria-[invalid=true]:border-[var(--color-error)]',
+        'aria-[invalid=true]:border-error',
         'disabled:cursor-not-allowed disabled:opacity-40',
         'transition-colors',
         className

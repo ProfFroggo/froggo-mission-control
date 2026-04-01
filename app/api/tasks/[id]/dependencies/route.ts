@@ -93,20 +93,29 @@ export async function POST(
       return NextResponse.json({ error: 'Dependency task not found' }, { status: 404 });
     }
 
-    // Check for circular dependency: if dependsOnTask already depends on this task
-    const wouldCycle = db.prepare(`
-      SELECT 1 FROM task_dependencies WHERE taskId = ? AND dependsOnId = ?
-    `).get(dependsOnId, id);
-    if (wouldCycle) {
-      return NextResponse.json({ error: 'Circular dependency detected' }, { status: 400 });
-    }
-
+    // Atomic cycle check + insert to prevent concurrent requests creating conflicting deps
     const depId = randomUUID();
     try {
-      db.prepare(`
-        INSERT INTO task_dependencies (id, taskId, dependsOnId)
-        VALUES (?, ?, ?)
-      `).run(depId, id, dependsOnId);
+      const insertDep = db.transaction(() => {
+        const wouldCycle = db.prepare(`
+          SELECT 1 FROM task_dependencies WHERE taskId = ? AND dependsOnId = ?
+        `).get(dependsOnId, id);
+        if (wouldCycle) {
+          return { error: 'Circular dependency detected' } as const;
+        }
+
+        db.prepare(`
+          INSERT INTO task_dependencies (id, taskId, dependsOnId)
+          VALUES (?, ?, ?)
+        `).run(depId, id, dependsOnId);
+
+        return null;
+      });
+
+      const result = insertDep();
+      if (result?.error) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('UNIQUE')) {

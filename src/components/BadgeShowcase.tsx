@@ -121,11 +121,11 @@ export default function BadgeShowcase() {
         </Box>
 
         {/* Status indicator */}
-        <Box p="4" className="bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-lg">
+        <Box p="4" className="bg-success/10 border border-success/30 rounded-lg">
           <Flex align="center" gap="2">
-            <CheckCircle size={16} className="text-[var(--color-success)]" />
+            <CheckCircle size={16} className="text-success" />
             <Box>
-              <Text weight="medium" className="text-[var(--color-success)]" as="div">All badges rendering correctly</Text>
+              <Text weight="medium" className="text-success" as="div">All badges rendering correctly</Text>
               <Text size="2" className="text-mission-control-text-dim">Icons are properly centered using flexbox alignment</Text>
             </Box>
           </Flex>

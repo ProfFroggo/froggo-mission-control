@@ -196,8 +196,8 @@ export default function ProjectSelector() {
                       </h3>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${
                         project.type === 'memoir'
-                          ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
-                          : 'bg-[var(--color-review)]-subtle text-[var(--color-review)]'
+                          ? 'bg-info/10 text-info'
+                          : 'bg-review-subtle text-review'
                       }`}>
                         {project.type === 'memoir' ? <BookOpen size={10} /> : <BookText size={10} />}
                         {project.type}
@@ -213,7 +213,7 @@ export default function ProjectSelector() {
                     type="button"
                     onClick={(e) => handleDelete(e, project)}
                     title="Delete project"
-                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <Trash2 size={14} />
                   </button>

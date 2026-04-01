@@ -21,7 +21,7 @@ const modes: FocusModeConfig[] = [
     icon: Briefcase,
     label: 'Work Mode',
     description: 'Focus on work tasks',
-    color: 'bg-[var(--color-info)]',
+    color: 'bg-info',
     holdApprovals: false,
     muteNotifications: false,
   },
@@ -30,7 +30,7 @@ const modes: FocusModeConfig[] = [
     icon: Coffee,
     label: 'Personal',
     description: 'Relaxed, non-urgent only',
-    color: 'bg-[var(--color-review)]',
+    color: 'bg-review',
     holdApprovals: false,
     muteNotifications: true,
   },
@@ -39,7 +39,7 @@ const modes: FocusModeConfig[] = [
     icon: Home,
     label: 'Family Time',
     description: 'Only urgent notifications',
-    color: 'bg-[var(--color-success)]',
+    color: 'bg-success',
     holdApprovals: true,
     muteNotifications: true,
   },
@@ -48,7 +48,7 @@ const modes: FocusModeConfig[] = [
     icon: Moon,
     label: 'Do Not Disturb',
     description: 'Complete silence',
-    color: 'bg-[var(--color-error)]',
+    color: 'bg-error',
     holdApprovals: true,
     muteNotifications: true,
   },
@@ -212,6 +212,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
 // Custom hook for focus mode state
 export function useFocusMode() {
   const [focusMode, setFocusMode] = useState<FocusModeType>(() => {
+    if (typeof window === 'undefined') return null;
     const saved = localStorage.getItem('focusMode');
     if (saved) {
       try {

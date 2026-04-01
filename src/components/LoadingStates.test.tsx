@@ -337,10 +337,10 @@ describe('LoadingStates', () => {
     });
 
     it('should apply custom color', () => {
-      const { container } = render(<PulsingDot color="bg-[var(--color-error)]" />);
+      const { container } = render(<PulsingDot color="bg-error" />);
 
       const dots = container.querySelectorAll('span > span');
-      expect(dots[0]).toHaveClass('bg-[var(--color-error)]');
+      expect(dots[0]).toHaveClass('bg-error');
     });
   });
 });

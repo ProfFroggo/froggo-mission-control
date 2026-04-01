@@ -153,10 +153,10 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
 
       {/* Response display */}
       {response && (
-        <div className="bg-[var(--color-info)]/8 border border-[var(--color-info)]/20 rounded-xl px-4 py-3">
+        <div className="bg-info/8 border border-info/20 rounded-xl px-4 py-3">
           <Flex align="start" gap="2" className="mb-2">
-            <CheckCircle size={14} className="text-[var(--color-info)] mt-0.5 flex-shrink-0" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)]">
+            <CheckCircle size={14} className="text-info mt-0.5 flex-shrink-0" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-info">
               Agent Progress Report
             </span>
           </Flex>
@@ -168,10 +168,10 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
 
       {/* Error display */}
       {error && (
-        <div className="bg-[var(--color-error)]/8 border border-[var(--color-error)]/20 rounded-xl px-4 py-3">
+        <div className="bg-error/8 border border-error/20 rounded-xl px-4 py-3">
           <Flex align="start" gap="2">
-            <XCircle size={14} className="text-[var(--color-error)] mt-0.5 flex-shrink-0" />
-            <span className="text-xs text-[var(--color-error)]">{error}</span>
+            <XCircle size={14} className="text-error mt-0.5 flex-shrink-0" />
+            <span className="text-xs text-error">{error}</span>
           </Flex>
         </div>
       )}

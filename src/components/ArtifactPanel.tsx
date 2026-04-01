@@ -40,12 +40,12 @@ const ARTIFACT_ICONS: Record<ArtifactType, LucideIcon> = {
 };
 
 const ARTIFACT_COLORS: Record<ArtifactType, string> = {
-  code: 'text-[var(--color-info)] bg-[var(--color-info)]/10 border-[var(--color-info)]/30',
-  image: 'text-[var(--color-success)] bg-[var(--color-success)]/10 border-[var(--color-success)]/30',
-  file: 'text-[var(--color-review)] bg-[var(--color-review)]-subtle border-[var(--color-review)]-border',
+  code: 'text-info bg-info/10 border-info/30',
+  image: 'text-success bg-success/10 border-success/30',
+  file: 'text-review bg-review-subtle border-review-border',
   text: 'text-mission-control-text-dim bg-mission-control-border/30 border-mission-control-border',
-  diagram: 'text-danger bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30',
-  data: 'text-[var(--color-info)] bg-[var(--color-info)]/10 border-[var(--color-info)]/30',
+  diagram: 'text-danger bg-warning/10 border-warning/30',
+  data: 'text-info bg-info/10 border-info/30',
 };
 
 function isPreviewable(artifact: Artifact): boolean {
@@ -442,6 +442,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
           {/* Artifact Header — single compact row */}
           <Flex align="center" gap="2" className="px-3 py-2 border-b border-mission-control-border">
             <button
+              type="button"
               onClick={() => selectArtifact(null)}
               className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors flex-shrink-0"
               aria-label="Back"
@@ -455,6 +456,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
             <span className="text-xs text-mission-control-text-dim flex-shrink-0 tabular-nums">v{selectedArtifact.currentVersion}</span>
             <div className="flex items-center gap-1 flex-shrink-0">
               <button
+                type="button"
                 onClick={() => handleCopy(fileContent ?? selectedArtifact.content, selectedArtifact.id)}
                 title="Copy"
                 aria-label="Copy"
@@ -468,6 +470,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 {copiedId === selectedArtifact.id && <span className="text-xs">Copied!</span>}
               </button>
               <button
+                type="button"
                 onClick={() => handleDownload(selectedArtifact)}
                 title="Download"
                 aria-label="Download"
@@ -476,6 +479,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 <Download size={13} />
               </button>
               <button
+                type="button"
                 onClick={() => setShowVersionHistory(!showVersionHistory)}
                 title="Version history"
                 aria-label="Version history"
@@ -558,6 +562,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
               </div>
               <Flex align="center" gap="1" className="ml-2">
                 <button
+                  type="button"
                   onClick={() => setReloadKey(k => k + 1)}
                   title="Reload preview"
                   aria-label="Reload preview"
@@ -567,6 +572,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 </button>
                 {viewTab === 'preview' && (
                   <button
+                    type="button"
                     onClick={() => {
                       const win = window.open('', '_blank');
                       if (win) { win.document.write(selectedArtifact.content); win.document.close(); }
@@ -651,6 +657,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                       <p className="text-sm font-medium text-mission-control-text">Could not connect to localhost</p>
                       <p className="text-xs text-mission-control-text-dim">Make sure the dev server is running on that port</p>
                       <button
+                        type="button"
                         onClick={() => { setPortUrl(''); setLoadedPortUrl(''); setPortError(false); }}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >

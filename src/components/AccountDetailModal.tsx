@@ -68,11 +68,11 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
   const getStatusColor = () => {
     switch (account.status) {
       case 'connected':
-        return 'text-[var(--color-success)]';
+        return 'text-success';
       case 'error':
-        return 'text-[var(--color-error)]';
+        return 'text-error';
       case 'needs-reauth':
-        return 'text-[var(--color-warning)]';
+        return 'text-warning';
       default:
         return 'text-mission-control-text-dim';
     }
@@ -233,7 +233,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                       align="center" gap="3"
                       className="p-3 bg-mission-control-surface rounded-xl border border-mission-control-border"
                     >
-                      <DtIcon size={18} className="text-[var(--color-success)] flex-shrink-0" />
+                      <DtIcon size={18} className="text-success flex-shrink-0" />
                       <div className="flex-1">
                         <div className="font-medium capitalize">{type}</div>
                         <div className="text-xs text-mission-control-text-dim">
@@ -242,7 +242,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                             'Active'}
                         </div>
                       </div>
-                      <CheckCircle size={14} className="text-[var(--color-success)] flex-shrink-0" />
+                      <CheckCircle size={14} className="text-success flex-shrink-0" />
                     </Flex>
                     );
                   })}
@@ -280,12 +280,12 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
 
               {/* Error Message */}
               {account.status === 'error' && account.errorMessage && (
-                <div className="p-4 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
+                <div className="p-4 bg-error/10 border border-error/30 rounded-lg">
                   <Flex align="start" gap="2">
-                    <AlertTriangle size={16} className="text-[var(--color-error)] mt-0.5" />
+                    <AlertTriangle size={16} className="text-error mt-0.5" />
                     <div>
-                      <div className="font-medium text-[var(--color-error)] mb-1">Connection Error</div>
-                      <div className="text-sm text-[var(--color-error)]">{account.errorMessage}</div>
+                      <div className="font-medium text-error mb-1">Connection Error</div>
+                      <div className="text-sm text-error">{account.errorMessage}</div>
                     </div>
                   </Flex>
                 </div>
@@ -313,12 +313,12 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
           {/* Permissions Tab */}
           {activeTab === 'permissions' && (
             <div className="space-y-6">
-              <div className="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-lg">
+              <div className="p-4 bg-info/10 border border-info/30 rounded-lg">
                 <Flex align="start" gap="2">
-                  <Shield size={16} className="text-[var(--color-info)] mt-0.5" />
+                  <Shield size={16} className="text-info mt-0.5" />
                   <div className="flex-1">
-                    <div className="font-medium text-[var(--color-info)] mb-1">Permissions Explained</div>
-                    <div className="text-sm text-[var(--color-info)]">
+                    <div className="font-medium text-info mb-1">Permissions Explained</div>
+                    <div className="text-sm text-info">
                       These permissions allow Mission Control to access your data securely.
                       You can revoke access at any time.
                     </div>
@@ -347,7 +347,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                           </Flex>
                           <p className="text-sm text-mission-control-text-dim">{scope.description}</p>
                         </div>
-                        <CheckCircle size={16} className="text-[var(--color-success)] mt-0.5" />
+                        <CheckCircle size={16} className="text-success mt-0.5" />
                       </Flex>
                     </div>
                     );
@@ -405,7 +405,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                       <Key size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">Token Storage</span>
                     </Flex>
-                    <span className="font-medium text-[var(--color-success)] flex items-center gap-1">
+                    <span className="font-medium text-success flex items-center gap-1">
                       <CheckCircle size={14} /> Encrypted
                     </span>
                   </Flex>
@@ -414,7 +414,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                       <Shield size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">OAuth Protocol</span>
                     </Flex>
-                    <span className="font-medium text-[var(--color-success)] flex items-center gap-1">
+                    <span className="font-medium text-success flex items-center gap-1">
                       <CheckCircle size={14} /> Secure
                     </span>
                   </Flex>
@@ -423,7 +423,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                       <Clock size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">Token Refresh</span>
                     </Flex>
-                    <span className="font-medium text-[var(--color-success)] flex items-center gap-1">
+                    <span className="font-medium text-success flex items-center gap-1">
                       <CheckCircle size={14} /> Automatic
                     </span>
                   </Flex>
@@ -475,9 +475,9 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               </section>
 
               {/* Danger Zone */}
-              <section className="p-4 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
-                <h4 className="font-medium text-[var(--color-error)] mb-2">Danger Zone</h4>
-                <p className="text-sm text-[var(--color-error)] mb-3">
+              <section className="p-4 bg-error/10 border border-error/30 rounded-lg">
+                <h4 className="font-medium text-error mb-2">Danger Zone</h4>
+                <p className="text-sm text-error mb-3">
                   Removing this account will revoke Mission Control&apos;s access and delete all stored credentials.
                   This action cannot be undone.
                 </p>

@@ -1,146 +1,218 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
-import { Flex, IconButton, Tooltip } from '@radix-ui/themes';
-import { Workflow, RefreshCw, ExternalLink, Wifi, WifiOff } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { ReactFlowProvider } from '@xyflow/react';
+import {
+  Workflow, Play, Save, Loader2, Check, Sparkles,
+  LayoutTemplate, History, List,
+} from 'lucide-react';
+import PanelHeader from './PanelHeader';
+import TabNav, { type TabNavItem } from './TabNav';
+import WorkflowsTab from './workflow-studio/WorkflowsTab';
+import CanvasTab from './workflow-studio/CanvasTab';
+import TemplatesTab from './workflow-studio/TemplatesTab';
+import RunsTab from './workflow-studio/RunsTab';
+import AIBuilderPane from './workflow-studio/AIBuilderTab';
+import WorkflowListDialog from './workflow-studio/WorkflowListDialog';
+import {
+  useCanvasStore,
+  type WorkflowMeta,
+  type SerializedWorkflow,
+} from './workflow-studio/store';
+import { wsClient } from '@/lib/workflow-studio-client';
 
-const WORKFLOW_STUDIO_URL = 'http://localhost:4000/workspace/local/w/demo';
+const TABS: TabNavItem[] = [
+  { id: 'workflows', label: 'Workflows', icon: List },
+  { id: 'canvas', label: 'Canvas', icon: Workflow },
+  { id: 'templates', label: 'Templates', icon: LayoutTemplate },
+  { id: 'runs', label: 'Runs', icon: History },
+];
 
-export default function WorkflowStudioPanel() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+function WorkflowStudioInner() {
+  const [activeTab, setActiveTab] = useState('workflows');
+  const [showWorkflowList, setShowWorkflowList] = useState(false);
+  const [showAIBuilder, setShowAIBuilder] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
-  const handleLoad = useCallback(() => {
-    setLoading(false);
-    setError(false);
-  }, []);
+  const [lastRunResult, setLastRunResult] = useState<{ status: string; result?: Record<string, unknown>; error?: string; duration_ms?: number } | null>(null);
 
-  const handleError = useCallback(() => {
-    setLoading(false);
-    setError(true);
-  }, []);
+  const {
+    workflowId, workflowMeta, dirty, executing, nodes,
+    setWorkflow, setExecuting, getSerializedWorkflow, setDirty,
+    setBlockExecState, resetBlockExecStates,
+  } = useCanvasStore();
 
-  const handleRefresh = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    if (iframeRef.current) {
-      iframeRef.current.src = WORKFLOW_STUDIO_URL;
+  // Create new workflow
+  const handleNew = useCallback(async (name?: string, description?: string) => {
+    try {
+      const workflowName = name || 'New Workflow';
+      const emptyState: SerializedWorkflow = { version: '1', blocks: [], connections: [], loops: {} };
+      const result = await wsClient.createWorkflow({ name: workflowName, state: emptyState, description });
+      const meta: WorkflowMeta = {
+        id: result.id,
+        name: workflowName,
+        description: description || '',
+        color: '#7c3aed',
+        is_deployed: false,
+        run_count: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setWorkflow(result.id, meta, emptyState);
+      setActiveTab('canvas');
+    } catch (err) {
+      console.error('Create failed:', err);
     }
-  }, []);
+  }, [setWorkflow]);
 
-  const handleOpenInNewTab = useCallback(() => {
-    window.open(WORKFLOW_STUDIO_URL, '_blank', 'noopener,noreferrer');
-  }, []);
+  // Save workflow
+  const handleSave = useCallback(async () => {
+    if (!workflowId) return;
+    setSaving(true);
+    try {
+      const wf = getSerializedWorkflow();
+      await wsClient.updateWorkflow(workflowId, { state: wf, name: workflowMeta?.name });
+      setDirty(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error('Save failed:', err);
+    } finally {
+      setSaving(false);
+    }
+  }, [workflowId, workflowMeta, getSerializedWorkflow, setDirty]);
+
+  // Execute workflow — always saves first, then runs and surfaces results
+  const handleExecute = useCallback(async () => {
+    if (!workflowId) return;
+    setLastRunResult(null);
+    resetBlockExecStates();
+    setExecuting(true);
+
+    try {
+      // ── 1. Force-save current canvas state to DB before execution ──
+      const wf = getSerializedWorkflow();
+      await wsClient.updateWorkflow(workflowId, { state: wf, name: workflowMeta?.name });
+      setDirty(false);
+
+      // Mark all blocks as running
+      for (const block of wf.blocks) {
+        setBlockExecState(block.id, 'running');
+      }
+
+      // ── 2. Execute ──
+      const result = await wsClient.executeWorkflow(workflowId);
+
+      // ── 3. Update per-block status from results ──
+      if (result.result) {
+        for (const [blockId, blockResult] of Object.entries(result.result)) {
+          const r = blockResult as Record<string, unknown> | null;
+          if (r && typeof r === 'object' && r.skipped) {
+            setBlockExecState(blockId, 'idle');
+          } else if (r && typeof r === 'object' && r.error) {
+            setBlockExecState(blockId, 'errored');
+          } else {
+            setBlockExecState(blockId, 'completed');
+          }
+        }
+      }
+
+      setLastRunResult({
+        status: result.status,
+        result: result.result,
+        error: result.error,
+        duration_ms: result.duration_ms,
+      });
+      setExecuting(false, result.id);
+    } catch (err) {
+      console.error('Execute failed:', err);
+      setLastRunResult({ status: 'failed', error: err instanceof Error ? err.message : String(err) });
+      setExecuting(false);
+    }
+  }, [workflowId, workflowMeta, getSerializedWorkflow, setDirty, setExecuting, setBlockExecState, resetBlockExecStates]);
+
+  // Build subtitle
+  const subtitle = workflowMeta?.name
+    ? `${workflowMeta.name}${dirty ? ' (unsaved)' : ''}${saveStatus === 'saving' ? ' — saving...' : saveStatus === 'saved' ? ' — saved' : ''}`
+    : 'Visual workflow editor';
+
+  const headerActions = undefined;
 
   return (
-    <Flex direction="column" className="h-full w-full bg-mission-control-surface">
-      {/* Toolbar */}
-      <Flex
-        align="center"
-        justify="between"
-        px="3"
-        py="2"
-        className="border-b border-mission-control-border shrink-0"
-      >
-        <Flex align="center" gap="2">
-          <Workflow size={16} className="text-mission-control-text-dim" />
-          <span className="text-sm font-medium text-mission-control-text">
-            Workflow Studio
-          </span>
-        </Flex>
-
-        <Flex align="center" gap="1">
-          {/* Connection status */}
-          <Tooltip content={error ? 'Disconnected' : loading ? 'Connecting...' : 'Connected'}>
-            <Flex
-              align="center"
-              justify="center"
-              className="w-7 h-7 rounded-md"
-            >
-              {error ? (
-                <WifiOff size={14} className="text-[var(--color-danger)]" />
-              ) : (
-                <Wifi
-                  size={14}
-                  className={loading ? 'text-mission-control-text-dim animate-pulse' : 'text-[var(--color-success)]'}
-                />
-              )}
-            </Flex>
-          </Tooltip>
-
-          {/* Refresh */}
-          <Tooltip content="Refresh">
-            <IconButton
-              size="1"
-              variant="ghost"
-              onClick={handleRefresh}
-              aria-label="Refresh Workflow Studio"
-            >
-              <RefreshCw size={14} />
-            </IconButton>
-          </Tooltip>
-
-          {/* Open in new tab */}
-          <Tooltip content="Open in new tab">
-            <IconButton
-              size="1"
-              variant="ghost"
-              onClick={handleOpenInNewTab}
-              aria-label="Open Workflow Studio in new tab"
-            >
-              <ExternalLink size={14} />
-            </IconButton>
-          </Tooltip>
-        </Flex>
-      </Flex>
-
-      {/* Content area */}
-      <div className="relative flex-1 min-h-0">
-        {/* Loading skeleton */}
-        {loading && !error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-mission-control-surface z-10">
-            <div className="w-8 h-8 border-2 border-mission-control-border border-t-mission-control-accent rounded-full animate-spin" />
-            <span className="text-sm text-mission-control-text-dim">
-              Connecting to Workflow Studio...
-            </span>
-          </div>
-        )}
-
-        {/* Error state */}
-        {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-mission-control-surface z-10">
-            <WifiOff size={32} className="text-mission-control-text-dim" />
-            <div className="text-center">
-              <p className="text-sm font-medium text-mission-control-text">
-                Unable to connect to Workflow Studio
-              </p>
-              <p className="text-xs text-mission-control-text-dim mt-1">
-                Make sure it is running on port 4000
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleRefresh}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-mission-control-accent text-white hover:opacity-90 transition-opacity"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
-        {/* Iframe */}
-        <iframe
-          key="stable-workflow-iframe"
-          ref={iframeRef}
-          src={WORKFLOW_STUDIO_URL}
+    <div className="flex flex-col h-full bg-mission-control-bg">
+      {/* Header + Tabs */}
+      <div className="border-b border-mission-control-border bg-mission-control-surface shrink-0">
+        <PanelHeader
+          icon={Workflow}
           title="Workflow Studio"
-          className="w-full h-full border-0"
-          onLoad={handleLoad}
-          onError={handleError}
-          allow="clipboard-read; clipboard-write"
+          subtitle={subtitle}
+          border={false}
+          actions={headerActions}
+        />
+        <TabNav
+          tabs={TABS}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          border={false}
         />
       </div>
-    </Flex>
+
+      {/* Content area */}
+      <div className="flex-1 min-h-0 flex relative">
+        {/* Main tab content */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          {activeTab === 'workflows' && (
+            <WorkflowsTab onSwitchToCanvas={() => setActiveTab('canvas')} />
+          )}
+          {activeTab === 'canvas' && (
+            <CanvasTab
+              onSaveStatus={setSaveStatus}
+              onSave={handleSave}
+              onRun={handleExecute}
+              onToggleAI={() => setShowAIBuilder(!showAIBuilder)}
+              saving={saving}
+              saved={saved}
+              showAIBuilder={showAIBuilder}
+              lastRunResult={lastRunResult}
+              onDismissResult={() => setLastRunResult(null)}
+              onCreate={handleNew}
+            />
+          )}
+          {activeTab === 'templates' && (
+            <TemplatesTab onSwitchToCanvas={() => setActiveTab('canvas')} />
+          )}
+          {activeTab === 'runs' && (
+            <RunsTab />
+          )}
+        </div>
+
+        {/* Persistent AI Builder right pane */}
+        {showAIBuilder && (
+          <div
+            className="w-[380px] shrink-0 flex flex-col border-l border-mission-control-border"
+            style={{ background: 'var(--mission-control-surface)' }}
+          >
+            <AIBuilderPane onSwitchToCanvas={() => setActiveTab('canvas')} />
+          </div>
+        )}
+
+        {/* Workflow list dialog */}
+        <WorkflowListDialog
+          open={showWorkflowList}
+          onClose={() => setShowWorkflowList(false)}
+          onNew={handleNew}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default function WorkflowStudioPanel() {
+  return (
+    <ReactFlowProvider>
+      <WorkflowStudioInner />
+    </ReactFlowProvider>
   );
 }

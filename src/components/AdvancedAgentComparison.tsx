@@ -164,8 +164,8 @@ export default function AdvancedAgentComparison({
   const COLORS = [CHART_COLORS.blue, CHART_COLORS.accent, CHART_COLORS.amber, CHART_COLORS.purple, CHART_COLORS.red];
 
   const getTrendIcon = (value: number, threshold: number) => {
-    if (value > threshold) return <ArrowUpRight size={16} className="text-[var(--color-success)]" />;
-    if (value < threshold) return <ArrowDownRight size={16} className="text-[var(--color-error)]" />;
+    if (value > threshold) return <ArrowUpRight size={16} className="text-success" />;
+    if (value < threshold) return <ArrowDownRight size={16} className="text-error" />;
     return <Minus size={16} className="text-mission-control-text-dim" />;
   };
 
@@ -310,7 +310,7 @@ export default function AdvancedAgentComparison({
                           </td>
                           <td className="p-4 text-right">
                             <Flex align="center" justify="end" gap="2">
-                              <span className="text-[var(--color-success)] font-medium tabular-nums">
+                              <span className="text-success font-medium tabular-nums">
                                 {agent.tasksCompleted}
                               </span>
                               {getTrendIcon(
@@ -324,23 +324,23 @@ export default function AdvancedAgentComparison({
                             <span
                               className={`font-medium tabular-nums ${
                                 agent.completionRate >= 80
-                                  ? 'text-[var(--color-success)]'
+                                  ? 'text-success'
                                   : agent.completionRate >= 50
-                                  ? 'text-[var(--color-warning)]'
-                                  : 'text-[var(--color-error)]'
+                                  ? 'text-warning'
+                                  : 'text-error'
                               }`}
                             >
                               {agent.completionRate}%
                             </span>
                           </td>
                           <td className="p-4 text-right">
-                            <span className="text-[var(--color-warning)] font-medium tabular-nums">
+                            <span className="text-warning font-medium tabular-nums">
                               {agent.avgCompletionTime.toFixed(1)}h
                             </span>
                           </td>
                           <td className="p-4 text-right">
                             <Flex align="center" justify="end" gap="2">
-                              <span className="text-[var(--color-info)] font-medium tabular-nums">
+                              <span className="text-info font-medium tabular-nums">
                                 {agent.efficiency.toFixed(2)}
                               </span>
                               <span className="text-xs text-mission-control-text-dim">
@@ -352,11 +352,11 @@ export default function AdvancedAgentComparison({
                             <Flex align="center" justify="end" gap="2">
                               <div className="w-24 bg-mission-control-bg rounded-full h-2">
                                 <div
-                                  className="bg-[var(--color-review)] rounded-full h-2 transition-colors"
+                                  className="bg-review rounded-full h-2 transition-colors"
                                   style={{ width: `${agent.consistency}%` }}
                                 />
                               </div>
-                              <span className="text-[var(--color-review)] font-medium tabular-nums w-12">
+                              <span className="text-review font-medium tabular-nums w-12">
                                 {Math.round(agent.consistency)}%
                               </span>
                             </Flex>

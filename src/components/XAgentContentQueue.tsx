@@ -154,7 +154,7 @@ function PostPreview({ content }: PostPreviewProps) {
         </span>
       )}
       <div
-        className={`text-xs mt-2 text-right ${overLimit ? 'text-[var(--color-error)]' : 'text-mission-control-text-dim'}`}
+        className={`text-xs mt-2 text-right ${overLimit ? 'text-error' : 'text-mission-control-text-dim'}`}
       >
         {overLimit ? `${Math.abs(remaining)} over limit` : `${remaining} remaining`}
       </div>
@@ -215,7 +215,7 @@ function DraftCard({
   return (
     <div
       className={`p-4 rounded-2xl border bg-mission-control-surface ${
-        selected ? 'border-[var(--color-info)]' : 'border-mission-control-border'
+        selected ? 'border-info' : 'border-mission-control-border'
       }`}
     >
       {/* Top row */}
@@ -229,13 +229,13 @@ function DraftCard({
               aria-label={selected ? 'Deselect draft' : 'Select draft'}
             >
               {selected ? (
-                <CheckSquare size={16} className="text-[var(--color-info)]" />
+                <CheckSquare size={16} className="text-info" />
               ) : (
                 <Square size={16} className="text-mission-control-text-dim" />
               )}
             </button>
           )}
-          <span className="px-2 py-0.5 text-xs rounded bg-[var(--color-info)]/10 text-[var(--color-info)]">
+          <span className="px-2 py-0.5 text-xs rounded bg-info/10 text-info">
             {draft.topic}
           </span>
           <span className="text-xs text-mission-control-text-dim">
@@ -276,7 +276,7 @@ function DraftCard({
       {/* Actions */}
       {autoApprove ? (
         <span className="text-xs flex items-center gap-1 text-mission-control-text-dim">
-          <Zap size={11} className="text-[var(--color-warning)]" />
+          <Zap size={11} className="text-warning" />
           Will auto-approve
         </span>
       ) : (
@@ -542,12 +542,12 @@ export function XAgentContentQueue() {
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
         <Flex align="center" gap="2" className="mb-1">
-          <Bot size={20} className="text-[var(--color-info)]" />
+          <Bot size={20} className="text-info" />
           <h2 className="text-lg font-semibold text-mission-control-text">Agent Mode</h2>
           <span
             className={`px-2 py-0.5 text-xs rounded-full font-medium ${
               settings.enabled
-                ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]'
+                ? 'bg-success/10 text-success'
                 : 'bg-mission-control-surface text-mission-control-text-dim'
             }`}
           >
@@ -576,7 +576,7 @@ export function XAgentContentQueue() {
             aria-label={settings.enabled ? 'Disable agent mode' : 'Enable agent mode'}
           >
             {settings.enabled ? (
-              <ToggleRight size={36} className="text-[var(--color-info)]" />
+              <ToggleRight size={36} className="text-info" />
             ) : (
               <ToggleLeft size={36} className="text-mission-control-text-dim" />
             )}
@@ -628,7 +628,7 @@ export function XAgentContentQueue() {
         <Flex align="center" justify="between" className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface">
           <div>
             <Flex align="center" gap="2" className="mb-0.5">
-              <Zap size={14} className="text-[var(--color-warning)]" />
+              <Zap size={14} className="text-warning" />
               <span className="text-sm font-medium text-mission-control-text">Auto-approve drafts</span>
             </Flex>
             <p className="text-xs text-mission-control-text-dim">
@@ -643,7 +643,7 @@ export function XAgentContentQueue() {
             aria-label={settings.autoApprove ? 'Disable auto-approve' : 'Enable auto-approve'}
           >
             {settings.autoApprove ? (
-              <ToggleRight size={28} className="text-[var(--color-warning)]" />
+              <ToggleRight size={28} className="text-warning" />
             ) : (
               <ToggleLeft size={28} className="text-mission-control-text-dim" />
             )}
@@ -651,7 +651,7 @@ export function XAgentContentQueue() {
         </Flex>
 
         {settings.autoApprove && (
-          <Flex align="start" gap="2" className="p-3 rounded-lg text-xs bg-[var(--color-warning)]/10 text-[var(--color-warning)]">
+          <Flex align="start" gap="2" className="p-3 rounded-lg text-xs bg-warning/10 text-warning">
             <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
             <span>
               Auto-approve is ON — agent drafts will be scheduled without human review. Monitor the activity log regularly.
@@ -668,7 +668,7 @@ export function XAgentContentQueue() {
                 Upcoming Drafts
               </span>
               {pendingDrafts.length > 0 && (
-                <span className="px-2 py-0.5 text-xs rounded-full font-medium bg-[var(--color-info)]/10 text-[var(--color-info)]">
+                <span className="px-2 py-0.5 text-xs rounded-full font-medium bg-info/10 text-info">
                   {pendingDrafts.length}
                 </span>
               )}
@@ -735,7 +735,7 @@ export function XAgentContentQueue() {
                   key={draft.id}
                   className="flex items-start gap-3 p-3 rounded-lg border border-mission-control-border bg-mission-control-border/20 opacity-75"
                 >
-                  <Check size={14} className="text-[var(--color-success)] flex-shrink-0 mt-0.5" />
+                  <Check size={14} className="text-success flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm text-mission-control-text">{draft.content}</p>
                     <p className="text-xs text-mission-control-text-dim mt-1">{formatScheduledTime(draft.scheduledAt)}</p>

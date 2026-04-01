@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet, Plus, X, Calculator, ChevronDown, UtensilsCrossed, Lightbulb, ShoppingBag, ImageIcon, ShoppingCart, Car, Tv, Cross, Home, Clipboard, Fuel, ArrowLeftRight, Lock, Globe, ArrowRightLeft } from 'lucide-react';
 // eslint-disable-next-line import/order
 import { Button, Flex, IconButton, Badge, Heading, Select, TextField } from '@radix-ui/themes';
+import PanelHeader from './PanelHeader';
 import EmptyState from './EmptyState';
 import WidgetLoading from './WidgetLoading';
 import { showToast } from './Toast';
@@ -277,8 +278,8 @@ export default function FinancePanel() {
   };
 
   const getProgressColor = (percentage: number) => {
-    if (percentage >= 100) return 'bg-[var(--color-error)]';
-    if (percentage >= 80) return 'bg-[var(--color-warning)]';
+    if (percentage >= 100) return 'bg-error';
+    if (percentage >= 80) return 'bg-warning';
     return 'bg-[var(--mission-control-accent)]';
   };
 
@@ -332,11 +333,12 @@ export default function FinancePanel() {
         </div>
       )}
       {/* Header */}
-      <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border flex-shrink-0 bg-mission-control-surface">
-        <Flex align="center" gap="2">
-          <DollarSign size={16} className="text-mission-control-accent" />
-          <span className="text-sm font-semibold text-mission-control-text">Finance Manager</span>
-        </Flex>
+      <PanelHeader
+        icon={<DollarSign size={16} />}
+        title="Finance Manager"
+        subtitle={selectedAccountId ? accounts.find(a => a.id === selectedAccountId)?.name : 'All Accounts'}
+        variant="compact"
+      >
         <Flex align="center" gap="2">
           <Button
             variant={chatOpen ? 'soft' : 'surface'}
@@ -371,7 +373,7 @@ export default function FinancePanel() {
             Upload Statement
           </Button>
         </Flex>
-      </Flex>
+      </PanelHeader>
 
       {/* Account Tab Strip */}
       <div className="flex items-center border-b border-mission-control-border overflow-x-auto flex-shrink-0">
@@ -464,29 +466,29 @@ export default function FinancePanel() {
         {alerts.length > 0 && (
           <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 mb-6">
             <Flex align="center" gap="2" mb="4">
-              <Bell size={18} className="text-[var(--color-warning)]" />
+              <Bell size={18} className="text-warning" />
               <h2 className="text-sm font-semibold text-mission-control-text">System Alerts</h2>
             </Flex>
 
             <div className="space-y-2">
               {/* Critical alerts first */}
               {alerts.filter(a => a.severity === 'critical').map((alert) => (
-                <Flex key={alert.id} align="start" gap="2" className="p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
-                  <AlertTriangle size={16} className="text-[var(--color-error)] flex-shrink-0 mt-0.5" />
+                <Flex key={alert.id} align="start" gap="2" className="p-3 bg-error/10 border border-error/30 rounded-lg">
+                  <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-[var(--color-error)]">{alert.title}</div>
-                    <div className="text-xs text-[var(--color-error)]/80 mt-0.5">{alert.message}</div>
+                    <div className="font-medium text-sm text-error">{alert.title}</div>
+                    <div className="text-xs text-error/80 mt-0.5">{alert.message}</div>
                   </div>
                 </Flex>
               ))}
 
               {/* Warning alerts */}
               {alerts.filter(a => a.severity === 'warning').map((alert) => (
-                <Flex key={alert.id} align="start" gap="2" className="p-3 bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-lg">
-                  <AlertTriangle size={16} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
+                <Flex key={alert.id} align="start" gap="2" className="p-3 bg-warning/10 border border-warning/30 rounded-lg">
+                  <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-[var(--color-warning)]">{alert.title}</div>
-                    <div className="text-xs text-[var(--color-warning)]/80 mt-0.5">{alert.message}</div>
+                    <div className="font-medium text-sm text-warning">{alert.title}</div>
+                    <div className="text-xs text-warning/80 mt-0.5">{alert.message}</div>
                   </div>
                 </Flex>
               ))}
@@ -500,7 +502,7 @@ export default function FinancePanel() {
           <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
             <Flex align="center" justify="between" mb="4">
               <span className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
-                <DollarSign size={14} className="text-[var(--color-info)]" />
+                <DollarSign size={14} className="text-info" />
                 Family Budget
               </span>
               <span className="text-sm text-mission-control-text-dim">
@@ -542,7 +544,7 @@ export default function FinancePanel() {
                             <span>{getCategoryIcon(cat.category)}</span>
                             <span>{cat.category}</span>
                           </span>
-                          <span className={`tabular-nums ${percentage >= 90 ? 'text-[var(--color-error)]' : ''}`}>
+                          <span className={`tabular-nums ${percentage >= 90 ? 'text-error' : ''}`}>
                             {formatCurrency(cat.spent, cat.currency)} / {formatCurrency(cat.limit, cat.currency)}
                           </span>
                         </Flex>
@@ -557,7 +559,7 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button aria-label="View all budget categories" className="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors mt-4">
+                <button type="button" aria-label="View all budget categories" className="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors mt-4">
                   View All Categories →
                 </button>
               </>
@@ -566,7 +568,7 @@ export default function FinancePanel() {
                 <p className="mb-2">
                   {selectedAccountId ? 'No family budget for this account' : 'No family budget set up'}
                 </p>
-                <button onClick={() => openBudgetModal('family')} aria-label="Create family budget" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                <button type="button" onClick={() => openBudgetModal('family')} aria-label="Create family budget" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                   Create Budget
                 </button>
               </div>
@@ -577,7 +579,7 @@ export default function FinancePanel() {
           <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
             <Flex align="center" justify="between" mb="4">
               <span className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
-                <Coins size={14} className="text-[var(--color-review)]" />
+                <Coins size={14} className="text-review" />
                 Crypto Budget
               </span>
               <span className="text-sm text-mission-control-text-dim">
@@ -619,7 +621,7 @@ export default function FinancePanel() {
                             <span>{getCategoryIcon(cat.category)}</span>
                             <span>{cat.category}</span>
                           </span>
-                          <span className={`tabular-nums ${percentage >= 90 ? 'text-[var(--color-error)]' : ''}`}>
+                          <span className={`tabular-nums ${percentage >= 90 ? 'text-error' : ''}`}>
                             {formatCurrency(cat.spent, cat.currency)} / {formatCurrency(cat.limit, cat.currency)}
                           </span>
                         </Flex>
@@ -634,7 +636,7 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button aria-label="View all crypto budget categories" className="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors mt-4">
+                <button type="button" aria-label="View all crypto budget categories" className="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors mt-4">
                   View All Categories →
                 </button>
               </>
@@ -643,7 +645,7 @@ export default function FinancePanel() {
                 <p className="mb-2">
                   {selectedAccountId ? 'No crypto budget for this account' : 'No crypto budget set up'}
                 </p>
-                <button onClick={() => openBudgetModal('crypto')} aria-label="Create crypto budget" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                <button type="button" onClick={() => openBudgetModal('crypto')} aria-label="Create crypto budget" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                   Create Budget
                 </button>
               </div>
@@ -664,7 +666,7 @@ export default function FinancePanel() {
                     <Flex align="center" gap="2">
                       <span className="text-mission-control-text font-medium truncate">{item.description}</span>
                       {item.status === 'confirmed' && (
-                        <span className="text-xs bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/30 rounded-full px-2 py-0.5">Confirmed</span>
+                        <span className="text-xs bg-success/10 text-success border border-success/30 rounded-full px-2 py-0.5">Confirmed</span>
                       )}
                     </Flex>
                     <Flex align="center" gap="3" mt="1">
@@ -742,6 +744,7 @@ export default function FinancePanel() {
                         </Select.Root>
                       ) : (
                         <button
+                          type="button"
                           onClick={() => setEditingCategoryTxId(tx.id)}
                           title="Click to recategorize"
                           aria-label={`Recategorize ${tx.description} (currently ${tx.category || 'other'})`}
@@ -752,7 +755,7 @@ export default function FinancePanel() {
                       )}
                     </div>
                   </div>
-                  <div className={`text-sm font-medium flex-shrink-0 tabular-nums text-right ${tx.amount < 0 ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'}`}>
+                  <div className={`text-sm font-medium flex-shrink-0 tabular-nums text-right ${tx.amount < 0 ? 'text-error' : 'text-success'}`}>
                     {tx.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(tx.amount), tx.currency)}
                   </div>
                 </div>
@@ -779,6 +782,7 @@ export default function FinancePanel() {
         {/* Scenario Projections (collapsible) */}
         <div className="mt-2 mb-6">
           <button
+            type="button"
             onClick={() => setShowScenarios(!showScenarios)}
             aria-label={showScenarios ? 'Collapse scenario projections' : 'Expand scenario projections'}
             className="w-full inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mb-3"
@@ -1075,7 +1079,7 @@ export default function FinancePanel() {
 
                 {/* Result message */}
                 {exportResult && (
-                  <p className={`text-sm ${exportResult.startsWith('Export failed') ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'}`}>
+                  <p className={`text-sm ${exportResult.startsWith('Export failed') ? 'text-error' : 'text-success'}`}>
                     {exportResult}
                   </p>
                 )}

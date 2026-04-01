@@ -96,7 +96,7 @@ export default function XTwitterPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-[var(--color-info)] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-mission-control-text-dim">Loading Social Media module...</p>
         </div>
       </div>

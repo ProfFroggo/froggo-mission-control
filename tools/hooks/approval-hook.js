@@ -53,9 +53,9 @@ function logAnalytics(toolName, tier, decision, agentTrustTier) {
     const database = getDb();
     if (database) {
       database.prepare(`
-        INSERT INTO analytics_events (type, agentId, data, timestamp)
-        VALUES ('hook_decision', 'system', ?, ?)
-      `).run(JSON.stringify({ toolName, tier, decision, agentTrustTier }), Date.now());
+        INSERT INTO analytics_events (event_type, timestamp, metadata)
+        VALUES ('hook_decision', ?, ?)
+      `).run(Date.now(), JSON.stringify({ toolName, tier, decision, agentTrustTier }));
     }
   } catch (e) { /* non-critical */ }
 }
@@ -66,8 +66,8 @@ function createApprovalRecord(toolName, toolInput, status = 'pending') {
     if (database) {
       const id = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       database.prepare(`
-        INSERT INTO approvals (id, type, title, content, metadata, status, requester, tier, category, createdAt)
-        VALUES (?, 'tool_use', ?, ?, ?, ?, 'agent', 2, 'agent_approval', ?)
+        INSERT INTO approvals (id, type, title, content, metadata, status, requester, tier, createdAt)
+        VALUES (?, 'tool_use', ?, ?, ?, ?, 'agent', 2, ?)
       `).run(
         id,
         `Tool: ${toolName}`,
@@ -179,7 +179,7 @@ async function main() {
     toolInput = parsed.tool_input || parsed.toolInput || {};
     if (parsed.session_id) sessionId = parsed.session_id;
   } catch (e) {
-    process.stdout.write(JSON.stringify({ decision: 'approve' }));
+    process.stdout.write(JSON.stringify({ decision: 'block', reason: 'Approval hook received malformed input — blocking by default.' }));
     return;
   }
 

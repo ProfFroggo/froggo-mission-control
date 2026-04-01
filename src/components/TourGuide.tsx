@@ -461,7 +461,7 @@ export const tours: Record<string, Tour> = {
       {
         target: '[data-column="done"]',
         title: 'Done',
-        content: 'Approved tasks move to Done. Celebrate your wins! 🎉',
+        content: 'Approved tasks move to Done. Celebrate your wins!',
         position: 'right',
       },
     ],

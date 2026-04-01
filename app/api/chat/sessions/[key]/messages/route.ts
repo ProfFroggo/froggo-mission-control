@@ -13,7 +13,18 @@ export async function GET(
       'SELECT * FROM messages WHERE sessionKey = ? ORDER BY timestamp ASC'
     ).all(key);
 
-    return NextResponse.json({ success: true, messages });
+    // If no messages remain, check for a compact summary from a previous session
+    let compactSummary: string | null = null;
+    if (messages.length === 0) {
+      const sess = db.prepare(
+        'SELECT compact_summary FROM sessions WHERE key = ? AND compact_summary IS NOT NULL'
+      ).get(key) as { compact_summary: string } | undefined;
+      if (sess?.compact_summary) {
+        compactSummary = sess.compact_summary;
+      }
+    }
+
+    return NextResponse.json({ success: true, messages, compactSummary });
   } catch (error) {
     console.error('GET /api/chat/sessions/[key]/messages error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

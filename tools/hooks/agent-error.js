@@ -52,7 +52,7 @@ async function main() {
             ).run(task.id, agentId, 'agent_error', `Agent process error: ${errorMsg}`, Date.now());
 
             database.prepare(
-              `UPDATE tasks SET status = 'blocked', lastAgentUpdate = ? WHERE id = ?`
+              `UPDATE tasks SET status = 'human-review', lastAgentUpdate = ? WHERE id = ?`
             ).run(`Agent error: ${errorMsg}`, task.id);
           } catch { /* non-critical */ }
         }

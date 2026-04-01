@@ -21,9 +21,9 @@ const STEP_ORDER: Step[] = ['match', 'review', 'personalize', 'confirm', 'instal
 const PROGRESS_STEPS: Step[] = ['match', 'review', 'personalize', 'confirm'];
 
 const MODEL_BADGE: Record<string, { label: string; cls: string }> = {
-  opus:   { label: 'Opus',   cls: 'bg-[var(--color-review)]-subtle text-[var(--color-review)]' },
-  sonnet: { label: 'Sonnet', cls: 'bg-[var(--color-info)]/10 text-[var(--color-info)]' },
-  haiku:  { label: 'Haiku',  cls: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' },
+  opus:   { label: 'Opus',   cls: 'bg-review-subtle text-review' },
+  sonnet: { label: 'Sonnet', cls: 'bg-info/10 text-info' },
+  haiku:  { label: 'Haiku',  cls: 'bg-warning/10 text-warning' },
 };
 
 export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWizardProps) {
@@ -195,16 +195,16 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             {query.trim() && (
               <Flex align="start" gap="3" className={`p-3 rounded-lg mb-4 border ${
                 matchScore !== null && matchScore >= 50
-                  ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30'
-                  : 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30'
+                  ? 'bg-success/10 border-success/30'
+                  : 'bg-warning/10 border-warning/30'
               }`}>
                 {matchScore !== null && matchScore >= 50 ? (
-                  <CheckCircle size={16} className="text-[var(--color-success)] mt-0.5 flex-shrink-0" />
+                  <CheckCircle size={16} className="text-success mt-0.5 flex-shrink-0" />
                 ) : (
-                  <Bot size={16} className="text-[var(--color-warning)] mt-0.5 flex-shrink-0" />
+                  <Bot size={16} className="text-warning mt-0.5 flex-shrink-0" />
                 )}
                 <div>
-                  <p className={`text-sm font-medium ${matchScore !== null && matchScore >= 50 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'}`}>
+                  <p className={`text-sm font-medium ${matchScore !== null && matchScore >= 50 ? 'text-success' : 'text-warning'}`}>
                     {matchScore !== null && matchScore >= 50
                       ? `${agent.name} looks like a great fit`
                       : `${agent.name} may partially match`}
@@ -270,7 +270,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
 
             {/* Required APIs warning */}
             {agent.requiredApis.length > 0 && (
-              <Flex align="start" gap="2" className="p-3 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 text-[var(--color-warning)] text-xs mb-4">
+              <Flex align="start" gap="2" className="p-3 rounded-lg bg-warning/10 border border-warning/30 text-warning text-xs mb-4">
                 <Cpu size={13} className="flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium mb-0.5">Required APIs</p>
@@ -400,7 +400,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
             <p className="text-sm font-medium mb-4">Confirm hire details</p>
 
             {error && (
-              <div className="mb-4 p-3 rounded-lg bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)] text-sm">
+              <div className="mb-4 p-3 rounded-lg bg-error/10 border border-error/30 text-error text-sm">
                 {error}
               </div>
             )}
@@ -449,10 +449,10 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               </Flex>
               {/* Trial */}
               {trialMode && (
-                <Flex align="start" gap="3" className="px-4 py-3 bg-[var(--color-info)]/10">
-                  <FlaskConical size={14} className="text-[var(--color-info)] mt-0.5 flex-shrink-0" />
+                <Flex align="start" gap="3" className="px-4 py-3 bg-info/10">
+                  <FlaskConical size={14} className="text-info mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)] mb-0.5">Trial mode</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-info mb-0.5">Trial mode</p>
                     <p className="text-sm text-mission-control-text-dim">7-day trial tag applied</p>
                   </div>
                 </Flex>
@@ -498,13 +498,13 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
         {/* ── Step: Done ── */}
         {step === 'done' && (
           <div className="px-6 py-10 flex flex-col items-center text-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 flex items-center justify-center">
-              <CheckCircle size={32} className="text-[var(--color-success)]" />
+            <div className="w-16 h-16 rounded-2xl bg-success/10 border border-success/30 flex items-center justify-center">
+              <CheckCircle size={32} className="text-success" />
             </div>
             <div>
               <p className="font-semibold text-lg mb-1">{agent.name} is hired!</p>
               {trialMode && (
-                <p className="text-xs text-[var(--color-info)] mb-1">7-day trial is active.</p>
+                <p className="text-xs text-info mb-1">7-day trial is active.</p>
               )}
               <p className="text-sm text-mission-control-text-dim">
                 Their workspace is ready at{' '}

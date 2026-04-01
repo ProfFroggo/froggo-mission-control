@@ -68,8 +68,8 @@ export default function QuickStatsWidget() {
 
   const channelColors: Record<string, string> = {
     discord: 'text-mission-control-accent',
-    telegram: 'text-[var(--color-info)]',
-    whatsapp: 'text-[var(--color-success)]',
+    telegram: 'text-info',
+    whatsapp: 'text-success',
     web: 'text-mission-control-text-dim',
   };
 
@@ -86,7 +86,7 @@ export default function QuickStatsWidget() {
         {/* Active Sessions */}
         <Box className="space-y-2">
           <Flex align="center" gap="2">
-            <Users size={16} className="text-[var(--color-review)]" />
+            <Users size={16} className="text-review" />
             <span className="text-xs text-mission-control-text-dim mt-0.5">Active Sessions</span>
             <span className="ml-auto text-2xl font-bold tabular-nums text-mission-control-text">{sessions.length}</span>
           </Flex>
@@ -116,7 +116,7 @@ export default function QuickStatsWidget() {
         {/* Running Agents */}
         <Box className="space-y-2">
           <Flex align="center" gap="2">
-            <Bot size={16} className="text-[var(--color-info)]" />
+            <Bot size={16} className="text-info" />
             <span className="text-xs text-mission-control-text-dim mt-0.5">Running Agents</span>
             <span className="ml-auto text-2xl font-bold tabular-nums text-mission-control-text">{totalAgents}</span>
           </Flex>
@@ -145,7 +145,7 @@ export default function QuickStatsWidget() {
                 </Box>
                 {subagentSessions.slice(0, 2).map(session => (
                   <Flex key={session.key} align="center" gap="2" className="text-xs overflow-hidden">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-pulse shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
                     <span className="text-mission-control-text truncate min-w-0 flex-1">{session.displayName}</span>
                   </Flex>
                 ))}
@@ -157,7 +157,7 @@ export default function QuickStatsWidget() {
         {/* Tasks Today */}
         <Box className="space-y-2">
           <Flex align="center" gap="2">
-            <CheckSquare size={16} className="text-[var(--color-success)]" />
+            <CheckSquare size={16} className="text-success" />
             <span className="text-xs text-mission-control-text-dim mt-0.5">Tasks Today</span>
             <span className="ml-auto text-2xl font-bold tabular-nums text-mission-control-text">
               {completedToday.length}/{totalToday}
@@ -168,7 +168,7 @@ export default function QuickStatsWidget() {
               <Box className="space-y-1">
                 <Box className="w-full bg-mission-control-border rounded-full h-2 overflow-hidden">
                   <Box
-                    className="h-full bg-[var(--color-success)] transition-colors"
+                    className="h-full bg-success transition-colors"
                     style={{ width: `${(completedToday.length / totalToday) * 100}%` }}
                   />
                 </Box>
@@ -186,7 +186,7 @@ export default function QuickStatsWidget() {
         {/* Recent Activity */}
         <Box className="space-y-2">
           <Flex align="center" gap="2">
-            <Activity size={16} className="text-[var(--color-warning)]" />
+            <Activity size={16} className="text-warning" />
             <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Recent Activity</span>
           </Flex>
           <Box ml="6" className="space-y-2">

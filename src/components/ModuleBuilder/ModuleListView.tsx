@@ -65,7 +65,7 @@ function MiniProgress({ moduleId, taskIds, onBuild }: MiniProgressProps) {
     <div className="mt-3">
       <Flex align="center" justify="between" className="text-[10px] text-mission-control-text-dim mb-1">
         {allDone ? (
-          <span className="flex items-center gap-1 text-[var(--color-success)]">
+          <span className="flex items-center gap-1 text-success">
             <CheckCircle2 size={10} /> Complete
           </span>
         ) : (
@@ -188,8 +188,8 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
                 <Flex align="center" justify="between" className="mb-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
                     mod.status === 'built' || mod.status === 'finished'
-                      ? 'bg-[var(--color-success)]/20 text-[var(--color-success)]'
-                      : 'bg-[var(--color-warning)]/20 text-[var(--color-warning)]'
+                      ? 'bg-success/20 text-success'
+                      : 'bg-warning/20 text-warning'
                   }`}>
                     {mod.status === 'built' || mod.status === 'finished' ? 'Built' : 'In Progress'}
                   </span>

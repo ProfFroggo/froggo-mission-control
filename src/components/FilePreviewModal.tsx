@@ -107,6 +107,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
 
           <Flex align="center" gap="2">
             <button
+              type="button"
               onClick={handleDownload}
               title="Download"
               aria-label="Download file"
@@ -115,6 +116,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
               <Download size={16} />
             </button>
             <button
+              type="button"
               onClick={handleClose}
               title="Close (ESC)"
               aria-label="Close modal"

@@ -6,7 +6,7 @@ import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode
 import { showToast } from './Toast';
 import PlatformHealthDashboard from './PlatformHealthDashboard';
 import NotificationCenter from './NotificationCenter';
-import { useEventBus } from '../lib/useEventBus';
+import { useEventBus, useSSEConnectionState } from '../lib/useEventBus';
 
 interface SystemStatus {
   watcherRunning: boolean;
@@ -147,6 +147,9 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
     setUnreadNotifCount(prev => prev + 1);
   }, []));
 
+  // Phase 88.4: SSE connection state indicator
+  const sseState = useSSEConnectionState();
+
   return (
     <>
       <header
@@ -162,6 +165,18 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
 
         {/* Right: Connection status + Counters */}
         <Flex align="center" gap="3" className="no-drag">
+          {/* SSE Connection Indicator */}
+          {sseState !== 'connected' && (
+            <span
+              title={sseState === 'reconnecting' ? 'SSE reconnecting...' : 'SSE disconnected'}
+              className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                sseState === 'reconnecting'
+                  ? 'bg-warning animate-pulse'
+                  : 'bg-error'
+              }`}
+            />
+          )}
+
           {/* Notification Bell */}
           <button
             type="button"
@@ -172,7 +187,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
           >
             <Bell size={16} aria-hidden="true" />
             {unreadNotifCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] flex items-center justify-center text-[9px] font-bold bg-[var(--color-error)] text-white rounded-full leading-none tabular-nums px-0.5">
+              <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] flex items-center justify-center text-[9px] font-bold bg-error text-white rounded-full leading-none tabular-nums px-0.5">
                 {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
               </span>
             )}
@@ -190,20 +205,20 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
             <span
               className={`w-2 h-2 rounded-full flex-shrink-0 ${
                 platformStatus === 'ok'
-                  ? 'bg-[var(--color-success)]'
+                  ? 'bg-success'
                   : platformStatus === 'degraded'
-                  ? 'bg-[var(--color-warning)]'
-                  : 'bg-[var(--color-error)] animate-pulse'
+                  ? 'bg-warning'
+                  : 'bg-error animate-pulse'
               }`}
             />
             <Activity
               size={11}
               className={
                 platformStatus === 'ok'
-                  ? 'text-[var(--color-success)]'
+                  ? 'text-success'
                   : platformStatus === 'degraded'
-                  ? 'text-[var(--color-warning)]'
-                  : 'text-[var(--color-error)]'
+                  ? 'text-warning'
+                  : 'text-error'
               }
               aria-hidden="true"
             />
@@ -219,8 +234,8 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
                 : `Connection: Connecting to gateway, attempt ${reconnectAttempts}.`}
               className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${
                 connectionState === 'disconnected'
-                  ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]'
-                  : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
+                  ? 'bg-error/10 text-error'
+                  : 'bg-warning/10 text-warning'
               }`}
               title={connectionState === 'disconnected'
                 ? `Disconnected. Reconnecting... (${reconnectAttempts})`
@@ -250,7 +265,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
               aria-live="polite"
               aria-atomic="true"
               aria-label={`${offlineQueueSize} actions queued for sync`}
-              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]"
+              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-info/10 text-info"
               title={`${offlineQueueSize} actions queued for sync`}
             >
               <Loader size={12} className="animate-spin" aria-hidden="true" />
@@ -260,14 +275,14 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
           )}
 
           {status.pendingInbox > 0 && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)]" title={`${status.pendingInbox} pending inbox items`}>
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-warning/10 text-warning" title={`${status.pendingInbox} pending inbox items`}>
               <Inbox size={12} aria-hidden="true" />
               <span className="tabular-nums">{status.pendingInbox}</span>
             </span>
           )}
 
           {status.inProgressTasks > 0 && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-info)]/10 text-[var(--color-info)]" title={`${status.inProgressTasks} tasks in progress`}>
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-info/10 text-info" title={`${status.inProgressTasks} tasks in progress`}>
               <Loader size={12} className="animate-spin" aria-hidden="true" />
               <span className="tabular-nums">{status.inProgressTasks}</span>
             </span>

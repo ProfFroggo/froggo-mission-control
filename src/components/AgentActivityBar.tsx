@@ -64,7 +64,7 @@ export default function AgentActivityBar({ onNavigate, onTaskClick, expanded = t
     >
       {expanded && (
         <Flex align="center" gap="2" className="mb-2 px-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-info)] animate-pulse flex-shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-info animate-pulse flex-shrink-0" />
           <span className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider">
             Live
           </span>
@@ -93,7 +93,7 @@ export default function AgentActivityBar({ onNavigate, onTaskClick, expanded = t
             >
               <div className="relative flex-shrink-0">
                 <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--color-info)] animate-pulse ring-1 ring-mission-control-surface" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-info animate-pulse ring-1 ring-mission-control-surface" />
               </div>
               {expanded && (
                 <div className="flex-1 min-w-0 text-left">

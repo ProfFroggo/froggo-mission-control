@@ -99,6 +99,7 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
             <span className="text-base font-semibold text-mission-control-text">Training Log</span>
           </Flex>
           <button
+            type="button"
             onClick={handleClose}
             aria-label="Close"
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"

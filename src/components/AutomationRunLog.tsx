@@ -55,8 +55,8 @@ function formatDuration(ms?: number): string {
 
 function StatusIcon({ status }: { status: string }) {
   switch (status) {
-    case 'success': return <CheckCircle size={14} className="text-[var(--color-success)] flex-shrink-0" />;
-    case 'failed':  return <XCircle size={14} className="text-[var(--color-error)] flex-shrink-0" />;
+    case 'success': return <CheckCircle size={14} className="text-success flex-shrink-0" />;
+    case 'failed':  return <XCircle size={14} className="text-error flex-shrink-0" />;
     case 'running': return <RefreshCw size={14} className="text-mission-control-accent flex-shrink-0 animate-spin" />;
     default:        return <AlertCircle size={14} className="text-mission-control-text-dim flex-shrink-0" />;
   }
@@ -64,8 +64,8 @@ function StatusIcon({ status }: { status: string }) {
 
 function statusChipClass(status: string): string {
   switch (status) {
-    case 'success': return 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)]';
-    case 'failed':  return 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-error)]/10 text-[var(--color-error)]';
+    case 'success': return 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-success/10 text-success';
+    case 'failed':  return 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-error/10 text-error';
     case 'running': return 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-mission-control-accent/10 text-mission-control-accent animate-pulse';
     default:        return 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-mission-control-border/50 text-mission-control-text-dim';
   }
@@ -129,7 +129,7 @@ function RunRow({ run }: { run: AutomationRun }) {
                   <p className="text-mission-control-text-dim mt-0.5 m-0">{sr.output}</p>
                 )}
                 {sr.error && (
-                  <p className="text-[var(--color-error)] mt-0.5 m-0">{sr.error}</p>
+                  <p className="text-error mt-0.5 m-0">{sr.error}</p>
                 )}
               </div>
             </div>
@@ -252,7 +252,7 @@ export default function AutomationRunLog({ automationId, automationName, onClose
           )}
 
           {error && (
-            <div className="mx-4 text-[13px] text-[var(--color-error)] rounded-lg px-3.5 py-3 bg-[var(--color-error)]-subtle border border-[var(--color-error)]-border">
+            <div className="mx-4 text-[13px] text-error rounded-lg px-3.5 py-3 bg-error-subtle border border-error-border">
               {error}
             </div>
           )}

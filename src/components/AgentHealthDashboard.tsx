@@ -104,17 +104,17 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
           },
           {
             icon: Activity, val: online, label: 'Online',
-            color: online > 0 ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim',
+            color: online > 0 ? 'text-success' : 'text-mission-control-text-dim',
             subLabel: 'last hour',
           },
           {
             icon: AlertTriangle, val: circuitOpenCount, label: 'Circuit open',
-            color: circuitOpenCount > 0 ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]',
+            color: circuitOpenCount > 0 ? 'text-error' : 'text-success',
             subLabel: circuitOpenCount > 0 ? 'needs attention' : 'all clear',
           },
           {
             icon: Zap, val: unassignedInProgress, label: 'Unassigned',
-            color: unassignedInProgress > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-success)]',
+            color: unassignedInProgress > 0 ? 'text-warning' : 'text-success',
             subLabel: 'in-progress',
           },
         ].map(({ icon: Icon, val, label, color, subLabel }) => (
@@ -155,12 +155,12 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
                   <Flex align="center" gap="2">
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                       row.agent.status === 'active' || row.agent.status === 'busy'
-                        ? 'bg-[var(--color-success)] agent-dot-pulse'
+                        ? 'bg-success agent-dot-pulse'
                         : 'bg-mission-control-border'
                     }`} />
                     <span className="font-medium text-mission-control-text">{row.agent.name}</span>
                     {(row.agent.status === 'active' || row.agent.status === 'busy') ? (
-                      <span className="hidden sm:inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20">
+                      <span className="hidden sm:inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success border border-success/20">
                         online
                       </span>
                     ) : (
@@ -181,7 +181,7 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
 
                 {/* Tasks done today */}
                 <td className="px-4 py-3 hidden md:table-cell">
-                  <Flex align="center" gap="1" className="text-[var(--color-success)]">
+                  <Flex align="center" gap="1" className="text-success">
                     <CheckCircle size={11} />
                     {row.tasksToday}
                   </Flex>
@@ -190,18 +190,18 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
                 {/* Circuit status */}
                 <td className="px-4 py-3">
                   {row.circuitOpen ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/30">
+                    <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-error/10 text-error border border-error/30">
                       <AlertTriangle size={9} /> Open
                     </span>
                   ) : (
-                    <span className="text-xs text-[var(--color-success)]">OK</span>
+                    <span className="text-xs text-success">OK</span>
                   )}
                 </td>
 
                 {/* Current task */}
                 <td className="px-4 py-3 max-w-xs">
                   {row.currentTask ? (
-                    <span className="flex items-center gap-1 text-[var(--color-warning)] text-xs">
+                    <span className="flex items-center gap-1 text-warning text-xs">
                       <Zap size={11} className="flex-shrink-0" />
                       <span className="truncate">{row.currentTask}</span>
                     </span>

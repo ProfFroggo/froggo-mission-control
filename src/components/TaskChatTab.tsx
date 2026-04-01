@@ -192,7 +192,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
             type="button"
             onClick={handleLoadContext}
             disabled={sending}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20 hover:bg-[var(--color-info)]/20 transition-colors disabled:opacity-50 flex-shrink-0"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-info/10 text-info border border-info/20 hover:bg-info/20 transition-colors disabled:opacity-50 flex-shrink-0"
           >
             {contextLoaded ? (
               <>
@@ -257,16 +257,16 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
             return (
               <div
                 key={`${msg.timestamp}-${i}`}
-                className="flex items-start gap-3 px-4 py-3 bg-[var(--color-warning)]/8 border border-[var(--color-warning)]/25 rounded-xl my-2"
+                className="flex items-start gap-3 px-4 py-3 bg-warning/8 border border-warning/25 rounded-xl my-2"
                 role="alert"
               >
-                <UserCheck size={16} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <UserCheck size={16} className="text-warning flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-[var(--color-warning)] uppercase tracking-wider mb-1">
+                  <p className="text-[10px] font-bold text-warning uppercase tracking-wider mb-1">
                     Needs your attention
                   </p>
                   <p className="text-sm text-mission-control-text leading-snug">{msg.content}</p>
-                  <p className="text-[11px] tabular-nums text-[var(--color-warning)]/60 mt-1.5">
+                  <p className="text-[11px] tabular-nums text-warning/60 mt-1.5">
                     {relativeTime(msg.timestamp)}
                   </p>
                 </div>
@@ -279,10 +279,10 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
             return (
               <div
                 key={`${msg.timestamp}-${i}`}
-                className="flex items-start gap-2 px-3 py-2 bg-[var(--color-warning)]/6 border border-[var(--color-warning)]/15 rounded-lg text-sm text-[var(--color-warning)] my-1"
+                className="flex items-start gap-2 px-3 py-2 bg-warning/6 border border-warning/15 rounded-lg text-sm text-warning my-1"
               >
                 <p className="flex-1 leading-snug">{msg.content}</p>
-                <p className="text-[11px] tabular-nums text-[var(--color-warning)]/50 flex-shrink-0 mt-0.5">
+                <p className="text-[11px] tabular-nums text-warning/50 flex-shrink-0 mt-0.5">
                   {relativeTime(msg.timestamp)}
                 </p>
               </div>
@@ -306,7 +306,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
               )}
               <div className={`max-w-[80%] flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                 {isNewSpeaker && msg.role !== 'user' && (
-                  <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">{agentName}</span>
+                  <span className="text-xs font-medium text-success mb-1 px-1">{agentName}</span>
                 )}
                 {isNewSpeaker && msg.role === 'user' && (
                   <span className="text-xs font-medium text-mission-control-accent mb-1 px-1">You</span>
@@ -338,7 +338,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
               <Bot size={14} className="text-mission-control-text-dim" />
             </div>
             <div className="flex flex-col items-start">
-              <span className="text-xs font-medium text-[var(--color-success)] mb-1 px-1">{agentName}</span>
+              <span className="text-xs font-medium text-success mb-1 px-1">{agentName}</span>
               <Flex gap="1" align="center" className="py-1">
                 <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />

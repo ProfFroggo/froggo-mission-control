@@ -216,9 +216,9 @@ function CredentialStatusDot({
   details: CredentialDetail[];
 }) {
   const colorMap = {
-    green: 'bg-[var(--color-success)]',
-    yellow: 'bg-[var(--color-warning)]',
-    red: 'bg-[var(--color-error)]',
+    green: 'bg-success',
+    yellow: 'bg-warning',
+    red: 'bg-error',
   };
 
   const tooltip = details
@@ -433,7 +433,7 @@ function ModuleCard({
         </span>
 
         {isUnconfigured && (
-          <span className="text-xs text-[var(--color-error)]">Unconfigured</span>
+          <span className="text-xs text-error">Unconfigured</span>
         )}
 
         {isDisabled && (

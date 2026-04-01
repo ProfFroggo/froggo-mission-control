@@ -28,6 +28,16 @@ export async function GET(request: NextRequest) {
   // Callback — exchange code for tokens
   if (code) {
     try {
+      // Validate CSRF state token
+      const storedState = getSetting('twitter_oauth_state');
+      if (!state || !storedState || state !== storedState) {
+        return new NextResponse(`<html><body style="background:#111;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh">
+          <div style="text-align:center"><h2 style="color:#ef4444">Invalid State</h2><p>OAuth state mismatch — possible CSRF attack. Please try again.</p></div>
+        </body></html>`, { headers: { 'Content-Type': 'text/html' }, status: 403 });
+      }
+      // Clear used state token
+      try { getDb().prepare(`DELETE FROM settings WHERE key = 'twitter_oauth_state'`).run(); } catch { /* non-critical */ }
+
       // Load PKCE verifier
       const verifier = getSetting('twitter_pkce_verifier');
 
@@ -99,6 +109,8 @@ export async function GET(request: NextRequest) {
   db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`).run('twitter_pkce_verifier', verifier);
 
   const stateToken = randomBytes(16).toString('hex');
+  db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`).run('twitter_oauth_state', stateToken);
+
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: clientId,

@@ -345,7 +345,7 @@ Be conversational, friendly, and help design an effective agent.`;
             <Bot className="text-[--accent-11]" size={20} />
             <span className="text-base font-semibold">Create Worker Agent</span>
           </Flex>
-          <button onClick={handleClose} aria-label="Close modal" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+          <button type="button" onClick={handleClose} aria-label="Close modal" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -470,7 +470,7 @@ Be conversational, friendly, and help design an effective agent.`;
                       )}
                       <Flex align="center" gap="2">
                         <strong>Model:</strong>
-                        <span className="px-2 py-0.5 bg-[var(--color-info)]/10 text-[var(--color-info)] rounded text-xs font-medium">
+                        <span className="px-2 py-0.5 bg-info/10 text-info rounded text-xs font-medium">
                           {extractedData.model === 'opus' ? 'Claude Opus 4' : 'Claude Sonnet 4.5'}
                         </span>
                       </Flex>

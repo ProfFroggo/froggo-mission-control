@@ -22,17 +22,17 @@ interface Props {
 }
 
 const complexityColors: Record<string, string> = {
-  simple: 'bg-[var(--color-success)]/10 text-[var(--color-success)]',
-  medium: 'bg-[var(--color-review)]-subtle text-[var(--color-review)]',
-  complex: 'bg-[var(--color-error)]/10 text-[var(--color-error)]',
+  simple: 'bg-success/10 text-success',
+  medium: 'bg-review-subtle text-review',
+  complex: 'bg-error/10 text-error',
 };
 
 const agentColors: Record<string, string> = {
-  coder: 'bg-[var(--color-info)]/20 text-[var(--color-info)]',
+  coder: 'bg-info/20 text-info',
   'senior-coder': 'bg-mission-control-border/30 text-mission-control-text-dim',
-  designer: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]',
-  writer: 'bg-[var(--color-success)]/10 text-[var(--color-success)]',
-  researcher: 'bg-[var(--color-info)]/20 text-[var(--color-info)]',
+  designer: 'bg-warning/10 text-warning',
+  writer: 'bg-success/10 text-success',
+  researcher: 'bg-info/20 text-info',
 };
 
 export default function SpecPreviewPanel({
@@ -163,7 +163,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
           {sectionProgress.map(s => (
             <Flex key={s.id} align="center" gap="2" className="text-sm">
               {s.complete ? (
-                <CheckCircle2 size={16} className="text-[var(--color-success)]" />
+                <CheckCircle2 size={16} className="text-success" />
               ) : (
                 <Circle size={16} className="text-mission-control-border" />
               )}
@@ -184,7 +184,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
           <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Code2 size={13} /> manifest.json
           </h3>
-          <pre className="bg-mission-control-surface text-[var(--color-success)] text-xs p-3 rounded-lg overflow-x-auto font-mono">
+          <pre className="bg-mission-control-surface text-success text-xs p-3 rounded-lg overflow-x-auto font-mono">
 {JSON.stringify({
   id: spec.id,
   name: spec.name,
@@ -230,7 +230,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
           <ul className="space-y-1">
             {spec.services?.map(s => (
               <li key={s.id} className="text-sm text-mission-control-text flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-info)]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-info" />
                 {s.name} <span className="text-mission-control-text-dim text-xs">({s.type})</span>
               </li>
             ))}

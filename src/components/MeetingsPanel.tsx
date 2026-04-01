@@ -28,6 +28,8 @@ import { copyToClipboard } from '../utils/clipboard';
 import { Spinner } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
+import MicSelector from './MicSelector';
+import { GeminiStt } from '../lib/globalStt';
 
 const logger = createLogger('Meetings');
 
@@ -308,6 +310,7 @@ export default function MeetingsPanel() {
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const recognitionRef = useRef<any>(null);
+  const sttRef = useRef<GeminiStt | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const transcriptionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -346,7 +349,7 @@ export default function MeetingsPanel() {
   useEffect(() => {
     return () => {
       if (wsRef.current) { try { wsRef.current.close(); } catch { /* ignore */ } }
-      if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); }
+      if (streamRef.current) { try { streamRef.current.getTracks().forEach(t => t.stop()); } catch { /* ignore */ } }
       if (audioContextRef.current) { audioContextRef.current.close().catch((err) => { logger.error('Failed to close audio context:', err); }); }
     };
   }, []);
@@ -537,7 +540,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
           // Extract JSON from response
           const jsonMatch = content.match(/\[[\s\S]*\]/);
           if (jsonMatch) {
-            const tasks = JSON.parse(jsonMatch[0]);
+            let tasks: any[];
+            try { tasks = JSON.parse(jsonMatch[0]); } catch { tasks = []; }
             const formatted = tasks.map((t: any, idx: number) => ({
               id: `proposed-${Date.now()}-${idx}`,
               title: t.title || 'Untitled Task',
@@ -1085,65 +1089,37 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
     }
   }, []);
 
-  // Web Speech API Transcription — defined after cleanupWithGemini to avoid TDZ
+  // Gemini STT Transcription — defined after cleanupWithGemini to avoid TDZ
   const startSpeechRecognition = useCallback((meetingDbId: string | null) => {
-    const SpeechRecognitionCtor =
-      (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognitionCtor) throw new Error('Speech recognition not supported in this browser. Use Chrome or Edge.');
-
-    const recognition: any = new SpeechRecognitionCtor();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-    recognitionRef.current = recognition;
-
-    recognition.onresult = (event: any) => {
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const text = event.results[i][0].transcript.trim();
-        if (!text) continue;
-
-        if (event.results[i].isFinal) {
-          // Final result — commit to transcript
-          transcriptBufferRef.current = '';
-          setMeetingTranscript(prev => [...prev, text]);
-          setMeetingTranscriptLines(prev => [...prev, { text, timestamp: Date.now() }]);
-          if (meetingDbId) saveTranscriptToDb(meetingDbId, text).catch(() => {});
-          cleanupWithGemini(text);
-        } else {
-          // Interim result — show live typing indicator
-          transcriptBufferRef.current = text;
-          setStatusMessage(text.slice(-80));
+    const stt = new GeminiStt({
+      deviceId: selectedDeviceId || undefined,
+      continuous: true,
+      chunkDurationMs: 10000,
+      onTranscript: (text) => {
+        if (!text.trim()) return;
+        transcriptBufferRef.current = '';
+        setMeetingTranscript(prev => [...prev, text]);
+        setMeetingTranscriptLines(prev => [...prev, { text, timestamp: Date.now() }]);
+        if (meetingDbId) saveTranscriptToDb(meetingDbId, text).catch(() => {});
+        cleanupWithGemini(text);
+        setStatusMessage('Listening...');
+      },
+      onStatus: (status) => { setStatusMessage(status); },
+      onError: (err) => {
+        console.error('[MeetingsPanel STT] error:', err);
+        setStatusMessage(`Mic error: ${err}`);
+      },
+      onEnd: () => {
+        // Only restart if meeting is still active
+        if (listeningRef.current) {
+          sttRef.current?.start();
         }
-      }
-    };
-
-    recognition.onerror = (event: any) => {
-      if (event.error === 'no-speech') return;
-      if (event.error === 'aborted') return;
-      console.error('[SpeechRecognition] error:', event.error, event);
-      setStatusMessage(`Mic error: ${event.error}`);
-    };
-
-    recognition.onaudiostart = () => { console.log('[SpeechRecognition] audio started — mic is active'); setStatusMessage('Mic active — listening...'); };
-    recognition.onspeechstart = () => { console.log('[SpeechRecognition] speech detected'); setStatusMessage('Hearing you...'); };
-    recognition.onspeechend = () => { console.log('[SpeechRecognition] speech ended — waiting for more...'); };
-    recognition.onnomatch = () => { console.log('[SpeechRecognition] no match'); };
-
-    recognition.onend = () => {
-      console.log('[SpeechRecognition] ended, listeningRef:', listeningRef.current);
-      if (listeningRef.current && recognitionRef.current) {
-        try { recognitionRef.current.start(); } catch (e) { console.error('[SpeechRecognition] restart failed:', e); }
-      }
-    };
-
-    try {
-      recognition.start();
-      console.log('[SpeechRecognition] started successfully');
-    } catch (e) {
-      console.error('[SpeechRecognition] start() failed:', e);
-      setStatusMessage(`Speech recognition failed to start: ${e}`);
-    }
-  }, [detectActionItems, cleanupWithGemini, saveTranscriptToDb]);
+      },
+    });
+    sttRef.current = stt;
+    stt.start();
+    setStatusMessage('Gemini STT active — listening...');
+  }, [selectedDeviceId, cleanupWithGemini, saveTranscriptToDb]);
 
   const startMeeting = useCallback(async () => {
     if (listeningRef.current) return;
@@ -1217,9 +1193,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       // Start Web Speech API for live transcription (Chrome/Edge)
       try {
         startSpeechRecognition(dbId);
-        console.log('[Meeting] Web Speech API started for live transcription');
-      } catch (e) {
-        console.error('[Meeting] Web Speech API failed:', e);
+      } catch {
         setStatusMessage('Speech recognition unavailable — audio is still being recorded for post-meeting processing');
       }
 
@@ -1247,6 +1221,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         const finalText = transcriptBufferRef.current.trim();
         transcriptBufferRef.current = '';
         setMeetingTranscript(prev => [...prev, finalText]);
+      }
+      if (sttRef.current) {
+        sttRef.current.stop();
+        sttRef.current = null;
       }
       if (recognitionRef.current) {
         recognitionRef.current.onend = null; // prevent auto-restart
@@ -1490,7 +1468,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 title={isMuted ? 'Unmute' : 'Mute'}
                 className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
                   isMuted
-                    ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)]'
+                    ? 'bg-error/10 border border-error/30 text-error'
                     : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
@@ -1531,9 +1509,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       <div className="space-y-4">
                         {/* Header row */}
                         <Flex align="center" gap="3">
-                          <div className="relative flex-shrink-0 w-10 h-10 rounded-lg bg-[var(--color-error)]/10 flex items-center justify-center">
-                            <Mic size={18} className="text-[var(--color-error)]" />
-                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-[var(--color-error)] rounded-full animate-pulse" />
+                          <div className="relative flex-shrink-0 w-10 h-10 rounded-lg bg-error/10 flex items-center justify-center">
+                            <Mic size={18} className="text-error" />
+                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-error rounded-full animate-pulse" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-mission-control-text truncate">{meetingTitle || 'Untitled Meeting'}</p>
@@ -1559,7 +1537,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             const active = i / 32 < audioLevel * 1.4;
                             const height = active ? `${30 + Math.sin(i * 0.9 + Date.now() / 200) * 50}%` : '15%';
                             return (
-                              <div key={i} className={`flex-1 rounded-full transition-colors duration-75 ${active ? 'bg-[var(--color-success)]' : 'bg-mission-control-border'}`}
+                              <div key={i} className={`flex-1 rounded-full transition-colors duration-75 ${active ? 'bg-success' : 'bg-mission-control-border'}`}
                                 style={{ height }} />
                             );
                           })}
@@ -1580,7 +1558,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               <Flex align="center" gap="3" className="text-mission-control-text-dim">
                                 <span className="flex gap-1 items-center">
                                   {[0, 1, 2].map(i => (
-                                    <span key={i} className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-bounce"
+                                    <span key={i} className="w-1.5 h-1.5 rounded-full bg-success animate-bounce"
                                       style={{ animationDelay: `${i * 0.2}s` }} />
                                   ))}
                                 </span>
@@ -1658,9 +1636,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         </div>
 
                         {startError && (
-                          <Flex align="start" gap="3" p="4" className="bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-lg">
-                            <XCircle size={18} className="text-[var(--color-error)] shrink-0 mt-0.5" />
-                            <p className="text-sm text-[var(--color-error)]">{startError}</p>
+                          <Flex align="start" gap="3" p="4" className="bg-error/10 border border-error/30 rounded-lg">
+                            <XCircle size={18} className="text-error shrink-0 mt-0.5" />
+                            <p className="text-sm text-error">{startError}</p>
                           </Flex>
                         )}
 
@@ -1766,7 +1744,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {(generatingSummary || aiSummary) && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
                         <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
-                          <Brain size={16} className="text-[var(--color-review)]" />
+                          <Brain size={16} className="text-review" />
                           <h3 className="text-sm font-semibold text-mission-control-text">AI Summary</h3>
                           {generatingSummary && <Loader2 size={14} className="animate-spin text-mission-control-text-dim" />}
                         </div>
@@ -1790,7 +1768,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
                         <div className="px-4 py-3 border-b border-mission-control-border flex items-center justify-between">
                           <Flex align="center" gap="2">
-                            <ListTodo size={16} className="text-[var(--color-warning)]" />
+                            <ListTodo size={16} className="text-warning" />
                             <h3 className="text-sm font-semibold text-mission-control-text">Action Items</h3>
                             <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                               {pendingItems.length} pending • {approvedItems.length} approved
@@ -1812,7 +1790,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               key={item.id} 
                               className={`p-4 transition-colors ${
                                 item.status === 'dismissed' ? 'opacity-40' : ''
-                              } ${item.status === 'approved' ? 'bg-[var(--color-success)]/10' : ''}`}
+                              } ${item.status === 'approved' ? 'bg-success/10' : ''}`}
                             >
                               {editingItemId === item.id ? (
                                 <div className="space-y-3">
@@ -1850,20 +1828,20 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     <Flex align="center" gap="2" className="mb-1">
                                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                                         item.type === 'task' ? 'bg-mission-control-accent/10 text-mission-control-accent' :
-                                        item.type === 'schedule' ? 'bg-[var(--color-review)]/10 text-[var(--color-review)]' :
-                                        item.type === 'message' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+                                        item.type === 'schedule' ? 'bg-review/10 text-review' :
+                                        item.type === 'message' ? 'bg-warning/10 text-warning' :
                                         'bg-mission-control-border text-mission-control-text-dim'
                                       }`}>
                                         {item.type}
                                       </span>
                                       {item.status === 'approved' && (
-                                        <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full flex items-center gap-1">
+                                        <span className="text-xs px-2 py-0.5 bg-success/10 text-success rounded-full flex items-center gap-1">
                                           <Check size={10} />
                                           Approved
                                         </span>
                                       )}
                                       {item.status === 'dismissed' && (
-                                        <span className="text-xs px-2 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full">
+                                        <span className="text-xs px-2 py-0.5 bg-error/10 text-error rounded-full">
                                           Dismissed
                                         </span>
                                       )}
@@ -1892,7 +1870,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       <button
                                         onClick={() => dismissActionItem(item.id)}
                                         title="Dismiss"
-                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                                       >
                                         <XCircle size={16} />
                                       </button>
@@ -1931,7 +1909,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {proposedTasks.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
                         <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
-                          <Brain size={16} className="text-[var(--color-review)]" />
+                          <Brain size={16} className="text-review" />
                           <h3 className="text-sm font-semibold text-mission-control-text">Agent-Proposed Tasks</h3>
                           <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                             {proposedTasks.filter(t => t.status === 'pending').length} pending • {proposedTasks.filter(t => t.status === 'approved').length} approved
@@ -1943,7 +1921,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               key={task.id} 
                               className={`p-4 transition-colors ${
                                 task.status === 'rejected' ? 'opacity-40' : ''
-                              } ${task.status === 'approved' ? 'bg-[var(--color-success)]/10' : ''}`}
+                              } ${task.status === 'approved' ? 'bg-success/10' : ''}`}
                             >
                               {editingProposedTask === task.id ? (
                                 <div className="space-y-3">
@@ -2015,7 +1993,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       <button
                                         onClick={() => rejectProposedTask(task.id)}
                                         title="Reject"
-                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                                       >
                                         <XCircle size={16} />
                                       </button>
@@ -2071,7 +2049,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           setMeetingEndSummary(null);
                           setAiSummary(null);
                         }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                       >
                         <Trash2 size={18} />
                         Clear
@@ -2224,7 +2202,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               <p className="text-xs text-mission-control-text-dim mb-2">Tasks Created</p>
                               <ul className="space-y-1">
                                 {selectedMeeting.tasksCreated.map((task) => (
-                                  <li key={task} className="text-sm text-[var(--color-success)] flex items-center gap-2">
+                                  <li key={task} className="text-sm text-success flex items-center gap-2">
                                     <Check size={12} />
                                     {task}
                                   </li>
@@ -2252,15 +2230,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               key={proposal.id}
                               className={`p-4 transition-colors ${
                                 proposal.status === 'rejected' ? 'opacity-30' : ''
-                              } ${proposal.status === 'approved' ? 'bg-[var(--color-success)]/10' : ''}`}
+                              } ${proposal.status === 'approved' ? 'bg-success/10' : ''}`}
                             >
                               <Flex align="start" gap="3">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                                     <span className="font-medium text-sm text-mission-control-text">{proposal.title}</span>
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                                      proposal.priority === 'p0' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
-                                      proposal.priority === 'p1' ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
+                                      proposal.priority === 'p0' ? 'bg-error/10 text-error' :
+                                      proposal.priority === 'p1' ? 'bg-warning/10 text-warning' :
                                       proposal.priority === 'p2' ? 'bg-mission-control-accent/10 text-mission-control-accent' :
                                       'bg-mission-control-bg text-mission-control-text-dim'
                                     }`}>{proposal.priority?.toUpperCase()}</span>
@@ -2322,7 +2300,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         setSelectedMeeting({ ...selectedMeeting, storedTaskProposals: updated });
                                       }}
                                       title="Reject"
-                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                                     >
                                       <XCircle size={16} />
                                     </button>
@@ -2330,8 +2308,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                 )}
                                 {proposal.status === 'approved' && (
                                   <Flex align="center" gap="1" className="shrink-0 mt-1">
-                                    <CheckCircle2 size={14} className="text-[var(--color-success)]" />
-                                    <span className="text-xs text-[var(--color-success)]">Created</span>
+                                    <CheckCircle2 size={14} className="text-success" />
+                                    <span className="text-xs text-success">Created</span>
                                   </Flex>
                                 )}
                                 {proposal.status === 'rejected' && (
@@ -2582,12 +2560,12 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                 {(meeting.actionItems.length > 0 || meeting.tasksCreated.length > 0 || (meeting.storedTaskProposals && meeting.storedTaskProposals.length > 0)) && (
                                   <Flex gap="2" className="mt-3">
                                     {meeting.actionItems.length > 0 && (
-                                      <span className="text-xs px-2 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full">
+                                      <span className="text-xs px-2 py-0.5 bg-warning/10 text-warning rounded-full">
                                         {meeting.actionItems.length} action items
                                       </span>
                                     )}
                                     {(meeting.tasksCreated.length > 0 || (meeting.storedTaskProposals && meeting.storedTaskProposals.filter(t => t.status === 'approved').length > 0)) && (
-                                      <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full">
+                                      <span className="text-xs px-2 py-0.5 bg-success/10 text-success rounded-full">
                                         {meeting.tasksCreated.length || meeting.storedTaskProposals?.filter(t => t.status === 'approved').length} tasks
                                       </span>
                                     )}
@@ -2671,10 +2649,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
                 {/* Upload error */}
                 {uploadError && !transcribing && (
-                  <div className="mb-4 bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-2xl p-4 flex items-start gap-3">
-                    <XCircle size={20} className="text-[var(--color-error)] shrink-0 mt-0.5" />
+                  <div className="mb-4 bg-error/10 border border-error/30 rounded-2xl p-4 flex items-start gap-3">
+                    <XCircle size={20} className="text-error shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-[var(--color-error)]">Upload failed</p>
+                      <p className="font-medium text-error">Upload failed</p>
                       <p className="text-sm text-mission-control-text-dim mt-1">{uploadError}</p>
                     </div>
                     <button
@@ -2748,10 +2726,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {transcriptionSaved && !transcribing && (
                   <div className="space-y-4">
                     {/* Success — navigate to meeting detail */}
-                    <div className="bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-2xl p-5">
+                    <div className="bg-success/10 border border-success/30 rounded-2xl p-5">
                       <Flex align="center" gap="3" className="mb-3">
-                        <CheckCircle2 size={20} className="text-[var(--color-success)] shrink-0" />
-                        <p className="font-medium text-[var(--color-success)]">Transcript processed</p>
+                        <CheckCircle2 size={20} className="text-success shrink-0" />
+                        <p className="font-medium text-success">Transcript processed</p>
                       </Flex>
                       <p className="text-sm text-mission-control-text-dim mb-4">
                         {uploadSummary ? 'AI summary generated' : 'Extractive summary created'}
@@ -2909,9 +2887,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     </Flex>
 
                     {driveError && (
-                      <Flex align="start" gap="2" className="bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 rounded-xl p-3">
-                        <XCircle size={16} className="text-[var(--color-error)] shrink-0 mt-0.5" />
-                        <p className="text-sm text-[var(--color-error)]">{driveError}</p>
+                      <Flex align="start" gap="2" className="bg-error/10 border border-error/30 rounded-xl p-3">
+                        <XCircle size={16} className="text-error shrink-0 mt-0.5" />
+                        <p className="text-sm text-error">{driveError}</p>
                       </Flex>
                     )}
 
@@ -2931,7 +2909,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             const isImported = file.alreadyImported || driveImported.has(file.id);
                             return (
                               <div key={file.id} className="flex items-center gap-3 px-4 py-3">
-                                <FileText size={15} className={`shrink-0 ${isImported ? 'text-[var(--color-success)]' : 'text-mission-control-text-dim'}`} />
+                                <FileText size={15} className={`shrink-0 ${isImported ? 'text-success' : 'text-mission-control-text-dim'}`} />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm text-mission-control-text truncate">{file.name}</p>
                                   <p className="text-xs text-mission-control-text-dim">
@@ -2939,7 +2917,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   </p>
                                 </div>
                                 {isImported ? (
-                                  <span className="text-xs text-[var(--color-success)] flex items-center gap-1 shrink-0">
+                                  <span className="text-xs text-success flex items-center gap-1 shrink-0">
                                     <Check size={12} /> Imported
                                   </span>
                                 ) : (
@@ -2976,10 +2954,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
               <div className="max-w-2xl mt-4">
                 <div className="space-y-4">
                   {!transcriptionSaved ? (
-                    <div className="bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-2xl p-6">
+                    <div className="bg-success/10 border border-success/30 rounded-2xl p-6">
                       <Flex align="center" gap="2" className="mb-4">
-                        <CheckCircle2 size={20} className="text-[var(--color-success)]" />
-                        <span className="font-medium text-[var(--color-success)]">
+                        <CheckCircle2 size={20} className="text-success" />
+                        <span className="font-medium text-success">
                           {activeView === 'transcribe' ? 'Transcription Complete' : 'Text Extracted'}
                         </span>
                       </Flex>
@@ -3024,9 +3002,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 rounded-2xl p-6 text-center">
-                      <CheckCircle2 size={32} className="text-[var(--color-success)] mx-auto mb-3" />
-                      <p className="font-medium text-[var(--color-success)] mb-1">Saved to Meetings</p>
+                    <div className="bg-success/10 border border-success/30 rounded-2xl p-6 text-center">
+                      <CheckCircle2 size={32} className="text-success mx-auto mb-3" />
+                      <p className="font-medium text-success mb-1">Saved to Meetings</p>
                       <p className="text-sm text-mission-control-text-dim mb-4">
                         Summary and tasks have been generated. View in the Meetings tab.
                       </p>
@@ -3056,7 +3034,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
                       <div className="px-4 py-3 border-b border-mission-control-border flex items-center justify-between">
                         <Flex align="center" gap="2">
-                          <Brain size={16} className="text-[var(--color-review)]" />
+                          <Brain size={16} className="text-review" />
                           <h3 className="text-sm font-semibold text-mission-control-text">Task Cards from Mission Control</h3>
                           <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                             {proposedTasks.filter(t => t.status === 'pending').length} pending
@@ -3070,7 +3048,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             key={task.id}
                             className={`p-4 transition-colors ${
                               task.status === 'rejected' ? 'opacity-40' : ''
-                            } ${task.status === 'approved' ? 'bg-[var(--color-success)]/10' : ''}`}
+                            } ${task.status === 'approved' ? 'bg-success/10' : ''}`}
                           >
                             {editingProposedTask === task.id ? (
                               <div className="space-y-3">
@@ -3116,7 +3094,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       {task.proposedAgent}
                                     </span>
                                     {task.status === 'approved' && (
-                                      <span className="text-xs px-2 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full flex items-center gap-1">
+                                      <span className="text-xs px-2 py-0.5 bg-success/10 text-success rounded-full flex items-center gap-1">
                                         <Check size={10} /> Added to Kanban
                                       </span>
                                     )}
@@ -3144,7 +3122,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     <button
                                       onClick={() => rejectProposedTask(task.id)}
                                       title="Reject"
-                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[var(--color-error)]/70 hover:text-[var(--color-error)] hover:bg-mission-control-surface transition-colors"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                                     >
                                       <XCircle size={16} />
                                     </button>

@@ -154,6 +154,8 @@ function pingSession(sessionKey: string, sessionId: string): void {
 
 export function runKeepaliveCycle(): { pinged: number } {
   const now = Date.now();
+  // Reset per-cycle checkpoint dedup — prevents unbounded Set growth
+  checkpointWritten.clear();
 
   let rows: { agentId: string; sessionId: string }[] = [];
   try {

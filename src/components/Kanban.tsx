@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, memo, useRef, lazy, Suspense } from 'react';
 import { Button, Checkbox, Flex, IconButton, Select, TextField } from '@radix-ui/themes';
-import { useEventBus } from '../lib/useEventBus';
 import { createPortal } from 'react-dom';
 import {
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap,
@@ -43,9 +42,9 @@ import {
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
-  { id: 'p0', label: 'Urgent', color: 'text-[var(--color-error)]', bg: 'bg-[var(--color-error)]/10', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
-  { id: 'p1', label: 'High', color: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
-  { id: 'p2', label: 'Medium', color: 'text-[var(--color-info)]', bg: 'bg-[var(--color-info)]/10', icon: <Circle size={14} className="flex-shrink-0" /> },
+  { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-error/10', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
+  { id: 'p1', label: 'High', color: 'text-warning', bg: 'bg-warning/10', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
+  { id: 'p2', label: 'Medium', color: 'text-info', bg: 'bg-info/10', icon: <Circle size={14} className="flex-shrink-0" /> },
   { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
 ];
 
@@ -69,11 +68,11 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
 
 const columns: { id: TaskStatus; title: string; color: string; iconColor: string; bg: string; icon: React.ReactNode }[] = [
   { id: 'todo',            title: 'To Do',            color: 'border-t-mission-control-text-dim', iconColor: 'text-mission-control-text-dim', bg: 'bg-mission-control-border/30', icon: <FileText size={14} /> },
-  { id: 'internal-review', title: 'Pre-review',  color: 'border-t-review',  iconColor: 'text-[var(--color-review)]',  bg: 'bg-[var(--color-review)]-subtle',  icon: <Search size={14} /> },
-  { id: 'in-progress',     title: 'In Progress',      color: 'border-t-info', iconColor: 'text-[var(--color-info)]', bg: 'bg-[var(--color-info)]/10', icon: <Zap size={14} /> },
-  { id: 'review',          title: 'Agent Review',     color: 'border-t-review',  iconColor: 'text-[var(--color-review)]',  bg: 'bg-[var(--color-review)]-subtle',  icon: <Bot size={14} /> },
-  { id: 'human-review',    title: 'Human Review',     color: 'border-t-warning', iconColor: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10', icon: <User size={14} /> },
-  { id: 'done',            title: 'Done',             color: 'border-t-success', iconColor: 'text-[var(--color-success)]', bg: 'bg-[var(--color-success)]/10', icon: <CheckCircle size={14} /> },
+  { id: 'internal-review', title: 'Pre-review',  color: 'border-t-review',  iconColor: 'text-review',  bg: 'bg-review-subtle',  icon: <Search size={14} /> },
+  { id: 'in-progress',     title: 'In Progress',      color: 'border-t-info', iconColor: 'text-info', bg: 'bg-info/10', icon: <Zap size={14} /> },
+  { id: 'review',          title: 'Agent Review',     color: 'border-t-review',  iconColor: 'text-review',  bg: 'bg-review-subtle',  icon: <Bot size={14} /> },
+  { id: 'human-review',    title: 'Human Review',     color: 'border-t-warning', iconColor: 'text-warning', bg: 'bg-warning/10', icon: <User size={14} /> },
+  { id: 'done',            title: 'Done',             color: 'border-t-success', iconColor: 'text-success', bg: 'bg-success/10', icon: <CheckCircle size={14} /> },
 ];
 
 type DueFilter = 'all' | 'overdue' | 'today' | 'this-week' | 'no-due-date';
@@ -147,12 +146,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   useEffect(() => {
     loadTasksFromDB().catch(err => setTaskLoadError(err instanceof Error ? err.message : 'Failed to load tasks'));
     
-    // Polling with visibility detection - stop polling when tab hidden
-    // Increased to 30s for better performance
+    // Polling as safety net — SSE bridge handles real-time updates (Phase 88.4)
     let interval: NodeJS.Timeout;
-    
+
     const startPolling = () => {
-      interval = setInterval(() => { if (document.hidden) return; loadTasksFromDB(); }, 60000); // 60s with visibility guard
+      interval = setInterval(() => { if (document.hidden) return; loadTasksFromDB(); }, 120000); // 120s fallback, SSE is primary
     };
     
     const stopPolling = () => {
@@ -177,13 +175,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     };
   }, [loadTasksFromDB]);
   
-  // Phase 82: SSE-driven real-time task updates (fallback: 30s polling above)
-  useEventBus('task.created', () => {
-    loadTasksFromDB().catch(() => {});
-  });
-  useEventBus('task.updated', () => {
-    loadTasksFromDB().catch(() => {});
-  });
+  // SSE-driven task updates handled centrally by useSSEStoreSync (Phase 88.4)
 
   // Poll active agent sessions for activity indicators
   useEffect(() => {
@@ -643,7 +635,23 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       return;
     }
 
-    // All validations passed - move the task
+    // Validate status transition — enforce the pipeline
+    const VALID_TRANSITIONS: Record<string, string[]> = {
+      'todo': ['internal-review', 'human-review'],
+      'internal-review': ['in-progress', 'todo'],
+      'in-progress': ['review', 'human-review'],
+      'review': ['done', 'in-progress', 'human-review'],
+      'human-review': ['in-progress', 'todo', 'review', 'done'],
+      'done': ['in-progress'], // allow reopen
+    };
+    const allowed = VALID_TRANSITIONS[task.status] ?? [];
+    if (task.status !== status && !allowed.includes(status)) {
+      showToast('warning', 'Invalid move', `Cannot move from ${task.status} to ${status}`);
+      setDraggedTask(null);
+      setDragOverColumn(null);
+      return;
+    }
+
     handleMoveTask(draggedTask, status);
     setDraggedTask(null);
     setDragOverColumn(null);
@@ -923,17 +931,17 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <Flex align="center" gap="4" className="text-secondary mt-1">
               <span>{filteredTasks.length} tasks</span>
               {stats.inProgress > 0 && (
-                <span className="icon-text-tight text-[var(--color-warning)]">
+                <span className="icon-text-tight text-warning">
                   <Zap size={14} className="flex-shrink-0" /> {stats.inProgress} in progress
                 </span>
               )}
               {stats.urgent > 0 && (
-                <span className="icon-text-tight text-[var(--color-error)]">
+                <span className="icon-text-tight text-error">
                   <AlertTriangle size={14} className="flex-shrink-0" /> {stats.urgent} urgent
                 </span>
               )}
               {stats.overdue > 0 && (
-                <span className="icon-text-tight text-[var(--color-error)]">
+                <span className="icon-text-tight text-error">
                   <Clock size={14} className="flex-shrink-0" /> {stats.overdue} overdue
                 </span>
               )}
@@ -1200,7 +1208,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
               {/* Clear filters */}
               {activeFiltersCount > 0 && (
-                <button onClick={clearFilters} className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                <button type="button" onClick={clearFilters} className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                   <X size={14} className="flex-shrink-0" /> Clear all
                 </button>
               )}
@@ -1290,10 +1298,10 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <span className="text-xs text-mission-control-text-dim font-medium">Saved views:</span>
             {savedViews.map(view => (
               <Flex key={view.name} align="center" gap="1">
-                <button onClick={() => applySavedView(view)} className="inline-flex items-center px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                <button type="button" onClick={() => applySavedView(view)} className="inline-flex items-center px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                   {view.name}
                 </button>
-                <button onClick={() => deleteSavedView(view.name)} title="Delete saved view" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                <button type="button" onClick={() => deleteSavedView(view.name)} title="Delete saved view" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                   <X size={10} />
                 </button>
               </Flex>
@@ -1398,7 +1406,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               {/* Column Header */}
               <div className={`flex items-center justify-between px-3 py-2.5 border-b border-mission-control-border/50 border-t-2 ${column.color} rounded-t-xl flex-shrink-0`}>
                 <div className={`icon-text ${isCollapsed ? 'flex-col gap-2' : ''}`}>
-                    <button onClick={() => toggleColumnCollapse(column.id)} title={isCollapsed ? 'Expand column' : 'Collapse column'} className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+                    <button type="button" onClick={() => toggleColumnCollapse(column.id)} title={isCollapsed ? 'Expand column' : 'Collapse column'} className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                       {isCollapsed ? <ChevronRight size={14} className="flex-shrink-0" /> : <ChevronDown size={14} className="flex-shrink-0" />}
                     </button>
                     <span className={column.iconColor}>{column.icon}</span>
@@ -1497,7 +1505,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                             </div>
                             {(settings.filterAgent !== 'all' || settings.filterPriority !== 'all') && (
                               <div className="p-2 border-t border-mission-control-border">
-                                <button onClick={() => { updateColumnSetting(column.id, 'filterAgent', 'all'); updateColumnSetting(column.id, 'filterPriority', 'all'); }} className="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors">
+                                <button type="button" onClick={() => { updateColumnSetting(column.id, 'filterAgent', 'all'); updateColumnSetting(column.id, 'filterPriority', 'all'); }} className="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors">
                                   Clear Filters
                                 </button>
                               </div>
@@ -1508,11 +1516,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
                       {/* Add / Archive action */}
                       {column.id === 'done' ? (
-                        <button onClick={() => setShowArchiveConfirm(true)} disabled={isArchiving || columnTasks.length === 0} title="Archive all done tasks" className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                        <button type="button" onClick={() => setShowArchiveConfirm(true)} disabled={isArchiving || columnTasks.length === 0} title="Archive all done tasks" className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                           <Archive size={14} className="flex-shrink-0" />
                         </button>
                       ) : (
-                        <button onClick={() => handleAddTask(column.id)} title="Add task" className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+                        <button type="button" onClick={() => handleAddTask(column.id)} title="Add task" className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                           <Plus size={14} className="flex-shrink-0" />
                         </button>
                       )}
@@ -1728,7 +1736,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
           {/* Assign Agent */}
           <div className="relative">
-            <button onClick={() => setShowBulkAssign(v => !v)} disabled={isBulkUpdating || isBulkDeleting} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            <button type="button" onClick={() => setShowBulkAssign(v => !v)} disabled={isBulkUpdating || isBulkDeleting} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
               <UserCheck size={15} className="flex-shrink-0" />
               Assign Agent
               <ChevronDown size={13} className="flex-shrink-0" />
@@ -1747,7 +1755,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                   {agents.filter(a => !isProtectedAgent(a.id)).length === 0 ? (
                     <div className="px-4 py-3 text-sm text-mission-control-text-dim">No agents available</div>
                   ) : agents.filter(a => !isProtectedAgent(a.id)).map(a => (
-                    <button key={a.id} onClick={() => handleBulkAssign(a.id)} className="w-full inline-flex items-center gap-2 px-3 py-1.5 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors">
+                    <button type="button" key={a.id} onClick={() => handleBulkAssign(a.id)} className="w-full inline-flex items-center gap-2 px-3 py-1.5 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors">
                       <AgentAvatar agentId={a.id} fallbackEmoji={a.avatar} size="xs" />
                       {a.name}
                     </button>
@@ -1766,7 +1774,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
           <div className="w-px h-5 bg-mission-control-border flex-shrink-0" />
 
           {/* Clear selection */}
-          <button onClick={() => { setSelectedIds(new Set()); setLastSelectedId(null); setShowBulkAssign(false); }} title="Clear selection (Esc)" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+          <button type="button" onClick={() => { setSelectedIds(new Set()); setLastSelectedId(null); setShowBulkAssign(false); }} title="Clear selection (Esc)" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
             <X size={16} className="flex-shrink-0" />
           </button>
         </div>
@@ -1870,7 +1878,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
     
     // 🟠 Orange: Silent agent - assigned but no activity logged
     if (!lastActivity) {
-      return { color: 'border-[var(--color-warning)]/30', description: 'Silent agent (no activity logged)' };
+      return { color: 'border-warning/30', description: 'Silent agent (no activity logged)' };
     }
     
     const now = Date.now();
@@ -1878,16 +1886,16 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
     
     // 🟢 Green: Active work in last 15 minutes
     if (minutesSinceActivity < 15) {
-      return { color: 'border-[var(--color-success)]/30', description: `Active (${Math.floor(minutesSinceActivity)}m ago)` };
+      return { color: 'border-success/30', description: `Active (${Math.floor(minutesSinceActivity)}m ago)` };
     }
     
     // 🟡 Yellow: Stale, no activity in 15-30 minutes
     if (minutesSinceActivity < 30) {
-      return { color: 'border-[var(--color-warning)]/30', description: `Stale (${Math.floor(minutesSinceActivity)}m ago)` };
+      return { color: 'border-warning/30', description: `Stale (${Math.floor(minutesSinceActivity)}m ago)` };
     }
     
     // 🔴 Red: Stuck/abandoned, no activity in 30+ minutes
-    return { color: 'border-[var(--color-error)]/30', description: `Stuck (${Math.floor(minutesSinceActivity)}m ago)` };
+    return { color: 'border-error/30', description: `Stuck (${Math.floor(minutesSinceActivity)}m ago)` };
   };
   
   // Subtask progress
@@ -1937,11 +1945,11 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         isSelected
           ? 'border-mission-control-accent bg-mission-control-accent/5 shadow-[0_0_0_1px_var(--mc-accent)]'
           : task.status === 'in-progress'
-          ? 'border-[var(--color-success)]/60 bg-[var(--color-success)]/10 shadow-[0_0_0_1px_var(--color-success-border)]'
+          ? 'border-success/60 bg-success/10 shadow-[0_0_0_1px_var(--color-success-border)]'
           : activityIndicator ? activityIndicator.color
-          : dueInfo?.isOverdue ? 'border-[var(--color-error)]/30 bg-[var(--color-error)]/10'
-          : task.priority === 'p0' ? 'border-[var(--color-error)]/30'
-          : task.priority === 'p1' ? 'border-[var(--color-warning)]/30'
+          : dueInfo?.isOverdue ? 'border-error/30 bg-error/10'
+          : task.priority === 'p0' ? 'border-error/30'
+          : task.priority === 'p1' ? 'border-warning/30'
           : 'border-mission-control-border hover:border-mission-control-accent/50'
       } hover:shadow-lg hover:-translate-y-0.5`}
       title={activityIndicator?.description}
@@ -2015,7 +2023,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
                 onDoubleClick={startEditTitle}
                 title="Double-click to edit"
               >{task.title}</h4>
-              <button onClick={startEditTitle} title="Edit title" style={{ opacity: 0 }} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+              <button type="button" onClick={startEditTitle} title="Edit title" style={{ opacity: 0 }} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                 <Pencil size={11} />
               </button>
             </div>
@@ -2104,22 +2112,22 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       {isTodoTask && !isReady && (
         <div className="flex flex-wrap gap-1 mb-2" title={`Missing: ${missingCriteria.join(', ')}`}>
           {!hasMinSubtasks && (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full inline-flex items-center gap-0.5">
+            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-warning/10 text-warning rounded-full inline-flex items-center gap-0.5">
               <AlertTriangle size={10} className="inline" /> {task.subtasks?.length || 0}/2 subtasks
             </span>
           )}
           {!hasPriority && (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full inline-flex items-center gap-0.5">
+            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-error/10 text-error rounded-full inline-flex items-center gap-0.5">
               <AlertTriangle size={10} className="inline" /> No priority
             </span>
           )}
           {!hasValidAssignment && (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full inline-flex items-center gap-0.5">
+            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-error/10 text-error rounded-full inline-flex items-center gap-0.5">
               <AlertTriangle size={10} className="inline" /> No valid assignee
             </span>
           )}
           {!hasDescription && (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-warning)]/10 text-[var(--color-warning)] rounded-full inline-flex items-center gap-0.5">
+            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-warning/10 text-warning rounded-full inline-flex items-center gap-0.5">
               <AlertTriangle size={10} className="inline" /> Needs description
             </span>
           )}
@@ -2127,7 +2135,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       )}
       {isTodoTask && isReady && (
         <div className="mb-2">
-          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-full inline-flex items-center gap-0.5">
+          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-success/10 text-success rounded-full inline-flex items-center gap-0.5">
             <CheckCircle size={10} className="inline" /> Ready for Review
           </span>
         </div>
@@ -2138,7 +2146,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         if (dueInfo.isOverdue) {
           return (
             <Flex align="center" gap="1" mb="2">
-              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-[var(--color-error)] bg-[var(--color-error)]/10 border-[var(--color-error)]/30">
+              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-error bg-error/10 border-error/30">
                 <AlertTriangle size={10} />
                 {dueInfo.text}
               </span>
@@ -2148,7 +2156,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         if (dueInfo.isDueSoon) {
           return (
             <Flex align="center" gap="1" mb="2">
-              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30">
+              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-warning bg-warning/10 border-warning/30">
                 <Clock size={10} />
                 Due in {dueInfo.text}
               </span>
@@ -2158,7 +2166,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         if (dueInfo.isDueThisWeek) {
           return (
             <Flex align="center" gap="1" mb="2">
-              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-[var(--color-warning)] bg-[var(--color-warning)]/10/50 border-[var(--color-warning)]/30/50">
+              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border text-warning bg-warning/10/50 border-warning/30/50">
                 <Calendar size={10} />
                 Due in {dueInfo.text}
               </span>
@@ -2182,7 +2190,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
 
       {/* Awaiting Clara badge — shown on Pre-review column cards */}
       {task.status === 'internal-review' && (
-        <div className="icon-text-tight text-[10px] font-medium px-1.5 py-0.5 rounded-full mb-2 bg-[var(--color-review)]-subtle text-[var(--color-review)]">
+        <div className="icon-text-tight text-[10px] font-medium px-1.5 py-0.5 rounded-full mb-2 bg-review-subtle text-review">
           <Clock size={10} className="no-shrink animate-pulse" />
           <span>Awaiting Clara</span>
           {task.reviewStatus === 'pre-review' && (
@@ -2194,8 +2202,8 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       {/* Clara review status badge */}
       {task.reviewStatus && task.status !== 'internal-review' && (
         <div className={`icon-text-tight text-[10px] font-medium px-1.5 py-0.5 rounded-full mb-2 ${
-          task.reviewStatus === 'approved' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' :
-          task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
+          task.reviewStatus === 'approved' ? 'bg-success/10 text-success' :
+          task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-error/10 text-error' :
           'bg-mission-control-accent/10 text-mission-control-accent animate-pulse'
         }`}>
           {task.reviewStatus === 'approved' ? <ShieldCheck size={10} className="no-shrink" /> :
@@ -2218,7 +2226,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
             <div
               className={`h-full transition-colors duration-300 ${
-                subtaskProgress === 100 ? 'bg-[var(--color-success)]' : 'bg-mission-control-accent'
+                subtaskProgress === 100 ? 'bg-success' : 'bg-mission-control-accent'
               }`}
               style={{ width: `${subtaskProgress}%` }}
             />
@@ -2236,9 +2244,9 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
 
           {dueInfo && (
             <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap ${
-              dueInfo.isOverdue ? 'bg-[var(--color-error)]/10 text-[var(--color-error)]' :
-              dueInfo.isDueSoon ? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]' :
-              dueInfo.isDueThisWeek ? 'bg-[var(--color-warning)]/10/50 text-[var(--color-warning)]' :
+              dueInfo.isOverdue ? 'bg-error/10 text-error' :
+              dueInfo.isDueSoon ? 'bg-warning/10 text-warning' :
+              dueInfo.isDueThisWeek ? 'bg-warning/10/50 text-warning' :
               'bg-mission-control-border/30 text-mission-control-text-dim'
             }`}>
               <Calendar size={11} className="flex-shrink-0" />
@@ -2251,7 +2259,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           {assignedAgent ? (
             <>
               {task.status === 'in-progress' ? (
-                <span className="icon-badge-sm bg-[var(--color-success)]/10 text-[var(--color-success)] animate-pulse" title="Agent working">
+                <span className="icon-badge-sm bg-success/10 text-success animate-pulse" title="Agent working">
                   <Zap size={14} className="no-shrink" />
                 </span>
               ) : canStart ? (

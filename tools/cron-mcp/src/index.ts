@@ -109,4 +109,7 @@ async function main() {
   await server.connect(transport);
 }
 
-main();
+main().catch((err) => {
+  console.error('[cron-mcp] Fatal error:', err);
+  process.exit(1);
+});

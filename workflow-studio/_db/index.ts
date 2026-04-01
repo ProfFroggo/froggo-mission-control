@@ -34,3 +34,7 @@ if (connectionString) {
 }
 
 export { db }
+
+// SQLite local-mode database (standalone, no drizzle dependency)
+export { sqliteDb } from './sqlite'
+export type { WorkflowRow, ExecutionRow, CredentialRow, EnvironmentRow } from './sqlite'
