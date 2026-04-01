@@ -159,7 +159,8 @@ export class GeminiStt {
   private startRecording(): void {
     if (this.recorder && this.stream && !this.stopped) {
       try {
-        this.recorder.start();
+        // Use timeslice to get ondataavailable events every 1s (ensures data is captured)
+        this.recorder.start(1000);
       } catch {
         // Already recording or stream ended
       }
@@ -195,6 +196,9 @@ export class GeminiStt {
 
   /** Send audio blob to Gemini transcribe API */
   private async transcribe(blob: Blob): Promise<string> {
+    // Skip tiny blobs (< 1KB) — likely silence or recording artifacts
+    if (blob.size < 1024) return '';
+
     try {
       const headers = await getAuthHeaders();
       const formData = new FormData();
@@ -214,7 +218,11 @@ export class GeminiStt {
       }
 
       const data = await res.json();
-      return (data.transcript || '').trim();
+      const text = (data.transcript || '').trim();
+
+      // Filter out non-transcription responses
+      if (!text || /^\s*$/.test(text)) return '';
+      return text;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.options.onError?.(`Transcription error: ${msg}`);
