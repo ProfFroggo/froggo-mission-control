@@ -21,6 +21,7 @@ tools:
 mcpServers:
   - mission-control_db
   - memory
+  - mixpanel
 ---
 
 # Data — Data Analyst
